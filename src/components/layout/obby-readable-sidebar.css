@@ -16,5 +16,5 @@
 .obby-server-rail[data-expanded="true"] .obby-server-row[data-selected="true"] { background: #5865f255; }
 .obby-server-rail[data-expanded="true"] .obby-server-row:hover { background: #5865f233; }
 /* Names are visible; use native title tooltips in compact mode. */
-.obby-server-rail .pointer-events-none.whitespace-nowrap { display: none; }
+.obby-server-rail[data-expanded="true"] .pointer-events-none.whitespace-nowrap { display: none; }
 @media (pointer: coarse) { .obby-server-row { min-height: 44px; } }
