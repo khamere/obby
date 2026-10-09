@@ -3,6 +3,7 @@ import ircClient from "../../lib/ircClient";
 import type { BouncerState } from "../../types";
 import { generateDeterministicId } from "../helpers";
 import type { AppState } from "../index";
+import * as storage from "../localStorage";
 
 // Module-scope so a single childId only ever dispatches one bind across
 // the burst of BOUNCER_NETWORK events that arrive during the initial
@@ -100,6 +101,34 @@ export function registerBouncerHandlers(store: StoreApi<AppState>): void {
           },
         };
       });
+      // Only the control connection owns names for its bound children.
+      const state = store.getState();
+      if (
+        !deleted &&
+        attributes.name &&
+        !state.servers.find((s) => s.id === serverId)?.bouncerNetid
+      ) {
+        const childId = generateDeterministicId(serverId, netid);
+        if (
+          state.servers.some(
+            (s) => s.id === childId && s.name !== attributes.name,
+          )
+        ) {
+          store.setState((current) => ({
+            servers: current.servers.map((s) =>
+              s.id === childId ? { ...s, name: attributes.name } : s,
+            ),
+          }));
+        }
+        const saved = storage.servers.load();
+        if (saved.some((s) => s.id === childId && s.name !== attributes.name)) {
+          storage.servers.save(
+            saved.map((s) =>
+              s.id === childId ? { ...s, name: attributes.name } : s,
+            ),
+          );
+        }
+      }
       if (attributes.state === "connected" || (!deleted && attributes.state)) {
         autoBindConnectedNetworks(store, serverId);
       }
