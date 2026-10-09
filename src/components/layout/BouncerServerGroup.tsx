@@ -6,6 +6,7 @@ import { GiGlassShot } from "react-icons/gi";
 import { useLongPress } from "../../hooks/useLongPress";
 import { serverFilehosts } from "../../lib/ircUtils";
 import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
+import { serverDisplayName } from "../../lib/serverDisplayName";
 import useStore from "../../store";
 import type { Server } from "../../types";
 import ServerBottomSheet from "../mobile/ServerBottomSheet";
@@ -50,14 +51,22 @@ export const BouncerServerGroup: React.FC<BouncerServerGroupProps> = ({
   const setBouncerGroupAccent = useStore((s) => s.setBouncerGroupAccent);
   const colorInputRef = useRef<HTMLInputElement>(null);
 
+  const networkRecords = useStore((s) => s.bouncers[control.id]?.networks);
+
   const sortedChildren = useMemo(
     () =>
       [...networks].sort((a, b) => {
-        const an = (a.networkName || a.name || "").toLowerCase();
-        const bn = (b.networkName || b.name || "").toLowerCase();
+        const an = serverDisplayName(
+          a,
+          networkRecords?.[a.bouncerNetid || ""],
+        ).toLowerCase();
+        const bn = serverDisplayName(
+          b,
+          networkRecords?.[b.bouncerNetid || ""],
+        ).toLowerCase();
         return an.localeCompare(bn);
       }),
-    [networks],
+    [networks, networkRecords],
   );
 
   const isAnyMemberSelected =
@@ -169,6 +178,12 @@ const GroupedAvatar: React.FC<GroupedAvatarProps> = ({
 }) => {
   const { t } = useLingui();
   const [bottomSheetOpen, setBottomSheetOpen] = useState(false);
+  const network = useStore((s) =>
+    server.bouncerServerId && server.bouncerNetid
+      ? s.bouncers[server.bouncerServerId]?.networks[server.bouncerNetid]
+      : undefined,
+  );
+  const displayName = serverDisplayName(server, network);
 
   const mediaSettings = mediaLevelToSettings(
     useStore((state) => state.globalSettings.mediaVisibilityLevel),
@@ -196,9 +211,7 @@ const GroupedAvatar: React.FC<GroupedAvatarProps> = ({
     onSelect();
   };
 
-  const initial = (
-    (server.networkName || server.name || "").charAt(0) || "?"
-  ).toUpperCase();
+  const initial = (displayName.charAt(0) || "?").toUpperCase();
 
   // Footer control session without a draft/ICON: 50% of full-tile size
   // (w-6 = 24px) with the shotglass fallback inside.
@@ -224,18 +237,10 @@ const GroupedAvatar: React.FC<GroupedAvatarProps> = ({
         `}
         style={selectedRingStyle}
         data-selected={isSelected}
-        title={
-          isControl
-            ? `Bouncer: ${server.networkName || server.name}`
-            : server.networkName || server.name
-        }
+        title={isControl ? `Bouncer: ${displayName}` : displayName}
         role="button"
         tabIndex={0}
-        aria-label={
-          isControl
-            ? `Bouncer: ${server.networkName || server.name}`
-            : server.networkName || server.name
-        }
+        aria-label={isControl ? `Bouncer: ${displayName}` : displayName}
         aria-pressed={isSelected}
         onKeyDown={(e) => {
           if (
@@ -303,7 +308,7 @@ const GroupedAvatar: React.FC<GroupedAvatarProps> = ({
 
         <span className="obby-server-name">
           {isControl ? "Bouncer: " : ""}
-          {server.networkName || server.name}
+          {displayName}
         </span>
 
         {hasMentions && !isSelected && (
@@ -338,7 +343,7 @@ const GroupedAvatar: React.FC<GroupedAvatarProps> = ({
         )}
 
         <div className="absolute top-1/2 -translate-y-1/2 left-14 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-40 pointer-events-none">
-          {server.networkName || server.name}
+          {displayName}
         </div>
       </div>
 
@@ -346,7 +351,7 @@ const GroupedAvatar: React.FC<GroupedAvatarProps> = ({
         <ServerBottomSheet
           isOpen={bottomSheetOpen}
           onClose={() => setBottomSheetOpen(false)}
-          serverName={server.networkName || server.name}
+          serverName={displayName}
           onEdit={onEdit}
           onDisconnect={onDelete}
         />
