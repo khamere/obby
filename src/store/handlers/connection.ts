@@ -224,7 +224,7 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
 
     store.setState((state) => {
       const updatedServers = state.servers.map((server) => {
-        if (server.id === serverId) {
+        if (server.id === serverId && !server.bouncerNetid) {
           return { ...server, name: serverName }; // Update the server name for display purposes
         }
         return server;

@@ -1,0 +1,112 @@
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, describe, expect, test, vi } from "vitest";
+import { BouncerServerGroup } from "../../../src/components/layout/BouncerServerGroup";
+import ircClient from "../../../src/lib/ircClient";
+import useStore from "../../../src/store";
+import { generateDeterministicId } from "../../../src/store/helpers";
+import type { Server } from "../../../src/types";
+
+const parent: Server = {
+  id: "sidebar-parent",
+  name: "soju",
+  host: "soju.example",
+  port: 443,
+  channels: [],
+  privateChats: [],
+  users: [],
+  isConnected: true,
+};
+const child: Server = {
+  ...parent,
+  id: generateDeterministicId(parent.id, "1"),
+  name: "Old name",
+  networkName: "Lowland.Example",
+  bouncerServerId: parent.id,
+  bouncerNetid: "1",
+};
+const other: Server = {
+  ...child,
+  id: "other",
+  bouncerNetid: "2",
+  name: "Zephyr",
+  networkName: "Aardvark",
+};
+
+function Group({ touch = false }: { touch?: boolean }) {
+  const servers = useStore((s) => s.servers);
+  return (
+    <BouncerServerGroup
+      control={parent}
+      networks={servers.filter((s) => s.bouncerServerId === parent.id)}
+      selectedServerId={child.id}
+      shimmeringServers={new Set()}
+      isTouchDevice={touch}
+      onSelect={vi.fn()}
+      onEdit={vi.fn()}
+      onDelete={vi.fn()}
+      onReconnect={vi.fn()}
+    />
+  );
+}
+
+describe("soju sidebar labels", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    useStore.setState({ servers: [], bouncers: {} });
+  });
+
+  test("labels, initials, tooltips and sort order follow live soju renames", () => {
+    useStore.setState({ servers: [parent, child, other], bouncers: {} });
+    render(<Group />);
+    act(() =>
+      ircClient.triggerEvent("BOUNCER_NETWORK", {
+        serverId: parent.id,
+        netid: "1",
+        deleted: false,
+        attributes: { name: "uplink.example" },
+      }),
+    );
+    const row = screen.getByRole("button", { name: "uplink.example" });
+    expect(row).toHaveAttribute("title", "uplink.example");
+    expect(within(row).getByText("U", { exact: true })).toBeInTheDocument();
+    expect(row.querySelector(".obby-server-name")).toHaveTextContent(
+      "uplink.example",
+    );
+    expect(within(row).getAllByText("uplink.example")).toHaveLength(2);
+    expect(
+      Array.from(document.querySelectorAll(".obby-server-row")).map((el) =>
+        el.getAttribute("aria-label"),
+      ),
+    ).toEqual(["uplink.example", "Zephyr", "Bouncer: soju"]);
+    act(() =>
+      ircClient.triggerEvent("BOUNCER_NETWORK", {
+        serverId: parent.id,
+        netid: "1",
+        deleted: false,
+        attributes: { name: "Zulu Tracker" },
+      }),
+    );
+    expect(
+      screen.queryByRole("button", { name: "uplink.example" }),
+    ).not.toBeInTheDocument();
+    expect(
+      Array.from(document.querySelectorAll(".obby-server-row")).map((el) =>
+        el.getAttribute("aria-label"),
+      ),
+    ).toEqual(["Zephyr", "Zulu Tracker", "Bouncer: soju"]);
+  });
+
+  test("mobile long-press shows the saved soju name", () => {
+    vi.useFakeTimers();
+    useStore.setState({
+      servers: [parent, { ...child, name: "uplink.example" }],
+      bouncers: {},
+    });
+    render(<Group touch />);
+    const row = screen.getByRole("button", { name: "uplink.example" });
+    fireEvent.touchStart(row, { touches: [{ clientX: 10, clientY: 10 }] });
+    act(() => vi.advanceTimersByTime(1000));
+    expect(screen.getByText("Edit Server")).toBeVisible();
+    expect(screen.getAllByText("uplink.example").length).toBeGreaterThan(2);
+  });
+});
