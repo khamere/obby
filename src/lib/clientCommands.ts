@@ -103,6 +103,19 @@ export function getClientCommands(): ClientCommand[] {
       ],
     },
     {
+      name: "slap",
+      description: t`Slap someone around a bit with a large trout`,
+      options: [
+        { name: "user", type: "user", required: true },
+        {
+          name: "item",
+          type: "string",
+          required: false,
+          description: t`What to slap them with (defaults to a large trout)`,
+        },
+      ],
+    },
+    {
       name: "away",
       description: t`Mark yourself as away`,
       options: [
@@ -126,9 +139,19 @@ export const CLIENT_COMMAND_NAMES: ReadonlySet<string> = new Set([
   "me",
   "msg",
   "whisper",
+  "slap",
   "join",
   "part",
   "nick",
   "away",
   "back",
 ]);
+
+// The classic mIRC /slap. The text goes out on the wire as an ACTION, so it
+// stays in English for everyone, like the original.
+export function slapAction(args: readonly string[]): string | null {
+  const [nick, ...item] = args.filter((a) => a.length > 0);
+  if (!nick) return null;
+  const withWhat = item.length > 0 ? item.join(" ") : "a large trout";
+  return `slaps ${nick} around a bit with ${withWhat}`;
+}

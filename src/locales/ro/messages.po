@@ -3220,6 +3220,10 @@ msgstr "Conectat la"
 msgid "Signed On"
 msgstr "Conectat la"
 
+#: src/lib/clientCommands.ts
+msgid "Slap someone around a bit with a large trout"
+msgstr "Plesnește pe cineva cu un păstrăv mare"
+
 #: src/components/ui/BotsModal.tsx
 #: src/components/ui/SlashCommandPopover.tsx
 msgid "Slash commands"
@@ -3775,6 +3779,10 @@ msgstr "Ce faci?"
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "What this means:"
 msgstr "Ce înseamnă aceasta:"
+
+#: src/lib/clientCommands.ts
+msgid "What to slap them with (defaults to a large trout)"
+msgstr "Cu ce să-l plesnești (implicit, un păstrăv mare)"
 
 #: src/lib/clientCommands.ts
 msgid "What you're doing"

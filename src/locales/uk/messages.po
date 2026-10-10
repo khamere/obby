@@ -3220,6 +3220,10 @@ msgstr "Час входу"
 msgid "Signed On"
 msgstr "Час входу"
 
+#: src/lib/clientCommands.ts
+msgid "Slap someone around a bit with a large trout"
+msgstr "Відшмагати когось великою фореллю"
+
 #: src/components/ui/BotsModal.tsx
 #: src/components/ui/SlashCommandPopover.tsx
 msgid "Slash commands"
@@ -3775,6 +3779,10 @@ msgstr "Що ти зараз робиш?"
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "What this means:"
 msgstr "Що це означає:"
+
+#: src/lib/clientCommands.ts
+msgid "What to slap them with (defaults to a large trout)"
+msgstr "Чим відшмагати (типово — великою фореллю)"
 
 #: src/lib/clientCommands.ts
 msgid "What you're doing"

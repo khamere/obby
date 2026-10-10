@@ -3220,6 +3220,10 @@ msgstr "접속 시각"
 msgid "Signed On"
 msgstr "접속 시각"
 
+#: src/lib/clientCommands.ts
+msgid "Slap someone around a bit with a large trout"
+msgstr "큰 송어로 누군가를 살짝 때리기"
+
 #: src/components/ui/BotsModal.tsx
 #: src/components/ui/SlashCommandPopover.tsx
 msgid "Slash commands"
@@ -3775,6 +3779,10 @@ msgstr "지금 뭐 하세요?"
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "What this means:"
 msgstr "이것이 의미하는 바:"
+
+#: src/lib/clientCommands.ts
+msgid "What to slap them with (defaults to a large trout)"
+msgstr "때릴 물건 (기본값: 큰 송어)"
 
 #: src/lib/clientCommands.ts
 msgid "What you're doing"

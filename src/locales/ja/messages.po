@@ -3220,6 +3220,10 @@ msgstr "サインオン"
 msgid "Signed On"
 msgstr "サインイン日時"
 
+#: src/lib/clientCommands.ts
+msgid "Slap someone around a bit with a large trout"
+msgstr "大きなマスで誰かをちょっと叩く"
+
 #: src/components/ui/BotsModal.tsx
 #: src/components/ui/SlashCommandPopover.tsx
 msgid "Slash commands"
@@ -3775,6 +3779,10 @@ msgstr "今何してるの?"
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "What this means:"
 msgstr "これが意味すること："
+
+#: src/lib/clientCommands.ts
+msgid "What to slap them with (defaults to a large trout)"
+msgstr "叩くもの（既定は大きなマス）"
 
 #: src/lib/clientCommands.ts
 msgid "What you're doing"
