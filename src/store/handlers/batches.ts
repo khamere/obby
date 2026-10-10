@@ -411,13 +411,12 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
               ),
           );
 
-          const merged = [...existing, ...newMessages]
-            .sort(
-              (a, b) =>
-                new Date(a.timestamp).getTime() -
-                new Date(b.timestamp).getTime(),
-            )
-            .slice(-MAX_MESSAGES_PER_CHANNEL);
+          // Keep requested PM scrollback: trimming the oldest entries here
+          // would discard each older page once the recent-message limit is hit.
+          const merged = [...existing, ...newMessages].sort(
+            (a, b) =>
+              new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+          );
 
           const finalMessages = merged.map((m) => {
             let updated = m;
@@ -468,6 +467,22 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
             processedMessageIds: rememberMsgIds(
               state.processedMessageIds,
               newMsgIds,
+            ),
+            servers: state.servers.map((s) =>
+              s.id !== serverId
+                ? s
+                : {
+                    ...s,
+                    privateChats: s.privateChats?.map((chat) =>
+                      chat.id !== privateChat.id
+                        ? chat
+                        : {
+                            ...chat,
+                            hasMoreHistory: pending.length > 0,
+                            isLoadingHistory: false,
+                          },
+                    ),
+                  },
             ),
           };
         }
