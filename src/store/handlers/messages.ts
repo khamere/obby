@@ -2070,7 +2070,12 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
               }
               return channel;
             });
-            return { ...server, channels: updatedChannels };
+            const privateChats = server.privateChats?.map((chat) =>
+              chat.username.toLowerCase() === channelName.toLowerCase()
+                ? { ...chat, isLoadingHistory: isLoading }
+                : chat,
+            );
+            return { ...server, channels: updatedChannels, privateChats };
           }
           return server;
         });
