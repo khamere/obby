@@ -442,6 +442,22 @@ export const MessageItem = memo((props: MessageItemProps) => {
     () => server?.channels.find((c) => c.id === channelId)?.users ?? NO_USERS,
     [server, channelId],
   );
+  const openPrivateChatWith = useCallback(
+    (nick: string) => {
+      const { openPrivateChat, selectPrivateChat } = useStore.getState();
+      const serverId = message.serverId;
+      openPrivateChat(serverId, nick);
+      // Read fresh state: the PM may have been created just now.
+      const privateChat = useStore
+        .getState()
+        .servers.find((s) => s.id === serverId)
+        ?.privateChats?.find(
+          (pc) => pc.username.toLowerCase() === nick.toLowerCase(),
+        );
+      if (privateChat) selectPrivateChat(privateChat.id, { navigate: true });
+    },
+    [message.serverId],
+  );
   // Our own messages never highlight us; with highlights off our nick is
   // just another member name.
   const highlightSelf = enableHighlights && !isCurrentUser;
@@ -449,11 +465,12 @@ export const MessageItem = memo((props: MessageItemProps) => {
     () =>
       highlightNicks(
         htmlContent,
-        buildNickMatcher(
-          channelUsers,
-          highlightSelf ? ircCurrentUser?.username : undefined,
-          highlightSelf ? customMentions : [],
-        ),
+        buildNickMatcher(channelUsers, {
+          ownNick: ircCurrentUser?.username,
+          highlightSelf,
+          customMentions,
+          onNickClick: openPrivateChatWith,
+        }),
       ),
     [
       htmlContent,
@@ -461,6 +478,7 @@ export const MessageItem = memo((props: MessageItemProps) => {
       highlightSelf,
       ircCurrentUser?.username,
       customMentions,
+      openPrivateChatWith,
     ],
   );
 

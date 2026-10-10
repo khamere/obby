@@ -1,5 +1,6 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { mircToHtml } from "../../src/lib/ircUtils";
 import {
   buildNickMatcher,
@@ -23,13 +24,21 @@ const users: User[] = [
 function html(text: string, self?: string, custom: string[] = []) {
   const out = highlightNicks(
     mircToHtml(text, "k"),
-    buildNickMatcher(users, self, custom),
+    buildNickMatcher(users, {
+      ownNick: self,
+      highlightSelf: self !== undefined,
+      customMentions: custom,
+    }),
   );
   return { html: renderToStaticMarkup(out.node), ...out };
 }
 
 describe("segmentText", () => {
-  const matcher = buildNickMatcher(users, "me", ["pizza night"]);
+  const matcher = buildNickMatcher(users, {
+    ownNick: "me",
+    highlightSelf: true,
+    customMentions: ["pizza night"],
+  });
 
   it("finds member nicks case-insensitively with punctuation around them", () => {
     const segs = segmentText("BOB: hi @carol[m], bob's turn", matcher);
@@ -96,7 +105,39 @@ describe("highlightNicks", () => {
 
   it("returns text without nicks unchanged", () => {
     const node = mircToHtml("nothing to see", "k");
-    const out = highlightNicks(node, buildNickMatcher(users, "me"));
+    const out = highlightNicks(
+      node,
+      buildNickMatcher(users, { ownNick: "me", highlightSelf: true }),
+    );
     expect(renderToStaticMarkup(out.node)).toBe(renderToStaticMarkup(node));
+  });
+});
+
+describe("clickable nicks", () => {
+  function renderClickable(text: string, highlightSelf = false) {
+    const onNickClick = vi.fn();
+    const out = highlightNicks(
+      mircToHtml(text, "k"),
+      buildNickMatcher(users, { ownNick: "me", highlightSelf, onNickClick }),
+    );
+    render(<div>{out.node}</div>);
+    return onNickClick;
+  }
+
+  it("clicking a member's nick reports their server spelling", () => {
+    const onNickClick = renderClickable("ask carol[m] about it");
+    fireEvent.click(screen.getByRole("button", { name: "carol[m]" }));
+    expect(onNickClick).toHaveBeenCalledWith("Carol[m]");
+  });
+
+  it("our own nick is never a button, highlighted or not", () => {
+    renderClickable("me and bob");
+    expect(screen.queryByRole("button", { name: "me" })).toBeNull();
+    expect(screen.getByRole("button", { name: "bob" })).toBeDefined();
+  });
+
+  it("our highlighted nick stays a plain pill", () => {
+    renderClickable("hey me", true);
+    expect(screen.queryByRole("button")).toBeNull();
   });
 });

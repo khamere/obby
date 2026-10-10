@@ -6,31 +6,50 @@ import { getColorStyle } from "./ircUtils";
 // token, so "bob:", "@bob" and "bob's" all still find "bob".
 const NICK_TOKEN_RX = /[A-Za-z0-9[\]\\`^{}|_-]+/g;
 
-// Elements whose text must stay verbatim: link targets and code.
-const OPAQUE_TAGS = new Set(["a", "code", "pre"]);
+// Elements whose text must stay verbatim (link targets, code) or that are
+// already interactive.
+const OPAQUE_TAGS = new Set(["a", "button", "code", "pre"]);
+
+interface Member {
+  // the server's spelling, used when acting on the nick
+  nick: string;
+  color?: string;
+}
 
 export interface NickMatcher {
-  // lowercased nick -> colour from the user's metadata, if any
-  others: Map<string, string | undefined>;
+  // keyed by lowercased nick
+  others: Map<string, Member>;
+  // our nick when it should be highlighted as a mention, lowercased
   selfNick?: string;
+  // our nick regardless of highlighting, lowercased; never clickable
+  ownNick?: string;
   // custom mention words/phrases, already lowercased
   selfWords: string[];
+  onNickClick?: (nick: string) => void;
+}
+
+export interface NickMatcherOptions {
+  ownNick?: string;
+  // highlight our own nick and the custom mentions as pings
+  highlightSelf?: boolean;
+  customMentions?: readonly string[];
+  onNickClick?: (nick: string) => void;
 }
 
 // One map per member list, shared by every message rendered from it.
-const memberMapCache = new WeakMap<
-  readonly User[],
-  Map<string, string | undefined>
->();
+const memberMapCache = new WeakMap<readonly User[], Map<string, Member>>();
 
-function memberMap(users: readonly User[]): Map<string, string | undefined> {
+function memberMap(users: readonly User[]): Map<string, Member> {
   let map = memberMapCache.get(users);
   if (!map) {
     map = new Map();
     for (const u of users) {
       // One-letter nicks would light up every lone "a" or "I".
       if (u.username.length < 2) continue;
-      map.set(u.username.toLowerCase(), u.metadata?.color?.value);
+      map.set(u.username.toLowerCase(), {
+        nick: u.username,
+        color: u.metadata?.color?.value,
+      });
     }
     memberMapCache.set(users, map);
   }
@@ -39,15 +58,24 @@ function memberMap(users: readonly User[]): Map<string, string | undefined> {
 
 export function buildNickMatcher(
   users: readonly User[],
-  selfNick: string | undefined,
-  customMentions: readonly string[] = [],
+  {
+    ownNick,
+    highlightSelf = false,
+    customMentions = [],
+    onNickClick,
+  }: NickMatcherOptions = {},
 ): NickMatcher {
+  const own = ownNick?.toLowerCase();
   return {
     others: memberMap(users),
-    selfNick: selfNick?.toLowerCase(),
-    selfWords: customMentions
-      .map((m) => m.trim().toLowerCase())
-      .filter((m) => m.length > 0),
+    selfNick: highlightSelf ? own : undefined,
+    ownNick: own,
+    selfWords: highlightSelf
+      ? customMentions
+          .map((m) => m.trim().toLowerCase())
+          .filter((m) => m.length > 0)
+      : [],
+    onNickClick,
   };
 }
 
@@ -58,7 +86,7 @@ function escapeRegExp(s: string): string {
 interface Segment {
   text: string;
   kind: "plain" | "self" | "other";
-  color?: string;
+  member?: Member;
 }
 
 function isNickChar(ch: string | undefined): boolean {
@@ -80,7 +108,7 @@ function splitNickTokens(
     out.push(
       isSelf
         ? { text: m[0], kind: "self" }
-        : { text: m[0], kind: "other", color: matcher.others.get(lower) },
+        : { text: m[0], kind: "other", member: matcher.others.get(lower) },
     );
     last = idx + m[0].length;
   }
@@ -114,7 +142,9 @@ export function segmentText(text: string, matcher: NickMatcher): Segment[] {
 function renderSegments(
   segments: Segment[],
   keyPrefix: string,
+  matcher: NickMatcher,
 ): React.ReactNode[] {
+  const { onNickClick, ownNick } = matcher;
   return segments.map((seg, i) => {
     const key = `${keyPrefix}-nh${i}`;
     if (seg.kind === "self") {
@@ -125,14 +155,30 @@ function renderSegments(
       );
     }
     if (seg.kind === "other") {
+      const style = getColorStyle(seg.member?.color);
+      const nick = seg.member?.nick ?? seg.text;
+      if (!onNickClick || nick.toLowerCase() === ownNick) {
+        return (
+          <span key={key} className="font-bold text-white" style={style}>
+            {seg.text}
+          </span>
+        );
+      }
       return (
-        <span
+        <button
           key={key}
-          className="font-bold text-white"
-          style={getColorStyle(seg.color)}
+          type="button"
+          className="obby-nick-link font-bold text-white"
+          style={style}
+          title={nick}
+          onClick={(e) => {
+            // The row has its own click/long-press handling.
+            e.stopPropagation();
+            onNickClick(nick);
+          }}
         >
           {seg.text}
-        </span>
+        </button>
       );
     }
     return seg.text;
@@ -154,7 +200,7 @@ export function highlightNicks(
       const segments = segmentText(n, matcher);
       if (segments.every((s) => s.kind === "plain")) return n;
       if (segments.some((s) => s.kind === "self")) mentionsSelf = true;
-      return renderSegments(segments, `t${counter++}`);
+      return renderSegments(segments, `t${counter++}`, matcher);
     }
     if (Array.isArray(n)) return n.map(walk);
     if (!React.isValidElement(n)) return n;

@@ -154,6 +154,20 @@ html {
   padding: 0 2px;
 }
 
+/* A member's nick inside message text: opens a PM with them */
+.obby-nick-link {
+  display: inline;
+  padding: 0;
+  font-size: inherit;
+  line-height: inherit;
+  background: none;
+  cursor: pointer;
+}
+.obby-nick-link:hover,
+.obby-nick-link:focus-visible {
+  text-decoration: underline;
+}
+
 /* A message row that mentions us */
 .obby-mention-row {
   background-color: rgba(250, 204, 21, 0.07);
