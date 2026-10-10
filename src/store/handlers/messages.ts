@@ -31,6 +31,35 @@ import { confirmEncryptedEcho } from "./e2eeConversation";
 import { handleInboundOtr } from "./otr";
 import { notePrivateMessageArrived } from "./privateChatArrival";
 
+// A live message from a nick proves they're connected, even on servers
+// where MONITOR never answers.
+export function markPrivateChatPeerOnline(
+  store: StoreApi<AppState>,
+  serverId: string,
+  nick: string,
+): void {
+  const lower = nick.toLowerCase();
+  const server = store.getState().servers.find((s) => s.id === serverId);
+  const chat = server?.privateChats?.find(
+    (pc) => pc.username.toLowerCase() === lower,
+  );
+  if (!chat || chat.isOnline === true) return;
+  store.setState((state) => ({
+    servers: state.servers.map((s) =>
+      s.id === serverId
+        ? {
+            ...s,
+            privateChats: s.privateChats?.map((pc) =>
+              pc.username.toLowerCase() === lower
+                ? { ...pc, isOnline: true }
+                : pc,
+            ),
+          }
+        : s,
+    ),
+  }));
+}
+
 export function registerMessageHandlers(store: StoreApi<AppState>): void {
   ircClient.on("CHANMSG", (response) => {
     const { mtags, channelName, message, timestamp } = response;
@@ -670,7 +699,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
             lastActivity: new Date(),
             isPinned: false,
             order: undefined,
-            isOnline: false,
+            isOnline: undefined,
             isAway: false,
           };
           privateChat = newPrivateChat;
@@ -724,6 +753,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
 
         const isHistoricalMessage = mtags?.batch !== undefined;
         if (!isHistoricalMessage) {
+          markPrivateChatPeerOnline(store, server.id, sender);
           const state = store.getState();
           const serverCurrentUser = ircClient.getCurrentUser(response.serverId);
           if (
@@ -1023,6 +1053,10 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           ?.privateChats?.find(
             (pc) => pc.username.toLowerCase() === sender.toLowerCase(),
           );
+      }
+
+      if (privateChat && mtags?.batch === undefined) {
+        markPrivateChatPeerOnline(store, server.id, sender);
       }
 
       if (privateChat) {
@@ -1460,6 +1494,10 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
         ?.privateChats?.find(
           (pc) => pc.username.toLowerCase() === response.sender.toLowerCase(),
         );
+    }
+
+    if (privateChat && mtags?.batch === undefined) {
+      markPrivateChatPeerOnline(store, server.id, response.sender);
     }
 
     if (privateChat) {

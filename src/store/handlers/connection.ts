@@ -498,7 +498,8 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
             lastActivity: new Date(),
             isPinned: true,
             order,
-            isOnline: false, // Will be updated by MONITOR
+            // Unknown until MONITOR/WHO answers; must not block sending.
+            isOnline: undefined,
             isAway: false,
           }),
         );
