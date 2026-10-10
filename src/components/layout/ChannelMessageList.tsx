@@ -156,6 +156,17 @@ export const ChannelMessageList = forwardRef<
       [servers, serverId, channelId],
     );
 
+    const server = servers.find((s) => s.id === serverId);
+    const privateChat = privateChatId
+      ? server?.privateChats?.find((chat) => chat.id === privateChatId)
+      : undefined;
+    const historyTarget = channel?.name ?? privateChat?.username;
+    const historyState = channel ?? privateChat;
+    const canRequestHistory =
+      server?.isConnected &&
+      !server.isBouncerControl &&
+      server.capabilities?.includes("draft/chathistory");
+
     const { isScrolledUp, wasAtBottomRef, scrollToBottom } = useScrollToBottom(
       messagesContainerRef,
       messagesEndRef,
@@ -246,7 +257,11 @@ export const ChannelMessageList = forwardRef<
     }, [filteredMessages, visibleMessageCount, searchQuery]);
 
     const locallyHidden = filteredMessages.length > displayedMessages.length;
-    const serverHasMore = channel?.hasMoreHistory === true;
+    const serverHasMore =
+      canRequestHistory &&
+      (channel?.hasMoreHistory === true ||
+        (privateChat && privateChat.hasMoreHistory !== false)) &&
+      channelMessages.length > 0;
     const hasMoreMessages = locallyHidden || serverHasMore;
 
     const eventGroups = useMemo(
@@ -254,7 +269,7 @@ export const ChannelMessageList = forwardRef<
       [displayedMessages],
     );
 
-    const isLoadingHistory = channel?.isLoadingHistory ?? false;
+    const isLoadingHistory = historyState?.isLoadingHistory ?? false;
 
     // Scroll to bottom on initial mount, unless a saved position was passed in.
     // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount only
@@ -448,7 +463,7 @@ export const ChannelMessageList = forwardRef<
                         setVisibleMessageCount(
                           (prev) => prev + DEFAULT_VISIBLE_MESSAGE_COUNT,
                         );
-                      } else if (serverHasMore && channel && channelId) {
+                      } else if (serverHasMore && historyTarget) {
                         const oldest = channelMessages[0];
                         if (oldest?.timestamp) {
                           const ts = new Date(oldest.timestamp).toISOString();
@@ -458,13 +473,13 @@ export const ChannelMessageList = forwardRef<
                           setIsFetchingMore(true);
                           ircClient.requestChathistoryBefore(
                             serverId,
-                            channel.name,
+                            historyTarget,
                             ts,
                           );
                         }
                       }
                     }}
-                    disabled={isFetchingMore}
+                    disabled={isFetchingMore || isLoadingHistory}
                     className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full text-discord-text-muted hover:text-discord-text-normal bg-discord-dark-400 hover:bg-discord-dark-300 border border-white/5 transition-all"
                   >
                     {isFetchingMore ? (

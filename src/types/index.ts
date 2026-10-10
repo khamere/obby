@@ -338,6 +338,8 @@ export interface PrivateChat {
   // Highlight counter (PMs always count as mentions; this is per-PM).
   mentionCount?: number;
   isMentioned: boolean;
+  isLoadingHistory?: boolean;
+  hasMoreHistory?: boolean;
   lastActivity?: Date;
   isPinned?: boolean;
   order?: number;
