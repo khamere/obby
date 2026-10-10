@@ -1,6 +1,7 @@
 import { Trans } from "@lingui/react/macro";
 import type React from "react";
 import { processMarkdownInText } from "../../lib/ircUtils";
+import { useNickColor } from "../../lib/nickColor";
 import type { MessageType, User } from "../../types";
 import { EnhancedLinkWrapper } from "../ui/LinkWrapper";
 import { MessageAvatar } from "./MessageAvatar";
@@ -46,7 +47,10 @@ export const WhisperMessage: React.FC<WhisperMessageProps> = ({
   const username = message.userId;
   const avatarUrl = messageUser?.metadata?.avatar?.value;
   const displayName = messageUser?.metadata?.["display-name"]?.value;
-  const userColor = messageUser?.metadata?.color?.value;
+  const userColor = useNickColor(
+    message.userId,
+    messageUser?.metadata?.color?.value,
+  );
   const userStatus = messageUser?.metadata?.status?.value;
   const isBot =
     messageUser?.isBot ||

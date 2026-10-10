@@ -1,6 +1,7 @@
 import { useLingui } from "@lingui/react/macro";
 import type React from "react";
 import { FaEnvelope } from "react-icons/fa";
+import { useNickColor } from "../../lib/nickColor";
 import useStore from "../../store";
 import type { Message as MessageType, User } from "../../types";
 
@@ -53,7 +54,9 @@ export const InviteMessage: React.FC<InviteMessageProps> = ({
   const username = message.userId;
   const displayName =
     messageUser?.metadata?.["display-name"]?.value || username;
-  const userColor = messageUser?.metadata?.color?.value || "#888888";
+  const userColor =
+    useNickColor(message.userId, messageUser?.metadata?.color?.value) ??
+    "#888888";
 
   // Check if we're already in the channel
   const server = servers.find((s) => s.id === message.serverId);

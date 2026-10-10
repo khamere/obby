@@ -28,6 +28,7 @@ import {
   mediaLevelToSettings,
 } from "../../lib/mediaUtils";
 import { stripIrcFormatting } from "../../lib/messageFormatter";
+import { nickColor, useNickColor } from "../../lib/nickColor";
 import { buildNickMatcher, highlightNicks } from "../../lib/nickHighlight";
 import useStore, { loadSavedMetadata } from "../../store";
 import type { MessageType, PrivateChat, User } from "../../types";
@@ -334,7 +335,10 @@ export const MessageItem = memo((props: MessageItemProps) => {
 
   const avatarUrl = messageUser?.metadata?.avatar?.value;
   const displayName = messageUser?.metadata?.["display-name"]?.value;
-  const userColor = messageUser?.metadata?.color?.value;
+  const userColor = useNickColor(
+    message.userId,
+    messageUser?.metadata?.color?.value,
+  );
   const userStatus = messageUser?.metadata?.status?.value;
   const userPronouns = messageUser?.metadata?.pronouns?.value;
   const isSystem = message.type === "system";
@@ -443,6 +447,9 @@ export const MessageItem = memo((props: MessageItemProps) => {
   const customMentions = useStore(
     useCallback((state) => state.globalSettings.customMentions, []),
   );
+  const coloredNicknames = useStore(
+    useCallback((state) => state.globalSettings.coloredNicknames, []),
+  );
   const channelUsers = useMemo(
     () => server?.channels.find((c) => c.id === channelId)?.users ?? NO_USERS,
     [server, channelId],
@@ -475,6 +482,7 @@ export const MessageItem = memo((props: MessageItemProps) => {
           highlightSelf,
           customMentions,
           onNickClick: openPrivateChatWith,
+          colorFor: coloredNicknames ? nickColor : undefined,
         }),
       ),
     [
@@ -484,6 +492,7 @@ export const MessageItem = memo((props: MessageItemProps) => {
       ircCurrentUser?.username,
       customMentions,
       openPrivateChatWith,
+      coloredNicknames,
     ],
   );
 
