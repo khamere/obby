@@ -6,7 +6,6 @@ import { GiGlassShot } from "react-icons/gi";
 import { useLongPress } from "../../hooks/useLongPress";
 import { serverFilehosts } from "../../lib/ircUtils";
 import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
-import { networkHost } from "../../lib/networkHost";
 import { serverDisplayName } from "../../lib/serverDisplayName";
 import useStore from "../../store";
 import type { Server } from "../../types";
@@ -185,7 +184,6 @@ const GroupedAvatar: React.FC<GroupedAvatarProps> = ({
       : undefined,
   );
   const displayName = serverDisplayName(server, network);
-  const host = networkHost(server, network);
 
   const mediaSettings = mediaLevelToSettings(
     useStore((state) => state.globalSettings.mediaVisibilityLevel),
@@ -239,7 +237,6 @@ const GroupedAvatar: React.FC<GroupedAvatarProps> = ({
         `}
         style={selectedRingStyle}
         data-selected={isSelected}
-        data-network-host={host || undefined}
         title={isControl ? `Bouncer: ${displayName}` : displayName}
         role="button"
         tabIndex={0}
