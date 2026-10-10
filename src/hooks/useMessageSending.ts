@@ -402,6 +402,8 @@ export function useMessageSending({
         }
       } else if (commandName === "back") {
         clearAway(selectedServerId);
+      } else if (commandName.toLowerCase() === "motd") {
+        ircClient.requestMotd(selectedServerId, args[0]);
       } else if (
         tryDispatchBotCommand(
           selectedServerId,
