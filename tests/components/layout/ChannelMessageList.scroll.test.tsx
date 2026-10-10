@@ -95,6 +95,49 @@ describe("private chat history pagination", () => {
     });
   });
 
+  it("shows one date separator when the first message of a day is an action", () => {
+    const today = new Date(2026, 9, 10, 11, 16);
+    useStore.setState({
+      messages: {
+        [defaultProps.channelKey]: [
+          makeMsg("yesterday", { timestamp: new Date(2026, 9, 9, 21, 38) }),
+          makeMsg("action", {
+            timestamp: today,
+            content: "\u0001ACTION waves\u0001",
+          }),
+        ],
+      },
+    });
+    render(<ChannelMessageList {...defaultProps} />);
+    expect(screen.getAllByText("October 10, 2026")).toHaveLength(1);
+  });
+
+  it("paginates past a history page whose events are not displayed", () => {
+    useStore.setState({
+      messages: { [defaultProps.channelKey]: [] },
+      servers: [
+        makeServer({
+          privateChats: [
+            {
+              ...makeServer().privateChats?.[0],
+              hasMoreHistory: true,
+              historyOldestTime: "2026-10-10T10:00:00.000Z",
+            },
+          ],
+        }),
+      ],
+    });
+    render(<ChannelMessageList {...defaultProps} />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Load older messages" }),
+    );
+    expect(ircClient.requestChathistoryBefore).toHaveBeenCalledWith(
+      "s1",
+      "mrkmrtns",
+      "2026-10-10T10:00:00.000Z",
+    );
+  });
+
   it("requests older messages for the PM nickname, blocks duplicate clicks and re-enables after a page", () => {
     vi.mocked(ircClient.requestChathistoryBefore).mockImplementation(() => {
       useStore.setState((state) => ({

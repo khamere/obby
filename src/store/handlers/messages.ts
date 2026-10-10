@@ -31,7 +31,7 @@ import { confirmEncryptedEcho } from "./e2eeConversation";
 import { handleInboundOtr } from "./otr";
 import { notePrivateMessageArrived } from "./privateChatArrival";
 
-function privateHistoryBatch(
+function historyBatchId(
   store: StoreApi<AppState>,
   serverId: string,
   tags: Record<string, string> | undefined,
@@ -75,9 +75,10 @@ export function markPrivateChatPeerOnline(
 export function registerMessageHandlers(store: StoreApi<AppState>): void {
   ircClient.on("CHANMSG", (response) => {
     const { mtags, channelName, message, timestamp } = response;
+    const historyBatch = historyBatchId(store, response.serverId, mtags);
 
     // Check for duplicate messages based on msgid
-    if (mtags?.msgid) {
+    if (!historyBatch && mtags?.msgid) {
       const currentState = store.getState();
       if (currentState.processedMessageIds.has(mtags.msgid)) {
         return;
@@ -406,9 +407,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
       timestamp,
     } = response;
 
-    const historyBatch = !channelName
-      ? privateHistoryBatch(store, response.serverId, mtags)
-      : undefined;
+    const historyBatch = historyBatchId(store, response.serverId, mtags);
 
     // History is deduplicated at batch end so cached pages still count as nonempty.
     const currentState = store.getState();
@@ -524,6 +523,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
             });
             return { servers: updatedServers };
           });
+        }
+
+        if (historyBatch) {
+          bufferChathistoryMessage(historyBatch, newMessage);
+          return;
         }
 
         // Mark these message IDs as processed to prevent duplicates
@@ -798,7 +802,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
   // Handle private messages (USERMSG)
   ircClient.on("USERMSG", (response) => {
     const { mtags, sender, target, message, timestamp } = response;
-    const historyBatch = privateHistoryBatch(store, response.serverId, mtags);
+    const historyBatch = historyBatchId(store, response.serverId, mtags);
 
     // History is deduplicated at batch end so cached pages still count as nonempty.
     if (!historyBatch && mtags?.msgid) {

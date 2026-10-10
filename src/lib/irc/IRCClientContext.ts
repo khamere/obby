@@ -62,6 +62,8 @@ export interface IRCClientContext {
         batchMsgId?: string;
         batchTime?: Date;
         batchTags?: Record<string, string>;
+        historyMessageCount?: number;
+        historyOldestTime?: string;
       }
     >
   >;
