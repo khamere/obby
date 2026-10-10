@@ -4,6 +4,16 @@ import type { IRCClientContext } from "../IRCClientContext";
 // RPL_ENDOFMOTD, and are emitted as a single MOTD event at the end.
 const pending = new Map<string, string[]>();
 
+// Connections where the user asked for the MOTD with /motd. ERR_NOMOTD is
+// only worth showing as an answer to that: bouncers like soju send it on
+// every connect ("Use /motd to read the message of the day"), and posting it
+// each time would add a line per network on every reconnect.
+const requested = new Set<string>();
+
+export function noteMotdRequested(serverId: string): void {
+  requested.add(serverId);
+}
+
 // RPL_MOTD's text is conventionally prefixed with "- ". Lines are trimmed
 // before parsing, so a blank MOTD line (":- ") arrives as a lone "-".
 function motdText(trailing: string): string {
@@ -32,11 +42,11 @@ export function handleEndOfMotd(
 ): void {
   const lines = pending.get(serverId) ?? [];
   pending.delete(serverId);
+  requested.delete(serverId);
   ctx.triggerEvent("MOTD", { serverId, source, lines });
 }
 
-// ERR_NOMOTD. Bouncers use its text to explain where the MOTD went, e.g.
-// soju's "Use /motd to read the message of the day".
+// ERR_NOMOTD, shown only in reply to /motd (e.g. "MOTD File is missing").
 export function handleNoMotd(
   ctx: IRCClientContext,
   serverId: string,
@@ -44,6 +54,7 @@ export function handleNoMotd(
   trailing: string,
 ): void {
   pending.delete(serverId);
+  if (!requested.delete(serverId)) return;
   ctx.triggerEvent("MOTD", {
     serverId,
     source,

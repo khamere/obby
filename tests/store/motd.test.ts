@@ -63,11 +63,30 @@ describe("MOTD", () => {
     ]);
   });
 
-  test("ERR_NOMOTD shows the server's explanation as a plain notice", () => {
+  test("ERR_NOMOTD on connect (soju's per-network hint) adds nothing", () => {
     feed(":soju.test 422 me :Use /motd to read the message of the day");
+    expect(notices()).toHaveLength(0);
+  });
+
+  test("/motd sends MOTD, and an ERR_NOMOTD reply is shown", () => {
+    ircClient.requestMotd(serverId);
+    expect(ircClient.sendRaw).toHaveBeenCalledWith(serverId, "MOTD");
+    feed(":irc.test 422 me :MOTD File is missing");
     const [notice] = notices();
-    expect(notice.content).toBe("Use /motd to read the message of the day");
+    expect(notice.content).toBe("MOTD File is missing");
     expect(notice.motdLines).toBeUndefined();
+    // the request is consumed: a later unsolicited 422 stays silent
+    feed(":irc.test 422 me :MOTD File is missing");
+    expect(notices()).toHaveLength(1);
+  });
+
+  test("/motd with a target server passes it on", () => {
+    ircClient.requestMotd(serverId, "other.irc.test");
+    expect(ircClient.sendRaw).toHaveBeenCalledWith(
+      serverId,
+      "MOTD other.irc.test",
+    );
+    feed(":irc.test 376 me :End");
   });
 
   test("lines without RPL_MOTDSTART are still collected", () => {
