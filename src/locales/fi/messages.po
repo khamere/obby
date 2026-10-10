@@ -344,14 +344,6 @@ msgstr "Toiminto"
 msgid "active"
 msgstr "aktiivinen"
 
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Active, stored in this browser only"
-msgstr "Käytössä, tallennettu vain tähän selaimeen"
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Active, stored on the server"
-msgstr "Käytössä, tallennettu palvelimelle"
-
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "Activity"
 msgstr "Toiminta"
@@ -1115,26 +1107,6 @@ msgstr "Luotu aiemmin kuin (min sitten)"
 #: src/components/ui/AvatarUpload.tsx
 msgid "Current avatar"
 msgstr "Nykyinen avatar"
-
-#: src/lib/settings/definitions/allSettings.ts
-msgid "Custom CSS"
-msgstr "Oma CSS"
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Custom CSS removed for every browser."
-msgstr "Oma CSS poistettu kaikista selaimista."
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Custom CSS removed from this browser; the server copy could not be changed."
-msgstr "Oma CSS poistettu tästä selaimesta; palvelimen kopiota ei voitu muuttaa."
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Custom CSS saved in this browser only; the server did not accept the upload."
-msgstr "Oma CSS tallennettu vain tähän selaimeen; palvelin ei hyväksynyt latausta."
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Custom CSS saved on the server for every browser."
-msgstr "Oma CSS tallennettu palvelimelle kaikille selaimille."
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Custom Flood Rules (+f)"
@@ -2296,10 +2268,6 @@ msgstr "Kanavia ei löydetty."
 msgid "No comments yet. Be the first!"
 msgstr "Ei vielä kommentteja. Ole ensimmäinen!"
 
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "No custom CSS"
-msgstr "Ei omaa CSS:ää"
-
 #: src/components/message/JsonLogMessage.tsx
 msgid "No data"
 msgstr "Ei tietoja"
@@ -2567,10 +2535,6 @@ msgstr "Salasana"
 msgid "Password required to join the channel. Leave empty to remove the key."
 msgstr "Salasana vaaditaan kanavalle liittymiseen. Jätä tyhjäksi poistaaksesi avaimen."
 
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Paste CSS here or upload a .css file"
-msgstr "Liitä CSS tähän tai lataa .css-tiedosto"
-
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Pattern already exists"
 msgstr "Malli on jo olemassa"
@@ -2811,7 +2775,6 @@ msgid "Relaxed - Less aggressive protection"
 msgstr "Löysä – vähemmän aggressiivinen suojaus"
 
 #: src/components/ui/ChannelSettingsModal.tsx
-#: src/components/ui/settings/CustomCssField.tsx
 msgid "Remove"
 msgstr "Poista"
 
@@ -2892,7 +2855,6 @@ msgstr "Turvallinen"
 
 #: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/ChannelSettingsModal.tsx
-#: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/TopicModal.tsx
 #: src/components/ui/UserSettings.tsx
 msgid "Save"
@@ -3350,10 +3312,6 @@ msgstr "Teksti"
 msgid "Text Channels"
 msgstr "Tekstikanavat"
 
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "That stylesheet is too large."
-msgstr "Tyylitiedosto on liian suuri."
-
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
 msgstr "Yhteydessä palvelimeen <0>{serverName}</0> on seuraavia tietoturvaongelmia:"
@@ -3579,10 +3537,6 @@ msgstr "Poista jäädytys"
 #: src/components/ui/UploadPreviewModal.tsx
 msgid "Upload"
 msgstr "Lähetä"
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Upload .css file"
-msgstr "Lataa .css-tiedosto"
 
 #: src/components/ui/ChannelSettingsModal.tsx
 msgid "Upload an image or provide a URL with optional {size} substitution for dynamic sizing"
@@ -3972,10 +3926,6 @@ msgstr "Viestisi käyttäjän {nick} kanssa ovat salattuja. {0} / {1} tiedostost
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "Your messages with {nick} are encrypted. These files are too large to encrypt and would be sent in the clear."
 msgstr "Viestisi käyttäjän {nick} kanssa ovat salattuja. Nämä tiedostot ovat liian suuria salattaviksi ja lähetettäisiin selkokielisinä."
-
-#: src/lib/settings/definitions/allSettings.ts
-msgid "Your own stylesheet, applied on top of Obby. Sidebar rows carry data-network-host so you can style individual networks. Remote URLs are removed."
-msgstr "Oma tyylitiedostosi, joka lisätään Obbyn päälle. Sivupalkin riveillä on data-network-host, joten voit muotoilla yksittäisiä verkkoja. Etä-URL-osoitteet poistetaan."
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your personal website"

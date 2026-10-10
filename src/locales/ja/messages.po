@@ -344,14 +344,6 @@ msgstr "アクション"
 msgid "active"
 msgstr "アクティブ"
 
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Active, stored in this browser only"
-msgstr "有効（このブラウザーのみに保存）"
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Active, stored on the server"
-msgstr "有効（サーバーに保存）"
-
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "Activity"
 msgstr "アクティビティ"
@@ -1115,26 +1107,6 @@ msgstr "作成日時（以前、分前）"
 #: src/components/ui/AvatarUpload.tsx
 msgid "Current avatar"
 msgstr "現在のアバター"
-
-#: src/lib/settings/definitions/allSettings.ts
-msgid "Custom CSS"
-msgstr "カスタム CSS"
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Custom CSS removed for every browser."
-msgstr "すべてのブラウザーからカスタム CSS を削除しました。"
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Custom CSS removed from this browser; the server copy could not be changed."
-msgstr "このブラウザーからカスタム CSS を削除しました。サーバー上のコピーは変更できませんでした。"
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Custom CSS saved in this browser only; the server did not accept the upload."
-msgstr "カスタム CSS をこのブラウザーのみに保存しました。サーバーがアップロードを受け付けませんでした。"
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Custom CSS saved on the server for every browser."
-msgstr "カスタム CSS をすべてのブラウザー用にサーバーへ保存しました。"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Custom Flood Rules (+f)"
@@ -2296,10 +2268,6 @@ msgstr "チャンネルが見つかりません。"
 msgid "No comments yet. Be the first!"
 msgstr "まだコメントはありません。最初のコメントを投稿しましょう！"
 
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "No custom CSS"
-msgstr "カスタム CSS なし"
-
 #: src/components/message/JsonLogMessage.tsx
 msgid "No data"
 msgstr "データなし"
@@ -2567,10 +2535,6 @@ msgstr "パスワード"
 msgid "Password required to join the channel. Leave empty to remove the key."
 msgstr "チャンネルに参加するために必要なパスワード。キーを削除するには空欄にしてください。"
 
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Paste CSS here or upload a .css file"
-msgstr "ここに CSS を貼り付けるか .css ファイルをアップロード"
-
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Pattern already exists"
 msgstr "パターンはすでに存在します"
@@ -2811,7 +2775,6 @@ msgid "Relaxed - Less aggressive protection"
 msgstr "緩め — 控えめな保護"
 
 #: src/components/ui/ChannelSettingsModal.tsx
-#: src/components/ui/settings/CustomCssField.tsx
 msgid "Remove"
 msgstr "削除"
 
@@ -2892,7 +2855,6 @@ msgstr "安全"
 
 #: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/ChannelSettingsModal.tsx
-#: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/TopicModal.tsx
 #: src/components/ui/UserSettings.tsx
 msgid "Save"
@@ -3350,10 +3312,6 @@ msgstr "テキスト"
 msgid "Text Channels"
 msgstr "テキストチャンネル"
 
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "That stylesheet is too large."
-msgstr "このスタイルシートは大きすぎます。"
-
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
 msgstr "<0>{serverName}</0> への接続には次のセキュリティ上の懸念事項があります："
@@ -3579,10 +3537,6 @@ msgstr "停止を解除"
 #: src/components/ui/UploadPreviewModal.tsx
 msgid "Upload"
 msgstr "アップロード"
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Upload .css file"
-msgstr ".css ファイルをアップロード"
 
 #: src/components/ui/ChannelSettingsModal.tsx
 msgid "Upload an image or provide a URL with optional {size} substitution for dynamic sizing"
@@ -3972,10 +3926,6 @@ msgstr "{nick} とのメッセージは暗号化されています。{1} 件の�
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "Your messages with {nick} are encrypted. These files are too large to encrypt and would be sent in the clear."
 msgstr "{nick} とのメッセージは暗号化されています。これらのファイルは大きすぎて暗号化できず、暗号化されずに送信されます。"
-
-#: src/lib/settings/definitions/allSettings.ts
-msgid "Your own stylesheet, applied on top of Obby. Sidebar rows carry data-network-host so you can style individual networks. Remote URLs are removed."
-msgstr "Obby の上に適用する独自のスタイルシートです。サイドバーの行には data-network-host があるので、ネットワークごとにスタイルを設定できます。外部 URL は削除されます。"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your personal website"
