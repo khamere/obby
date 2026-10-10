@@ -87,6 +87,91 @@ describe("IRCClient", () => {
   });
 
   describe("connect", () => {
+    test("removing a child clears its binding and does not schedule a reconnect", async () => {
+      vi.useFakeTimers();
+      try {
+        const first = new MockWebSocket("wss://soju.example/socket");
+        const second = new MockWebSocket("wss://soju.example/socket");
+        MockWebSocketSpy.mockImplementationOnce(returnsSocket(first));
+        MockWebSocketSpy.mockImplementationOnce(returnsSocket(second));
+        client.setPendingBouncerBind("child", "42");
+        const firstConnect = client.connect(
+          "Yu Scene",
+          "wss://soju.example/socket",
+          443,
+          "alice",
+          undefined,
+          undefined,
+          undefined,
+          "child",
+        );
+        first.simulateOpen();
+        await firstConnect;
+        client.sendCapEnd("child");
+        client.removeServer("child");
+        await vi.advanceTimersByTimeAsync(3001);
+        expect(MockWebSocketSpy).toHaveBeenCalledTimes(1);
+        const nextConnect = client.connect(
+          "Control",
+          "wss://soju.example/socket",
+          443,
+          "alice",
+          undefined,
+          undefined,
+          undefined,
+          "child",
+        );
+        second.simulateOpen();
+        await nextConnect;
+        client.sendCapEnd("child");
+        expect(second.sentMessages).not.toContain("BOUNCER BIND 42");
+      } finally {
+        client.removeServer("child");
+        vi.clearAllTimers();
+        vi.useRealTimers();
+      }
+    });
+
+    test("rebinds the same Soju network after an automatic reconnect", async () => {
+      vi.useFakeTimers();
+      const first = new MockWebSocket("wss://soju.example/socket");
+      const second = new MockWebSocket("wss://soju.example/socket");
+      MockWebSocketSpy.mockImplementationOnce(returnsSocket(first));
+      MockWebSocketSpy.mockImplementationOnce(returnsSocket(second));
+      try {
+        client.setPendingBouncerBind("child", "42");
+        const connected = client.connect(
+          "Yu Scene",
+          "wss://soju.example/socket",
+          443,
+          "alice",
+          undefined,
+          undefined,
+          undefined,
+          "child",
+        );
+        first.simulateOpen();
+        await connected;
+        client.sendCapEnd("child");
+        first.close();
+        await vi.advanceTimersByTimeAsync(3001);
+        second.simulateOpen();
+        await Promise.resolve();
+        client.sendCapEnd("child");
+        client.sendCapEnd("child");
+        expect(
+          second.sentMessages.filter((line) => line.startsWith("BOUNCER BIND")),
+        ).toEqual(["BOUNCER BIND 42"]);
+        expect(second.sentMessages.indexOf("BOUNCER BIND 42")).toBeLessThan(
+          second.sentMessages.indexOf("CAP END"),
+        );
+      } finally {
+        client.removeServer("child");
+        vi.clearAllTimers();
+        vi.useRealTimers();
+      }
+    });
+
     test("should connect to IRC server successfully", async () => {
       const mockSocket = new MockWebSocket("ws://irc.example.com:443");
       MockWebSocketSpy.mockImplementation(returnsSocket(mockSocket));
