@@ -28,6 +28,8 @@ export interface NickMatcher {
   onNickClick?: (nick: string) => void;
   // colour for a member who has none in their metadata (nick colours)
   colorFor?: (nick: string) => string | undefined;
+  // when set, #channel names in text become buttons calling this
+  onChannelClick?: (channel: string) => void;
 }
 
 export interface NickMatcherOptions {
@@ -37,6 +39,7 @@ export interface NickMatcherOptions {
   customMentions?: readonly string[];
   onNickClick?: (nick: string) => void;
   colorFor?: (nick: string) => string | undefined;
+  onChannelClick?: (channel: string) => void;
 }
 
 // One map per member list, shared by every message rendered from it.
@@ -67,6 +70,7 @@ export function buildNickMatcher(
     customMentions = [],
     onNickClick,
     colorFor,
+    onChannelClick,
   }: NickMatcherOptions = {},
 ): NickMatcher {
   const own = ownNick?.toLowerCase();
@@ -81,6 +85,7 @@ export function buildNickMatcher(
       : [],
     onNickClick,
     colorFor,
+    onChannelClick,
   };
 }
 
@@ -214,6 +219,45 @@ function renderSegments(
   });
 }
 
+// A channel name starts a word with "#" and runs until whitespace, a comma
+// or BEL (RFC 2812). Trailing sentence punctuation isn't part of it, and a
+// bare number ("issue #3") isn't a channel.
+// biome-ignore lint/suspicious/noControlCharactersInRegex: BEL ends a channel name (RFC 2812)
+const CHANNEL_RX = /(^|[\s([{"'])(#[^\s,\x07]+)/g;
+const TRAILING_PUNCT_RX = /[.,!?;:)\]}'"]+$/;
+
+export function findChannels(text: string): { index: number; name: string }[] {
+  const found: { index: number; name: string }[] = [];
+  for (const m of text.matchAll(CHANNEL_RX)) {
+    const name = m[2].replace(TRAILING_PUNCT_RX, "");
+    if (name.length < 2 || /^#\d+$/.test(name)) continue;
+    found.push({ index: (m.index ?? 0) + m[1].length, name });
+  }
+  return found;
+}
+
+function renderChannel(
+  name: string,
+  key: string,
+  onChannelClick: (channel: string) => void,
+): React.ReactNode {
+  return (
+    <button
+      key={key}
+      type="button"
+      className="obby-channel-link"
+      title={name}
+      onClick={(e) => {
+        // The row has its own click/long-press handling.
+        e.stopPropagation();
+        onChannelClick(name);
+      }}
+    >
+      {name}
+    </button>
+  );
+}
+
 // Wraps nicknames found in rendered message text. Only plain strings inside
 // host elements and fragments are touched; links, code and anything rendered
 // by a component (markdown, emoji) pass through unchanged.
@@ -224,12 +268,32 @@ export function highlightNicks(
   let mentionsSelf = false;
   let counter = 0;
 
+  const walkText = (text: string): React.ReactNode => {
+    const segments = segmentText(text, matcher);
+    if (segments.every((s) => s.kind === "plain")) return text;
+    if (segments.some((s) => s.kind === "self")) mentionsSelf = true;
+    return renderSegments(segments, `t${counter++}`, matcher);
+  };
+
   const walk = (n: React.ReactNode): React.ReactNode => {
     if (typeof n === "string") {
-      const segments = segmentText(n, matcher);
-      if (segments.every((s) => s.kind === "plain")) return n;
-      if (segments.some((s) => s.kind === "self")) mentionsSelf = true;
-      return renderSegments(segments, `t${counter++}`, matcher);
+      const channels = matcher.onChannelClick ? findChannels(n) : [];
+      if (channels.length === 0) return walkText(n);
+      const out: React.ReactNode[] = [];
+      let last = 0;
+      for (const { index, name } of channels) {
+        if (index > last) out.push(walkText(n.slice(last, index)));
+        out.push(
+          renderChannel(
+            name,
+            `c${counter++}`,
+            matcher.onChannelClick as (channel: string) => void,
+          ),
+        );
+        last = index + name.length;
+      }
+      if (last < n.length) out.push(walkText(n.slice(last)));
+      return out;
     }
     if (Array.isArray(n)) return n.map(walk);
     if (!React.isValidElement(n)) return n;

@@ -2,6 +2,7 @@ import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import type * as React from "react";
 import { memo, useCallback, useMemo, useRef, useState } from "react";
 import { FaLock, FaLockOpen } from "react-icons/fa";
+import { useJoinAndSelectChannel } from "../../hooks/useJoinAndSelectChannel";
 import { useLongPress } from "../../hooks/useLongPress";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { formatCopyAuthor } from "../../lib/chatMarkdownCopy";
@@ -470,6 +471,19 @@ export const MessageItem = memo((props: MessageItemProps) => {
     },
     [message.serverId],
   );
+  const joinAndSelectChannel = useJoinAndSelectChannel();
+  const openChannel = useCallback(
+    (name: string) => {
+      const serverId = message.serverId;
+      const { servers, selectChannel } = useStore.getState();
+      const existing = servers
+        .find((s) => s.id === serverId)
+        ?.channels.find((c) => c.name.toLowerCase() === name.toLowerCase());
+      if (existing) selectChannel(existing.id, { navigate: true });
+      else joinAndSelectChannel(serverId, name);
+    },
+    [message.serverId, joinAndSelectChannel],
+  );
   // Our own messages never highlight us; with highlights off our nick is
   // just another member name.
   const highlightSelf = enableHighlights && !isCurrentUser;
@@ -483,6 +497,7 @@ export const MessageItem = memo((props: MessageItemProps) => {
           customMentions,
           onNickClick: openPrivateChatWith,
           colorFor: coloredNicknames ? nickColor : undefined,
+          onChannelClick: openChannel,
         }),
       ),
     [
@@ -493,6 +508,7 @@ export const MessageItem = memo((props: MessageItemProps) => {
       customMentions,
       openPrivateChatWith,
       coloredNicknames,
+      openChannel,
     ],
   );
 
