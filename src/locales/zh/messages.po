@@ -3220,6 +3220,10 @@ msgstr "登录时间"
 msgid "Signed On"
 msgstr "登录时间"
 
+#: src/lib/clientCommands.ts
+msgid "Slap someone around a bit with a large trout"
+msgstr "用一条大鳟鱼拍打某人"
+
 #: src/components/ui/BotsModal.tsx
 #: src/components/ui/SlashCommandPopover.tsx
 msgid "Slash commands"
@@ -3775,6 +3779,10 @@ msgstr "你在做什么?"
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "What this means:"
 msgstr "这意味着："
+
+#: src/lib/clientCommands.ts
+msgid "What to slap them with (defaults to a large trout)"
+msgstr "用什么拍打（默认是一条大鳟鱼）"
 
 #: src/lib/clientCommands.ts
 msgid "What you're doing"

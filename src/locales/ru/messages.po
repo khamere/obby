@@ -3220,6 +3220,10 @@ msgstr "В сети с"
 msgid "Signed On"
 msgstr "В сети с"
 
+#: src/lib/clientCommands.ts
+msgid "Slap someone around a bit with a large trout"
+msgstr "Отхлестать кого-нибудь большой форелью"
+
 #: src/components/ui/BotsModal.tsx
 #: src/components/ui/SlashCommandPopover.tsx
 msgid "Slash commands"
@@ -3775,6 +3779,10 @@ msgstr "Чем ты занимаешься?"
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "What this means:"
 msgstr "Что это означает:"
+
+#: src/lib/clientCommands.ts
+msgid "What to slap them with (defaults to a large trout)"
+msgstr "Чем отхлестать (по умолчанию — большой форелью)"
 
 #: src/lib/clientCommands.ts
 msgid "What you're doing"

@@ -3220,6 +3220,10 @@ msgstr "Conectado el"
 msgid "Signed On"
 msgstr "Conectado desde"
 
+#: src/lib/clientCommands.ts
+msgid "Slap someone around a bit with a large trout"
+msgstr "Dar a alguien unos cuantos golpes con una trucha grande"
+
 #: src/components/ui/BotsModal.tsx
 #: src/components/ui/SlashCommandPopover.tsx
 msgid "Slash commands"
@@ -3775,6 +3779,10 @@ msgstr "¿Qué estás haciendo?"
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "What this means:"
 msgstr "Qué significa esto:"
+
+#: src/lib/clientCommands.ts
+msgid "What to slap them with (defaults to a large trout)"
+msgstr "Con qué golpearle (por defecto, una trucha grande)"
 
 #: src/lib/clientCommands.ts
 msgid "What you're doing"
