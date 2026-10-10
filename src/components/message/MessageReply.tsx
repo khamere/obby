@@ -32,6 +32,7 @@ import {
   describeAttachment,
 } from "../../lib/messageAttachments";
 import { stripIrcFormatting } from "../../lib/messageFormatter";
+import { useNickColor } from "../../lib/nickColor";
 import useStore from "../../store";
 import type { MessageType } from "../../types";
 
@@ -66,6 +67,7 @@ export const MessageReply: React.FC<MessageReplyProps> = ({
 }) => {
   const { t } = useLingui();
   const replyUsername = replyMessage.userId;
+  const replyColor = useNickColor(replyUsername);
 
   const mediaVisibilityLevel = useStore(
     (state) => state.globalSettings.mediaVisibilityLevel,
@@ -114,6 +116,7 @@ export const MessageReply: React.FC<MessageReplyProps> = ({
           <RiReplyFill className="text-[11px] flex-shrink-0 text-discord-reply/70" />
           <span
             className="text-xs font-semibold text-discord-reply hover:underline cursor-pointer truncate"
+            style={replyColor ? { color: replyColor } : undefined}
             onClick={handleUsernameClick}
           >
             {replyUsername}

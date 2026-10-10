@@ -10,6 +10,7 @@ import {
   serverFilehosts,
 } from "../../lib/ircUtils";
 import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
+import { useNickColor } from "../../lib/nickColor";
 import useStore from "../../store";
 import type { User } from "../../types";
 import ModerationModal, { type ModerationAction } from "../ui/ModerationModal";
@@ -144,7 +145,7 @@ const UserItem: React.FC<{
   const website = user.metadata?.url?.value || user.metadata?.website?.value;
   const metadataStatus = user.metadata?.status?.value; // Metadata status message
   const avatarUrl = user.metadata?.avatar?.value;
-  const color = user.metadata?.color?.value;
+  const color = useNickColor(user.username, user.metadata?.color?.value);
   const displayName = user.metadata?.["display-name"]?.value;
   const isBot = user.isBot || user.metadata?.bot?.value === "true";
   const botInfo = user.metadata?.bot?.value; // Bot software info for tooltip

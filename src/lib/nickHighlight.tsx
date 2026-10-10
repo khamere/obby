@@ -26,6 +26,8 @@ export interface NickMatcher {
   // custom mention words/phrases, already lowercased
   selfWords: string[];
   onNickClick?: (nick: string) => void;
+  // colour for a member who has none in their metadata (nick colours)
+  colorFor?: (nick: string) => string | undefined;
 }
 
 export interface NickMatcherOptions {
@@ -34,6 +36,7 @@ export interface NickMatcherOptions {
   highlightSelf?: boolean;
   customMentions?: readonly string[];
   onNickClick?: (nick: string) => void;
+  colorFor?: (nick: string) => string | undefined;
 }
 
 // One map per member list, shared by every message rendered from it.
@@ -63,6 +66,7 @@ export function buildNickMatcher(
     highlightSelf = false,
     customMentions = [],
     onNickClick,
+    colorFor,
   }: NickMatcherOptions = {},
 ): NickMatcher {
   const own = ownNick?.toLowerCase();
@@ -76,6 +80,7 @@ export function buildNickMatcher(
           .filter((m) => m.length > 0)
       : [],
     onNickClick,
+    colorFor,
   };
 }
 
@@ -177,8 +182,10 @@ function renderSegments(
       );
     }
     if (seg.kind === "other") {
-      const style = getColorStyle(seg.member?.color);
       const nick = seg.member?.nick ?? seg.text;
+      const style = getColorStyle(
+        seg.member?.color ?? matcher.colorFor?.(nick),
+      );
       if (!onNickClick || nick.toLowerCase() === ownNick) {
         return (
           <span key={key} className="font-bold text-white" style={style}>
