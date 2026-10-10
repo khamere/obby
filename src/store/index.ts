@@ -2833,39 +2833,41 @@ const useStore = create<AppState>((set, get) => ({
         }
 
         // Check if we already have user info from channels
-        let hasUserInfo = false;
-        for (const channel of server.channels) {
-          const user = channel.users.find(
+        const sharedUsers = server.channels.flatMap((channel) =>
+          channel.users.filter(
             (u) => u.username.toLowerCase() === username.toLowerCase(),
-          );
-          if (user?.realname && user.account !== undefined) {
-            // We have complete user info, copy it to the PM
-            hasUserInfo = true;
-            useStore.setState((state) => ({
-              servers: state.servers.map((s) => {
-                if (s.id === serverId) {
-                  return {
-                    ...s,
-                    privateChats: s.privateChats?.map((pm) => {
-                      if (
-                        pm.username.toLowerCase() === username.toLowerCase()
-                      ) {
-                        return {
-                          ...pm,
+          ),
+        );
+        const user = sharedUsers.find(
+          (u) => u.realname && u.account !== undefined,
+        );
+        const hasUserInfo = !!user;
+        // Sharing a channel proves presence where MONITOR can't.
+        if (sharedUsers.length > 0) {
+          useStore.setState((state) => ({
+            servers: state.servers.map((s) => {
+              if (s.id === serverId) {
+                return {
+                  ...s,
+                  privateChats: s.privateChats?.map((pm) => {
+                    if (pm.username.toLowerCase() === username.toLowerCase()) {
+                      return {
+                        ...pm,
+                        isOnline: true,
+                        ...(user && {
                           realname: user.realname,
                           account: user.account,
                           isBot: user.isBot,
-                        };
-                      }
-                      return pm;
-                    }),
-                  };
-                }
-                return s;
-              }),
-            }));
-            break;
-          }
+                        }),
+                      };
+                    }
+                    return pm;
+                  }),
+                };
+              }
+              return s;
+            }),
+          }));
         }
 
         // Only request WHO if we don't already have complete user info
@@ -2902,7 +2904,9 @@ const useStore = create<AppState>((set, get) => ({
         unreadCount: 0,
         isMentioned: false,
         lastActivity: new Date(),
-        isOnline: false, // Will be updated by MONITOR response
+        // Unknown until MONITOR/WHO answers; servers without MONITOR never do,
+        // and an unknown peer must stay messageable.
+        isOnline: undefined,
         isAway: false,
       };
 
@@ -2912,7 +2916,10 @@ const useStore = create<AppState>((set, get) => ({
         const user = channel.users.find(
           (u) => u.username.toLowerCase() === username.toLowerCase(),
         );
-        if (user?.realname && user.account !== undefined) {
+        if (!user) continue;
+        // Sharing a channel proves presence where MONITOR can't.
+        newPrivateChat.isOnline = true;
+        if (user.realname && user.account !== undefined) {
           // We have complete user info, copy it to the new PM
           hasUserInfo = true;
           newPrivateChat.realname = user.realname;
