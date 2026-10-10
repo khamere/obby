@@ -6,10 +6,12 @@ import { GiGlassShot } from "react-icons/gi";
 import { useLongPress } from "../../hooks/useLongPress";
 import { serverFilehosts } from "../../lib/ircUtils";
 import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
+import { networkLogo } from "../../lib/networkLogo";
 import { serverDisplayName } from "../../lib/serverDisplayName";
 import useStore from "../../store";
 import type { Server } from "../../types";
 import ServerBottomSheet from "../mobile/ServerBottomSheet";
+import { NetworkLabel } from "./NetworkLabel";
 
 const DEFAULT_ACCENT = "#fcd34d";
 
@@ -184,6 +186,7 @@ const GroupedAvatar: React.FC<GroupedAvatarProps> = ({
       : undefined,
   );
   const displayName = serverDisplayName(server, network);
+  const logo = isControl ? undefined : networkLogo(server, network);
 
   const mediaSettings = mediaLevelToSettings(
     useStore((state) => state.globalSettings.mediaVisibilityLevel),
@@ -237,6 +240,7 @@ const GroupedAvatar: React.FC<GroupedAvatarProps> = ({
         `}
         style={selectedRingStyle}
         data-selected={isSelected}
+        data-network-logo={logo ? "true" : undefined}
         title={isControl ? `Bouncer: ${displayName}` : displayName}
         role="button"
         tabIndex={0}
@@ -279,37 +283,39 @@ const GroupedAvatar: React.FC<GroupedAvatarProps> = ({
           />
         )}
 
-        {showIcon ? (
-          <img
-            src={iconUrl}
-            alt={server.name}
-            className={`${innerImg} rounded-full pointer-events-none object-cover`}
-            draggable={false}
-          />
-        ) : controlNoIcon ? (
-          <div
-            className="w-6 h-6 rounded-full flex items-center justify-center border"
-            style={{
-              background: `linear-gradient(to bottom right, ${hexWithAlpha(accent, 0.3)}, ${hexWithAlpha(accent, 0.05)})`,
-              borderColor: hexWithAlpha(accent, 0.4),
-            }}
-            title={t`soju bouncer (control)`}
-          >
-            <GiGlassShot
-              className="text-sm"
-              style={{ color: hexWithAlpha(accent, 0.85) }}
+        <span className="obby-server-avatar">
+          {showIcon ? (
+            <img
+              src={iconUrl}
+              alt={server.name}
+              className={`${innerImg} rounded-full pointer-events-none object-cover`}
+              draggable={false}
             />
-          </div>
-        ) : (
-          <div className="w-9 h-9 rounded-full bg-discord-dark-400 flex items-center justify-center text-sm font-semibold text-white">
-            {initial}
-          </div>
-        )}
-
-        <span className="obby-server-name">
-          {isControl ? "Bouncer: " : ""}
-          {displayName}
+          ) : controlNoIcon ? (
+            <div
+              className="w-6 h-6 rounded-full flex items-center justify-center border"
+              style={{
+                background: `linear-gradient(to bottom right, ${hexWithAlpha(accent, 0.3)}, ${hexWithAlpha(accent, 0.05)})`,
+                borderColor: hexWithAlpha(accent, 0.4),
+              }}
+              title={t`soju bouncer (control)`}
+            >
+              <GiGlassShot
+                className="text-sm"
+                style={{ color: hexWithAlpha(accent, 0.85) }}
+              />
+            </div>
+          ) : (
+            <div className="w-9 h-9 rounded-full bg-discord-dark-400 flex items-center justify-center text-sm font-semibold text-white">
+              {initial}
+            </div>
+          )}
         </span>
+
+        <NetworkLabel
+          name={isControl ? `Bouncer: ${displayName}` : displayName}
+          logo={logo}
+        />
 
         {hasMentions && !isSelected && (
           <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-red-500 rounded-full border-[1.5px] border-discord-dark-600" />
