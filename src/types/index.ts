@@ -318,6 +318,7 @@ export interface Channel {
   needsWhoRequest?: boolean;
   chathistoryRequested?: boolean;
   hasMoreHistory?: boolean;
+  historyOldestTime?: string;
   metadata?: Record<string, { value: string | undefined; visibility: string }>;
   modes?: string;
   modeArgs?: string[];
@@ -340,6 +341,7 @@ export interface PrivateChat {
   isMentioned: boolean;
   isLoadingHistory?: boolean;
   hasMoreHistory?: boolean;
+  historyOldestTime?: string;
   lastActivity?: Date;
   isPinned?: boolean;
   order?: number;

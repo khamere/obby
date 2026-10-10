@@ -144,7 +144,11 @@ export interface EventMap {
     parameters?: string[];
     sender?: string;
   };
-  BATCH_END: BaseIRCEvent & { batchId: string };
+  BATCH_END: BaseIRCEvent & {
+    batchId: string;
+    historyMessageCount?: number;
+    historyOldestTime?: string;
+  };
   MULTILINE_MESSAGE: BaseMessageEvent & {
     channelName?: string;
     target: string; // raw BATCH recipient (channel name or username)
@@ -665,6 +669,8 @@ export class IRCClient implements IRCClientContext {
         batchMsgId?: string;
         batchTime?: Date;
         batchTags?: Record<string, string>;
+        historyMessageCount?: number;
+        historyOldestTime?: string;
       }
     >
   > = new Map(); // Track active batches per server
@@ -2010,6 +2016,31 @@ export class IRCClient implements IRCClientContext {
       }
 
       const handler = IRC_DISPATCH[command];
+      // Count replay traffic before deduplication, filtering, or event collapsing.
+      if (mtags?.batch && command !== "BATCH") {
+        const batches = this.activeBatches.get(serverId);
+        let batchId: string | undefined = mtags.batch;
+        const visited = new Set<string>();
+        while (batchId && !visited.has(batchId)) {
+          visited.add(batchId);
+          const batch: ReturnType<NonNullable<typeof batches>["get"]> =
+            batches?.get(batchId);
+          if (!batch) break;
+          if (batch.type === "chathistory") {
+            batch.historyMessageCount = (batch.historyMessageCount ?? 0) + 1;
+            const time = Date.parse(mtags.time ?? "");
+            if (
+              Number.isFinite(time) &&
+              (!batch.historyOldestTime ||
+                time < Date.parse(batch.historyOldestTime))
+            ) {
+              batch.historyOldestTime = new Date(time).toISOString();
+            }
+            break;
+          }
+          batchId = batch.batchTags?.batch;
+        }
+      }
       if (handler) {
         handler(this, serverId, source, parv, mtags, trailing);
       }
