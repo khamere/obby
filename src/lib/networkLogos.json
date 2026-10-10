@@ -1,0 +1,294 @@
+[
+  {
+    "hosts": [
+      "irc.aither.cc"
+    ],
+    "names": [
+      "Aither"
+    ],
+    "file": "aither.svg"
+  },
+  {
+    "hosts": [
+      "irc.beyond-hd.me"
+    ],
+    "names": [
+      "BeyondHD",
+      "Beyond-HD",
+      "BHD"
+    ],
+    "file": "beyondhd.svg"
+  },
+  {
+    "hosts": [],
+    "names": [
+      "Blutopia",
+      "BLU"
+    ],
+    "file": "blutopia.svg"
+  },
+  {
+    "hosts": [
+      "irc.brokenstones.is"
+    ],
+    "names": [
+      "BrokenStones"
+    ],
+    "file": "brokenstones.svg"
+  },
+  {
+    "hosts": [
+      "irc.darkpeers.org"
+    ],
+    "names": [
+      "DarkPeers"
+    ],
+    "file": "darkpeers.svg"
+  },
+  {
+    "hosts": [
+      "irc.desitorrents.tv"
+    ],
+    "names": [
+      "DesiTorrents"
+    ],
+    "file": "desitorrents.svg"
+  },
+  {
+    "hosts": [
+      "irc.digitalcore.club"
+    ],
+    "names": [
+      "Digital Core",
+      "DigitalCore"
+    ],
+    "file": "digital-core.svg"
+  },
+  {
+    "hosts": [
+      "irc.dkok.to"
+    ],
+    "names": [
+      "DKOKTO",
+      "DK OKTO",
+      "DKOKTO ERGO"
+    ],
+    "file": "dkokto.svg"
+  },
+  {
+    "hosts": [
+      "irc.dreadvault.org"
+    ],
+    "names": [
+      "DreadVault"
+    ],
+    "file": "dreadvault.svg"
+  },
+  {
+    "hosts": [
+      "irc.filelist.io"
+    ],
+    "names": [
+      "FileList"
+    ],
+    "file": "filelist.svg"
+  },
+  {
+    "hosts": [
+      "irc.funfile.org"
+    ],
+    "names": [
+      "FunFile"
+    ],
+    "file": "funfile.svg"
+  },
+  {
+    "hosts": [
+      "irc.gazellegames.net"
+    ],
+    "names": [
+      "GazelleGames"
+    ],
+    "file": "gazellegames.svg"
+  },
+  {
+    "hosts": [
+      "irc.homiehelpdesk.net"
+    ],
+    "names": [
+      "HomieHelpDesk"
+    ],
+    "file": "homiehelpdesk.svg"
+  },
+  {
+    "hosts": [
+      "irc.immortalseed.me"
+    ],
+    "names": [
+      "ImmortalSeed"
+    ],
+    "file": "immortalseed.svg"
+  },
+  {
+    "hosts": [
+      "irc.infinityhd.net"
+    ],
+    "names": [
+      "InfinityHD"
+    ],
+    "file": "infinityhd.svg"
+  },
+  {
+    "hosts": [
+      "irc.lst.gg"
+    ],
+    "names": [
+      "LST"
+    ],
+    "file": "lst.svg"
+  },
+  {
+    "hosts": [
+      "irc.luminarr.me"
+    ],
+    "names": [
+      "Luminarr"
+    ],
+    "file": "luminarr.svg"
+  },
+  {
+    "hosts": [
+      "irc.midnightscene.cc",
+      "irc2.midnightscene.cc"
+    ],
+    "names": [
+      "MidnightScene",
+      "Midnight Scene",
+      "MNS"
+    ],
+    "file": "midnightscene.svg"
+  },
+  {
+    "hosts": [
+      "irc.myanonamouse.net"
+    ],
+    "names": [
+      "MyAnonamouse",
+      "MaM"
+    ],
+    "file": "myanonamouse.svg"
+  },
+  {
+    "hosts": [
+      "irc.onlyencodes.cc"
+    ],
+    "names": [
+      "OnlyEncodes",
+      "OnlyEncode"
+    ],
+    "file": "onlyencodes.svg"
+  },
+  {
+    "hosts": [
+      "irc.peergarden.org"
+    ],
+    "names": [
+      "PeerGarden"
+    ],
+    "file": "peergarden.svg"
+  },
+  {
+    "hosts": [
+      "irc.periodical.me"
+    ],
+    "names": [
+      "Periodical"
+    ],
+    "file": "periodical.svg"
+  },
+  {
+    "hosts": [
+      "irc.redacted.cc"
+    ],
+    "names": [
+      "Redacted"
+    ],
+    "file": "redacted.svg"
+  },
+  {
+    "hosts": [
+      "irc.reelflix.cc"
+    ],
+    "names": [
+      "ReelFliX"
+    ],
+    "file": "reelflix.svg"
+  },
+  {
+    "hosts": [
+      "irc.retrotoon.world"
+    ],
+    "names": [
+      "RetroToon"
+    ],
+    "file": "retrotoon.svg"
+  },
+  {
+    "hosts": [
+      "irc.rocket-hd.cc"
+    ],
+    "names": [
+      "RocketHD"
+    ],
+    "file": "rockethd.svg"
+  },
+  {
+    "hosts": [
+      "irc.seedpool.org"
+    ],
+    "names": [
+      "Seedpool"
+    ],
+    "file": "seedpool.svg"
+  },
+  {
+    "hosts": [
+      "irc.skipthecommercials.xyz"
+    ],
+    "names": [
+      "SkipTheCommercials",
+      "STC"
+    ],
+    "file": "skipthecommercials.svg"
+  },
+  {
+    "hosts": [
+      "irc.upload.cx"
+    ],
+    "names": [
+      "upload.cx",
+      "ULCX"
+    ],
+    "file": "upload-cx.svg"
+  },
+  {
+    "hosts": [
+      "irc.yu-scene.net"
+    ],
+    "names": [
+      "Yu Scene",
+      "YuScene",
+      "YUS"
+    ],
+    "file": "yu-scene.svg"
+  },
+  {
+    "hosts": [
+      "irc.znth.cx"
+    ],
+    "names": [
+      "Zenith"
+    ],
+    "file": "zenith.svg"
+  }
+]

@@ -15,11 +15,13 @@ import { useMediaQuery } from "../../hooks/useMediaQuery";
 import ircClient from "../../lib/ircClient";
 import { serverFilehosts } from "../../lib/ircUtils";
 import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
+import { networkLogo } from "../../lib/networkLogo";
 import { serverDisplayName } from "../../lib/serverDisplayName";
 import useStore from "../../store";
 import type { Server } from "../../types";
 import ServerBottomSheet from "../mobile/ServerBottomSheet";
 import { BouncerServerGroup } from "./BouncerServerGroup";
+import { NetworkLabel } from "./NetworkLabel";
 import "./obby-readable-sidebar.css";
 
 interface ServerIconProps {
@@ -51,6 +53,7 @@ const ServerIcon: React.FC<ServerIconProps> = ({
       : undefined,
   );
   const displayName = serverDisplayName(server, network);
+  const logo = networkLogo(server, network);
 
   const mediaSettings = mediaLevelToSettings(
     useStore((state) => state.globalSettings.mediaVisibilityLevel),
@@ -98,6 +101,7 @@ const ServerIcon: React.FC<ServerIconProps> = ({
           ${isTouchDevice ? "no-touch-action no-select" : ""}
         `}
         data-selected={isSelected}
+        data-network-logo={logo ? "true" : undefined}
         title={displayName}
         role="button"
         tabIndex={0}
@@ -146,18 +150,20 @@ const ServerIcon: React.FC<ServerIconProps> = ({
             ${isSelected ? "h-10" : "h-0 group-hover:h-5"}
           `}
         />
-        {showIcon ? (
-          <img
-            src={iconUrl}
-            alt={server.name}
-            className="w-9 h-9 rounded-full pointer-events-none"
-            draggable={false}
-          />
-        ) : (
-          <div className="text-xl font-semibold text-white">
-            {getServerInitial(server)}
-          </div>
-        )}
+        <span className="obby-server-avatar">
+          {showIcon ? (
+            <img
+              src={iconUrl}
+              alt={server.name}
+              className="w-9 h-9 rounded-full pointer-events-none"
+              draggable={false}
+            />
+          ) : (
+            <div className="text-xl font-semibold text-white">
+              {getServerInitial(server)}
+            </div>
+          )}
+        </span>
 
         {(server.isBouncerControl || !!server.bouncerNetid) && (
           <div
@@ -177,7 +183,7 @@ const ServerIcon: React.FC<ServerIconProps> = ({
           </div>
         )}
 
-        <span className="obby-server-name">{displayName}</span>
+        <NetworkLabel name={displayName} logo={logo} />
 
         {hasMentions && !isSelected && (
           <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-discord-dark-600" />
