@@ -344,6 +344,12 @@ export function handleBatch(
     ctx.triggerEvent("BATCH_END", {
       serverId,
       batchId,
+      ...(batch?.type === "chathistory"
+        ? {
+            historyMessageCount: batch.historyMessageCount ?? 0,
+            historyOldestTime: batch.historyOldestTime,
+          }
+        : {}),
     });
   }
 }

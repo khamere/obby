@@ -708,7 +708,7 @@ export const MessageItem = memo((props: MessageItemProps) => {
         >
           <ActionMessage
             message={message}
-            showDate={showDate}
+            showDate={false}
             messageUser={messageUser}
             onUsernameContextMenu={onUsernameContextMenu}
             setReplyTo={setReplyTo}
