@@ -27,7 +27,6 @@ const RiReplyFill = ({ className }: { className?: string }) => (
 
 import { canShowImageUrl } from "../../lib/imageUtils";
 import { serverFilehosts } from "../../lib/ircUtils";
-import { imageCanHaveTransparency } from "../../lib/mediaUtils";
 import {
   type AttachmentKind,
   describeAttachment,
@@ -144,7 +143,7 @@ export const MessageReply: React.FC<MessageReplyProps> = ({
           alt=""
           loading="lazy"
           decoding="async"
-          className={`w-10 h-10 rounded object-cover flex-shrink-0 self-center mr-1.5 my-1.5 ${imageCanHaveTransparency(thumbnailUrl) ? "transparency-grid" : ""}`}
+          className="w-10 h-10 rounded object-cover flex-shrink-0 self-center mr-1.5 my-1.5 bg-transparent"
           draggable={false}
         />
       )}

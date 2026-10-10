@@ -18,7 +18,6 @@ import {
   canPlayVideoUrl,
   filenameFromUrl,
   getEmbedThumbnailUrl,
-  imageCanHaveTransparency,
   type MediaEntry,
   type MediaType,
 } from "../../lib/mediaUtils";
@@ -294,7 +293,7 @@ const ImagePreview: React.FC<{
         <img
           src={displayUrl}
           alt={isFilehostImage ? t`Filehost image` : t`GIF`}
-          className={`max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity ${imageCanHaveTransparency(displayUrl) ? "transparency-grid" : "bg-white"} ${imageLoaded ? "block" : "hidden"}`}
+          className={`max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity bg-transparent ${imageLoaded ? "block" : "hidden"}`}
           onClick={() => openMedia(displayUrl, msgid, serverId, channelId)}
           onLoad={() => setImageLoaded(true)}
           onError={() => setImageError(true)}
