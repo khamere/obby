@@ -20,11 +20,7 @@ import { useTypingNotification } from "../../hooks/useTypingNotification";
 import { canShowImageUrl } from "../../lib/imageUtils";
 import ircClient from "../../lib/ircClient";
 import { serverFilehosts } from "../../lib/ircUtils";
-import {
-  detectMediaType,
-  getEmbedThumbnailUrl,
-  imageCanHaveTransparency,
-} from "../../lib/mediaUtils";
+import { detectMediaType, getEmbedThumbnailUrl } from "../../lib/mediaUtils";
 import {
   type FormattingType,
   getPreviewStyles,
@@ -403,7 +399,7 @@ export function MediaCommentsSidebar({
               <img
                 src={currentImageUrl}
                 alt=""
-                className={`w-10 h-10 rounded object-cover flex-shrink-0 ${imageCanHaveTransparency(currentImageUrl) ? "transparency-grid" : ""}`}
+                className="w-10 h-10 rounded object-cover flex-shrink-0 bg-transparent"
                 draggable={false}
               />
             );
