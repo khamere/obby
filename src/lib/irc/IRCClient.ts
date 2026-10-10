@@ -635,6 +635,7 @@ export class IRCClient implements IRCClientContext {
   // line so the connection lands inside the named upstream network's
   // session rather than the bouncer's control channel.
   private pendingBouncerBind: Map<string, string> = new Map();
+  private bouncerBindings: Map<string, string> = new Map();
   capNegotiationComplete: Map<string, boolean> = new Map(); // Track if CAP negotiation is complete
   private reconnectionAttempts: Map<string, number> = new Map(); // Track reconnection attempts per server
   reconnectionTimeouts: Map<string, NodeJS.Timeout> = new Map(); // Track reconnection timeouts per server
@@ -876,6 +877,9 @@ export class IRCClient implements IRCClientContext {
         this.servers.set(server.id, server);
       }
       this.sockets.set(server.id, socket);
+      // Network selection belongs to the session, not just its first socket.
+      const bouncerNetid = this.bouncerBindings.get(server.id);
+      if (bouncerNetid) this.pendingBouncerBind.set(server.id, bouncerNetid);
       this.serverConnectParams.set(server.id, {
         name,
         host,
@@ -1049,6 +1053,9 @@ export class IRCClient implements IRCClientContext {
   disconnect(serverId: string, quitMessage?: string): void {
     const socket = this.sockets.get(serverId);
     if (socket) {
+      // Retire the socket before close callbacks can start another reconnect.
+      socket.onclose = null;
+      this.sockets.delete(serverId);
       const message =
         quitMessage || i18n._({ id: "Obby - Bringing IRC to the future" });
       socket.send(`QUIT :${message}`);
@@ -1084,6 +1091,8 @@ export class IRCClient implements IRCClientContext {
 
   removeServer(serverId: string): void {
     this.disconnect(serverId);
+    this.bouncerBindings.delete(serverId);
+    this.pendingBouncerBind.delete(serverId);
     this.servers.delete(serverId);
     this.capNegotiationComplete.delete(serverId);
     this.pendingCapReqs.delete(serverId);
@@ -1698,6 +1707,8 @@ export class IRCClient implements IRCClientContext {
   // immediately before `CAP END`. Call this BEFORE the WS opens (or at
   // least before CAP LS arrives) so we never miss the bind window.
   setPendingBouncerBind(serverId: string, netid: string): void {
+    if (netid) this.bouncerBindings.set(serverId, netid);
+    else this.bouncerBindings.delete(serverId);
     this.pendingBouncerBind.set(serverId, netid);
   }
   // Centralised CAP END sender. All call sites should use this instead
