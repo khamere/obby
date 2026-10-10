@@ -572,6 +572,21 @@ export function registerAuthHandlers(store: StoreApi<AppState>): void {
     }
   });
 
+  ircClient.on("CAP DEL", ({ serverId, caps }) => {
+    store.setState((state) => ({
+      servers: state.servers.map((server) =>
+        server.id === serverId && server.capabilities
+          ? {
+              ...server,
+              capabilities: server.capabilities.filter(
+                (cap) => !caps.includes(cap),
+              ),
+            }
+          : server,
+      ),
+    }));
+  });
+
   ircClient.on("CAP ACK", ({ serverId, cliCaps }) => {
     const caps = cliCaps.split(" ");
 
