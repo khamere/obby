@@ -15,7 +15,6 @@ import { useMediaQuery } from "../../hooks/useMediaQuery";
 import ircClient from "../../lib/ircClient";
 import { serverFilehosts } from "../../lib/ircUtils";
 import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
-import { networkHost } from "../../lib/networkHost";
 import { serverDisplayName } from "../../lib/serverDisplayName";
 import useStore from "../../store";
 import type { Server } from "../../types";
@@ -52,7 +51,6 @@ const ServerIcon: React.FC<ServerIconProps> = ({
       : undefined,
   );
   const displayName = serverDisplayName(server, network);
-  const host = networkHost(server, network);
 
   const mediaSettings = mediaLevelToSettings(
     useStore((state) => state.globalSettings.mediaVisibilityLevel),
@@ -100,7 +98,6 @@ const ServerIcon: React.FC<ServerIconProps> = ({
           ${isTouchDevice ? "no-touch-action no-select" : ""}
         `}
         data-selected={isSelected}
-        data-network-host={host || undefined}
         title={displayName}
         role="button"
         tabIndex={0}

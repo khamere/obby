@@ -1,5 +1,4 @@
 import { msg } from "@lingui/core/macro";
-import { CustomCssField } from "../../../components/ui/settings/CustomCssField";
 import { CustomMentionsField } from "../../../components/ui/settings/CustomMentionsField";
 import { IgnoreListField } from "../../../components/ui/settings/IgnoreListField";
 import settingsRegistry from "../registry";
@@ -395,20 +394,6 @@ const preferenceSettings: SettingDefinition[] = [
     searchKeywords: ["ignore", "block", "mute", "filter"],
     priority: 11,
     customComponent: IgnoreListField,
-  },
-  {
-    id: "preferences.customCss",
-    key: "customCss",
-    category: "preferences",
-    subcategory: "Custom CSS",
-    title: msg`Custom CSS`,
-    description: msg`Your own stylesheet, applied on top of Obby. Sidebar rows carry data-network-host so you can style individual networks. Remote URLs are removed.`,
-    type: "custom",
-    // Display-only: the stylesheet lives in lib/customCss, not in settings.
-    defaultValue: "",
-    searchKeywords: ["css", "custom", "style", "theme", "stylesheet", "logo"],
-    priority: 12,
-    customComponent: CustomCssField,
   },
 ];
 

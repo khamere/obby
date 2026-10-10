@@ -12,11 +12,9 @@ import "@fontsource/roboto-mono/700.css";
 import "@fontsource/roboto-mono/400-italic.css";
 import "@fontsource/roboto-mono/700-italic.css";
 import "./index.css";
-import { loadCustomCss } from "./lib/customCss";
 import { registerHostedServiceWorker } from "./lib/registerServiceWorker";
 
 registerHostedServiceWorker();
-loadCustomCss();
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {
