@@ -344,6 +344,14 @@ msgstr "操作"
 msgid "active"
 msgstr "活跃"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Active, stored in this browser only"
+msgstr "已启用，仅保存在此浏览器中"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Active, stored on the server"
+msgstr "已启用，已保存在服务器上"
+
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "Activity"
 msgstr "活动"
@@ -1107,6 +1115,26 @@ msgstr "创建时间早于（分钟前）"
 #: src/components/ui/AvatarUpload.tsx
 msgid "Current avatar"
 msgstr "当前头像"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Custom CSS"
+msgstr "自定义 CSS"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Custom CSS removed for every browser."
+msgstr "已为所有浏览器移除自定义 CSS。"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Custom CSS removed from this browser; the server copy could not be changed."
+msgstr "已从此浏览器移除自定义 CSS；无法更改服务器上的副本。"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Custom CSS saved in this browser only; the server did not accept the upload."
+msgstr "自定义 CSS 仅保存在此浏览器中；服务器未接受上传。"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Custom CSS saved on the server for every browser."
+msgstr "自定义 CSS 已保存到服务器，供所有浏览器使用。"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Custom Flood Rules (+f)"
@@ -2268,6 +2296,10 @@ msgstr "未找到频道。"
 msgid "No comments yet. Be the first!"
 msgstr "暂无评论，成为第一个吧！"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "No custom CSS"
+msgstr "无自定义 CSS"
+
 #: src/components/message/JsonLogMessage.tsx
 msgid "No data"
 msgstr "无数据"
@@ -2535,6 +2567,10 @@ msgstr "密码"
 msgid "Password required to join the channel. Leave empty to remove the key."
 msgstr "加入频道需要密码，留空可移除密钥。"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Paste CSS here or upload a .css file"
+msgstr "在此粘贴 CSS 或上传 .css 文件"
+
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Pattern already exists"
 msgstr "模式已存在"
@@ -2775,6 +2811,7 @@ msgid "Relaxed - Less aggressive protection"
 msgstr "宽松 – 较弱的保护"
 
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/components/ui/settings/CustomCssField.tsx
 msgid "Remove"
 msgstr "移除"
 
@@ -2855,6 +2892,7 @@ msgstr "安全"
 
 #: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/TopicModal.tsx
 #: src/components/ui/UserSettings.tsx
 msgid "Save"
@@ -3312,6 +3350,10 @@ msgstr "文本"
 msgid "Text Channels"
 msgstr "文字频道"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "That stylesheet is too large."
+msgstr "该样式表过大。"
+
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
 msgstr "与 <0>{serverName}</0> 的连接存在以下安全问题："
@@ -3537,6 +3579,10 @@ msgstr "取消停用"
 #: src/components/ui/UploadPreviewModal.tsx
 msgid "Upload"
 msgstr "上传"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Upload .css file"
+msgstr "上传 .css 文件"
 
 #: src/components/ui/ChannelSettingsModal.tsx
 msgid "Upload an image or provide a URL with optional {size} substitution for dynamic sizing"
@@ -3926,6 +3972,10 @@ msgstr "您与 {nick} 的消息已加密。{1} 个文件中有 {0} 个过大无�
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "Your messages with {nick} are encrypted. These files are too large to encrypt and would be sent in the clear."
 msgstr "您与 {nick} 的消息已加密。这些文件过大无法加密，将以明文发送。"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Your own stylesheet, applied on top of Obby. Sidebar rows carry data-network-host so you can style individual networks. Remote URLs are removed."
+msgstr "应用在 Obby 之上的自定义样式表。侧边栏的行带有 data-network-host，可为各个网络单独设置样式。远程 URL 会被移除。"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your personal website"

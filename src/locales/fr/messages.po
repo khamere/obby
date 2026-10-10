@@ -344,6 +344,14 @@ msgstr "Action"
 msgid "active"
 msgstr "actif"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Active, stored in this browser only"
+msgstr "Actif, enregistré dans ce navigateur uniquement"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Active, stored on the server"
+msgstr "Actif, enregistré sur le serveur"
+
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "Activity"
 msgstr "Activité"
@@ -1107,6 +1115,26 @@ msgstr "Créé avant (min)"
 #: src/components/ui/AvatarUpload.tsx
 msgid "Current avatar"
 msgstr "Avatar actuel"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Custom CSS"
+msgstr "CSS personnalisé"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Custom CSS removed for every browser."
+msgstr "CSS personnalisé supprimé pour tous les navigateurs."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Custom CSS removed from this browser; the server copy could not be changed."
+msgstr "CSS personnalisé supprimé de ce navigateur ; la copie du serveur n'a pas pu être modifiée."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Custom CSS saved in this browser only; the server did not accept the upload."
+msgstr "CSS personnalisé enregistré dans ce navigateur uniquement ; le serveur a refusé l'envoi."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Custom CSS saved on the server for every browser."
+msgstr "CSS personnalisé enregistré sur le serveur pour tous les navigateurs."
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Custom Flood Rules (+f)"
@@ -2268,6 +2296,10 @@ msgstr "Aucun canal trouvé."
 msgid "No comments yet. Be the first!"
 msgstr "Pas encore de commentaires. Soyez le premier !"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "No custom CSS"
+msgstr "Aucun CSS personnalisé"
+
 #: src/components/message/JsonLogMessage.tsx
 msgid "No data"
 msgstr "Aucune donnée"
@@ -2535,6 +2567,10 @@ msgstr "Mot de passe"
 msgid "Password required to join the channel. Leave empty to remove the key."
 msgstr "Mot de passe requis pour rejoindre le salon. Laissez vide pour supprimer la clé."
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Paste CSS here or upload a .css file"
+msgstr "Collez du CSS ici ou envoyez un fichier .css"
+
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Pattern already exists"
 msgstr "Le modèle existe déjà"
@@ -2775,6 +2811,7 @@ msgid "Relaxed - Less aggressive protection"
 msgstr "Détendu – Protection moins agressive"
 
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/components/ui/settings/CustomCssField.tsx
 msgid "Remove"
 msgstr "Supprimer"
 
@@ -2855,6 +2892,7 @@ msgstr "Sécurisé"
 
 #: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/TopicModal.tsx
 #: src/components/ui/UserSettings.tsx
 msgid "Save"
@@ -3312,6 +3350,10 @@ msgstr "Texte"
 msgid "Text Channels"
 msgstr "Salons textuels"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "That stylesheet is too large."
+msgstr "Cette feuille de style est trop volumineuse."
+
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
 msgstr "La connexion à <0>{serverName}</0> présente les problèmes de sécurité suivants :"
@@ -3537,6 +3579,10 @@ msgstr "Réactiver"
 #: src/components/ui/UploadPreviewModal.tsx
 msgid "Upload"
 msgstr "Téléverser"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Upload .css file"
+msgstr "Envoyer un fichier .css"
 
 #: src/components/ui/ChannelSettingsModal.tsx
 msgid "Upload an image or provide a URL with optional {size} substitution for dynamic sizing"
@@ -3926,6 +3972,10 @@ msgstr "Vos messages avec {nick} sont chiffrés. {0} fichiers sur {1} sont trop 
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "Your messages with {nick} are encrypted. These files are too large to encrypt and would be sent in the clear."
 msgstr "Vos messages avec {nick} sont chiffrés. Ces fichiers sont trop volumineux pour être chiffrés et seraient envoyés en clair."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Your own stylesheet, applied on top of Obby. Sidebar rows carry data-network-host so you can style individual networks. Remote URLs are removed."
+msgstr "Votre propre feuille de style, appliquée par-dessus Obby. Les lignes de la barre latérale portent data-network-host pour styliser chaque réseau. Les URL distantes sont supprimées."
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your personal website"
