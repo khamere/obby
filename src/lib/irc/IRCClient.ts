@@ -1053,14 +1053,27 @@ export class IRCClient implements IRCClientContext {
   disconnect(serverId: string, quitMessage?: string): void {
     const socket = this.sockets.get(serverId);
     if (socket) {
-      // Retire the socket before close callbacks can start another reconnect.
+      // Retire the socket before any of its callbacks can run again: a late
+      // close would start another reconnect, and a late error (closing a
+      // socket that's still connecting fires one) would clobber a
+      // replacement connection registered under the same serverId.
+      socket.onopen = null;
+      socket.onmessage = null;
+      socket.onerror = null;
       socket.onclose = null;
       this.sockets.delete(serverId);
-      const message =
-        quitMessage || i18n._({ id: "Obby - Bringing IRC to the future" });
-      socket.send(`QUIT :${message}`);
+      // send() throws while the socket is still connecting; QUIT only means
+      // something on an open connection anyway.
+      if (socket.readyState === 1) {
+        const message =
+          quitMessage || i18n._({ id: "Obby - Bringing IRC to the future" });
+        try {
+          socket.send(`QUIT :${message}`);
+        } catch {
+          // closing below is what matters
+        }
+      }
       socket.close();
-      this.sockets.delete(serverId);
     }
     const server = this.servers.get(serverId);
     if (server) {
