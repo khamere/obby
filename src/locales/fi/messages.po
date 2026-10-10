@@ -288,6 +288,10 @@ msgstr "<0>💡 Suositus:</0> Jatka vain jos luotat tähän palvelimeen ja ymmä
 msgid "<0>Risk:</0> Sensitive information (messages, private conversations, authentication details) could be exposed to network administrators or attackers positioned between IRC servers."
 msgstr "<0>Riski:</0> Arkaluonteiset tiedot (viestit, yksityiskeskustelut, tunnistautumistiedot) voisivat paljastua verkon ylläpitäjille tai hyökkääjille, jotka sijaitsevat IRC-palvelimien välissä."
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "A stylesheet applied on top of Obby, from a shared link and/or your own. Sidebar rows carry data-network-host so you can style individual networks. Anything that would load other files is removed."
+msgstr "Obbyn päälle lisättävä tyylitiedosto jaetusta linkistä ja/tai omasi. Sivupalkin riveillä on data-network-host, joten voit muotoilla yksittäisiä verkkoja. Kaikki, mikä lataisi muita tiedostoja, poistetaan."
+
 #: src/components/message/BotInvocationChip.tsx
 msgid "About this attribution"
 msgstr "Tietoja tästä lähdemerkinnästä"
@@ -1076,6 +1080,10 @@ msgstr "Kopioi linkki"
 msgid "Copy URL"
 msgstr "Kopioi URL"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Could not load this link. It must point to the raw .css file."
+msgstr "Linkkiä ei voitu ladata. Sen on osoitettava suoraan .css-tiedostoon."
+
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Couldn't set up encryption with {nick}."
 msgstr "Salausta ei voitu muodostaa käyttäjän {nick} kanssa."
@@ -1107,6 +1115,10 @@ msgstr "Luotu aiemmin kuin (min sitten)"
 #: src/components/ui/AvatarUpload.tsx
 msgid "Current avatar"
 msgstr "Nykyinen avatar"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Custom CSS"
+msgstr "Oma CSS"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Custom Flood Rules (+f)"
@@ -1435,6 +1447,10 @@ msgstr "Lopeta salaus"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Enter account name..."
 msgstr "Syötä tilin nimi..."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Enter an http(s) link to a .css file."
+msgstr "Anna http(s)-linkki .css-tiedostoon."
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Enter default nickname..."
@@ -1846,6 +1862,10 @@ msgstr "Liittyi kanavalle"
 msgid "just now"
 msgstr "juuri nyt"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Kept in this browser and applied after the linked file, so it can override it."
+msgstr "Tallennetaan tähän selaimeen ja lisätään linkitetyn tiedoston jälkeen, joten se voi ohittaa sen."
+
 #: src/components/ui/ModerationModal.tsx
 #: src/components/ui/UserContextMenu.tsx
 msgid "Kick User"
@@ -1918,9 +1938,17 @@ msgstr "Libera Chat"
 msgid "Link preview"
 msgstr "Linkin esikatselu"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Load from a link"
+msgstr "Lataa linkistä"
+
 #: src/components/layout/ChannelMessageList.tsx
 msgid "Load older messages"
 msgstr "Lataa vanhempia viestejä"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Loaded and up to date."
+msgstr "Ladattu ja ajan tasalla."
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Loading"
@@ -1949,6 +1977,10 @@ msgstr "Ladataan verkkoja bounceristasi…"
 #: src/components/ui/UserProfileModal.tsx
 msgid "Loading WHOIS data..."
 msgstr "Ladataan WHOIS-tietoja..."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Loading…"
+msgstr "Ladataan…"
 
 #: src/components/ui/UserSettings.tsx
 msgid "Local Storage:"
@@ -2391,6 +2423,10 @@ msgstr "Obby"
 msgid "Obby - Bringing IRC to the future"
 msgstr "Obby – IRC:n tulevaisuuteen"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Obby downloads this file every time it starts, so everyone using the same link gets updates. This contacts the site the link points to."
+msgstr "Obby lataa tämän tiedoston aina käynnistyessään, joten kaikki samaa linkkiä käyttävät saavat päivitykset. Tämä ottaa yhteyden sivustoon, johon linkki osoittaa."
+
 #. placeholder {0}: session.total
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "of {0}"
@@ -2534,6 +2570,10 @@ msgstr "Salasana"
 #: src/components/ui/ChannelSettingsModal.tsx
 msgid "Password required to join the channel. Leave empty to remove the key."
 msgstr "Salasana vaaditaan kanavalle liittymiseen. Jätä tyhjäksi poistaaksesi avaimen."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Paste CSS here or upload a .css file"
+msgstr "Liitä CSS tähän tai lataa .css-tiedosto"
 
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Pattern already exists"
@@ -2775,6 +2815,8 @@ msgid "Relaxed - Less aggressive protection"
 msgstr "Löysä – vähemmän aggressiivinen suojaus"
 
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/components/ui/settings/CustomCssField.tsx
+#: src/components/ui/settings/CustomCssField.tsx
 msgid "Remove"
 msgstr "Poista"
 
@@ -2855,6 +2897,8 @@ msgstr "Turvallinen"
 
 #: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/components/ui/settings/CustomCssField.tsx
+#: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/TopicModal.tsx
 #: src/components/ui/UserSettings.tsx
 msgid "Save"
@@ -3312,6 +3356,10 @@ msgstr "Teksti"
 msgid "Text Channels"
 msgstr "Tekstikanavat"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "That stylesheet is too large."
+msgstr "Tyylitiedosto on liian suuri."
+
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
 msgstr "Yhteydessä palvelimeen <0>{serverName}</0> on seuraavia tietoturvaongelmia:"
@@ -3538,6 +3586,10 @@ msgstr "Poista jäädytys"
 msgid "Upload"
 msgstr "Lähetä"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Upload .css file"
+msgstr "Lataa .css-tiedosto"
+
 #: src/components/ui/ChannelSettingsModal.tsx
 msgid "Upload an image or provide a URL with optional {size} substitution for dynamic sizing"
 msgstr "Lataa kuva tai anna URL, jossa voi käyttää valinnaista {size}-muuttujaa dynaamiseen kokoon"
@@ -3649,6 +3701,10 @@ msgstr "Kanavan ulkopuoliset käyttäjät eivät voi lähettää viestejä sille
 #: src/components/message/JsonLogMessage.tsx
 msgid "Users:"
 msgstr "Käyttäjät:"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Using the last saved copy; the link could not be reached."
+msgstr "Käytetään viimeksi tallennettua kopiota; linkkiin ei saatu yhteyttä."
 
 #: src/components/ui/AddServerModal.tsx
 #: src/components/ui/EditServerModal.tsx
@@ -3893,6 +3949,14 @@ msgstr "Selaimesi ei voi toistaa tätä ääntä."
 msgid "Your browser cannot play this video."
 msgstr "Selaimesi ei voi toistaa tätä videota."
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Your CSS was removed."
+msgstr "CSS:si poistettiin."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Your CSS was saved."
+msgstr "CSS:si tallennettiin."
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your default nickname for all servers"
 msgstr "Oletusnimimerkkisi kaikille palvelimille"
@@ -3926,6 +3990,10 @@ msgstr "Viestisi käyttäjän {nick} kanssa ovat salattuja. {0} / {1} tiedostost
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "Your messages with {nick} are encrypted. These files are too large to encrypt and would be sent in the clear."
 msgstr "Viestisi käyttäjän {nick} kanssa ovat salattuja. Nämä tiedostot ovat liian suuria salattaviksi ja lähetettäisiin selkokielisinä."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Your own CSS"
+msgstr "Oma CSS"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your personal website"
