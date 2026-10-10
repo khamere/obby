@@ -107,6 +107,7 @@ export interface EventMap {
   NAMES: BaseIRCEvent & { channelName: string; users: User[] };
   "CAP LS": BaseIRCEvent & { cliCaps: string };
   "CAP ACK": BaseIRCEvent & { cliCaps: string };
+  "CAP DEL": BaseIRCEvent & { caps: string[] };
   ISUPPORT: BaseIRCEvent & { key: string; value: string };
   CAP_ACKNOWLEDGED: BaseIRCEvent & { key: string; capabilities: string };
   CAP_END: BaseIRCEvent;
@@ -2155,14 +2156,38 @@ export class IRCClient implements IRCClientContext {
     }
   }
 
+  // cap-notify: the server withdrew these caps, so stop relying on them. A
+  // soju connection negotiates before BOUNCER BIND with every passthrough cap
+  // offered, then loses the ones the bound network lacks (e.g.
+  // labeled-response): keeping them would label sends that never echo back.
   onCapDel(serverId: string, cliCaps: string): void {
-    const caps = cliCaps.split(" ");
-    for (const c of caps) {
-      const [cap] = c.split("=", 2);
-      if (cap === "sasl") {
-        this.saslMechanisms.delete(serverId);
+    const removed = cliCaps
+      .split(" ")
+      .filter(Boolean)
+      .map((cap) => cap.split("=", 1)[0]);
+    if (removed.length === 0) return;
+
+    if (removed.includes("sasl")) {
+      this.saslMechanisms.delete(serverId);
+    }
+    const accumulated = this.capLsAccumulated.get(serverId);
+    for (const cap of removed) accumulated?.delete(cap);
+
+    const server = this.servers.get(serverId);
+    if (server) {
+      if (server.capabilities) {
+        server.capabilities = server.capabilities.filter(
+          (cap) => !removed.includes(cap),
+        );
+      }
+      if (server.capabilityValues) {
+        const values = { ...server.capabilityValues };
+        for (const cap of removed) delete values[cap];
+        server.capabilityValues = values;
       }
     }
+
+    this.triggerEvent("CAP DEL", { serverId, caps: removed });
   }
 
   onCapAck(serverId: string, cliCaps: string): void {
