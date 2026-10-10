@@ -2,8 +2,17 @@ import { t } from "@lingui/core/macro";
 import type { StoreApi } from "zustand";
 import ircClient from "../../lib/ircClient";
 import type { Message } from "../../types";
-import { type BatchInfo, MAX_MESSAGES_PER_CHANNEL } from "../helpers";
+import type { BatchInfo } from "../helpers";
 import { type AppState, rememberMsgIds } from "../index";
+
+function earlierHistoryTime(
+  previous?: string,
+  received?: string,
+): string | undefined {
+  if (!received) return previous;
+  if (!previous) return received;
+  return Date.parse(previous) < Date.parse(received) ? previous : received;
+}
 
 // Chathistory messages are buffered here (outside the store) to avoid one
 // store.setState per incoming PRIVMSG.  Only flushed at BATCH_END.
@@ -211,7 +220,9 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
     });
   });
 
-  ircClient.on("BATCH_END", ({ serverId, batchId }) => {
+  ircClient.on("BATCH_END", (response) => {
+    const { serverId, batchId, historyMessageCount, historyOldestTime } =
+      response;
     // Capture chathistory channel name so we can fire the loading event AFTER setState.
     // Calling triggerEvent inside store.setState causes a nested setState race: the inner
     // call sets isLoadingHistory=false, but the outer callback then returns stale servers
@@ -298,13 +309,10 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
               ),
           );
 
-          const merged = [...existing, ...newMessages]
-            .sort(
-              (a, b) =>
-                new Date(a.timestamp).getTime() -
-                new Date(b.timestamp).getTime(),
-            )
-            .slice(-MAX_MESSAGES_PER_CHANNEL);
+          const merged = [...existing, ...newMessages].sort(
+            (a, b) =>
+              new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+          );
 
           // Apply buffered reactions and re-resolve reply references now that
           // all messages from the batch are in `merged` and visible to each other.
@@ -375,7 +383,11 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
                   if (ch.id !== channel.id) return ch;
                   return {
                     ...ch,
-                    hasMoreHistory: pending.length > 0,
+                    hasMoreHistory: (historyMessageCount ?? pending.length) > 0,
+                    historyOldestTime: earlierHistoryTime(
+                      ch.historyOldestTime,
+                      historyOldestTime,
+                    ),
                     isLoadingHistory: false,
                   };
                 }),
@@ -478,7 +490,12 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
                         ? chat
                         : {
                             ...chat,
-                            hasMoreHistory: pending.length > 0,
+                            hasMoreHistory:
+                              (historyMessageCount ?? pending.length) > 0,
+                            historyOldestTime: earlierHistoryTime(
+                              chat.historyOldestTime,
+                              historyOldestTime,
+                            ),
                             isLoadingHistory: false,
                           },
                     ),

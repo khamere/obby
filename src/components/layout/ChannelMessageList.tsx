@@ -261,7 +261,7 @@ export const ChannelMessageList = forwardRef<
       canRequestHistory &&
       (channel?.hasMoreHistory === true ||
         (privateChat && privateChat.hasMoreHistory !== false)) &&
-      channelMessages.length > 0;
+      (channelMessages.length > 0 || !!historyState?.historyOldestTime);
     const hasMoreMessages = locallyHidden || serverHasMore;
 
     const eventGroups = useMemo(
@@ -465,8 +465,18 @@ export const ChannelMessageList = forwardRef<
                         );
                       } else if (serverHasMore && historyTarget) {
                         const oldest = channelMessages[0];
-                        if (oldest?.timestamp) {
-                          const ts = new Date(oldest.timestamp).toISOString();
+                        const oldestTime = oldest?.timestamp
+                          ? new Date(oldest.timestamp).toISOString()
+                          : undefined;
+                        const replayTime = historyState?.historyOldestTime;
+                        const ts = !oldestTime
+                          ? replayTime
+                          : !replayTime
+                            ? oldestTime
+                            : Date.parse(replayTime) < Date.parse(oldestTime)
+                              ? replayTime
+                              : oldestTime;
+                        if (ts) {
                           // WebSocket responses are macrotasks; the click handler's React batch
                           // always commits before the response arrives, so flushSync is unnecessary.
                           isFetchingMoreRef.current = true;

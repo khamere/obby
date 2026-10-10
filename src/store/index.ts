@@ -2094,8 +2094,9 @@ const useStore = create<AppState>((set, get) => ({
         return timeA - timeB;
       });
 
-      // Cap per-channel history to prevent unbounded memory growth in long sessions.
+      // Once explicit backfill expands scrollback, live messages must not discard it.
       const cappedMessages =
+        currentMessages.length <= MAX_MESSAGES_PER_CHANNEL &&
         updatedMessages.length > MAX_MESSAGES_PER_CHANNEL
           ? updatedMessages.slice(-MAX_MESSAGES_PER_CHANNEL)
           : updatedMessages;
