@@ -87,6 +87,107 @@ describe("IRCClient", () => {
   });
 
   describe("connect", () => {
+    test("disconnecting a socket that is still connecting closes it without throwing", () => {
+      const socket = new MockWebSocket("wss://soju.example/socket");
+      socket.readyState = MockWebSocket.CONNECTING;
+      // A real WebSocket rejects send() until it's open. (The global
+      // WebSocket is stubbed here, so use the mock's own constants.)
+      socket.send = (message: string) => {
+        if (socket.readyState !== MockWebSocket.OPEN) {
+          throw new Error("InvalidStateError");
+        }
+        socket.sentMessages.push(message);
+      };
+      MockWebSocketSpy.mockImplementationOnce(returnsSocket(socket));
+      void client.connect(
+        "Net",
+        "wss://soju.example/socket",
+        443,
+        "alice",
+        undefined,
+        undefined,
+        undefined,
+        "connecting",
+      );
+      expect(socket.readyState).toBe(MockWebSocket.CONNECTING);
+      expect(() => client.disconnect("connecting")).not.toThrow();
+      socket.readyState = MockWebSocket.CLOSED;
+      expect(client.servers.get("connecting")?.connectionState).toBe(
+        "disconnected",
+      );
+      expect(socket.sentMessages.some((m) => m.startsWith("QUIT"))).toBe(false);
+      client.removeServer("connecting");
+    });
+
+    test("a late error or close from a replaced socket leaves the new connection alone", async () => {
+      vi.useFakeTimers();
+      const first = new MockWebSocket("wss://soju.example/socket");
+      const second = new MockWebSocket("wss://soju.example/socket");
+      MockWebSocketSpy.mockImplementationOnce(returnsSocket(first));
+      MockWebSocketSpy.mockImplementationOnce(returnsSocket(second));
+      try {
+        const firstConnect = client.connect(
+          "Net",
+          "wss://soju.example/socket",
+          443,
+          "alice",
+          undefined,
+          undefined,
+          undefined,
+          "replaced",
+        );
+        first.simulateOpen();
+        await firstConnect;
+        client.disconnect("replaced");
+        const secondConnect = client.connect(
+          "Net",
+          "wss://soju.example/socket",
+          443,
+          "alice",
+          undefined,
+          undefined,
+          undefined,
+          "replaced",
+        );
+        second.simulateOpen();
+        await secondConnect;
+
+        first.simulateError(new Error("late"));
+        first.onclose?.(new CloseEvent("close"));
+        await vi.advanceTimersByTimeAsync(3001);
+
+        expect(client.servers.get("replaced")?.isConnected).toBe(true);
+        expect(MockWebSocketSpy).toHaveBeenCalledTimes(2);
+        client.sendRaw("replaced", "PING :still-here");
+        expect(second.sentMessages).toContain("PING :still-here");
+      } finally {
+        client.removeServer("replaced");
+        vi.clearAllTimers();
+        vi.useRealTimers();
+      }
+    });
+
+    test("an open socket still gets QUIT on disconnect", async () => {
+      const socket = new MockWebSocket("wss://soju.example/socket");
+      MockWebSocketSpy.mockImplementationOnce(returnsSocket(socket));
+      const connected = client.connect(
+        "Net",
+        "wss://soju.example/socket",
+        443,
+        "alice",
+        undefined,
+        undefined,
+        undefined,
+        "open",
+      );
+      socket.simulateOpen();
+      socket.readyState = MockWebSocket.OPEN;
+      await connected;
+      client.disconnect("open", "bye");
+      expect(socket.sentMessages).toContain("QUIT :bye");
+      client.removeServer("open");
+    });
+
     test("removing a child clears its binding and does not schedule a reconnect", async () => {
       vi.useFakeTimers();
       try {
