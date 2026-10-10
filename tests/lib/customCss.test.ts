@@ -46,6 +46,21 @@ describe("sanitizeCss", () => {
     expect(out).not.toMatch(/expression\s*\(/);
   });
 
+  it("disables functions that take a bare string URL", () => {
+    const out = sanitizeCss(
+      '.a { background: image("https://evil.example/a.png"); }\n' +
+        '.b { background-image: src("https://evil.example/b.png"); }\n' +
+        '.c { background: -webkit-image-set("https://evil.example/c.png" 1x); }',
+    );
+    expect(out).not.toMatch(/(^|[^\w-])(-webkit-)?(image-set|image|src)\(/i);
+  });
+
+  it("leaves the @font-face src descriptor and data: fonts alone", () => {
+    const css =
+      '@font-face { font-family: x; src: url("data:font/woff2;base64,AA==") format("woff2"); }';
+    expect(sanitizeCss(css)).toBe(css);
+  });
+
   it("can't close the <style> element", () => {
     expect(sanitizeCss("</style><script>x</script>")).not.toMatch(/<\/style/i);
   });

@@ -50,8 +50,13 @@ export function sanitizeCss(input: string): string {
         (match, _q: string, target: string) =>
           /^data:/i.test(target.trim()) ? match : "none",
       )
-      // image-set() accepts bare strings as image URLs
-      .replace(/(-webkit-)?image-set\(/gi, "invalid-image-set(")
+      // functions that accept a bare string as a URL: image-set("x"),
+      // image("x"), src("x"). Only the call is matched, not the `src:`
+      // descriptor in @font-face.
+      .replace(
+        /(^|[^\w-])(-webkit-)?(image-set|image|src)\(/gi,
+        "$1invalid-url-fn(",
+      )
       // legacy script/binding hooks
       .replace(/expression\s*\(|-moz-binding|behavior\s*:/gi, "invalid:")
   );
