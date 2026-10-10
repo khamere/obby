@@ -40,7 +40,6 @@ import {
   extractMediaFromMessage,
   extractMediaFromText,
   getEmbedThumbnailUrl,
-  imageCanHaveTransparency,
   mediaLevelToSettings,
 } from "../../lib/mediaUtils";
 import {
@@ -1493,7 +1492,7 @@ export function MediaViewerModal({
                   src={currentUrl}
                   alt={t`Image preview`}
                   draggable={false}
-                  className={`select-none pointer-events-auto ${imageCanHaveTransparency(currentUrl) ? "transparency-grid" : "bg-white"}`}
+                  className="select-none pointer-events-auto bg-transparent"
                   style={{
                     maxWidth: "calc(100% - 4rem)",
                     maxHeight: "calc(100vh - 10rem)",
@@ -1627,7 +1626,7 @@ export function MediaViewerModal({
                               src={thumbUrl}
                               alt=""
                               draggable={false}
-                              className={`w-full h-full object-cover ${imageCanHaveTransparency(thumbUrl) ? "transparency-grid" : ""}`}
+                              className="w-full h-full object-cover bg-transparent"
                               onError={() => addFailedUrl(thumbUrl)}
                             />
                           )}
