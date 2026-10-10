@@ -3273,6 +3273,49 @@ const useStore = create<AppState>((set, get) => ({
     try {
       // Get saved server config to get credentials
       const savedServers = loadSavedServers();
+      if (server.bouncerNetid && server.bouncerServerId) {
+        const savedChild = savedServers.find((s) => s.id === serverId);
+        const savedParent = savedServers.find(
+          (s) => s.id === server.bouncerServerId,
+        );
+        if (!savedChild || !savedParent) {
+          throw new Error(
+            `No saved bouncer configuration found for server ${serverId}`,
+          );
+        }
+        // Each network shares an endpoint but needs its own identity and fresh parent credentials.
+        const childConfig = {
+          ...savedChild,
+          host: savedParent.host,
+          port: savedParent.port,
+          nickname: savedParent.nickname,
+          password: savedParent.password,
+          saslEnabled: savedParent.saslEnabled,
+          saslAccountName: savedParent.saslAccountName,
+          saslPassword: savedParent.saslPassword,
+          oauth: savedParent.oauth,
+        };
+        saveServersToLocalStorage(
+          savedServers.map((s) => (s.id === serverId ? childConfig : s)),
+        );
+        ircClient.disconnect(serverId);
+        ircClient.setPendingBouncerBind(serverId, server.bouncerNetid);
+        await ircClient.connect(
+          server.name,
+          ensureUrlFormat(childConfig.host, childConfig.port),
+          childConfig.port,
+          childConfig.nickname,
+          childConfig.password,
+          childConfig.saslAccountName,
+          childConfig.saslPassword,
+          serverId,
+          !!(
+            childConfig.oauth?.enabled &&
+            (childConfig.oauth.accessToken || childConfig.oauth.idToken)
+          ),
+        );
+        return;
+      }
       const savedServer = savedServers.find(
         (s) =>
           normalizeHost(s.host) === normalizeHost(server.host) &&

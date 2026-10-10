@@ -153,4 +153,72 @@ describe("bouncerConnectNetwork action", () => {
     expect(result).toBeUndefined();
     expect(ircClient.connect).not.toHaveBeenCalled();
   });
+
+  test("manual reconnect targets the child ID instead of its connected parent", async () => {
+    await useStore.getState().bouncerConnectNetwork(BOUNCER_ID, "42");
+    const child = useStore
+      .getState()
+      .servers.find((s) => s.bouncerNetid === "42");
+    if (!child) throw new Error("Expected a bound child");
+    vi.mocked(ircClient.connect).mockClear();
+    vi.mocked(ircClient.setPendingBouncerBind).mockClear();
+    vi.spyOn(ircClient, "disconnect").mockImplementation(() => {});
+
+    await useStore.getState().reconnectServer(child.id);
+
+    expect(ircClient.setPendingBouncerBind).toHaveBeenCalledWith(
+      child.id,
+      "42",
+    );
+    expect(ircClient.connect).toHaveBeenCalledWith(
+      "Libera",
+      "wss://soju.example",
+      6697,
+      "alice",
+      undefined,
+      "alice",
+      "secret",
+      child.id,
+      false,
+    );
+    expect(ircClient.disconnect).toHaveBeenCalledWith(child.id);
+    expect(ircClient.disconnect).not.toHaveBeenCalledWith(BOUNCER_ID);
+    const saved = JSON.parse(lsBacking.get("savedServers") ?? "[]");
+    expect(saved).toHaveLength(2);
+    expect(
+      saved.find((s: { id: string }) => s.id === child.id)?.bouncerNetid,
+    ).toBe("42");
+  });
+
+  test("manual reconnect preserves the WebSocket path and uses updated parent credentials", async () => {
+    await useStore.getState().bouncerConnectNetwork(BOUNCER_ID, "42");
+    const child = useStore
+      .getState()
+      .servers.find((s) => s.bouncerNetid === "42");
+    if (!child) throw new Error("Expected a bound child");
+    const saved = JSON.parse(lsBacking.get("savedServers") ?? "[]");
+    saved[0].host = "wss://soju.example/socket-vpn";
+    saved[0].saslPassword = "updated-secret";
+    lsBacking.set("savedServers", JSON.stringify(saved));
+    vi.mocked(ircClient.connect).mockClear();
+    vi.spyOn(ircClient, "disconnect").mockImplementation(() => {});
+
+    await useStore.getState().reconnectServer(child.id);
+
+    expect(ircClient.connect).toHaveBeenCalledWith(
+      "Libera",
+      "wss://soju.example/socket-vpn",
+      6697,
+      "alice",
+      undefined,
+      "alice",
+      "updated-secret",
+      child.id,
+      false,
+    );
+    const persisted = JSON.parse(lsBacking.get("savedServers") ?? "[]");
+    expect(
+      persisted.find((s: { id: string }) => s.id === child.id)?.saslPassword,
+    ).toBe("updated-secret");
+  });
 });
