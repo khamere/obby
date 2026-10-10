@@ -2,6 +2,8 @@
  * Notification sound utilities for playing audio notifications
  */
 
+import { containsWholeWord } from "./nickHighlight";
+
 // Play notification sound based on current settings
 export const playNotificationSound = async (globalSettings: {
   enableNotificationSounds: boolean;
@@ -100,19 +102,12 @@ export const shouldPlayNotificationSound = (
 
   // If highlights are enabled, check for mentions
   if (globalSettings.enableHighlights && currentUser) {
-    const content = message.content.toLowerCase();
-
-    // Check for username mention
-    const usernameMention = content.includes(
-      currentUser.username.toLowerCase(),
+    return (
+      containsWholeWord(message.content, currentUser.username) ||
+      globalSettings.customMentions.some((mention) =>
+        containsWholeWord(message.content, mention),
+      )
     );
-
-    // Check for custom mentions
-    const customMention = globalSettings.customMentions.some(
-      (mention) => mention.trim() && content.includes(mention.toLowerCase()),
-    );
-
-    return usernameMention || customMention;
   }
 
   // If highlights are disabled, play sound for all user messages (except our own)

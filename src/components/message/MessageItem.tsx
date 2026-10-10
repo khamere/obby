@@ -28,6 +28,7 @@ import {
   mediaLevelToSettings,
 } from "../../lib/mediaUtils";
 import { stripIrcFormatting } from "../../lib/messageFormatter";
+import { buildNickMatcher, highlightNicks } from "../../lib/nickHighlight";
 import useStore, { loadSavedMetadata } from "../../store";
 import type { MessageType, PrivateChat, User } from "../../types";
 import MessageBottomSheet from "../mobile/MessageBottomSheet";
@@ -87,6 +88,9 @@ interface MessageItemProps {
   hideReply?: boolean;
   isHighlighted?: boolean;
 }
+
+// Stable empty member list so PM rows share one cached nick map.
+const NO_USERS: User[] = [];
 
 // Helper function to get user metadata
 const getUserMetadata = (username: string, serverId: string) => {
@@ -428,6 +432,56 @@ export const MessageItem = memo((props: MessageItemProps) => {
     resolveEmoji,
   ]);
 
+  const enableHighlights = useStore(
+    useCallback((state) => state.globalSettings.enableHighlights, []),
+  );
+  const customMentions = useStore(
+    useCallback((state) => state.globalSettings.customMentions, []),
+  );
+  const channelUsers = useMemo(
+    () => server?.channels.find((c) => c.id === channelId)?.users ?? NO_USERS,
+    [server, channelId],
+  );
+  const openPrivateChatWith = useCallback(
+    (nick: string) => {
+      const { openPrivateChat, selectPrivateChat } = useStore.getState();
+      const serverId = message.serverId;
+      openPrivateChat(serverId, nick);
+      // Read fresh state: the PM may have been created just now.
+      const privateChat = useStore
+        .getState()
+        .servers.find((s) => s.id === serverId)
+        ?.privateChats?.find(
+          (pc) => pc.username.toLowerCase() === nick.toLowerCase(),
+        );
+      if (privateChat) selectPrivateChat(privateChat.id, { navigate: true });
+    },
+    [message.serverId],
+  );
+  // Our own messages never highlight us; with highlights off our nick is
+  // just another member name.
+  const highlightSelf = enableHighlights && !isCurrentUser;
+  const { node: highlightedContent, mentionsSelf } = useMemo(
+    () =>
+      highlightNicks(
+        htmlContent,
+        buildNickMatcher(channelUsers, {
+          ownNick: ircCurrentUser?.username,
+          highlightSelf,
+          customMentions,
+          onNickClick: openPrivateChatWith,
+        }),
+      ),
+    [
+      htmlContent,
+      channelUsers,
+      highlightSelf,
+      ircCurrentUser?.username,
+      customMentions,
+      openPrivateChatWith,
+    ],
+  );
+
   // Ciphertext this device holds no key for keeps its place in the thread: a
   // dropped row would read as the peer having gone quiet, which is the one
   // conclusion the user must not draw.
@@ -448,7 +502,7 @@ export const MessageItem = memo((props: MessageItemProps) => {
   ) : (
     <CollapsibleMessage
       ref={collapsibleRef}
-      content={htmlContent}
+      content={highlightedContent}
       onNeedsCollapsing={setMessageNeedsCollapsing}
     />
   );
@@ -755,6 +809,8 @@ export const MessageItem = memo((props: MessageItemProps) => {
       className={`px-4 hover:bg-discord-message-hover group relative transition-colors duration-150 ${
         showHeader ? "mt-4" : "py-0.5"
       }${isHighlighted ? " bg-primary/10 ring-1 ring-primary/30 rounded" : ""}${
+        mentionsSelf && !isUnprotected ? " obby-mention-row" : ""
+      }${
         isUnprotected
           ? " border-l-2 border-amber-500/70 bg-amber-500/[0.06]"
           : isUndecryptable
