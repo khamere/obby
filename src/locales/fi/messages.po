@@ -3220,6 +3220,10 @@ msgstr "Kirjautui sisään"
 msgid "Signed On"
 msgstr "Kirjautunut"
 
+#: src/lib/clientCommands.ts
+msgid "Slap someone around a bit with a large trout"
+msgstr "Läimäytä jotakuta isolla taimenella"
+
 #: src/components/ui/BotsModal.tsx
 #: src/components/ui/SlashCommandPopover.tsx
 msgid "Slash commands"
@@ -3775,6 +3779,10 @@ msgstr "Mitä olet tekemässä?"
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "What this means:"
 msgstr "Mitä tämä tarkoittaa:"
+
+#: src/lib/clientCommands.ts
+msgid "What to slap them with (defaults to a large trout)"
+msgstr "Millä läimäytetään (oletuksena iso taimen)"
 
 #: src/lib/clientCommands.ts
 msgid "What you're doing"
