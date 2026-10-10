@@ -288,6 +288,10 @@ msgstr "<0>💡 Рекомендація:</0> Продовжуйте лише я
 msgid "<0>Risk:</0> Sensitive information (messages, private conversations, authentication details) could be exposed to network administrators or attackers positioned between IRC servers."
 msgstr "<0>Ризик:</0> Конфіденційна інформація (повідомлення, приватні розмови, дані автентифікації) може бути доступна мережевим адміністраторам або зловмисникам між IRC-серверами."
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "A stylesheet applied on top of Obby, from a shared link and/or your own. Sidebar rows carry data-network-host so you can style individual networks. Anything that would load other files is removed."
+msgstr "Таблиця стилів поверх Obby — зі спільного посилання та/або ваша власна. Рядки бічної панелі мають data-network-host, тож можна оформлювати окремі мережі. Усе, що завантажувало б інші файли, видаляється."
+
 #: src/components/message/BotInvocationChip.tsx
 msgid "About this attribution"
 msgstr "Про цю атрибуцію"
@@ -1076,6 +1080,10 @@ msgstr "Копіювати посилання"
 msgid "Copy URL"
 msgstr "Копіювати URL"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Could not load this link. It must point to the raw .css file."
+msgstr "Не вдалося завантажити це посилання. Воно має вести прямо на файл .css."
+
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Couldn't set up encryption with {nick}."
 msgstr "Не вдалося налаштувати шифрування з {nick}."
@@ -1107,6 +1115,10 @@ msgstr "Створено до (хв тому)"
 #: src/components/ui/AvatarUpload.tsx
 msgid "Current avatar"
 msgstr "Поточний аватар"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Custom CSS"
+msgstr "Власний CSS"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Custom Flood Rules (+f)"
@@ -1435,6 +1447,10 @@ msgstr "Завершити шифрування"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Enter account name..."
 msgstr "Введіть ім'я акаунту..."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Enter an http(s) link to a .css file."
+msgstr "Введіть http(s)-посилання на файл .css."
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Enter default nickname..."
@@ -1846,6 +1862,10 @@ msgstr "Приєднався до каналу"
 msgid "just now"
 msgstr "щойно"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Kept in this browser and applied after the linked file, so it can override it."
+msgstr "Зберігається в цьому браузері й застосовується після файлу за посиланням, тож може його перевизначати."
+
 #: src/components/ui/ModerationModal.tsx
 #: src/components/ui/UserContextMenu.tsx
 msgid "Kick User"
@@ -1918,9 +1938,17 @@ msgstr "Libera Chat"
 msgid "Link preview"
 msgstr "Попередній перегляд посилання"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Load from a link"
+msgstr "Завантажити за посиланням"
+
 #: src/components/layout/ChannelMessageList.tsx
 msgid "Load older messages"
 msgstr "Завантажити старіші повідомлення"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Loaded and up to date."
+msgstr "Завантажено, актуальна версія."
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Loading"
@@ -1949,6 +1977,10 @@ msgstr "Завантаження мереж з вашого bouncer…"
 #: src/components/ui/UserProfileModal.tsx
 msgid "Loading WHOIS data..."
 msgstr "Завантаження даних WHOIS..."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Loading…"
+msgstr "Завантаження…"
 
 #: src/components/ui/UserSettings.tsx
 msgid "Local Storage:"
@@ -2391,6 +2423,10 @@ msgstr "Obby"
 msgid "Obby - Bringing IRC to the future"
 msgstr "Obby - Привносимо IRC у майбутнє"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Obby downloads this file every time it starts, so everyone using the same link gets updates. This contacts the site the link points to."
+msgstr "Obby завантажує цей файл під час кожного запуску, тож усі, хто використовує те саме посилання, отримують оновлення. При цьому відбувається звернення до сайту, на який веде посилання."
+
 #. placeholder {0}: session.total
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "of {0}"
@@ -2534,6 +2570,10 @@ msgstr "Пароль"
 #: src/components/ui/ChannelSettingsModal.tsx
 msgid "Password required to join the channel. Leave empty to remove the key."
 msgstr "Пароль для входу до каналу. Залиште порожнім для видалення ключа."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Paste CSS here or upload a .css file"
+msgstr "Вставте CSS сюди або завантажте файл .css"
 
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Pattern already exists"
@@ -2775,6 +2815,8 @@ msgid "Relaxed - Less aggressive protection"
 msgstr "Розслаблений - менш агресивний захист"
 
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/components/ui/settings/CustomCssField.tsx
+#: src/components/ui/settings/CustomCssField.tsx
 msgid "Remove"
 msgstr "Видалити"
 
@@ -2855,6 +2897,8 @@ msgstr "Безпечно"
 
 #: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/components/ui/settings/CustomCssField.tsx
+#: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/TopicModal.tsx
 #: src/components/ui/UserSettings.tsx
 msgid "Save"
@@ -3312,6 +3356,10 @@ msgstr "Текст"
 msgid "Text Channels"
 msgstr "Текстові канали"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "That stylesheet is too large."
+msgstr "Ця таблиця стилів завелика."
+
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
 msgstr "З'єднання з <0>{serverName}</0> має такі проблеми безпеки:"
@@ -3538,6 +3586,10 @@ msgstr "Відновити"
 msgid "Upload"
 msgstr "Завантажити"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Upload .css file"
+msgstr "Завантажити файл .css"
+
 #: src/components/ui/ChannelSettingsModal.tsx
 msgid "Upload an image or provide a URL with optional {size} substitution for dynamic sizing"
 msgstr "Завантажте зображення або вкажіть URL з необов'язковою підстановкою {size} для динамічного розміру"
@@ -3649,6 +3701,10 @@ msgstr "Користувачі за межами каналу не можуть 
 #: src/components/message/JsonLogMessage.tsx
 msgid "Users:"
 msgstr "Користувачі:"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Using the last saved copy; the link could not be reached."
+msgstr "Використовується остання збережена копія; посилання недоступне."
 
 #: src/components/ui/AddServerModal.tsx
 #: src/components/ui/EditServerModal.tsx
@@ -3893,6 +3949,14 @@ msgstr "Ваш браузер не може відтворити це аудіо
 msgid "Your browser cannot play this video."
 msgstr "Ваш браузер не може відтворити це відео."
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Your CSS was removed."
+msgstr "Ваш CSS видалено."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Your CSS was saved."
+msgstr "Ваш CSS збережено."
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your default nickname for all servers"
 msgstr "Ваш псевдонім за замовчуванням для всіх серверів"
@@ -3926,6 +3990,10 @@ msgstr "Ваші повідомлення з {nick} зашифровані. {0} 
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "Your messages with {nick} are encrypted. These files are too large to encrypt and would be sent in the clear."
 msgstr "Ваші повідомлення з {nick} зашифровані. Ці файли завеликі для шифрування і будуть надіслані у відкритому вигляді."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Your own CSS"
+msgstr "Ваш власний CSS"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your personal website"
