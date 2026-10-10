@@ -3220,6 +3220,10 @@ msgstr "Giriş yaptı"
 msgid "Signed On"
 msgstr "Giriş Yapıldı"
 
+#: src/lib/clientCommands.ts
+msgid "Slap someone around a bit with a large trout"
+msgstr "Birini kocaman bir alabalıkla biraz tokatla"
+
 #: src/components/ui/BotsModal.tsx
 #: src/components/ui/SlashCommandPopover.tsx
 msgid "Slash commands"
@@ -3775,6 +3779,10 @@ msgstr "Ne yapıyorsun?"
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "What this means:"
 msgstr "Bu ne anlama geliyor:"
+
+#: src/lib/clientCommands.ts
+msgid "What to slap them with (defaults to a large trout)"
+msgstr "Neyle tokatlanacağı (varsayılan: kocaman bir alabalık)"
 
 #: src/lib/clientCommands.ts
 msgid "What you're doing"

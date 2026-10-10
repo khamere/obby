@@ -3220,6 +3220,10 @@ msgstr "Aangemeld op"
 msgid "Signed On"
 msgstr "Aangemeld op"
 
+#: src/lib/clientCommands.ts
+msgid "Slap someone around a bit with a large trout"
+msgstr "Geef iemand een paar meppen met een grote forel"
+
 #: src/components/ui/BotsModal.tsx
 #: src/components/ui/SlashCommandPopover.tsx
 msgid "Slash commands"
@@ -3775,6 +3779,10 @@ msgstr "Wat ben je aan het doen?"
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "What this means:"
 msgstr "Wat dit betekent:"
+
+#: src/lib/clientCommands.ts
+msgid "What to slap them with (defaults to a large trout)"
+msgstr "Waarmee je slaat (standaard een grote forel)"
 
 #: src/lib/clientCommands.ts
 msgid "What you're doing"

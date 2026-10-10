@@ -5,6 +5,7 @@
 import { useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { base64EncodeUtf8 } from "../lib/base64";
+import { slapAction } from "../lib/clientCommands";
 import ircClient from "../lib/ircClient";
 import {
   makeLabel,
@@ -340,8 +341,12 @@ export function useMessageSending({
           selectedChannel.name,
           message,
         );
-      } else if (commandName === "me") {
-        const actionMessage = cleanedText.substring(4).trim();
+      } else if (commandName === "me" || commandName === "slap") {
+        const actionMessage =
+          commandName === "slap"
+            ? slapAction(args)
+            : cleanedText.substring(4).trim();
+        if (actionMessage === null) return;
         const whisperContext = getWhisperContext(localReplyTo, currentUser);
         const target =
           selectedChannel?.name ?? selectedPrivateChat?.username ?? "";

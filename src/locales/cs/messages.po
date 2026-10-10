@@ -3220,6 +3220,10 @@ msgstr "Přihlášen"
 msgid "Signed On"
 msgstr "Přihlášen"
 
+#: src/lib/clientCommands.ts
+msgid "Slap someone around a bit with a large trout"
+msgstr "Pořádně někoho přetáhni velkým pstruhem"
+
 #: src/components/ui/BotsModal.tsx
 #: src/components/ui/SlashCommandPopover.tsx
 msgid "Slash commands"
@@ -3775,6 +3779,10 @@ msgstr "Co teď děláš?"
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "What this means:"
 msgstr "Co to znamená:"
+
+#: src/lib/clientCommands.ts
+msgid "What to slap them with (defaults to a large trout)"
+msgstr "Čím ho přetáhnout (výchozí je velký pstruh)"
 
 #: src/lib/clientCommands.ts
 msgid "What you're doing"
