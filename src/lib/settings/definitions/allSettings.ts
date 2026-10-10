@@ -252,6 +252,18 @@ const preferenceSettings: SettingDefinition[] = [
     priority: 2,
   },
   {
+    id: "preferences.coloredNicknames",
+    key: "coloredNicknames",
+    category: "preferences",
+    subcategory: "Chat",
+    title: msg`Colored Nicknames`,
+    description: msg`Give each nickname its own color, the same everywhere it appears`,
+    type: "toggle",
+    defaultValue: false,
+    searchKeywords: ["color", "colour", "nick", "nickname", "name"],
+    priority: 3,
+  },
+  {
     id: "preferences.showEvents",
     key: "showEvents",
     category: "preferences",

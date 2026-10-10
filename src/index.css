@@ -115,6 +115,45 @@ html {
   }
 }
 
+/* Nickname colours (Settings -> Preferences -> Colored Nicknames).
+   Soft pastels on the dark theme, deeper shades of the same hues on light. */
+:root {
+  --obby-nick-0: #e69f94;
+  --obby-nick-1: #e6bd94;
+  --obby-nick-2: #e6dc94;
+  --obby-nick-3: #d1e694;
+  --obby-nick-4: #b2e694;
+  --obby-nick-5: #94e694;
+  --obby-nick-6: #94e6b3;
+  --obby-nick-7: #94e6d2;
+  --obby-nick-8: #94dbe6;
+  --obby-nick-9: #94bce6;
+  --obby-nick-10: #9aa3e7;
+  --obby-nick-11: #af9ce8;
+  --obby-nick-12: #c894e6;
+  --obby-nick-13: #e694e5;
+  --obby-nick-14: #e694c6;
+  --obby-nick-15: #e694a7;
+}
+body.light {
+  --obby-nick-0: #953223;
+  --obby-nick-1: #955d23;
+  --obby-nick-2: #7e731e;
+  --obby-nick-3: #627a1d;
+  --obby-nick-4: #42801e;
+  --obby-nick-5: #1f821f;
+  --obby-nick-6: #1f8245;
+  --obby-nick-7: #1e8068;
+  --obby-nick-8: #207c8a;
+  --obby-nick-9: #235b95;
+  --obby-nick-10: #233095;
+  --obby-nick-11: #402395;
+  --obby-nick-12: #6b2395;
+  --obby-nick-13: #952394;
+  --obby-nick-14: #952369;
+  --obby-nick-15: #95233e;
+}
+
 /* Flash animation for message highlighting */
 @keyframes message-flash {
   0% {

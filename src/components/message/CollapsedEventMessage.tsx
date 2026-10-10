@@ -4,6 +4,7 @@ import { useState } from "react";
 import { type EventGroup, getEventGroupTooltip } from "../../lib/eventGrouping";
 import ircClient from "../../lib/ircClient";
 import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
+import { nickColor } from "../../lib/nickColor";
 import useStore from "../../store";
 import type { User } from "../../types";
 
@@ -34,6 +35,9 @@ export const CollapsedEventMessage: React.FC<CollapsedEventMessageProps> = ({
     useStore((state) => state.globalSettings.mediaVisibilityLevel),
   );
   const server = useStore.getState().servers.find((s) => s.id === serverId);
+  const coloredNicknames = useStore(
+    (state) => state.globalSettings.coloredNicknames,
+  );
 
   if (eventGroup.type !== "eventGroup") return null;
 
@@ -100,6 +104,11 @@ export const CollapsedEventMessage: React.FC<CollapsedEventMessageProps> = ({
                 <button
                   type="button"
                   className="font-medium not-italic hover:underline cursor-pointer bg-transparent border-none p-0 text-discord-text-muted"
+                  style={
+                    coloredNicknames
+                      ? { color: nickColor(us.username) }
+                      : undefined
+                  }
                   onClick={(e) =>
                     onUsernameContextMenu(e, us.username, serverId, channelId)
                   }
