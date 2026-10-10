@@ -47,7 +47,26 @@ function makeEventMessage(
   };
 }
 
+// Our own JOINs this soon after registration only restore membership: a
+// bouncer like soju replays every channel to each new client, and we rejoin
+// cached channels ourselves on reconnect. Announcing them would claim a join
+// that nobody else saw, stamped with the reconnect time.
+const MEMBERSHIP_RESTORE_WINDOW_MS = 15_000;
+const registeredAt = new Map<string, number>();
+
+export function isMembershipRestoreJoin(
+  serverId: string,
+  now: number = Date.now(),
+): boolean {
+  const at = registeredAt.get(serverId);
+  return at !== undefined && now - at < MEMBERSHIP_RESTORE_WINDOW_MS;
+}
+
 export function registerUserHandlers(store: StoreApi<AppState>): void {
+  ircClient.on("ready", ({ serverId }) => {
+    registeredAt.set(serverId, Date.now());
+  });
+
   ircClient.on(
     "JOIN",
     ({
@@ -216,7 +235,8 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
       const state = store.getState();
       if (
         state.globalSettings.showEvents &&
-        state.globalSettings.showJoinsParts
+        state.globalSettings.showJoinsParts &&
+        !(isOurJoin && isMembershipRestoreJoin(serverId))
       ) {
         const server = state.servers.find((s) => s.id === serverId);
         const channel = server?.channels.find(
