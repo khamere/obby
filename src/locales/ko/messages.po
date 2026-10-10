@@ -288,6 +288,10 @@ msgstr "<0>💡 권장사항:</0> 이 서버를 신뢰하고 위험을 충분히
 msgid "<0>Risk:</0> Sensitive information (messages, private conversations, authentication details) could be exposed to network administrators or attackers positioned between IRC servers."
 msgstr "<0>위험:</0> 민감한 정보(메시지, 비공개 대화, 인증 정보)가 네트워크 관리자나 IRC 서버 간에 위치한 공격자에게 노출될 수 있습니다."
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "A stylesheet applied on top of Obby, from a shared link and/or your own. Sidebar rows carry data-network-host so you can style individual networks. Anything that would load other files is removed."
+msgstr "공유 링크 및/또는 직접 작성한 CSS를 Obby 위에 적용하는 스타일시트입니다. 사이드바 행에 data-network-host가 있어 네트워크별로 스타일을 지정할 수 있습니다. 다른 파일을 불러오는 항목은 모두 제거됩니다."
+
 #: src/components/message/BotInvocationChip.tsx
 msgid "About this attribution"
 msgstr "이 출처 표시에 관하여"
@@ -1076,6 +1080,10 @@ msgstr "링크 복사"
 msgid "Copy URL"
 msgstr "URL 복사"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Could not load this link. It must point to the raw .css file."
+msgstr "이 링크를 불러올 수 없습니다. 원본 .css 파일을 가리켜야 합니다."
+
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Couldn't set up encryption with {nick}."
 msgstr "{nick} 님과 암호화를 설정하지 못했습니다."
@@ -1107,6 +1115,10 @@ msgstr "생성 시각 이전 (분 전)"
 #: src/components/ui/AvatarUpload.tsx
 msgid "Current avatar"
 msgstr "현재 아바타"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Custom CSS"
+msgstr "사용자 CSS"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Custom Flood Rules (+f)"
@@ -1435,6 +1447,10 @@ msgstr "암호화 종료"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Enter account name..."
 msgstr "계정 이름 입력..."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Enter an http(s) link to a .css file."
+msgstr ".css 파일의 http(s) 링크를 입력하세요."
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Enter default nickname..."
@@ -1846,6 +1862,10 @@ msgstr "채널에 참여했습니다"
 msgid "just now"
 msgstr "방금"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Kept in this browser and applied after the linked file, so it can override it."
+msgstr "이 브라우저에 저장되며 링크한 파일 다음에 적용되므로 그 내용을 덮어쓸 수 있습니다."
+
 #: src/components/ui/ModerationModal.tsx
 #: src/components/ui/UserContextMenu.tsx
 msgid "Kick User"
@@ -1918,9 +1938,17 @@ msgstr "Libera Chat"
 msgid "Link preview"
 msgstr "링크 미리보기"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Load from a link"
+msgstr "링크에서 불러오기"
+
 #: src/components/layout/ChannelMessageList.tsx
 msgid "Load older messages"
 msgstr "이전 메시지 불러오기"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Loaded and up to date."
+msgstr "불러왔으며 최신 상태입니다."
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Loading"
@@ -1949,6 +1977,10 @@ msgstr "bouncer에서 네트워크를 불러오는 중…"
 #: src/components/ui/UserProfileModal.tsx
 msgid "Loading WHOIS data..."
 msgstr "WHOIS 데이터 불러오는 중..."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Loading…"
+msgstr "불러오는 중…"
 
 #: src/components/ui/UserSettings.tsx
 msgid "Local Storage:"
@@ -2391,6 +2423,10 @@ msgstr "Obby"
 msgid "Obby - Bringing IRC to the future"
 msgstr "Obby - IRC를 미래로"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Obby downloads this file every time it starts, so everyone using the same link gets updates. This contacts the site the link points to."
+msgstr "Obby는 시작할 때마다 이 파일을 내려받으므로 같은 링크를 쓰는 모든 사람이 업데이트를 받습니다. 링크가 가리키는 사이트에 접속합니다."
+
 #. placeholder {0}: session.total
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "of {0}"
@@ -2534,6 +2570,10 @@ msgstr "비밀번호"
 #: src/components/ui/ChannelSettingsModal.tsx
 msgid "Password required to join the channel. Leave empty to remove the key."
 msgstr "채널 참여에 필요한 비밀번호입니다. 키를 제거하려면 비워두세요."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Paste CSS here or upload a .css file"
+msgstr "여기에 CSS를 붙여넣거나 .css 파일을 업로드하세요"
 
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Pattern already exists"
@@ -2775,6 +2815,8 @@ msgid "Relaxed - Less aggressive protection"
 msgstr "완화 - 덜 공격적인 보호"
 
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/components/ui/settings/CustomCssField.tsx
+#: src/components/ui/settings/CustomCssField.tsx
 msgid "Remove"
 msgstr "제거"
 
@@ -2855,6 +2897,8 @@ msgstr "안전"
 
 #: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/components/ui/settings/CustomCssField.tsx
+#: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/TopicModal.tsx
 #: src/components/ui/UserSettings.tsx
 msgid "Save"
@@ -3312,6 +3356,10 @@ msgstr "텍스트"
 msgid "Text Channels"
 msgstr "텍스트 채널"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "That stylesheet is too large."
+msgstr "스타일시트가 너무 큽니다."
+
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
 msgstr "<0>{serverName}</0>에 대한 연결에 다음과 같은 보안 문제가 있습니다:"
@@ -3538,6 +3586,10 @@ msgstr "정지 해제"
 msgid "Upload"
 msgstr "업로드"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Upload .css file"
+msgstr ".css 파일 업로드"
+
 #: src/components/ui/ChannelSettingsModal.tsx
 msgid "Upload an image or provide a URL with optional {size} substitution for dynamic sizing"
 msgstr "이미지를 업로드하거나 동적 크기 조정을 위해 {size} 대체가 있는 URL을 제공하세요"
@@ -3649,6 +3701,10 @@ msgstr "채널 외부 사용자는 메시지를 보낼 수 없습니다"
 #: src/components/message/JsonLogMessage.tsx
 msgid "Users:"
 msgstr "사용자:"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Using the last saved copy; the link could not be reached."
+msgstr "마지막으로 저장된 사본을 사용 중입니다. 링크에 연결할 수 없었습니다."
 
 #: src/components/ui/AddServerModal.tsx
 #: src/components/ui/EditServerModal.tsx
@@ -3893,6 +3949,14 @@ msgstr "이 브라우저에서는 이 오디오를 재생할 수 없습니다."
 msgid "Your browser cannot play this video."
 msgstr "이 브라우저에서는 이 동영상을 재생할 수 없습니다."
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Your CSS was removed."
+msgstr "CSS를 제거했습니다."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Your CSS was saved."
+msgstr "CSS를 저장했습니다."
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your default nickname for all servers"
 msgstr "모든 서버에 사용할 기본 닉네임"
@@ -3926,6 +3990,10 @@ msgstr "{nick} 님과의 메시지는 암호화되어 있습니다. {1}개 파�
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "Your messages with {nick} are encrypted. These files are too large to encrypt and would be sent in the clear."
 msgstr "{nick} 님과의 메시지는 암호화되어 있습니다. 이 파일들은 암호화하기에 너무 커서 암호화되지 않은 상태로 전송됩니다."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Your own CSS"
+msgstr "나만의 CSS"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your personal website"
