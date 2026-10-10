@@ -344,6 +344,14 @@ msgstr "Åtgärd"
 msgid "active"
 msgstr "aktiv"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Active, stored in this browser only"
+msgstr "Aktiv, sparad endast i den här webbläsaren"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Active, stored on the server"
+msgstr "Aktiv, sparad på servern"
+
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "Activity"
 msgstr "Aktivitet"
@@ -1107,6 +1115,26 @@ msgstr "Skapad före (min sedan)"
 #: src/components/ui/AvatarUpload.tsx
 msgid "Current avatar"
 msgstr "Nuvarande avatar"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Custom CSS"
+msgstr "Egen CSS"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Custom CSS removed for every browser."
+msgstr "Egen CSS borttagen för alla webbläsare."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Custom CSS removed from this browser; the server copy could not be changed."
+msgstr "Egen CSS borttagen från den här webbläsaren; kopian på servern kunde inte ändras."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Custom CSS saved in this browser only; the server did not accept the upload."
+msgstr "Egen CSS sparad endast i den här webbläsaren; servern tog inte emot uppladdningen."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Custom CSS saved on the server for every browser."
+msgstr "Egen CSS sparad på servern för alla webbläsare."
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Custom Flood Rules (+f)"
@@ -2268,6 +2296,10 @@ msgstr "Inga kanaler hittades."
 msgid "No comments yet. Be the first!"
 msgstr "Inga kommentarer ännu. Var den första!"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "No custom CSS"
+msgstr "Ingen egen CSS"
+
 #: src/components/message/JsonLogMessage.tsx
 msgid "No data"
 msgstr "Inga data"
@@ -2535,6 +2567,10 @@ msgstr "Lösenord"
 msgid "Password required to join the channel. Leave empty to remove the key."
 msgstr "Lösenord krävs för att gå med i kanalen. Lämna tomt för att ta bort nyckeln."
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Paste CSS here or upload a .css file"
+msgstr "Klistra in CSS här eller ladda upp en .css-fil"
+
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Pattern already exists"
 msgstr "Mönstret finns redan"
@@ -2775,6 +2811,7 @@ msgid "Relaxed - Less aggressive protection"
 msgstr "Avslappnat – mindre aggressivt skydd"
 
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/components/ui/settings/CustomCssField.tsx
 msgid "Remove"
 msgstr "Ta bort"
 
@@ -2855,6 +2892,7 @@ msgstr "Säkert"
 
 #: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/TopicModal.tsx
 #: src/components/ui/UserSettings.tsx
 msgid "Save"
@@ -3312,6 +3350,10 @@ msgstr "Text"
 msgid "Text Channels"
 msgstr "Textkanaler"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "That stylesheet is too large."
+msgstr "Formatmallen är för stor."
+
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
 msgstr "Anslutningen till <0>{serverName}</0> har följande säkerhetsproblem:"
@@ -3537,6 +3579,10 @@ msgstr "Återaktivera"
 #: src/components/ui/UploadPreviewModal.tsx
 msgid "Upload"
 msgstr "Ladda upp"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Upload .css file"
+msgstr "Ladda upp .css-fil"
 
 #: src/components/ui/ChannelSettingsModal.tsx
 msgid "Upload an image or provide a URL with optional {size} substitution for dynamic sizing"
@@ -3926,6 +3972,10 @@ msgstr "Dina meddelanden med {nick} är krypterade. {0} av {1} filer är för st
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "Your messages with {nick} are encrypted. These files are too large to encrypt and would be sent in the clear."
 msgstr "Dina meddelanden med {nick} är krypterade. De här filerna är för stora för att kryptera och skulle skickas i klartext."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Your own stylesheet, applied on top of Obby. Sidebar rows carry data-network-host so you can style individual networks. Remote URLs are removed."
+msgstr "Din egen formatmall som läggs ovanpå Obby. Raderna i sidofältet har data-network-host så att du kan formge enskilda nätverk. Externa URL:er tas bort."
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your personal website"
