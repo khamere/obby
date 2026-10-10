@@ -175,6 +175,7 @@ describe("Metadata Display Features", () => {
         notificationVolume: 0.8,
         enableNotificationSounds: true,
         enableHighlights: true,
+        coloredNicknames: false,
         sendTypingNotifications: true,
         showEvents: true,
         showNickChanges: true,

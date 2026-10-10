@@ -52,6 +52,7 @@ export interface GlobalSettings {
   autoFallbackToSingleLine: boolean;
   mediaVisibilityLevel: MediaVisibilityLevel;
   enableMarkdownRendering: boolean;
+  coloredNicknames: boolean;
   awayMessage: string;
   quitMessage: string;
 }

@@ -957,6 +957,10 @@ msgstr "颜色"
 msgid "Color & Formatting"
 msgstr "颜色与格式"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Colored Nicknames"
+msgstr "彩色暱稱"
+
 #: src/components/ui/BotsModal.tsx
 msgid "Commands are loading…"
 msgstr "指令載入中…"
@@ -1628,6 +1632,10 @@ msgstr "GIF"
 #: src/components/ui/UserSettings.tsx
 msgid "GitHub:"
 msgstr "GitHub："
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Give each nickname its own color, the same everywhere it appears"
+msgstr "為每個暱稱分配專屬顏色，在各處保持一致"
 
 #: src/components/message/JsonLogMessage.tsx
 msgid "GZ-Line"

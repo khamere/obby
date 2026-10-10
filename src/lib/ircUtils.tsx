@@ -1038,6 +1038,11 @@ function processUrlsInText(
 export function getColorStyle(colorValue?: string): React.CSSProperties {
   if (!colorValue) return {};
 
+  // A palette variable from the app's own stylesheet (nick colours)
+  if (/^var\(--[\w-]+\)$/.test(colorValue)) {
+    return { color: colorValue };
+  }
+
   // If it's a hex color
   if (colorValue.startsWith("#")) {
     return { color: colorValue };

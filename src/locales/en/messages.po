@@ -956,6 +956,10 @@ msgstr "Color"
 msgid "Color & Formatting"
 msgstr "Color & Formatting"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Colored Nicknames"
+msgstr "Colored Nicknames"
+
 #: src/components/ui/BotsModal.tsx
 msgid "Commands are loading…"
 msgstr "Commands are loading…"
@@ -1627,6 +1631,10 @@ msgstr "GIF"
 #: src/components/ui/UserSettings.tsx
 msgid "GitHub:"
 msgstr "GitHub:"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Give each nickname its own color, the same everywhere it appears"
+msgstr "Give each nickname its own color, the same everywhere it appears"
 
 #: src/components/message/JsonLogMessage.tsx
 msgid "GZ-Line"
