@@ -4,9 +4,13 @@ import { describe, expect, it, vi } from "vitest";
 import { mircToHtml } from "../../src/lib/ircUtils";
 import {
   buildNickMatcher,
+  containsWholeWord,
   highlightNicks,
   segmentText,
 } from "../../src/lib/nickHighlight";
+import { shouldPlayNotificationSound } from "../../src/lib/notificationSounds";
+import { checkForMention, extractMentions } from "../../src/lib/notifications";
+import type { GlobalSettings } from "../../src/store";
 import type { User } from "../../src/types";
 
 const users: User[] = [
@@ -139,5 +143,61 @@ describe("clickable nicks", () => {
   it("our highlighted nick stays a plain pill", () => {
     renderClickable("hey me", true);
     expect(screen.queryByRole("button")).toBeNull();
+  });
+});
+
+describe("whole-word mentions (sound, red dot, highlight agree)", () => {
+  const me: User = { id: "me", username: "bob", isOnline: true };
+  const settings = {
+    customMentions: ["pizza"],
+    enableHighlights: true,
+    enableNotificationSounds: true,
+    notificationSound: "",
+  } as unknown as GlobalSettings;
+
+  it.each([
+    "bob!",
+    "hey bob",
+    "@bob",
+    "bob: hi",
+    "BOB?",
+    "(bob)",
+  ])("%s mentions bob", (text) => {
+    expect(containsWholeWord(text, "bob")).toBe(true);
+    expect(checkForMention(text, me, settings)).toBe(true);
+  });
+
+  it.each([
+    "bobby",
+    "kebob",
+    "bob_",
+    "bob2",
+    "[bob]x",
+  ])("%s does not mention bob", (text) => {
+    expect(containsWholeWord(text, "bob")).toBe(false);
+    expect(checkForMention(text, me, settings)).toBe(false);
+  });
+
+  it("custom mentions are whole words too", () => {
+    expect(checkForMention("pizza time", me, settings)).toBe(true);
+    expect(checkForMention("pizzas", me, settings)).toBe(false);
+    expect(extractMentions("bob, pizza?", me, settings)).toEqual([
+      "bob",
+      "pizza",
+    ]);
+  });
+
+  it("the notification sound uses the same rule", () => {
+    const msg = (content: string) => ({
+      type: "message" as const,
+      userId: "carol",
+      content,
+    });
+    expect(
+      shouldPlayNotificationSound(msg("bob!") as never, me, settings),
+    ).toBe(true);
+    expect(
+      shouldPlayNotificationSound(msg("bobby") as never, me, settings),
+    ).toBe(false);
   });
 });

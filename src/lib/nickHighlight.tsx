@@ -93,6 +93,28 @@ function isNickChar(ch: string | undefined): boolean {
   return ch !== undefined && /[A-Za-z0-9[\]\\`^{}|_-]/.test(ch);
 }
 
+// True when `word` appears in `text` with no nick character directly before
+// or after it, ignoring case: "bob!", "@bob" and "bob:" mention bob, "bobby"
+// doesn't. Shared by the highlighting and the notification/mention checks so
+// they always agree.
+export function containsWholeWord(text: string, word: string): boolean {
+  const needle = word.trim().toLowerCase();
+  if (!needle) return false;
+  const haystack = text.toLowerCase();
+  for (
+    let i = haystack.indexOf(needle);
+    i !== -1;
+    i = haystack.indexOf(needle, i + 1)
+  ) {
+    if (
+      !isNickChar(haystack[i - 1]) &&
+      !isNickChar(haystack[i + needle.length])
+    )
+      return true;
+  }
+  return false;
+}
+
 function splitNickTokens(
   text: string,
   matcher: NickMatcher,
