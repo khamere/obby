@@ -2143,16 +2143,44 @@ export class IRCClient implements IRCClientContext {
     }
   }
 
+  // cap-notify: the server now offers these caps; request the ones we want.
+  // A soju connection negotiates before BOUNCER BIND, and soju only offers
+  // some caps once bound (e.g. draft/event-playback, without which history
+  // replays leave out reactions and other events).
   onCapNew(serverId: string, cliCaps: string): void {
-    const caps = cliCaps.split(" ");
-    for (const c of caps) {
-      const [cap, value] = c.split("=", 2);
-      if (cap === "sasl" && value) {
-        const mechanisms = value.split(",");
-        this.saslMechanisms.set(serverId, mechanisms);
-        // If sasl becomes available, perhaps request it if not already
-        // But for now, just log
+    const offered = cliCaps.split(" ").filter(Boolean).map(splitCapToken);
+    if (offered.length === 0) return;
+
+    let accumulated = this.capLsAccumulated.get(serverId);
+    if (!accumulated) {
+      accumulated = new Set();
+      this.capLsAccumulated.set(serverId, accumulated);
+    }
+    const server = this.servers.get(serverId);
+    for (const { cap, value } of offered) {
+      accumulated.add(cap);
+      if (value && server) {
+        server.capabilityValues = {
+          ...(server.capabilityValues ?? {}),
+          [cap]: value,
+        };
       }
+      if (cap === "sasl" && value) {
+        this.saslMechanisms.set(serverId, value.split(","));
+      }
+    }
+
+    // SASL can't be used after registration, so it isn't requested here.
+    const wanted = offered
+      .map(({ cap }) => cap)
+      .filter(
+        (cap) =>
+          cap !== "sasl" &&
+          (this.ourCaps.includes(cap) || cap.startsWith("draft/metadata")) &&
+          !server?.capabilities?.includes(cap),
+      );
+    if (wanted.length > 0) {
+      this.sendRaw(serverId, `CAP REQ :${wanted.join(" ")}`);
     }
   }
 
