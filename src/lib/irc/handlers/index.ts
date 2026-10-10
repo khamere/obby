@@ -71,6 +71,12 @@ import {
   handleMonOnline,
 } from "./monitoring";
 import {
+  handleEndOfMotd,
+  handleMotd,
+  handleMotdStart,
+  handleNoMotd,
+} from "./motd";
+import {
   handleProp,
   handleRplChmodelist,
   handleRplEndOfListProplist,
@@ -143,6 +149,12 @@ export const IRC_DISPATCH: Record<string, HandlerFn> = {
     handleRplYourHost(ctx, serverId, source, parv),
   "005": (ctx, serverId, source, parv, _mtags, trailing) =>
     handleIsupport(ctx, serverId, source, parv, trailing),
+  "375": (_ctx, serverId) => handleMotdStart(serverId),
+  "372": (_ctx, serverId, _source, _parv, _mtags, trailing) =>
+    handleMotd(serverId, trailing),
+  "376": (ctx, serverId, source) => handleEndOfMotd(ctx, serverId, source),
+  "422": (ctx, serverId, source, _parv, _mtags, trailing) =>
+    handleNoMotd(ctx, serverId, source, trailing),
   CAP: (ctx, serverId, source, parv, mtags, trailing) =>
     handleCap(ctx, serverId, source, parv, mtags, trailing),
   "381": (ctx, serverId, source, parv) =>

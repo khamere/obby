@@ -18,6 +18,7 @@ import { isChannelTarget, parseMessageTags } from "../ircUtils";
 import { createBatchId, splitLongMessage } from "../messageProtocol";
 import { createSocket, type ISocket } from "../socket";
 import { IRC_DISPATCH } from "./handlers";
+import { noteMotdRequested } from "./handlers/motd";
 import type { IRCClientContext } from "./IRCClientContext";
 import {
   chunkForMultiline,
@@ -262,6 +263,13 @@ export interface EventMap {
   RPL_YOURHOST: BaseIRCEvent & {
     serverName: string;
     version: string;
+  };
+  // The whole MOTD once RPL_ENDOFMOTD arrives; `missing` carries
+  // ERR_NOMOTD's text when the server has none to send.
+  MOTD: BaseIRCEvent & {
+    source: string;
+    lines: string[];
+    missing?: string;
   };
   MONONLINE: BaseIRCEvent & {
     targets: Array<{ nick: string; user?: string; host?: string }>;
@@ -1851,6 +1859,12 @@ export class IRCClient implements IRCClientContext {
   // values and replies with MARKREAD echoing whatever it stored.
   markreadSet(serverId: string, target: string, timestamp: string): void {
     this.sendRaw(serverId, `MARKREAD ${target} timestamp=${timestamp}`);
+  }
+
+  // Explicit /motd: the reply (including ERR_NOMOTD) is shown to the user.
+  requestMotd(serverId: string, target?: string): void {
+    noteMotdRequested(serverId);
+    this.sendRaw(serverId, target ? `MOTD ${target}` : "MOTD");
   }
 
   // MONITOR commands
