@@ -970,8 +970,8 @@ export const ChatArea: React.FC<{
   const handleSendMessage = () => {
     if (!hasTextRef.current) return;
 
-    // Block sending to offline PM targets — isOnline is explicitly false (MONITOR tracked).
-    // undefined means the server doesn't support MONITOR, so we let it through.
+    // Block sending only when the server reported the PM target offline
+    // (MONOFFLINE or an empty WHO); undefined means presence is unknown.
     if (selectedPrivateChat?.isOnline === false && selectedServerId) {
       useStore.getState().addGlobalNotification({
         type: "warn",
