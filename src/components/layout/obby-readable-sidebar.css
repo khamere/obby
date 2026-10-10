@@ -8,9 +8,6 @@
 .obby-server-row { touch-action: pan-y !important; }
 .obby-server-row:focus-visible, .obby-server-toggle:focus-visible { outline: 2px solid #a5b4fc; outline-offset: -2px; }
 .obby-server-name { display: none; }
-.obby-server-avatar { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.obby-network-wordmark { display: block; width: 100%; max-width: 150px; height: 24px; object-fit: contain; object-position: left center; pointer-events: none; }
-.obby-server-rail[data-expanded="true"] .obby-server-row[data-network-logo="true"] > .obby-server-avatar { display: none; }
 .obby-server-rail[data-expanded="true"] .obby-bouncer-group { width: 100%; border-radius: 10px; padding: 8px; }
 .obby-server-rail[data-expanded="true"] .obby-server-row { width: 100%; height: auto; min-height: 44px; border-radius: 6px; justify-content: flex-start; gap: 8px; padding: 6px 8px; }
 .obby-server-rail[data-expanded="true"] .obby-server-row > img,
