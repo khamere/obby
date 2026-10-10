@@ -424,6 +424,9 @@ export interface Message {
   linkPreviewMeta?: string; // URL to preview image/thumbnail
   // JSON log data for server notices
   jsonLogData?: JsonValue;
+  // Message of the day, one entry per line; rendered verbatim (monospace,
+  // spacing preserved) so ASCII art survives.
+  motdLines?: string[];
   // True when the message was replayed from chathistory (not a live event)
   fromHistory?: boolean;
   // labeled-response: when the user sends a message with the

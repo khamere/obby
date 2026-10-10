@@ -56,6 +56,7 @@ import {
 } from "./index";
 import { MediaPreview } from "./MediaPreview";
 import { MessageStatusIndicator } from "./MessageStatusIndicator";
+import { MotdBlock } from "./MotdBlock";
 
 interface MessageItemProps {
   message: MessageType;
@@ -407,6 +408,9 @@ export const MessageItem = memo((props: MessageItemProps) => {
 
   const htmlContent = useMemo(() => {
     const keyPrefix = message.id || message.msgid || "msg";
+    if (message.motdLines) {
+      return <MotdBlock lines={message.motdLines} keyPrefix={keyPrefix} />;
+    }
     return renderWithCustomEmoji(
       messageContent,
       resolveEmoji,
@@ -425,6 +429,7 @@ export const MessageItem = memo((props: MessageItemProps) => {
     enableMarkdownRendering,
     message.id,
     message.msgid,
+    message.motdLines,
     resolveEmoji,
   ]);
 

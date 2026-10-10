@@ -10,6 +10,7 @@ import { registerE2EEHandlers } from "./e2ee";
 import { registerInvitelinkHandlers } from "./invitelink";
 import { registerMessageHandlers } from "./messages";
 import { registerMetadataHandlers } from "./metadata";
+import { registerMotdHandlers } from "./motd";
 import { registerNamedModesHandlers } from "./named-modes";
 import { registerPushBotHandlers } from "./pushbot";
 import { registerReadMarkerHandlers } from "./readMarker";
@@ -28,6 +29,7 @@ export function registerAllHandlers(store: StoreApi<AppState>): void {
   registerUserHandlers(store);
   registerChannelHandlers(store);
   registerWhoisHandlers(store);
+  registerMotdHandlers(store);
   registerMetadataHandlers(store);
   registerInvitelinkHandlers(store);
   registerBatchHandlers(store);
