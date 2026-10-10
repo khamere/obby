@@ -1,7 +1,28 @@
 # Custom CSS
 
-**Settings → Preferences → Custom CSS** applies your own stylesheet on top of
-Obby. Paste CSS into the box, or upload a `.css` file, then save.
+**Settings → Preferences → Custom CSS** applies a stylesheet on top of Obby.
+It has two parts, and both are optional:
+
+- **Load from a link**: the URL of a `.css` file. Obby downloads it every time
+  it starts, so everyone who uses the same link gets your updates. The last
+  copy that loaded is kept, so it still applies when the host is down.
+- **Your own CSS**: paste CSS or upload a `.css` file. It's kept in this
+  browser and applied after the linked file, so it can override it.
+
+Both are stored in the browser, so each browser or device is set up once.
+
+## Sharing a stylesheet
+
+Put the `.css` file somewhere with a stable link and share the link:
+
+- The link must point to the **raw file**, not a preview page. On a GitHub
+  gist, use the "Raw" link. On a file host like Zipline, use the raw/direct
+  link.
+- The host must allow other sites to read the file, with the
+  `Access-Control-Allow-Origin` header. GitHub raw links and Zipline send it.
+  If a host doesn't, Obby shows "Could not load this link".
+- Loading the link contacts that host (and only that host), which sees the
+  viewer's IP address like any web request. No cookies or referrer are sent.
 
 ## Styling individual networks
 
@@ -29,42 +50,14 @@ instead of a network's name:
 
 ## What is removed
 
-So a stylesheet can never make Obby load anything from elsewhere (and leak
-your IP), these are removed or disabled when saving and loading: `@import`,
-any `url()` that isn't an inline `data:` URL, `image-set()`, and the legacy
-`expression()`, `behavior:` and `-moz-binding` hooks. CSS escapes are decoded
-first, so they can't be used to disguise them. Use `data:` URLs for images and
+So a stylesheet can never make Obby load anything else (and leak your IP),
+these are removed or disabled in both the linked file and your own CSS:
+
+- `@import`
+- any `url()` that isn't an inline `data:` URL
+- `image-set()`, `image()` and `src()`, which take a plain string as a URL
+- the legacy `expression()`, `behavior:` and `-moz-binding` hooks
+
+Line endings are normalised and CSS escapes decoded first, the same way the
+browser does, so neither can disguise them. Use `data:` URLs for images and
 fonts.
-
-## Sharing it between browsers
-
-After a save, Obby keeps the stylesheet in that browser and also tries to
-upload it with `PUT data/custom.css`, relative to where Obby is served. On
-startup every browser loads that file, so one upload covers every browser.
-
-The stock Docker image doesn't accept uploads: the `PUT` fails, the stylesheet
-stays in that browser only, and the settings panel says so. To enable it, add
-a location like this to the nginx config, and mount a writable directory
-owned by the `nginx` user (uid 101) at `/usr/share/nginx/html/data`:
-
-```nginx
-location = /data/custom.css {
-    root /usr/share/nginx/html;
-    default_type text/css;
-    add_header Cache-Control "no-cache";
-    dav_methods PUT;
-    client_max_body_size 6m;
-    client_body_temp_path /tmp/nginx-put;
-    # Only trusted networks may change the stylesheet.
-    limit_except GET HEAD {
-        allow 10.0.0.0/8;
-        allow 172.16.0.0/12;
-        allow 192.168.0.0/16;
-        allow 100.64.0.0/10;
-        deny all;
-    }
-}
-```
-
-Anyone who can send the `PUT` can change what every browser sees, so restrict
-it to networks you trust.

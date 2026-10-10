@@ -1,26 +1,32 @@
 import { useSyncExternalStore } from "react";
 
 // A user stylesheet applied on top of the app (themes, fonts, per-network
-// styling via the sidebar's data-network-host attribute, ...). It is set from
-// Settings, kept in this browser, and also uploaded next to the app
-// (data/custom.css) so every other browser picks it up. The upload only works
-// where the deployment allows PUT on that path (see docs/custom-css.md);
-// otherwise the stylesheet stays local to this browser.
+// styling via the sidebar's data-network-host attribute, ...). Two sources,
+// both kept in this browser:
+//   - linked: a CSS file at a URL the user chose, fetched at startup so
+//     everyone who uses the same link gets updates; the last good copy is
+//     cached so it applies immediately and survives the host being down.
+//   - own: CSS pasted or uploaded in Settings, applied after the linked file
+//     so personal tweaks win.
 //
-// Anything that could make the browser fetch from elsewhere (@import, remote
-// url()s, image-set) is removed, so a stylesheet can never leak the user's IP.
+// Everything is sanitised: @import, remote url()s and other functions that
+// take a URL are removed, so a stylesheet can never make the browser fetch
+// anything. The only request is the one for the link itself, which the user
+// opts into.
 
-export const SHARED_CSS_PATH = "data/custom.css";
-const LOCAL_KEY = "obby.customCss";
-// Set when this browser's last save couldn't reach the server, so that save
-// keeps applying here instead of an older server copy.
-const LOCAL_ONLY_KEY = "obby.customCss.localOnly";
+const OWN_KEY = "obby.customCss";
+const LINK_KEY = "obby.customCss.link";
+const LINK_CACHE_KEY = "obby.customCss.linkCache";
 const STYLE_ID = "obby-custom-css";
 export const MAX_CSS_CHARS = 5_000_000;
 
+export type LinkStatus = "none" | "loading" | "ok" | "cached" | "error";
+
 export interface CustomCssState {
-  css: string;
-  source: "server" | "local" | "none";
+  own: string;
+  link: string;
+  linkCss: string;
+  linkStatus: LinkStatus;
 }
 
 // ---- sanitising -------------------------------------------------------------
@@ -37,9 +43,16 @@ function decodeLetterEscapes(css: string): string {
     .replace(/\\([g-zG-Z(-])/g, "$1");
 }
 
+// The browser's own preprocessing (CSS Syntax §3.3): CRLF, CR and FF become LF
+// and NUL becomes U+FFFD. Without it, "\75\r\nrl(" reads as "url(" to the
+// browser but the escape decoder above would leave a stray "\n".
+function preprocess(css: string): string {
+  return css.replace(/\r\n?|\f/g, "\n").replace(/\0/g, "�");
+}
+
 export function sanitizeCss(input: string): string {
   return (
-    decodeLetterEscapes(input)
+    decodeLetterEscapes(preprocess(input))
       // closing the <style> element would let the rest escape as markup
       .replace(/<\/style/gi, "<\\/style")
       // @import pulls in another (remote) stylesheet
@@ -62,18 +75,46 @@ export function sanitizeCss(input: string): string {
   );
 }
 
+export function isValidCssLink(link: string): boolean {
+  try {
+    const url = new URL(link);
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
 // ---- store ------------------------------------------------------------------
 
-let local: string | null = null;
-let shared: string | null = null;
-let localOnly = false;
-let state: CustomCssState = { css: "", source: "none" };
+let state: CustomCssState = {
+  own: "",
+  link: "",
+  linkCss: "",
+  linkStatus: "none",
+};
 const listeners = new Set<() => void>();
+
+function storageGet(key: string): string {
+  try {
+    return localStorage.getItem(key) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function storageSet(key: string, value: string): void {
+  try {
+    if (value) localStorage.setItem(key, value);
+    else localStorage.removeItem(key);
+  } catch {
+    // quota or storage disabled: still applies for this session
+  }
+}
 
 function applyToDocument(css: string): void {
   if (typeof document === "undefined") return;
   let el = document.getElementById(STYLE_ID) as HTMLStyleElement | null;
-  if (!css) {
+  if (!css.trim()) {
     el?.remove();
     return;
   }
@@ -86,61 +127,41 @@ function applyToDocument(css: string): void {
   if (el.textContent !== css) el.textContent = css;
 }
 
-function recompute(): void {
-  // The server copy is authoritative (a change made in another browser
-  // applies here too) unless this browser's own save never reached it.
-  const useLocal = local !== null && (localOnly || shared === null);
-  const css = (useLocal ? local : shared) ?? "";
-  state = css.trim()
-    ? { css, source: useLocal ? "local" : "server" }
-    : { css: "", source: "none" };
-  applyToDocument(state.css);
+function update(patch: Partial<CustomCssState>): void {
+  state = { ...state, ...patch };
+  // linked file first, own CSS last so it wins
+  applyToDocument([state.linkCss, state.own].filter(Boolean).join("\n\n"));
   for (const l of listeners) l();
 }
 
-function storageGet(key: string): string | null {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
+async function fetchLink(link: string): Promise<string> {
+  const res = await fetch(link, {
+    cache: "no-cache",
+    credentials: "omit",
+    referrerPolicy: "no-referrer",
+  });
+  if (!res.ok) throw new Error(`http-${res.status}`);
+  const text = await res.text();
+  if (text.length > MAX_CSS_CHARS) throw new Error("too-large");
+  // a file host's preview page instead of the raw file
+  if (/^\s*<(!doctype|html)/i.test(text)) throw new Error("not-css");
+  return sanitizeCss(text);
 }
 
-function storageSet(key: string, value: string | null): void {
+let refreshSeq = 0;
+async function refreshLink(): Promise<void> {
+  const link = state.link;
+  if (!link) return;
+  const seq = ++refreshSeq;
+  update({ linkStatus: state.linkCss ? "cached" : "loading" });
   try {
-    if (value === null) localStorage.removeItem(key);
-    else localStorage.setItem(key, value);
+    const css = await fetchLink(link);
+    if (seq !== refreshSeq) return;
+    storageSet(LINK_CACHE_KEY, css);
+    update({ linkCss: css, linkStatus: "ok" });
   } catch {
-    // quota or storage disabled: the server copy still works
-  }
-}
-
-async function fetchShared(): Promise<string | null> {
-  try {
-    const res = await fetch(SHARED_CSS_PATH, { cache: "no-cache" });
-    if (!res.ok) return null;
-    const text = await res.text();
-    // An SPA fallback answers unknown paths with index.html.
-    const type = res.headers.get("content-type") ?? "";
-    if (!type.includes("css") || /^\s*<(!doctype|html)/i.test(text)) {
-      return null;
-    }
-    return sanitizeCss(text);
-  } catch {
-    return null;
-  }
-}
-
-async function putShared(css: string): Promise<boolean> {
-  try {
-    const res = await fetch(SHARED_CSS_PATH, {
-      method: "PUT",
-      headers: { "Content-Type": "text/css" },
-      body: css,
-    });
-    return res.ok;
-  } catch {
-    return false;
+    if (seq !== refreshSeq) return;
+    update({ linkStatus: state.linkCss ? "cached" : "error" });
   }
 }
 
@@ -148,31 +169,36 @@ let loaded = false;
 export function loadCustomCss(): void {
   if (loaded) return;
   loaded = true;
-  const stored = storageGet(LOCAL_KEY);
-  local = stored === null ? null : sanitizeCss(stored);
-  localOnly = storageGet(LOCAL_ONLY_KEY) === "1";
-  recompute();
-  void fetchShared().then((css) => {
-    shared = css;
-    recompute();
+  const link = storageGet(LINK_KEY);
+  update({
+    own: sanitizeCss(storageGet(OWN_KEY)),
+    link,
+    linkCss: link ? sanitizeCss(storageGet(LINK_CACHE_KEY)) : "",
+    linkStatus: link ? "cached" : "none",
   });
+  void refreshLink();
 }
 
-// Saves (or, with an empty string, removes) the custom stylesheet for this
-// browser and tries to store it on the server for every other browser.
-export async function saveCustomCss(
-  input: string,
-): Promise<{ savedOnServer: boolean }> {
+/** Saves (or, with "", removes) the user's own pasted/uploaded CSS. */
+export function saveOwnCss(input: string): void {
   if (input.length > MAX_CSS_CHARS) throw new Error("too-large");
-  const css = sanitizeCss(input);
-  local = css.trim() ? css : null;
-  storageSet(LOCAL_KEY, local);
-  const savedOnServer = await putShared(css.trim() ? css : "");
-  if (savedOnServer) shared = css.trim() ? css : "";
-  localOnly = !savedOnServer && local !== null;
-  storageSet(LOCAL_ONLY_KEY, localOnly ? "1" : null);
-  recompute();
-  return { savedOnServer };
+  const own = sanitizeCss(input);
+  storageSet(OWN_KEY, own);
+  update({ own });
+}
+
+/**
+ * Sets (or, with "", removes) the linked stylesheet and loads it. Resolves
+ * once the first fetch has finished; check `linkStatus` for the outcome.
+ */
+export async function setCssLink(input: string): Promise<void> {
+  const link = input.trim();
+  if (link && !isValidCssLink(link)) throw new Error("bad-link");
+  storageSet(LINK_KEY, link);
+  storageSet(LINK_CACHE_KEY, "");
+  refreshSeq++;
+  update({ link, linkCss: "", linkStatus: link ? "loading" : "none" });
+  await refreshLink();
 }
 
 function subscribe(listener: () => void): () => void {
@@ -190,10 +216,8 @@ export function useCustomCssState(): CustomCssState {
 
 // test hook
 export function resetCustomCssForTests(): void {
-  local = null;
-  shared = null;
-  localOnly = false;
   loaded = false;
-  state = { css: "", source: "none" };
+  refreshSeq++;
+  state = { own: "", link: "", linkCss: "", linkStatus: "none" };
   applyToDocument("");
 }

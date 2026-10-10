@@ -3,55 +3,58 @@ import { Trans } from "@lingui/react/macro";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import {
+  isValidCssLink,
   MAX_CSS_CHARS,
-  saveCustomCss,
+  saveOwnCss,
+  setCssLink,
   useCustomCssState,
 } from "../../../lib/customCss";
 import type { SettingComponentProps } from "../../../lib/settings/types";
 
+const inputClass =
+  "w-full rounded border border-discord-button-secondary-default bg-discord-input-bg px-3 py-2 text-discord-text-normal placeholder-discord-text-muted focus:border-discord-text-link focus:outline-none disabled:opacity-50";
+const buttonClass =
+  "rounded px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed";
+
 /**
- * Upload, edit or remove the custom stylesheet. It is stored by
- * lib/customCss (this browser + the server when it accepts uploads), not in
- * the settings object, so `value`/`onChange` are unused.
+ * Custom CSS: a linked stylesheet (shared by URL, kept up to date) plus the
+ * user's own pasted/uploaded CSS. Stored by lib/customCss, not in the
+ * settings object, so `value`/`onChange` are unused.
  */
 export const CustomCssField: React.FC<SettingComponentProps> = ({
   disabled,
 }) => {
-  const { css, source } = useCustomCssState();
-  const [draft, setDraft] = useState(css);
+  const { own, link, linkStatus } = useCustomCssState();
+  const [linkDraft, setLinkDraft] = useState(link);
+  const [ownDraft, setOwnDraft] = useState(own);
   const [busy, setBusy] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Follow the active stylesheet (e.g. once the server copy loads) unless the
-  // user has unsaved edits.
-  const lastLoaded = useRef(css);
-  useEffect(() => {
-    setDraft((current) => (current === lastLoaded.current ? css : current));
-    lastLoaded.current = css;
-  }, [css]);
+  useEffect(() => setLinkDraft(link), [link]);
+  useEffect(() => setOwnDraft(own), [own]);
 
-  const save = async (text: string) => {
-    if (text.length > MAX_CSS_CHARS) {
-      setStatus(t`That stylesheet is too large.`);
+  const applyLink = async (value: string) => {
+    if (value.trim() && !isValidCssLink(value.trim())) {
+      setMessage(t`Enter an http(s) link to a .css file.`);
       return;
     }
     setBusy(true);
+    setMessage(null);
     try {
-      const { savedOnServer } = await saveCustomCss(text);
-      const removed = !text.trim();
-      setStatus(
-        removed
-          ? savedOnServer
-            ? t`Custom CSS removed for every browser.`
-            : t`Custom CSS removed from this browser; the server copy could not be changed.`
-          : savedOnServer
-            ? t`Custom CSS saved on the server for every browser.`
-            : t`Custom CSS saved in this browser only; the server did not accept the upload.`,
-      );
+      await setCssLink(value);
     } finally {
       setBusy(false);
     }
+  };
+
+  const applyOwn = (text: string) => {
+    if (text.length > MAX_CSS_CHARS) {
+      setMessage(t`That stylesheet is too large.`);
+      return;
+    }
+    saveOwnCss(text);
+    setMessage(text.trim() ? t`Your CSS was saved.` : t`Your CSS was removed.`);
   };
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,72 +62,126 @@ export const CustomCssField: React.FC<SettingComponentProps> = ({
     e.target.value = "";
     if (!file) return;
     const text = await file.text();
-    setDraft(text);
-    await save(text);
+    setOwnDraft(text);
+    applyOwn(text);
   };
 
-  const buttonClass =
-    "rounded px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed";
+  const linkStatusText =
+    linkStatus === "loading"
+      ? t`Loading…`
+      : linkStatus === "ok"
+        ? t`Loaded and up to date.`
+        : linkStatus === "cached"
+          ? t`Using the last saved copy; the link could not be reached.`
+          : linkStatus === "error"
+            ? t`Could not load this link. It must point to the raw .css file.`
+            : null;
 
   return (
-    <div className="space-y-3">
-      <p className="text-sm text-discord-text-muted">
-        {source === "server" ? (
-          <Trans>Active, stored on the server</Trans>
-        ) : source === "local" ? (
-          <Trans>Active, stored in this browser only</Trans>
-        ) : (
-          <Trans>No custom CSS</Trans>
-        )}
-      </p>
-      <textarea
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        disabled={disabled || busy}
-        spellCheck={false}
-        rows={8}
-        placeholder={t`Paste CSS here or upload a .css file`}
-        className="w-full rounded border border-discord-button-secondary-default bg-discord-input-bg px-3 py-2 font-mono text-xs text-discord-text-normal placeholder-discord-text-muted focus:border-discord-text-link focus:outline-none disabled:opacity-50"
-      />
-      <div className="flex flex-wrap gap-2">
-        <input
-          ref={fileRef}
-          type="file"
-          accept="text/css,.css"
-          className="hidden"
-          onChange={handleFile}
-        />
-        <button
-          type="button"
-          onClick={() => fileRef.current?.click()}
-          disabled={disabled || busy}
-          className={`${buttonClass} bg-discord-button-success-default text-white hover:bg-discord-button-success-hover`}
-        >
-          <Trans>Upload .css file</Trans>
-        </button>
-        <button
-          type="button"
-          onClick={() => save(draft)}
-          disabled={disabled || busy || draft === css}
-          className={`${buttonClass} bg-discord-primary text-white hover:opacity-90`}
-        >
-          <Trans>Save</Trans>
-        </button>
-        {source !== "none" && (
+    <div className="space-y-5">
+      <div className="space-y-2">
+        <p className="text-sm font-semibold text-discord-text-normal">
+          <Trans>Load from a link</Trans>
+        </p>
+        <p className="text-xs text-discord-text-muted">
+          <Trans>
+            Obby downloads this file every time it starts, so everyone using the
+            same link gets updates. This contacts the site the link points to.
+          </Trans>
+        </p>
+        <div className="flex gap-2">
+          <input
+            type="url"
+            value={linkDraft}
+            onChange={(e) => setLinkDraft(e.target.value)}
+            disabled={disabled || busy}
+            placeholder="https://…/style.css"
+            className={inputClass}
+          />
           <button
             type="button"
-            onClick={() => {
-              setDraft("");
-              void save("");
-            }}
-            disabled={disabled || busy}
-            className={`${buttonClass} bg-discord-dark-400 text-discord-text-normal hover:bg-discord-dark-300`}
+            onClick={() => applyLink(linkDraft)}
+            disabled={disabled || busy || linkDraft.trim() === link}
+            className={`${buttonClass} bg-discord-primary text-white hover:opacity-90`}
           >
-            <Trans>Remove</Trans>
+            <Trans>Save</Trans>
           </button>
+          {link && (
+            <button
+              type="button"
+              onClick={() => applyLink("")}
+              disabled={disabled || busy}
+              className={`${buttonClass} bg-discord-dark-400 text-discord-text-normal hover:bg-discord-dark-300`}
+            >
+              <Trans>Remove</Trans>
+            </button>
+          )}
+        </div>
+        {link && linkStatusText && (
+          <p className="text-xs text-discord-text-muted">{linkStatusText}</p>
         )}
       </div>
-      {status && <p className="text-sm text-discord-text-normal">{status}</p>}
+
+      <div className="space-y-2">
+        <p className="text-sm font-semibold text-discord-text-normal">
+          <Trans>Your own CSS</Trans>
+        </p>
+        <p className="text-xs text-discord-text-muted">
+          <Trans>
+            Kept in this browser and applied after the linked file, so it can
+            override it.
+          </Trans>
+        </p>
+        <textarea
+          value={ownDraft}
+          onChange={(e) => setOwnDraft(e.target.value)}
+          disabled={disabled}
+          spellCheck={false}
+          rows={6}
+          placeholder={t`Paste CSS here or upload a .css file`}
+          className={`${inputClass} font-mono text-xs`}
+        />
+        <div className="flex flex-wrap gap-2">
+          <input
+            ref={fileRef}
+            type="file"
+            accept="text/css,.css"
+            className="hidden"
+            onChange={handleFile}
+          />
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={disabled}
+            className={`${buttonClass} bg-discord-button-success-default text-white hover:bg-discord-button-success-hover`}
+          >
+            <Trans>Upload .css file</Trans>
+          </button>
+          <button
+            type="button"
+            onClick={() => applyOwn(ownDraft)}
+            disabled={disabled || ownDraft === own}
+            className={`${buttonClass} bg-discord-primary text-white hover:opacity-90`}
+          >
+            <Trans>Save</Trans>
+          </button>
+          {own && (
+            <button
+              type="button"
+              onClick={() => {
+                setOwnDraft("");
+                applyOwn("");
+              }}
+              disabled={disabled}
+              className={`${buttonClass} bg-discord-dark-400 text-discord-text-normal hover:bg-discord-dark-300`}
+            >
+              <Trans>Remove</Trans>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {message && <p className="text-sm text-discord-text-normal">{message}</p>}
     </div>
   );
 };

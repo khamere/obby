@@ -288,6 +288,10 @@ msgstr "<0>💡 Recomandare:</0> Continuați doar dacă aveți încredere în ac
 msgid "<0>Risk:</0> Sensitive information (messages, private conversations, authentication details) could be exposed to network administrators or attackers positioned between IRC servers."
 msgstr "<0>Risc:</0> Informațiile sensibile (mesaje, conversații private, date de autentificare) pot fi expuse administratorilor de rețea sau atacatorilor poziționați între serverele IRC."
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "A stylesheet applied on top of Obby, from a shared link and/or your own. Sidebar rows carry data-network-host so you can style individual networks. Anything that would load other files is removed."
+msgstr "O foaie de stil aplicată peste Obby, dintr-un link partajat și/sau a ta. Rândurile din bara laterală au data-network-host, ca să poți stiliza fiecare rețea. Orice ar încărca alte fișiere este eliminat."
+
 #: src/components/message/BotInvocationChip.tsx
 msgid "About this attribution"
 msgstr "Despre această atribuire"
@@ -343,14 +347,6 @@ msgstr "Acțiune"
 #: src/components/ui/BotsModal.tsx
 msgid "active"
 msgstr "activ"
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Active, stored in this browser only"
-msgstr "Activ, salvat doar în acest browser"
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Active, stored on the server"
-msgstr "Activ, salvat pe server"
 
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "Activity"
@@ -1084,6 +1080,10 @@ msgstr "Copiază linkul"
 msgid "Copy URL"
 msgstr "Copiază URL"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Could not load this link. It must point to the raw .css file."
+msgstr "Acest link nu a putut fi încărcat. Trebuie să ducă direct la fișierul .css."
+
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Couldn't set up encryption with {nick}."
 msgstr "Criptarea cu {nick} nu a putut fi configurată."
@@ -1119,22 +1119,6 @@ msgstr "Avatar curent"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Custom CSS"
 msgstr "CSS personalizat"
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Custom CSS removed for every browser."
-msgstr "CSS-ul personalizat a fost eliminat pentru toate browserele."
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Custom CSS removed from this browser; the server copy could not be changed."
-msgstr "CSS-ul personalizat a fost eliminat din acest browser; copia de pe server nu a putut fi modificată."
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Custom CSS saved in this browser only; the server did not accept the upload."
-msgstr "CSS-ul personalizat a fost salvat doar în acest browser; serverul nu a acceptat încărcarea."
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Custom CSS saved on the server for every browser."
-msgstr "CSS-ul personalizat a fost salvat pe server pentru toate browserele."
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Custom Flood Rules (+f)"
@@ -1463,6 +1447,10 @@ msgstr "Încheie criptarea"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Enter account name..."
 msgstr "Introduceți numele contului..."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Enter an http(s) link to a .css file."
+msgstr "Introdu un link http(s) către un fișier .css."
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Enter default nickname..."
@@ -1874,6 +1862,10 @@ msgstr "S-a alăturat canalului"
 msgid "just now"
 msgstr "chiar acum"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Kept in this browser and applied after the linked file, so it can override it."
+msgstr "Salvat în acest browser și aplicat după fișierul din link, ca să-l poată suprascrie."
+
 #: src/components/ui/ModerationModal.tsx
 #: src/components/ui/UserContextMenu.tsx
 msgid "Kick User"
@@ -1946,9 +1938,17 @@ msgstr "Libera Chat"
 msgid "Link preview"
 msgstr "Previzualizare link"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Load from a link"
+msgstr "Încarcă dintr-un link"
+
 #: src/components/layout/ChannelMessageList.tsx
 msgid "Load older messages"
 msgstr "Încarcă mesaje mai vechi"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Loaded and up to date."
+msgstr "Încărcat și actualizat."
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Loading"
@@ -1977,6 +1977,10 @@ msgstr "Se încarcă rețelele de pe bouncer-ul tău…"
 #: src/components/ui/UserProfileModal.tsx
 msgid "Loading WHOIS data..."
 msgstr "Se încarcă datele WHOIS..."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Loading…"
+msgstr "Se încarcă…"
 
 #: src/components/ui/UserSettings.tsx
 msgid "Local Storage:"
@@ -2296,10 +2300,6 @@ msgstr "Nu s-au găsit canale."
 msgid "No comments yet. Be the first!"
 msgstr "Niciun comentariu. Fiți primul!"
 
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "No custom CSS"
-msgstr "Fără CSS personalizat"
-
 #: src/components/message/JsonLogMessage.tsx
 msgid "No data"
 msgstr "Fără date"
@@ -2422,6 +2422,10 @@ msgstr "Obby"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Obby - Bringing IRC to the future"
 msgstr "Obby - Aducând IRC în viitor"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Obby downloads this file every time it starts, so everyone using the same link gets updates. This contacts the site the link points to."
+msgstr "Obby descarcă acest fișier la fiecare pornire, așa că toți cei care folosesc același link primesc actualizările. Aceasta contactează site-ul către care duce linkul."
 
 #. placeholder {0}: session.total
 #: src/components/ui/ObbyWhoisModal.tsx
@@ -2812,6 +2816,7 @@ msgstr "Relaxat – Protecție mai puțin agresivă"
 
 #: src/components/ui/ChannelSettingsModal.tsx
 #: src/components/ui/settings/CustomCssField.tsx
+#: src/components/ui/settings/CustomCssField.tsx
 msgid "Remove"
 msgstr "Elimină"
 
@@ -2892,6 +2897,7 @@ msgstr "Sigur"
 
 #: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/TopicModal.tsx
 #: src/components/ui/UserSettings.tsx
@@ -3696,6 +3702,10 @@ msgstr "Utilizatorii din afara canalului nu pot trimite mesaje"
 msgid "Users:"
 msgstr "Utilizatori:"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Using the last saved copy; the link could not be reached."
+msgstr "Se folosește ultima copie salvată; linkul nu a putut fi accesat."
+
 #: src/components/ui/AddServerModal.tsx
 #: src/components/ui/EditServerModal.tsx
 msgid "Valid server port is required"
@@ -3939,6 +3949,14 @@ msgstr "Browserul tău nu poate reda acest fișier audio."
 msgid "Your browser cannot play this video."
 msgstr "Browserul tău nu poate reda acest videoclip."
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Your CSS was removed."
+msgstr "CSS-ul tău a fost eliminat."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Your CSS was saved."
+msgstr "CSS-ul tău a fost salvat."
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your default nickname for all servers"
 msgstr "Pseudonimul dvs. implicit pentru toate serverele"
@@ -3973,9 +3991,9 @@ msgstr "Mesajele tale cu {nick} sunt criptate. {0} din {1} fișiere sunt prea ma
 msgid "Your messages with {nick} are encrypted. These files are too large to encrypt and would be sent in the clear."
 msgstr "Mesajele tale cu {nick} sunt criptate. Aceste fișiere sunt prea mari pentru criptare și ar fi trimise în clar."
 
-#: src/lib/settings/definitions/allSettings.ts
-msgid "Your own stylesheet, applied on top of Obby. Sidebar rows carry data-network-host so you can style individual networks. Remote URLs are removed."
-msgstr "Propria ta foaie de stil, aplicată peste Obby. Rândurile din bara laterală au data-network-host, ca să poți stiliza fiecare rețea. URL-urile externe sunt eliminate."
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Your own CSS"
+msgstr "CSS-ul tău"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your personal website"

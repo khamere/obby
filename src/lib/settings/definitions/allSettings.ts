@@ -402,7 +402,7 @@ const preferenceSettings: SettingDefinition[] = [
     category: "preferences",
     subcategory: "Custom CSS",
     title: msg`Custom CSS`,
-    description: msg`Your own stylesheet, applied on top of Obby. Sidebar rows carry data-network-host so you can style individual networks. Remote URLs are removed.`,
+    description: msg`A stylesheet applied on top of Obby, from a shared link and/or your own. Sidebar rows carry data-network-host so you can style individual networks. Anything that would load other files is removed.`,
     type: "custom",
     // Display-only: the stylesheet lives in lib/customCss, not in settings.
     defaultValue: "",

@@ -288,6 +288,10 @@ msgstr "<0>💡 推奨事項：</0> このサーバーを信頼し、リスク�
 msgid "<0>Risk:</0> Sensitive information (messages, private conversations, authentication details) could be exposed to network administrators or attackers positioned between IRC servers."
 msgstr "<0>リスク：</0> 機密情報（メッセージ、プライベート会話、認証情報）が、IRCサーバー間に位置するネットワーク管理者や攻撃者に露出する可能性があります。"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "A stylesheet applied on top of Obby, from a shared link and/or your own. Sidebar rows carry data-network-host so you can style individual networks. Anything that would load other files is removed."
+msgstr "共有リンクや自分の CSS を Obby の上に適用するスタイルシートです。サイドバーの行には data-network-host があるので、ネットワークごとにスタイルを設定できます。他のファイルを読み込むものはすべて削除されます。"
+
 #: src/components/message/BotInvocationChip.tsx
 msgid "About this attribution"
 msgstr "この帰属について"
@@ -343,14 +347,6 @@ msgstr "アクション"
 #: src/components/ui/BotsModal.tsx
 msgid "active"
 msgstr "アクティブ"
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Active, stored in this browser only"
-msgstr "有効（このブラウザーのみに保存）"
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Active, stored on the server"
-msgstr "有効（サーバーに保存）"
 
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "Activity"
@@ -1084,6 +1080,10 @@ msgstr "リンクをコピー"
 msgid "Copy URL"
 msgstr "URLをコピー"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Could not load this link. It must point to the raw .css file."
+msgstr "このリンクを読み込めませんでした。.css ファイル本体を指す必要があります。"
+
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Couldn't set up encryption with {nick}."
 msgstr "{nick} との暗号化を設定できませんでした。"
@@ -1119,22 +1119,6 @@ msgstr "現在のアバター"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Custom CSS"
 msgstr "カスタム CSS"
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Custom CSS removed for every browser."
-msgstr "すべてのブラウザーからカスタム CSS を削除しました。"
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Custom CSS removed from this browser; the server copy could not be changed."
-msgstr "このブラウザーからカスタム CSS を削除しました。サーバー上のコピーは変更できませんでした。"
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Custom CSS saved in this browser only; the server did not accept the upload."
-msgstr "カスタム CSS をこのブラウザーのみに保存しました。サーバーがアップロードを受け付けませんでした。"
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Custom CSS saved on the server for every browser."
-msgstr "カスタム CSS をすべてのブラウザー用にサーバーへ保存しました。"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Custom Flood Rules (+f)"
@@ -1463,6 +1447,10 @@ msgstr "暗号化を終了"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Enter account name..."
 msgstr "アカウント名を入力..."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Enter an http(s) link to a .css file."
+msgstr ".css ファイルへの http(s) リンクを入力してください。"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Enter default nickname..."
@@ -1874,6 +1862,10 @@ msgstr "チャンネルに参加しました"
 msgid "just now"
 msgstr "たった今"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Kept in this browser and applied after the linked file, so it can override it."
+msgstr "このブラウザーに保存され、リンク先のファイルの後に適用されるため、それを上書きできます。"
+
 #: src/components/ui/ModerationModal.tsx
 #: src/components/ui/UserContextMenu.tsx
 msgid "Kick User"
@@ -1946,9 +1938,17 @@ msgstr "Libera Chat"
 msgid "Link preview"
 msgstr "リンクプレビュー"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Load from a link"
+msgstr "リンクから読み込む"
+
 #: src/components/layout/ChannelMessageList.tsx
 msgid "Load older messages"
 msgstr "古いメッセージを読み込む"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Loaded and up to date."
+msgstr "読み込み済みで最新です。"
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Loading"
@@ -1977,6 +1977,10 @@ msgstr "bouncer からネットワークを読み込み中…"
 #: src/components/ui/UserProfileModal.tsx
 msgid "Loading WHOIS data..."
 msgstr "WHOISデータを読み込み中..."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Loading…"
+msgstr "読み込み中…"
 
 #: src/components/ui/UserSettings.tsx
 msgid "Local Storage:"
@@ -2296,10 +2300,6 @@ msgstr "チャンネルが見つかりません。"
 msgid "No comments yet. Be the first!"
 msgstr "まだコメントはありません。最初のコメントを投稿しましょう！"
 
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "No custom CSS"
-msgstr "カスタム CSS なし"
-
 #: src/components/message/JsonLogMessage.tsx
 msgid "No data"
 msgstr "データなし"
@@ -2422,6 +2422,10 @@ msgstr "Obby"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Obby - Bringing IRC to the future"
 msgstr "Obby — IRCを未来へ"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Obby downloads this file every time it starts, so everyone using the same link gets updates. This contacts the site the link points to."
+msgstr "Obby は起動するたびにこのファイルをダウンロードするため、同じリンクを使う全員が更新を受け取れます。リンク先のサイトに接続します。"
 
 #. placeholder {0}: session.total
 #: src/components/ui/ObbyWhoisModal.tsx
@@ -2812,6 +2816,7 @@ msgstr "緩め — 控えめな保護"
 
 #: src/components/ui/ChannelSettingsModal.tsx
 #: src/components/ui/settings/CustomCssField.tsx
+#: src/components/ui/settings/CustomCssField.tsx
 msgid "Remove"
 msgstr "削除"
 
@@ -2892,6 +2897,7 @@ msgstr "安全"
 
 #: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/TopicModal.tsx
 #: src/components/ui/UserSettings.tsx
@@ -3696,6 +3702,10 @@ msgstr "チャンネル外のユーザーはメッセージを送信できませ
 msgid "Users:"
 msgstr "ユーザー："
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Using the last saved copy; the link could not be reached."
+msgstr "最後に保存したコピーを使用しています。リンクに接続できませんでした。"
+
 #: src/components/ui/AddServerModal.tsx
 #: src/components/ui/EditServerModal.tsx
 msgid "Valid server port is required"
@@ -3939,6 +3949,14 @@ msgstr "お使いのブラウザではこの音声を再生できません。"
 msgid "Your browser cannot play this video."
 msgstr "お使いのブラウザではこの動画を再生できません。"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Your CSS was removed."
+msgstr "CSS を削除しました。"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Your CSS was saved."
+msgstr "CSS を保存しました。"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your default nickname for all servers"
 msgstr "すべてのサーバーで使用するデフォルトのニックネーム"
@@ -3973,9 +3991,9 @@ msgstr "{nick} とのメッセージは暗号化されています。{1} 件の�
 msgid "Your messages with {nick} are encrypted. These files are too large to encrypt and would be sent in the clear."
 msgstr "{nick} とのメッセージは暗号化されています。これらのファイルは大きすぎて暗号化できず、暗号化されずに送信されます。"
 
-#: src/lib/settings/definitions/allSettings.ts
-msgid "Your own stylesheet, applied on top of Obby. Sidebar rows carry data-network-host so you can style individual networks. Remote URLs are removed."
-msgstr "Obby の上に適用する独自のスタイルシートです。サイドバーの行には data-network-host があるので、ネットワークごとにスタイルを設定できます。外部 URL は削除されます。"
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Your own CSS"
+msgstr "自分の CSS"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your personal website"
