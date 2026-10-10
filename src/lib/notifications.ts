@@ -1,5 +1,6 @@
 import type { GlobalSettings } from "../store";
 import type { User } from "../types";
+import { containsWholeWord } from "./nickHighlight";
 
 /**
  * Check if the browser Notification API is supported
@@ -63,18 +64,12 @@ export const checkForMention = (
 ): boolean => {
   if (!currentUser) return false;
 
-  const content = messageContent.toLowerCase();
-
-  // Check for username mention
-  const usernameMention = content.includes(currentUser.username.toLowerCase());
-
-  // Check for custom mentions
-  const customMention = globalSettings.customMentions.some(
-    (mention: string) =>
-      mention.trim() && content.includes(mention.toLowerCase()),
+  return (
+    containsWholeWord(messageContent, currentUser.username) ||
+    globalSettings.customMentions.some((mention: string) =>
+      containsWholeWord(messageContent, mention),
+    )
   );
-
-  return usernameMention || customMention;
 };
 
 /**
@@ -89,16 +84,12 @@ export const extractMentions = (
 
   if (!currentUser) return mentions;
 
-  const content = messageContent.toLowerCase();
-
-  // Check for username mention
-  if (content.includes(currentUser.username.toLowerCase())) {
+  if (containsWholeWord(messageContent, currentUser.username)) {
     mentions.push(currentUser.username);
   }
 
-  // Check for custom mentions
   for (const mention of globalSettings.customMentions) {
-    if (mention.trim() && content.includes(mention.toLowerCase())) {
+    if (containsWholeWord(messageContent, mention)) {
       mentions.push(mention);
     }
   }
