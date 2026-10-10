@@ -288,6 +288,10 @@ msgstr "<0>💡 Aanbeveling:</0> Ga alleen verder als je deze server vertrouwt e
 msgid "<0>Risk:</0> Sensitive information (messages, private conversations, authentication details) could be exposed to network administrators or attackers positioned between IRC servers."
 msgstr "<0>Risico:</0> Gevoelige informatie (berichten, privégesprekken, authenticatiegegevens) kan worden blootgesteld aan netwerkbeheerders of aanvallers tussen IRC-servers."
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "A stylesheet applied on top of Obby, from a shared link and/or your own. Sidebar rows carry data-network-host so you can style individual networks. Anything that would load other files is removed."
+msgstr "Een stylesheet bovenop Obby, via een gedeelde link en/of je eigen. Rijen in de zijbalk hebben data-network-host zodat je afzonderlijke netwerken kunt opmaken. Alles wat andere bestanden zou laden, wordt verwijderd."
+
 #: src/components/message/BotInvocationChip.tsx
 msgid "About this attribution"
 msgstr "Over deze toeschrijving"
@@ -1076,6 +1080,10 @@ msgstr "Link kopiëren"
 msgid "Copy URL"
 msgstr "URL kopiëren"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Could not load this link. It must point to the raw .css file."
+msgstr "Deze link kon niet worden geladen. Hij moet naar het ruwe .css-bestand wijzen."
+
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Couldn't set up encryption with {nick}."
 msgstr "Kon geen versleuteling met {nick} opzetten."
@@ -1107,6 +1115,10 @@ msgstr "Aangemaakt voor (min geleden)"
 #: src/components/ui/AvatarUpload.tsx
 msgid "Current avatar"
 msgstr "Huidige avatar"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Custom CSS"
+msgstr "Eigen CSS"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Custom Flood Rules (+f)"
@@ -1435,6 +1447,10 @@ msgstr "Versleuteling beëindigen"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Enter account name..."
 msgstr "Voer accountnaam in..."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Enter an http(s) link to a .css file."
+msgstr "Voer een http(s)-link naar een .css-bestand in."
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Enter default nickname..."
@@ -1846,6 +1862,10 @@ msgstr "Het kanaal betreden"
 msgid "just now"
 msgstr "zojuist"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Kept in this browser and applied after the linked file, so it can override it."
+msgstr "Opgeslagen in deze browser en toegepast na het gekoppelde bestand, zodat het dat kan overschrijven."
+
 #: src/components/ui/ModerationModal.tsx
 #: src/components/ui/UserContextMenu.tsx
 msgid "Kick User"
@@ -1918,9 +1938,17 @@ msgstr "Libera Chat"
 msgid "Link preview"
 msgstr "Linkvoorbeeldweergave"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Load from a link"
+msgstr "Laden via een link"
+
 #: src/components/layout/ChannelMessageList.tsx
 msgid "Load older messages"
 msgstr "Oudere berichten laden"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Loaded and up to date."
+msgstr "Geladen en up-to-date."
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Loading"
@@ -1949,6 +1977,10 @@ msgstr "Netwerken van je bouncer laden…"
 #: src/components/ui/UserProfileModal.tsx
 msgid "Loading WHOIS data..."
 msgstr "WHOIS-gegevens laden..."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Loading…"
+msgstr "Laden…"
 
 #: src/components/ui/UserSettings.tsx
 msgid "Local Storage:"
@@ -2391,6 +2423,10 @@ msgstr "Obby"
 msgid "Obby - Bringing IRC to the future"
 msgstr "Obby — IRC de toekomst in"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Obby downloads this file every time it starts, so everyone using the same link gets updates. This contacts the site the link points to."
+msgstr "Obby downloadt dit bestand bij elke start, zodat iedereen met dezelfde link updates krijgt. Hiermee wordt de site benaderd waar de link naar wijst."
+
 #. placeholder {0}: session.total
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "of {0}"
@@ -2534,6 +2570,10 @@ msgstr "Wachtwoord"
 #: src/components/ui/ChannelSettingsModal.tsx
 msgid "Password required to join the channel. Leave empty to remove the key."
 msgstr "Wachtwoord vereist om het kanaal te betreden. Laat leeg om de sleutel te verwijderen."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Paste CSS here or upload a .css file"
+msgstr "Plak hier CSS of upload een .css-bestand"
 
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Pattern already exists"
@@ -2775,6 +2815,8 @@ msgid "Relaxed - Less aggressive protection"
 msgstr "Ontspannen — Minder agressieve beveiliging"
 
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/components/ui/settings/CustomCssField.tsx
+#: src/components/ui/settings/CustomCssField.tsx
 msgid "Remove"
 msgstr "Verwijderen"
 
@@ -2855,6 +2897,8 @@ msgstr "Veilig"
 
 #: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/components/ui/settings/CustomCssField.tsx
+#: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/TopicModal.tsx
 #: src/components/ui/UserSettings.tsx
 msgid "Save"
@@ -3312,6 +3356,10 @@ msgstr "Tekst"
 msgid "Text Channels"
 msgstr "Tekstkanalen"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "That stylesheet is too large."
+msgstr "Dit stylesheet is te groot."
+
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
 msgstr "De verbinding met <0>{serverName}</0> heeft de volgende beveiligingsproblemen:"
@@ -3538,6 +3586,10 @@ msgstr "Opschorting opheffen"
 msgid "Upload"
 msgstr "Uploaden"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Upload .css file"
+msgstr ".css-bestand uploaden"
+
 #: src/components/ui/ChannelSettingsModal.tsx
 msgid "Upload an image or provide a URL with optional {size} substitution for dynamic sizing"
 msgstr "Upload een afbeelding of geef een URL op met optionele {size}-vervanging voor dynamische grootte"
@@ -3649,6 +3701,10 @@ msgstr "Gebruikers buiten het kanaal kunnen er geen berichten naar sturen"
 #: src/components/message/JsonLogMessage.tsx
 msgid "Users:"
 msgstr "Gebruikers:"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Using the last saved copy; the link could not be reached."
+msgstr "De laatst opgeslagen kopie wordt gebruikt; de link was niet bereikbaar."
 
 #: src/components/ui/AddServerModal.tsx
 #: src/components/ui/EditServerModal.tsx
@@ -3893,6 +3949,14 @@ msgstr "Je browser kan deze audio niet afspelen."
 msgid "Your browser cannot play this video."
 msgstr "Je browser kan deze video niet afspelen."
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Your CSS was removed."
+msgstr "Je CSS is verwijderd."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Your CSS was saved."
+msgstr "Je CSS is opgeslagen."
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your default nickname for all servers"
 msgstr "Je standaard nickname voor alle servers"
@@ -3926,6 +3990,10 @@ msgstr "Je berichten met {nick} zijn versleuteld. {0} van {1} bestanden zijn te 
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "Your messages with {nick} are encrypted. These files are too large to encrypt and would be sent in the clear."
 msgstr "Je berichten met {nick} zijn versleuteld. Deze bestanden zijn te groot om te versleutelen en zouden onversleuteld worden verzonden."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Your own CSS"
+msgstr "Je eigen CSS"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your personal website"
