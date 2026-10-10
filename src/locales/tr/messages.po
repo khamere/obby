@@ -344,14 +344,6 @@ msgstr "İşlem"
 msgid "active"
 msgstr "aktif"
 
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Active, stored in this browser only"
-msgstr "Etkin, yalnızca bu tarayıcıda saklanıyor"
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Active, stored on the server"
-msgstr "Etkin, sunucuda saklanıyor"
-
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "Activity"
 msgstr "Etkinlik"
@@ -1115,26 +1107,6 @@ msgstr "Şu kadar dakika önce önce oluşturulan"
 #: src/components/ui/AvatarUpload.tsx
 msgid "Current avatar"
 msgstr "Mevcut avatar"
-
-#: src/lib/settings/definitions/allSettings.ts
-msgid "Custom CSS"
-msgstr "Özel CSS"
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Custom CSS removed for every browser."
-msgstr "Özel CSS tüm tarayıcılardan kaldırıldı."
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Custom CSS removed from this browser; the server copy could not be changed."
-msgstr "Özel CSS bu tarayıcıdan kaldırıldı; sunucudaki kopya değiştirilemedi."
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Custom CSS saved in this browser only; the server did not accept the upload."
-msgstr "Özel CSS yalnızca bu tarayıcıya kaydedildi; sunucu yüklemeyi kabul etmedi."
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Custom CSS saved on the server for every browser."
-msgstr "Özel CSS tüm tarayıcılar için sunucuya kaydedildi."
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Custom Flood Rules (+f)"
@@ -2296,10 +2268,6 @@ msgstr "Kanal bulunamadı."
 msgid "No comments yet. Be the first!"
 msgstr "Henüz yorum yok. İlk sen ol!"
 
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "No custom CSS"
-msgstr "Özel CSS yok"
-
 #: src/components/message/JsonLogMessage.tsx
 msgid "No data"
 msgstr "Veri yok"
@@ -2567,10 +2535,6 @@ msgstr "Şifre"
 msgid "Password required to join the channel. Leave empty to remove the key."
 msgstr "Kanala katılmak için şifre gerekli. Anahtarı kaldırmak için boş bırakın."
 
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Paste CSS here or upload a .css file"
-msgstr "CSS'i buraya yapıştırın veya bir .css dosyası yükleyin"
-
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Pattern already exists"
 msgstr "Desen zaten mevcut"
@@ -2811,7 +2775,6 @@ msgid "Relaxed - Less aggressive protection"
 msgstr "Rahat - Daha az agresif koruma"
 
 #: src/components/ui/ChannelSettingsModal.tsx
-#: src/components/ui/settings/CustomCssField.tsx
 msgid "Remove"
 msgstr "Kaldır"
 
@@ -2892,7 +2855,6 @@ msgstr "Güvenli"
 
 #: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/ChannelSettingsModal.tsx
-#: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/TopicModal.tsx
 #: src/components/ui/UserSettings.tsx
 msgid "Save"
@@ -3350,10 +3312,6 @@ msgstr "Metin"
 msgid "Text Channels"
 msgstr "Metin Kanalları"
 
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "That stylesheet is too large."
-msgstr "Bu stil dosyası çok büyük."
-
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
 msgstr "<0>{serverName}</0> bağlantısında aşağıdaki güvenlik endişeleri bulunmaktadır:"
@@ -3579,10 +3537,6 @@ msgstr "Askıdan al"
 #: src/components/ui/UploadPreviewModal.tsx
 msgid "Upload"
 msgstr "Yükle"
-
-#: src/components/ui/settings/CustomCssField.tsx
-msgid "Upload .css file"
-msgstr ".css dosyası yükle"
 
 #: src/components/ui/ChannelSettingsModal.tsx
 msgid "Upload an image or provide a URL with optional {size} substitution for dynamic sizing"
@@ -3972,10 +3926,6 @@ msgstr "{nick} ile mesajlarınız şifreli. {1} dosyanın {0} tanesi şifrelenem
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "Your messages with {nick} are encrypted. These files are too large to encrypt and would be sent in the clear."
 msgstr "{nick} ile mesajlarınız şifreli. Bu dosyalar şifrelenemeyecek kadar büyük ve şifresiz gönderilecek."
-
-#: src/lib/settings/definitions/allSettings.ts
-msgid "Your own stylesheet, applied on top of Obby. Sidebar rows carry data-network-host so you can style individual networks. Remote URLs are removed."
-msgstr "Obby'nin üzerine uygulanan kendi stil dosyanız. Kenar çubuğu satırlarında data-network-host bulunur, böylece ağları tek tek biçimlendirebilirsiniz. Uzak URL'ler kaldırılır."
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your personal website"
