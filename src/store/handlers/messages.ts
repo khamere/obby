@@ -31,6 +31,18 @@ import { confirmEncryptedEcho } from "./e2eeConversation";
 import { handleInboundOtr } from "./otr";
 import { notePrivateMessageArrived } from "./privateChatArrival";
 
+function privateHistoryBatch(
+  store: StoreApi<AppState>,
+  serverId: string,
+  tags: Record<string, string> | undefined,
+): string | undefined {
+  const id = tags?.batch;
+  return id &&
+    store.getState().activeBatches[serverId]?.[id]?.type === "chathistory"
+    ? id
+    : undefined;
+}
+
 // A live message from a nick proves they're connected, even on servers
 // where MONITOR never answers.
 export function markPrivateChatPeerOnline(
@@ -394,9 +406,13 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
       timestamp,
     } = response;
 
-    // Check for duplicate messages based on messageIds or batch msgid
+    const historyBatch = !channelName
+      ? privateHistoryBatch(store, response.serverId, mtags)
+      : undefined;
+
+    // History is deduplicated at batch end so cached pages still count as nonempty.
     const currentState = store.getState();
-    if (messageIds && messageIds.length > 0) {
+    if (!historyBatch && messageIds && messageIds.length > 0) {
       const hasDuplicate = messageIds.some((id) =>
         currentState.processedMessageIds.has(id),
       );
@@ -404,6 +420,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
         return;
       }
     } else if (
+      !historyBatch &&
       mtags?.msgid &&
       currentState.processedMessageIds.has(mtags.msgid)
     ) {
@@ -672,6 +689,10 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
                 : mtags?.msgid
                   ? [mtags.msgid]
                   : [];
+            if (historyBatch) {
+              bufferChathistoryMessage(historyBatch, newMessage);
+              return;
+            }
             if (idsToTrack.length > 0) {
               store.setState((state) => ({
                 processedMessageIds: new Set([
@@ -740,6 +761,10 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
             : mtags?.msgid
               ? [mtags.msgid]
               : [];
+        if (historyBatch) {
+          bufferChathistoryMessage(historyBatch, newMessage);
+          return;
+        }
         if (idsToTrack.length > 0) {
           store.setState((state) => ({
             processedMessageIds: rememberMsgIds(
@@ -773,9 +798,10 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
   // Handle private messages (USERMSG)
   ircClient.on("USERMSG", (response) => {
     const { mtags, sender, target, message, timestamp } = response;
+    const historyBatch = privateHistoryBatch(store, response.serverId, mtags);
 
-    // Check for duplicate messages based on msgid
-    if (mtags?.msgid) {
+    // History is deduplicated at batch end so cached pages still count as nonempty.
+    if (!historyBatch && mtags?.msgid) {
       const currentState = store.getState();
       if (currentState.processedMessageIds.has(mtags.msgid)) {
         return;
@@ -1031,6 +1057,10 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
             mentioned: [],
             tags: mtags,
           };
+          if (historyBatch) {
+            bufferChathistoryMessage(historyBatch, newMessage);
+            return;
+          }
           store.getState().addMessage(newMessage);
         }
       }
@@ -1084,6 +1114,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
               ? { ...(mtags ?? {}), [E2EE_UNDECRYPTABLE_TAG]: "1" }
               : mtags,
         };
+
+        if (historyBatch) {
+          bufferChathistoryMessage(historyBatch, newMessage);
+          return;
+        }
 
         // If message has bot tag, mark user as bot
         if (mtags?.bot !== undefined) {
