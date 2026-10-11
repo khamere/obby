@@ -1,6 +1,7 @@
 import React from "react";
 import type { User } from "../types";
 import { getColorStyle } from "./ircUtils";
+import { stripIrcFormatting } from "./messageFormatter";
 
 // Characters RFC 2812 allows in a nickname. A run of them is one candidate
 // token, so "bob:", "@bob" and "bob's" all still find "bob".
@@ -110,7 +111,7 @@ function isNickChar(ch: string | undefined): boolean {
 export function containsWholeWord(text: string, word: string): boolean {
   const needle = word.trim().toLowerCase();
   if (!needle) return false;
-  const haystack = text.toLowerCase();
+  const haystack = stripIrcFormatting(text).toLowerCase();
   for (
     let i = haystack.indexOf(needle);
     i !== -1;

@@ -10,6 +10,7 @@ import {
 } from "../../src/lib/nickHighlight";
 import { shouldPlayNotificationSound } from "../../src/lib/notificationSounds";
 import { checkForMention, extractMentions } from "../../src/lib/notifications";
+import { rainbowText } from "../../src/lib/rainbow";
 import type { GlobalSettings } from "../../src/store";
 import type { User } from "../../src/types";
 
@@ -74,6 +75,10 @@ describe("segmentText", () => {
 });
 
 describe("highlightNicks", () => {
+  it("highlights protected rainbow nicknames as one complete name", () => {
+    const r = html(rainbowText("Hey bob!", ["bob"]));
+    expect(r.html).toContain(">bob</span>");
+  });
   it("bolds other nicks in their metadata colour", () => {
     const r = html("hi Carol[m]");
     expect(r.html).toContain(
@@ -185,6 +190,24 @@ describe("whole-word mentions (sound, red dot, highlight agree)", () => {
       "bob",
       "pizza",
     ]);
+  });
+  it("detects nicknames and custom mentions through IRC color and style codes", () => {
+    const content = rainbowText("BOB, pizza?");
+    expect(checkForMention(content, me, settings)).toBe(true);
+    expect(extractMentions(content, me, settings)).toEqual(["bob", "pizza"]);
+    expect(
+      shouldPlayNotificationSound(
+        { type: "message", userId: "carol", content } as never,
+        me,
+        settings,
+      ),
+    ).toBe(true);
+    expect(containsWholeWord("\x0304bob\x0f!", "bob")).toBe(true);
+    expect(containsWholeWord("\x02bo\x1db\x0f", "bob")).toBe(true);
+    expect(checkForMention(rainbowText("bobby pizzas"), me, settings)).toBe(
+      false,
+    );
+    expect(containsWholeWord("bob\x0304by", "bob")).toBe(false);
   });
 
   it("the notification sound uses the same rule", () => {

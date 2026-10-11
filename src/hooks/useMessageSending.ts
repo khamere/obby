@@ -684,6 +684,11 @@ export function useMessageSending({
       if (rainbow) {
         cleanedText = rainbowText(
           cleanedText.replace(/^\/rainbow(?:\s|$)/i, ""),
+          [
+            ...(selectedChannel?.users.map((user) => user.username) ?? []),
+            ...(selectedPrivateChat ? [selectedPrivateChat.username] : []),
+            ...(currentUser ? [currentUser.username] : []),
+          ],
         );
       }
 

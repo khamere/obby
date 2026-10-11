@@ -29,6 +29,30 @@ describe("rainbow text", () => {
       "\x0304a\x0307b\x0308c\x0309d\x0311e\x0312f\x0306g\x0304h\x0f",
     );
   });
+  it("keeps known nicknames intact, case-insensitively and with punctuation", () => {
+    const text = "Hey @BoB! Carol[m]: bob's here, bobby is not bob.";
+    const result = rainbowText(text, ["bob", "Carol[m]"]);
+    expect(stripIrcFormatting(result)).toBe(text);
+    expect(result).toContain("\x0fBoB\x0f");
+    expect(result).toContain("\x0fCarol[m]\x0f");
+    expect(result.match(/bob/g)).toHaveLength(2);
+    expect(result).not.toContain("bobby");
+  });
+  it("never splits a protected nickname across IRC messages", () => {
+    for (let length = 80; length < 100; length++) {
+      const text = `${"x".repeat(length)} bob ${"z".repeat(100)}`;
+      const chunks = splitRainbowMessage(rainbowText(text, ["bob"]), "#chat");
+      expect(chunks.map(stripIrcFormatting).join("")).toBe(text);
+      expect(chunks.filter((c) => c.includes("\x0fbob\x0f"))).toHaveLength(1);
+      expect(
+        chunks.every(
+          (c) =>
+            new TextEncoder().encode(c).length <=
+            512 - calculateProtocolOverhead("#chat"),
+        ),
+      ).toBe(true);
+    }
+  });
   it("preserves spaces, digits, commas, combining accents and emoji", () => {
     const text = "a  12,34 e\u0301 👩🏽‍💻\nnext";
     const result = rainbowText(text);
@@ -77,7 +101,7 @@ describe("/rainbow", () => {
     id: "c1",
     name: "#chat",
     serverId: "s1",
-    users: [],
+    users: [{ id: "bob", username: "bob", isOnline: true }],
     messages: [],
   } as unknown as Channel;
   const peer = {
@@ -129,6 +153,24 @@ describe("/rainbow", () => {
     expect(ircClient.sendRaw).toHaveBeenCalledWith(
       "s1",
       `PRIVMSG #chat :${rainbowText("Hello!")}`,
+    );
+  });
+  it("preserves channel members and the private-chat peer in outgoing text", () => {
+    send("/rainbow Hi BOB!");
+    expect(ircClient.sendRaw).toHaveBeenCalledWith(
+      "s1",
+      `PRIVMSG #chat :${rainbowText("Hi BOB!", ["bob"])}`,
+    );
+    send("/rainbow Hi FRIEND!", true);
+    expect(routeOutgoingPM).toHaveBeenCalledWith(
+      "s1",
+      "friend",
+      rainbowText("Hi FRIEND!", ["friend"]),
+      undefined,
+    );
+    expect(ircClient.sendRaw).toHaveBeenCalledWith(
+      "s1",
+      `PRIVMSG friend :${rainbowText("Hi FRIEND!", ["friend"])}`,
     );
   });
   it("does nothing for an empty argument", () => {
