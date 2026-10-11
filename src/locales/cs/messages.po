@@ -3047,6 +3047,10 @@ msgstr "samoregistrovaný"
 msgid "Send a GIF"
 msgstr "Odeslat GIF"
 
+#: src/lib/clientCommands.ts
+msgid "Send a message in rainbow colors"
+msgstr "Odeslat zprávu v barvách duhy"
+
 #: src/components/ui/ModerationModal.tsx
 msgid "Send a warning message to {username}"
 msgstr "Odeslat varovnou zprávu uživateli {username}"

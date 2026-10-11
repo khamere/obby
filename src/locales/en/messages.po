@@ -3046,6 +3046,10 @@ msgstr "self-registered"
 msgid "Send a GIF"
 msgstr "Send a GIF"
 
+#: src/lib/clientCommands.ts
+msgid "Send a message in rainbow colors"
+msgstr "Send a message in rainbow colors"
+
 #: src/components/ui/ModerationModal.tsx
 msgid "Send a warning message to {username}"
 msgstr "Send a warning message to {username}"

@@ -3047,6 +3047,10 @@ msgstr "自助注册"
 msgid "Send a GIF"
 msgstr "发送 GIF"
 
+#: src/lib/clientCommands.ts
+msgid "Send a message in rainbow colors"
+msgstr "发送彩虹色消息"
+
 #: src/components/ui/ModerationModal.tsx
 msgid "Send a warning message to {username}"
 msgstr "向 {username} 发送警告消息"
