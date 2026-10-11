@@ -41,6 +41,23 @@ describe("sanitizeCss", () => {
     }
   });
 
+  it("neutralises a url( left open at the end of the stylesheet", () => {
+    for (const sneaky of [
+      ".a { background: url(https://evil.example/p.png",
+      ".a { background: url('https://evil.example/p.png",
+      '.a { background: url("https://evil.example/p.png',
+      ".a { background: \\75 rl(https://evil.example/p.png",
+    ]) {
+      expect(sanitizeCss(sneaky)).not.toMatch(EVIL);
+    }
+    // a data: URL that is closed stays, even when followed by an open one
+    const out = sanitizeCss(
+      `.a { background: ${DATA} } .b { background: url(https://evil.example/p.png`,
+    );
+    expect(out).toContain(DATA);
+    expect(out).not.toMatch(EVIL);
+  });
+
   it("normalises line endings like the browser before decoding escapes", () => {
     // "\75" + CRLF + "rl(" is url( to the browser: CRLF is one newline,
     // and the single whitespace after an escape is consumed.
