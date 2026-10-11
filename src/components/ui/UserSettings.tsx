@@ -104,6 +104,14 @@ interface CategoryInfo {
   description: string;
 }
 
+/** Which build is running: package version plus the commit it was built from. */
+const AppVersion: React.FC<{ className?: string }> = ({ className = "" }) => (
+  <div className={`select-text text-xs text-discord-text-muted ${className}`}>
+    Obby {__APP_VERSION__}
+    {__APP_COMMIT__ && ` · ${__APP_COMMIT__}`}
+  </div>
+);
+
 export const UserSettings: React.FC = React.memo(() => {
   const {
     toggleSettingsModal,
@@ -1556,6 +1564,7 @@ export const UserSettings: React.FC = React.memo(() => {
                   <FaChevronRight className="text-discord-text-muted flex-shrink-0" />
                 </button>
               ))}
+              <AppVersion className="p-4" />
             </div>
           </>
         ) : (
@@ -1754,6 +1763,7 @@ export const UserSettings: React.FC = React.memo(() => {
               ))}
             </nav>
           </div>
+          {!isMobile && <AppVersion className="p-3" />}
         </div>
 
         {/* Main content */}
