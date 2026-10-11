@@ -2,12 +2,26 @@
 /// <reference types="@testing-library/jest-dom" />
 
 import fs from "node:fs";
+import { execSync } from "node:child_process";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from "@vitejs/plugin-react";
 
 const require = createRequire(import.meta.url);
+
+// Short commit the build came from: OBBY_COMMIT when set (Docker builds from
+// an archive have no .git), else git, else empty.
+function appCommit(): string {
+  if (process.env.OBBY_COMMIT) return process.env.OBBY_COMMIT.slice(0, 12);
+  try {
+    return execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] })
+      .toString()
+      .trim();
+  } catch {
+    return "";
+  }
+}
 
 // Single-tenant hosted deployments (VITE_HIDE_SERVER_LIST=true) ship a
 // PWA manifest + service worker so the page is installable on Android/
@@ -138,6 +152,7 @@ export default defineConfig(({ mode }) => {
     },
     define: {
       '__APP_VERSION__': JSON.stringify(process.env.npm_package_version),
+      '__APP_COMMIT__': JSON.stringify(appCommit()),
       '__APP_NAME__': JSON.stringify(process.env.npm_package_name),
       '__APP_DESCRIPTION__': JSON.stringify(process.env.npm_package_description),
       '__DEFAULT_IRC_SERVER__': JSON.stringify(process.env.VITE_DEFAULT_IRC_SERVER),
