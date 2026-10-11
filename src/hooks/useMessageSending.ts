@@ -18,6 +18,7 @@ import {
 } from "../lib/messageFormatter";
 import { splitLongMessage } from "../lib/messageProtocol";
 import { PRIVILEGED_COMMANDS } from "../lib/privilegedCommands";
+import { rainbowText, splitRainbowMessage } from "../lib/rainbow";
 import useStore, { serverSupportsMultiline } from "../store";
 import { routeOutgoingPM } from "../store/handlers/e2eeOutbound";
 import type { BotCommand, Channel, Message, PrivateChat, User } from "../types";
@@ -440,7 +441,10 @@ export function useMessageSending({
    * Send a multiline message using BATCH protocol
    */
   const sendMultilineMessage = useCallback(
-    (cleanedText: string, target: string, lines: string[]) => {
+    (cleanedText: string, target: string, lines: string[], rainbow = false) => {
+      const split: typeof splitLongMessage = rainbow
+        ? splitRainbowMessage
+        : splitLongMessage;
       if (!selectedServerId) return;
 
       const whisperContext = getWhisperContext(localReplyTo, currentUser);
@@ -451,12 +455,17 @@ export function useMessageSending({
             color: selectedColor || "inherit",
             formatting: selectedFormatting,
           });
-          ircClient.sendWhisper(
-            selectedServerId,
-            whisperContext.targetUser,
-            whisperContext.channelContext,
-            formattedLine,
-          );
+          const chunks = rainbow
+            ? splitRainbowMessage(formattedLine, whisperContext.targetUser)
+            : [formattedLine];
+          for (const chunk of chunks) {
+            ircClient.sendWhisper(
+              selectedServerId,
+              whisperContext.targetUser,
+              whisperContext.channelContext,
+              chunk,
+            );
+          }
         });
         return;
       }
@@ -469,7 +478,7 @@ export function useMessageSending({
       // spacing. Without it the receiver sees "AAA BBBCCC" instead of
       // "AAA BBB CCC".
       const format = (line: string) =>
-        splitLongMessage(
+        split(
           formatMessageForIrc(line, {
             color: selectedColor || "inherit",
             formatting: selectedFormatting,
@@ -498,7 +507,10 @@ export function useMessageSending({
    * Send multiline fallback when server doesn't support BATCH
    */
   const sendMultilineFallback = useCallback(
-    (lines: string[], target: string) => {
+    (lines: string[], target: string, rainbow = false) => {
+      const split: typeof splitLongMessage = rainbow
+        ? splitRainbowMessage
+        : splitLongMessage;
       if (!selectedServerId) return;
 
       const whisperContext = getWhisperContext(localReplyTo, currentUser);
@@ -509,12 +521,17 @@ export function useMessageSending({
             color: selectedColor || "inherit",
             formatting: selectedFormatting,
           });
-          ircClient.sendWhisper(
-            selectedServerId,
-            whisperContext.targetUser,
-            whisperContext.channelContext,
-            formattedLine,
-          );
+          const chunks = rainbow
+            ? splitRainbowMessage(formattedLine, whisperContext.targetUser)
+            : [formattedLine];
+          for (const chunk of chunks) {
+            ircClient.sendWhisper(
+              selectedServerId,
+              whisperContext.targetUser,
+              whisperContext.channelContext,
+              chunk,
+            );
+          }
         });
         return;
       }
@@ -530,7 +547,7 @@ export function useMessageSending({
           formatting: selectedFormatting,
         });
 
-        const splitLines = splitLongMessage(formattedText, target);
+        const splitLines = split(formattedText, target);
         splitLines.forEach((line: string) => {
           ircClient.sendRaw(
             selectedServerId,
@@ -544,7 +561,7 @@ export function useMessageSending({
             formatting: selectedFormatting,
           });
 
-          const splitLines = splitLongMessage(formattedLine, target);
+          const splitLines = split(formattedLine, target);
           splitLines.forEach((splitLine: string) => {
             ircClient.sendRaw(
               selectedServerId,
@@ -568,7 +585,10 @@ export function useMessageSending({
    * Send a regular single message
    */
   const sendRegularMessage = useCallback(
-    (cleanedText: string, target: string) => {
+    (cleanedText: string, target: string, rainbow = false) => {
+      const split: typeof splitLongMessage = rainbow
+        ? splitRainbowMessage
+        : splitLongMessage;
       if (!selectedServerId) return;
 
       const formattedText = formatMessageForIrc(cleanedText, {
@@ -620,20 +640,28 @@ export function useMessageSending({
         : "";
       const tagPrefix = withLabel(replyPrefix, label);
 
-      sendViaWhisperOrRegular(
-        selectedServerId,
-        whisperContext,
-        formattedText,
-        (formattedLine) => {
-          const splitLines = splitLongMessage(formattedLine, target);
-          splitLines.forEach((line: string) => {
-            ircClient.sendRaw(
-              selectedServerId,
-              `${tagPrefix}PRIVMSG ${target} :${line}`,
-            );
-          });
-        },
-      );
+      const outgoingLines = rainbow
+        ? splitRainbowMessage(
+            formattedText,
+            whisperContext?.targetUser ?? target,
+          )
+        : [formattedText];
+      for (const outgoingLine of outgoingLines) {
+        sendViaWhisperOrRegular(
+          selectedServerId,
+          whisperContext,
+          outgoingLine,
+          (formattedLine) => {
+            const splitLines = split(formattedLine, target);
+            splitLines.forEach((line: string) => {
+              ircClient.sendRaw(
+                selectedServerId,
+                `${tagPrefix}PRIVMSG ${target} :${line}`,
+              );
+            });
+          },
+        );
+      }
     },
     [
       selectedServerId,
@@ -651,14 +679,20 @@ export function useMessageSending({
    */
   const sendMessage = useCallback(
     (text: string) => {
-      const cleanedText = text.replace(/\n+$/, "");
+      let cleanedText = text.replace(/\n+$/, "");
+      const rainbow = /^\/rainbow(?:\s|$)/i.test(cleanedText);
+      if (rainbow) {
+        cleanedText = rainbowText(
+          cleanedText.replace(/^\/rainbow(?:\s|$)/i, ""),
+        );
+      }
 
       if (cleanedText.trim() === "") return;
       if (!selectedServerId || (!selectedChannelId && !selectedPrivateChatId))
         return;
 
       // Handle commands
-      if (cleanedText.startsWith("/")) {
+      if (!rainbow && cleanedText.startsWith("/")) {
         return handleCommand(cleanedText);
       }
 
@@ -693,11 +727,11 @@ export function useMessageSending({
 
       // Determine sending strategy
       if (supportsMultiline && (hasMultipleLines || isSingleLongLine)) {
-        sendMultilineMessage(cleanedText, target, lines);
+        sendMultilineMessage(cleanedText, target, lines, rainbow);
       } else if (hasMultipleLines && !supportsMultiline) {
-        sendMultilineFallback(lines, target);
+        sendMultilineFallback(lines, target, rainbow);
       } else {
-        sendRegularMessage(cleanedText, target);
+        sendRegularMessage(cleanedText, target, rainbow);
       }
 
       // Only needed for servers that won't echo our outgoing DM back.

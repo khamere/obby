@@ -3073,6 +3073,10 @@ msgstr "kendi kaydı"
 msgid "Send a GIF"
 msgstr "GIF gönder"
 
+#: src/lib/clientCommands.ts
+msgid "Send a message in rainbow colors"
+msgstr "Gökkuşağı renklerinde bir mesaj gönder"
+
 #: src/components/ui/ModerationModal.tsx
 msgid "Send a warning message to {username}"
 msgstr "{username} kullanıcısına uyarı mesajı gönder"
