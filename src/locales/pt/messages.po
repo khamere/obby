@@ -288,6 +288,18 @@ msgstr "<0>💡 Recomendação:</0> Prossiga apenas se você confiar neste servi
 msgid "<0>Risk:</0> Sensitive information (messages, private conversations, authentication details) could be exposed to network administrators or attackers positioned between IRC servers."
 msgstr "<0>Risco:</0> Informações sensíveis (mensagens, conversas privadas, dados de autenticação) podem ser expostas a administradores de rede ou atacantes posicionados entre servidores IRC."
 
+#: src/components/ui/MuteModal.tsx
+msgid "1 hour"
+msgstr "1 hora"
+
+#: src/components/ui/MuteModal.tsx
+msgid "24 hours"
+msgstr "24 horas"
+
+#: src/components/ui/MuteModal.tsx
+msgid "8 hours"
+msgstr "8 horas"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "A stylesheet applied on top of Obby, from a shared link and/or your own. Sidebar rows carry data-network-host so you can style individual networks. Anything that would load other files is removed."
 msgstr "Uma folha de estilos aplicada por cima do Obby, a partir de um link partilhado e/ou a sua. As linhas da barra lateral têm data-network-host para estilizar cada rede. Tudo o que carregaria outros ficheiros é removido."
@@ -441,6 +453,10 @@ msgstr "Todos"
 #: src/components/ui/UserSettings.tsx
 msgid "All Content"
 msgstr "Todo o Conteúdo"
+
+#: src/components/ui/MuteModal.tsx
+msgid "All notification sounds"
+msgstr "Todos os sons de notificação"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Allow entering multiple lines of text"
@@ -1361,13 +1377,6 @@ msgstr "Ativar entrada multilinha"
 msgid "Enable Notification Sounds"
 msgstr "Ativar sons de notificação"
 
-#: src/components/layout/ChatHeader.tsx
-#: src/components/layout/ChatHeader.tsx
-#: src/components/layout/ChatHeader.tsx
-#: src/components/layout/ChatHeader.tsx
-msgid "Enable notifications"
-msgstr "Ativar notificações"
-
 #: src/components/ui/E2EELockControl.tsx
 msgid "Encrypt (Obby)"
 msgstr "Criptografar (Obby)"
@@ -2199,12 +2208,21 @@ msgstr "Silenciar"
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/ChatHeader.tsx
+#: src/components/ui/MuteModal.tsx
 msgid "Mute notifications"
 msgstr "Silenciar notificações"
 
 #: src/components/ui/QuickActions/uiActionConfig.tsx
 msgid "Mute or unmute notification sounds"
 msgstr "Silenciar ou ativar sons de notificação"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Muted until {endsAt}"
+msgstr "Silenciado até {endsAt}"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Muted until you unmute"
+msgstr "Silenciado até reativar"
 
 #: src/components/message/JsonLogMessage.tsx
 #: src/components/message/JsonLogMessage.tsx
@@ -2367,6 +2385,14 @@ msgstr "Nenhum servidor selecionado. Escolha primeiro um servidor na barra later
 #: src/components/ui/HomeScreen.tsx
 msgid "No servers found."
 msgstr "Nenhum servidor encontrado."
+
+#: src/components/ui/MuteModal.tsx
+msgid "No sound, notification or red dot for messages from this person."
+msgstr "Sem som, notificação nem ponto vermelho para mensagens desta pessoa."
+
+#: src/components/ui/MuteModal.tsx
+msgid "No sound, notification or red dot from this channel, except when someone mentions you."
+msgstr "Sem som, notificação nem ponto vermelho deste canal, exceto quando alguém o menciona."
 
 #: src/components/ui/ChannelListModal.tsx
 msgid "No topic"
@@ -3272,6 +3298,10 @@ msgstr "Conectado em"
 msgid "Signed On"
 msgstr "Conectado em"
 
+#: src/components/ui/MuteModal.tsx
+msgid "Silences everything on this server, including mentions and private messages, and hides its red dot."
+msgstr "Silencia tudo neste servidor, incluindo menções e mensagens privadas, e esconde o seu ponto vermelho."
+
 #: src/lib/clientCommands.ts
 msgid "Slap someone around a bit with a large trout"
 msgstr "Dar uns tabefes em alguém com uma truta grande"
@@ -3556,6 +3586,14 @@ msgstr "Transporte"
 msgid "Trusted Sources"
 msgstr "Fontes Confiáveis"
 
+#: src/components/ui/MuteModal.tsx
+msgid "Turn all sounds off"
+msgstr "Desligar todos os sons"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Turn all sounds on"
+msgstr "Ligar todos os sons"
+
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Type"
 msgstr "Tipo"
@@ -3569,6 +3607,7 @@ msgid "Unignore User"
 msgstr "Deixar de ignorar usuário"
 
 #: src/components/message/MediaPreview.tsx
+#: src/components/ui/MuteModal.tsx
 msgid "Unmute"
 msgstr "Ativar som"
 
@@ -3589,6 +3628,10 @@ msgstr "Desafixar esta conversa de mensagem privada"
 #: src/components/ui/BotsModal.tsx
 msgid "Unsuspend"
 msgstr "Reativar"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Until I unmute"
+msgstr "Até eu reativar"
 
 #: src/components/ui/UploadPreviewModal.tsx
 msgid "Upload"
@@ -3863,6 +3906,10 @@ msgstr "WHISPER"
 #: src/lib/clientCommands.ts
 msgid "Whisper to a user in the current channel context"
 msgstr "Sussurrar para um usuário no contexto do canal atual"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Whole server: {serverName}"
+msgstr "Servidor inteiro: {serverName}"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Wide - Broader protection scope"

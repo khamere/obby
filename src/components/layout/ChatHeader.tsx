@@ -29,7 +29,9 @@ import {
   serverFilehosts,
 } from "../../lib/ircUtils";
 import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
+import { chatMute, isServerMuted, useMutes } from "../../lib/mutes";
 import { isTauriMobile } from "../../lib/platformUtils";
+import { serverDisplayName } from "../../lib/serverDisplayName";
 import useStore, { loadSavedMetadata } from "../../store";
 import type { Channel, PrivateChat, User } from "../../types";
 import { BotToolsHistoryButton } from "../ui/BotToolsHistoryButton";
@@ -37,6 +39,7 @@ import E2EELockControl from "../ui/E2EELockControl";
 import HeaderOverflowMenu, {
   type HeaderOverflowMenuItem,
 } from "../ui/HeaderOverflowMenu";
+import MuteModal from "../ui/MuteModal";
 import { TextInput } from "../ui/TextInput";
 import TopicModal from "../ui/TopicModal";
 
@@ -106,9 +109,29 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [isOverflowMenuOpen, setIsOverflowMenuOpen] = useState(false);
+  const [isMuteModalOpen, setIsMuteModalOpen] = useState(false);
+  useMutes(); // re-render when mutes change
+  const openChatId = selectedChannel?.id ?? selectedPrivateChat?.id;
+  // The bell shows a slash when this chat can't make a sound right now.
+  const isQuiet =
+    globalSettings.notificationVolume === 0 ||
+    (!!selectedServerId &&
+      (isServerMuted(selectedServerId) ||
+        (!!openChatId && !!chatMute(selectedServerId, openChatId))));
   const overflowButtonRef = useRef<HTMLButtonElement>(null);
 
   const servers = useStore((state) => state.servers);
+  const muteServerRecord = servers.find((s) => s.id === selectedServerId);
+  const muteNetwork = useStore((state) =>
+    muteServerRecord?.bouncerServerId && muteServerRecord.bouncerNetid
+      ? state.bouncers[muteServerRecord.bouncerServerId]?.networks[
+          muteServerRecord.bouncerNetid
+        ]
+      : undefined,
+  );
+  const muteServerName = muteServerRecord
+    ? serverDisplayName(muteServerRecord, muteNetwork)
+    : undefined;
   const mobileViewActiveColumn = useStore(
     (state) => state.ui.mobileViewActiveColumn,
   );
@@ -546,23 +569,11 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               {/* Bell */}
               <button
                 className="p-2 md:p-0 hover:text-discord-text-normal"
-                onClick={onToggleNotificationVolume}
-                aria-label={
-                  globalSettings.notificationVolume > 0
-                    ? t`Mute notifications`
-                    : t`Enable notifications`
-                }
-                title={
-                  globalSettings.notificationVolume > 0
-                    ? t`Mute notifications`
-                    : t`Enable notifications`
-                }
+                onClick={() => setIsMuteModalOpen(true)}
+                aria-label={t`Mute notifications`}
+                title={t`Mute notifications`}
               >
-                {globalSettings.notificationVolume > 0 ? (
-                  <FaBell />
-                ) : (
-                  <FaBellSlash />
-                )}
+                {isQuiet ? <FaBellSlash /> : <FaBell />}
               </button>
 
               {/* Users — hidden on iOS/Android native since member list is a swipe-right gesture */}
@@ -865,23 +876,11 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             <div className="flex items-center gap-0 md:gap-4 text-discord-text-muted flex-shrink-0">
               <button
                 className="p-2 md:p-0 hover:text-discord-text-normal"
-                onClick={onToggleNotificationVolume}
-                aria-label={
-                  globalSettings.notificationVolume > 0
-                    ? t`Mute notifications`
-                    : t`Enable notifications`
-                }
-                title={
-                  globalSettings.notificationVolume > 0
-                    ? t`Mute notifications`
-                    : t`Enable notifications`
-                }
+                onClick={() => setIsMuteModalOpen(true)}
+                aria-label={t`Mute notifications`}
+                title={t`Mute notifications`}
               >
-                {globalSettings.notificationVolume > 0 ? (
-                  <FaBell />
-                ) : (
-                  <FaBellSlash />
-                )}
+                {isQuiet ? <FaBellSlash /> : <FaBell />}
               </button>
 
               {hasMedia && !nativeMobile && (
@@ -991,6 +990,32 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
       )}
 
       {/* Overflow Menu Component */}
+      {selectedServerId && (
+        <MuteModal
+          isOpen={isMuteModalOpen}
+          onClose={() => setIsMuteModalOpen(false)}
+          serverId={selectedServerId}
+          serverName={muteServerName ?? selectedServerId}
+          chat={
+            selectedChannel
+              ? {
+                  id: selectedChannel.id,
+                  name: selectedChannel.name,
+                  kind: "channel",
+                }
+              : selectedPrivateChat
+                ? {
+                    id: selectedPrivateChat.id,
+                    name: selectedPrivateChat.username,
+                    kind: "dm",
+                  }
+                : undefined
+          }
+          soundsOn={globalSettings.notificationVolume > 0}
+          onToggleSounds={onToggleNotificationVolume}
+        />
+      )}
+
       <HeaderOverflowMenu
         isOpen={isOverflowMenuOpen}
         onClose={() => setIsOverflowMenuOpen(false)}

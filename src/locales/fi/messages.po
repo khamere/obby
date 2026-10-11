@@ -288,6 +288,18 @@ msgstr "<0>💡 Suositus:</0> Jatka vain jos luotat tähän palvelimeen ja ymmä
 msgid "<0>Risk:</0> Sensitive information (messages, private conversations, authentication details) could be exposed to network administrators or attackers positioned between IRC servers."
 msgstr "<0>Riski:</0> Arkaluonteiset tiedot (viestit, yksityiskeskustelut, tunnistautumistiedot) voisivat paljastua verkon ylläpitäjille tai hyökkääjille, jotka sijaitsevat IRC-palvelimien välissä."
 
+#: src/components/ui/MuteModal.tsx
+msgid "1 hour"
+msgstr "1 tunti"
+
+#: src/components/ui/MuteModal.tsx
+msgid "24 hours"
+msgstr "24 tuntia"
+
+#: src/components/ui/MuteModal.tsx
+msgid "8 hours"
+msgstr "8 tuntia"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "A stylesheet applied on top of Obby, from a shared link and/or your own. Sidebar rows carry data-network-host so you can style individual networks. Anything that would load other files is removed."
 msgstr "Obbyn päälle lisättävä tyylitiedosto jaetusta linkistä ja/tai omasi. Sivupalkin riveillä on data-network-host, joten voit muotoilla yksittäisiä verkkoja. Kaikki, mikä lataisi muita tiedostoja, poistetaan."
@@ -441,6 +453,10 @@ msgstr "Kaikki"
 #: src/components/ui/UserSettings.tsx
 msgid "All Content"
 msgstr "Kaikki sisältö"
+
+#: src/components/ui/MuteModal.tsx
+msgid "All notification sounds"
+msgstr "Kaikki ilmoitusäänet"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Allow entering multiple lines of text"
@@ -1361,13 +1377,6 @@ msgstr "Ota monirivisyöttö käyttöön"
 msgid "Enable Notification Sounds"
 msgstr "Ota ilmoitusäänet käyttöön"
 
-#: src/components/layout/ChatHeader.tsx
-#: src/components/layout/ChatHeader.tsx
-#: src/components/layout/ChatHeader.tsx
-#: src/components/layout/ChatHeader.tsx
-msgid "Enable notifications"
-msgstr "Ota ilmoitukset käyttöön"
-
 #: src/components/ui/E2EELockControl.tsx
 msgid "Encrypt (Obby)"
 msgstr "Salaa (Obby)"
@@ -2199,12 +2208,21 @@ msgstr "Mykistä"
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/ChatHeader.tsx
+#: src/components/ui/MuteModal.tsx
 msgid "Mute notifications"
 msgstr "Mykistä ilmoitukset"
 
 #: src/components/ui/QuickActions/uiActionConfig.tsx
 msgid "Mute or unmute notification sounds"
 msgstr "Mykistä tai poista mykistys ilmoitusäänistä"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Muted until {endsAt}"
+msgstr "Mykistetty {endsAt} asti"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Muted until you unmute"
+msgstr "Mykistetty, kunnes poistat mykistyksen"
 
 #: src/components/message/JsonLogMessage.tsx
 #: src/components/message/JsonLogMessage.tsx
@@ -2367,6 +2385,14 @@ msgstr "Yhtään palvelinta ei ole valittu. Valitse ensin palvelin sivupalkista;
 #: src/components/ui/HomeScreen.tsx
 msgid "No servers found."
 msgstr "Palvelimia ei löydetty."
+
+#: src/components/ui/MuteModal.tsx
+msgid "No sound, notification or red dot for messages from this person."
+msgstr "Ei ääntä, ilmoitusta eikä punaista pistettä tämän henkilön viesteistä."
+
+#: src/components/ui/MuteModal.tsx
+msgid "No sound, notification or red dot from this channel, except when someone mentions you."
+msgstr "Ei ääntä, ilmoitusta eikä punaista pistettä tältä kanavalta, paitsi kun joku mainitsee sinut."
 
 #: src/components/ui/ChannelListModal.tsx
 msgid "No topic"
@@ -3272,6 +3298,10 @@ msgstr "Kirjautui sisään"
 msgid "Signed On"
 msgstr "Kirjautunut"
 
+#: src/components/ui/MuteModal.tsx
+msgid "Silences everything on this server, including mentions and private messages, and hides its red dot."
+msgstr "Mykistää kaiken tällä palvelimella, myös maininnat ja yksityisviestit, ja piilottaa sen punaisen pisteen."
+
 #: src/lib/clientCommands.ts
 msgid "Slap someone around a bit with a large trout"
 msgstr "Läimäytä jotakuta isolla taimenella"
@@ -3556,6 +3586,14 @@ msgstr "Siirtotapa"
 msgid "Trusted Sources"
 msgstr "Luotetut lähteet"
 
+#: src/components/ui/MuteModal.tsx
+msgid "Turn all sounds off"
+msgstr "Poista kaikki äänet käytöstä"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Turn all sounds on"
+msgstr "Ota kaikki äänet käyttöön"
+
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Type"
 msgstr "Tyyppi"
@@ -3569,6 +3607,7 @@ msgid "Unignore User"
 msgstr "Poista esto käyttäjältä"
 
 #: src/components/message/MediaPreview.tsx
+#: src/components/ui/MuteModal.tsx
 msgid "Unmute"
 msgstr "Poista mykistys"
 
@@ -3589,6 +3628,10 @@ msgstr "Irrota tämä yksityisviestiketju"
 #: src/components/ui/BotsModal.tsx
 msgid "Unsuspend"
 msgstr "Poista jäädytys"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Until I unmute"
+msgstr "Kunnes poistan mykistyksen"
 
 #: src/components/ui/UploadPreviewModal.tsx
 msgid "Upload"
@@ -3863,6 +3906,10 @@ msgstr "WHISPER"
 #: src/lib/clientCommands.ts
 msgid "Whisper to a user in the current channel context"
 msgstr "Kuiskaa käyttäjälle nykyisen kanavan kontekstissa"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Whole server: {serverName}"
+msgstr "Koko palvelin: {serverName}"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Wide - Broader protection scope"

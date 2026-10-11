@@ -288,6 +288,18 @@ msgstr "<0>💡 Aanbeveling:</0> Ga alleen verder als je deze server vertrouwt e
 msgid "<0>Risk:</0> Sensitive information (messages, private conversations, authentication details) could be exposed to network administrators or attackers positioned between IRC servers."
 msgstr "<0>Risico:</0> Gevoelige informatie (berichten, privégesprekken, authenticatiegegevens) kan worden blootgesteld aan netwerkbeheerders of aanvallers tussen IRC-servers."
 
+#: src/components/ui/MuteModal.tsx
+msgid "1 hour"
+msgstr "1 uur"
+
+#: src/components/ui/MuteModal.tsx
+msgid "24 hours"
+msgstr "24 uur"
+
+#: src/components/ui/MuteModal.tsx
+msgid "8 hours"
+msgstr "8 uur"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "A stylesheet applied on top of Obby, from a shared link and/or your own. Sidebar rows carry data-network-host so you can style individual networks. Anything that would load other files is removed."
 msgstr "Een stylesheet bovenop Obby, via een gedeelde link en/of je eigen. Rijen in de zijbalk hebben data-network-host zodat je afzonderlijke netwerken kunt opmaken. Alles wat andere bestanden zou laden, wordt verwijderd."
@@ -441,6 +453,10 @@ msgstr "Alle"
 #: src/components/ui/UserSettings.tsx
 msgid "All Content"
 msgstr "Alle inhoud"
+
+#: src/components/ui/MuteModal.tsx
+msgid "All notification sounds"
+msgstr "Alle meldingsgeluiden"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Allow entering multiple lines of text"
@@ -1361,13 +1377,6 @@ msgstr "Meerdere regels invoer inschakelen"
 msgid "Enable Notification Sounds"
 msgstr "Meldingsgeluiden inschakelen"
 
-#: src/components/layout/ChatHeader.tsx
-#: src/components/layout/ChatHeader.tsx
-#: src/components/layout/ChatHeader.tsx
-#: src/components/layout/ChatHeader.tsx
-msgid "Enable notifications"
-msgstr "Meldingen inschakelen"
-
 #: src/components/ui/E2EELockControl.tsx
 msgid "Encrypt (Obby)"
 msgstr "Versleutelen (Obby)"
@@ -2199,12 +2208,21 @@ msgstr "Dempen"
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/ChatHeader.tsx
+#: src/components/ui/MuteModal.tsx
 msgid "Mute notifications"
 msgstr "Meldingen dempen"
 
 #: src/components/ui/QuickActions/uiActionConfig.tsx
 msgid "Mute or unmute notification sounds"
 msgstr "Meldingsgeluiden dempen of activeren"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Muted until {endsAt}"
+msgstr "Gedempt tot {endsAt}"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Muted until you unmute"
+msgstr "Gedempt tot je het opheft"
 
 #: src/components/message/JsonLogMessage.tsx
 #: src/components/message/JsonLogMessage.tsx
@@ -2367,6 +2385,14 @@ msgstr "Er is geen server geselecteerd. Kies eerst een server uit de zijbalk; ui
 #: src/components/ui/HomeScreen.tsx
 msgid "No servers found."
 msgstr "Geen servers gevonden."
+
+#: src/components/ui/MuteModal.tsx
+msgid "No sound, notification or red dot for messages from this person."
+msgstr "Geen geluid, melding of rode stip voor berichten van deze persoon."
+
+#: src/components/ui/MuteModal.tsx
+msgid "No sound, notification or red dot from this channel, except when someone mentions you."
+msgstr "Geen geluid, melding of rode stip uit dit kanaal, behalve als iemand je noemt."
 
 #: src/components/ui/ChannelListModal.tsx
 msgid "No topic"
@@ -3272,6 +3298,10 @@ msgstr "Aangemeld op"
 msgid "Signed On"
 msgstr "Aangemeld op"
 
+#: src/components/ui/MuteModal.tsx
+msgid "Silences everything on this server, including mentions and private messages, and hides its red dot."
+msgstr "Dempt alles op deze server, ook vermeldingen en privéberichten, en verbergt de rode stip."
+
 #: src/lib/clientCommands.ts
 msgid "Slap someone around a bit with a large trout"
 msgstr "Geef iemand een paar meppen met een grote forel"
@@ -3556,6 +3586,14 @@ msgstr "Transport"
 msgid "Trusted Sources"
 msgstr "Vertrouwde bronnen"
 
+#: src/components/ui/MuteModal.tsx
+msgid "Turn all sounds off"
+msgstr "Alle geluiden uit"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Turn all sounds on"
+msgstr "Alle geluiden aan"
+
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Type"
 msgstr "Type"
@@ -3569,6 +3607,7 @@ msgid "Unignore User"
 msgstr "Gebruiker niet meer negeren"
 
 #: src/components/message/MediaPreview.tsx
+#: src/components/ui/MuteModal.tsx
 msgid "Unmute"
 msgstr "Dempen opheffen"
 
@@ -3589,6 +3628,10 @@ msgstr "Dit privéberichtgesprek losmaken"
 #: src/components/ui/BotsModal.tsx
 msgid "Unsuspend"
 msgstr "Opschorting opheffen"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Until I unmute"
+msgstr "Tot ik het ophef"
 
 #: src/components/ui/UploadPreviewModal.tsx
 msgid "Upload"
@@ -3863,6 +3906,10 @@ msgstr "WHISPER"
 #: src/lib/clientCommands.ts
 msgid "Whisper to a user in the current channel context"
 msgstr "Fluister naar een gebruiker in de context van het huidige kanaal"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Whole server: {serverName}"
+msgstr "Hele server: {serverName}"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Wide - Broader protection scope"

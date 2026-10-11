@@ -288,6 +288,18 @@ msgstr "<0>💡 Рекомендація:</0> Продовжуйте лише я
 msgid "<0>Risk:</0> Sensitive information (messages, private conversations, authentication details) could be exposed to network administrators or attackers positioned between IRC servers."
 msgstr "<0>Ризик:</0> Конфіденційна інформація (повідомлення, приватні розмови, дані автентифікації) може бути доступна мережевим адміністраторам або зловмисникам між IRC-серверами."
 
+#: src/components/ui/MuteModal.tsx
+msgid "1 hour"
+msgstr "1 година"
+
+#: src/components/ui/MuteModal.tsx
+msgid "24 hours"
+msgstr "24 години"
+
+#: src/components/ui/MuteModal.tsx
+msgid "8 hours"
+msgstr "8 годин"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "A stylesheet applied on top of Obby, from a shared link and/or your own. Sidebar rows carry data-network-host so you can style individual networks. Anything that would load other files is removed."
 msgstr "Таблиця стилів поверх Obby — зі спільного посилання та/або ваша власна. Рядки бічної панелі мають data-network-host, тож можна оформлювати окремі мережі. Усе, що завантажувало б інші файли, видаляється."
@@ -441,6 +453,10 @@ msgstr "Усі"
 #: src/components/ui/UserSettings.tsx
 msgid "All Content"
 msgstr "Весь вміст"
+
+#: src/components/ui/MuteModal.tsx
+msgid "All notification sounds"
+msgstr "Усі звуки сповіщень"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Allow entering multiple lines of text"
@@ -1361,13 +1377,6 @@ msgstr "Увімкнути багаторядкове введення"
 msgid "Enable Notification Sounds"
 msgstr "Увімкнути звуки сповіщень"
 
-#: src/components/layout/ChatHeader.tsx
-#: src/components/layout/ChatHeader.tsx
-#: src/components/layout/ChatHeader.tsx
-#: src/components/layout/ChatHeader.tsx
-msgid "Enable notifications"
-msgstr "Увімкнути сповіщення"
-
 #: src/components/ui/E2EELockControl.tsx
 msgid "Encrypt (Obby)"
 msgstr "Шифрувати (Obby)"
@@ -2199,12 +2208,21 @@ msgstr "Вимкнути звук"
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/ChatHeader.tsx
+#: src/components/ui/MuteModal.tsx
 msgid "Mute notifications"
 msgstr "Вимкнути сповіщення"
 
 #: src/components/ui/QuickActions/uiActionConfig.tsx
 msgid "Mute or unmute notification sounds"
 msgstr "Вимкнути або увімкнути звуки сповіщень"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Muted until {endsAt}"
+msgstr "Вимкнено до {endsAt}"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Muted until you unmute"
+msgstr "Вимкнено, доки не ввімкнете"
 
 #: src/components/message/JsonLogMessage.tsx
 #: src/components/message/JsonLogMessage.tsx
@@ -2367,6 +2385,14 @@ msgstr "Жоден сервер не вибрано. Спочатку обері
 #: src/components/ui/HomeScreen.tsx
 msgid "No servers found."
 msgstr "Сервери не знайдено."
+
+#: src/components/ui/MuteModal.tsx
+msgid "No sound, notification or red dot for messages from this person."
+msgstr "Без звуку, сповіщень і червоної крапки для повідомлень від цієї людини."
+
+#: src/components/ui/MuteModal.tsx
+msgid "No sound, notification or red dot from this channel, except when someone mentions you."
+msgstr "Без звуку, сповіщень і червоної крапки з цього каналу, крім згадок."
 
 #: src/components/ui/ChannelListModal.tsx
 msgid "No topic"
@@ -3272,6 +3298,10 @@ msgstr "Час входу"
 msgid "Signed On"
 msgstr "Час входу"
 
+#: src/components/ui/MuteModal.tsx
+msgid "Silences everything on this server, including mentions and private messages, and hides its red dot."
+msgstr "Вимикає все на цьому сервері, зокрема згадки й особисті повідомлення, і приховує його червону крапку."
+
 #: src/lib/clientCommands.ts
 msgid "Slap someone around a bit with a large trout"
 msgstr "Відшмагати когось великою фореллю"
@@ -3556,6 +3586,14 @@ msgstr "Транспорт"
 msgid "Trusted Sources"
 msgstr "Надійні джерела"
 
+#: src/components/ui/MuteModal.tsx
+msgid "Turn all sounds off"
+msgstr "Вимкнути всі звуки"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Turn all sounds on"
+msgstr "Увімкнути всі звуки"
+
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Type"
 msgstr "Тип"
@@ -3569,6 +3607,7 @@ msgid "Unignore User"
 msgstr "Скасувати ігнорування"
 
 #: src/components/message/MediaPreview.tsx
+#: src/components/ui/MuteModal.tsx
 msgid "Unmute"
 msgstr "Увімкнути звук"
 
@@ -3589,6 +3628,10 @@ msgstr "Відкріпити цю приватну розмову"
 #: src/components/ui/BotsModal.tsx
 msgid "Unsuspend"
 msgstr "Відновити"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Until I unmute"
+msgstr "Доки не ввімкну"
 
 #: src/components/ui/UploadPreviewModal.tsx
 msgid "Upload"
@@ -3863,6 +3906,10 @@ msgstr "ШЕПІТ"
 #: src/lib/clientCommands.ts
 msgid "Whisper to a user in the current channel context"
 msgstr "Шепнути користувачу в контексті поточного каналу"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Whole server: {serverName}"
+msgstr "Увесь сервер: {serverName}"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Wide - Broader protection scope"
