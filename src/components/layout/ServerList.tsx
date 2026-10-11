@@ -15,6 +15,7 @@ import { useMediaQuery } from "../../hooks/useMediaQuery";
 import ircClient from "../../lib/ircClient";
 import { serverFilehosts } from "../../lib/ircUtils";
 import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
+import { isServerMuted, useMutes } from "../../lib/mutes";
 import { networkHost } from "../../lib/networkHost";
 import { serverDisplayName } from "../../lib/serverDisplayName";
 import useStore from "../../store";
@@ -58,9 +59,11 @@ const ServerIcon: React.FC<ServerIconProps> = ({
     useStore((state) => state.globalSettings.mediaVisibilityLevel),
   );
 
+  useMutes(); // re-render when mutes change
   const hasMentions =
-    server.channels.some((ch) => ch.isMentioned) ||
-    server.privateChats?.some((pc) => pc.isMentioned);
+    !isServerMuted(server.id) &&
+    (server.channels.some((ch) => ch.isMentioned) ||
+      server.privateChats?.some((pc) => pc.isMentioned));
 
   const iconUrl = server.icon;
   const showIcon = canShowAvatarUrl(
