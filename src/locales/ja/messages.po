@@ -288,6 +288,18 @@ msgstr "<0>💡 推奨事項：</0> このサーバーを信頼し、リスク�
 msgid "<0>Risk:</0> Sensitive information (messages, private conversations, authentication details) could be exposed to network administrators or attackers positioned between IRC servers."
 msgstr "<0>リスク：</0> 機密情報（メッセージ、プライベート会話、認証情報）が、IRCサーバー間に位置するネットワーク管理者や攻撃者に露出する可能性があります。"
 
+#: src/components/ui/MuteModal.tsx
+msgid "1 hour"
+msgstr "1時間"
+
+#: src/components/ui/MuteModal.tsx
+msgid "24 hours"
+msgstr "24時間"
+
+#: src/components/ui/MuteModal.tsx
+msgid "8 hours"
+msgstr "8時間"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "A stylesheet applied on top of Obby, from a shared link and/or your own. Sidebar rows carry data-network-host so you can style individual networks. Anything that would load other files is removed."
 msgstr "共有リンクや自分の CSS を Obby の上に適用するスタイルシートです。サイドバーの行には data-network-host があるので、ネットワークごとにスタイルを設定できます。他のファイルを読み込むものはすべて削除されます。"
@@ -441,6 +453,10 @@ msgstr "すべて"
 #: src/components/ui/UserSettings.tsx
 msgid "All Content"
 msgstr "すべてのコンテンツ"
+
+#: src/components/ui/MuteModal.tsx
+msgid "All notification sounds"
+msgstr "すべての通知音"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Allow entering multiple lines of text"
@@ -1361,13 +1377,6 @@ msgstr "複数行入力を有効にする"
 msgid "Enable Notification Sounds"
 msgstr "通知音を有効にする"
 
-#: src/components/layout/ChatHeader.tsx
-#: src/components/layout/ChatHeader.tsx
-#: src/components/layout/ChatHeader.tsx
-#: src/components/layout/ChatHeader.tsx
-msgid "Enable notifications"
-msgstr "通知を有効にする"
-
 #: src/components/ui/E2EELockControl.tsx
 msgid "Encrypt (Obby)"
 msgstr "暗号化 (Obby)"
@@ -2199,12 +2208,21 @@ msgstr "ミュート"
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/ChatHeader.tsx
+#: src/components/ui/MuteModal.tsx
 msgid "Mute notifications"
 msgstr "通知をミュート"
 
 #: src/components/ui/QuickActions/uiActionConfig.tsx
 msgid "Mute or unmute notification sounds"
 msgstr "通知音をミュートまたはミュート解除する"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Muted until {endsAt}"
+msgstr "{endsAt} までミュート"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Muted until you unmute"
+msgstr "解除するまでミュート"
 
 #: src/components/message/JsonLogMessage.tsx
 #: src/components/message/JsonLogMessage.tsx
@@ -2367,6 +2385,14 @@ msgstr "サーバーが選択されていません。まずサイドバーから
 #: src/components/ui/HomeScreen.tsx
 msgid "No servers found."
 msgstr "サーバーが見つかりません。"
+
+#: src/components/ui/MuteModal.tsx
+msgid "No sound, notification or red dot for messages from this person."
+msgstr "この人からのメッセージで音・通知・赤い点を出しません。"
+
+#: src/components/ui/MuteModal.tsx
+msgid "No sound, notification or red dot from this channel, except when someone mentions you."
+msgstr "このチャンネルでは音・通知・赤い点を出しません（メンションされた場合を除く）。"
 
 #: src/components/ui/ChannelListModal.tsx
 msgid "No topic"
@@ -3272,6 +3298,10 @@ msgstr "サインオン"
 msgid "Signed On"
 msgstr "サインイン日時"
 
+#: src/components/ui/MuteModal.tsx
+msgid "Silences everything on this server, including mentions and private messages, and hides its red dot."
+msgstr "このサーバーのすべてをミュートし（メンションや個人メッセージを含む）、赤い点も非表示にします。"
+
 #: src/lib/clientCommands.ts
 msgid "Slap someone around a bit with a large trout"
 msgstr "大きなマスで誰かをちょっと叩く"
@@ -3556,6 +3586,14 @@ msgstr "トランスポート"
 msgid "Trusted Sources"
 msgstr "信頼できるソース"
 
+#: src/components/ui/MuteModal.tsx
+msgid "Turn all sounds off"
+msgstr "すべての音をオフ"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Turn all sounds on"
+msgstr "すべての音をオン"
+
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Type"
 msgstr "種類"
@@ -3569,6 +3607,7 @@ msgid "Unignore User"
 msgstr "無視を解除"
 
 #: src/components/message/MediaPreview.tsx
+#: src/components/ui/MuteModal.tsx
 msgid "Unmute"
 msgstr "ミュート解除"
 
@@ -3589,6 +3628,10 @@ msgstr "このプライベートメッセージの会話のピン留めを解除
 #: src/components/ui/BotsModal.tsx
 msgid "Unsuspend"
 msgstr "停止を解除"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Until I unmute"
+msgstr "解除するまで"
 
 #: src/components/ui/UploadPreviewModal.tsx
 msgid "Upload"
@@ -3863,6 +3906,10 @@ msgstr "WHISPER"
 #: src/lib/clientCommands.ts
 msgid "Whisper to a user in the current channel context"
 msgstr "現在のチャンネルのコンテキストでユーザーにささやく"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Whole server: {serverName}"
+msgstr "サーバー全体: {serverName}"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Wide - Broader protection scope"

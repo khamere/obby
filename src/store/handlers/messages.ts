@@ -8,6 +8,7 @@ import { e2eeSessionKey, expectsProtection } from "../../lib/e2ee/session";
 import { isUserIgnored } from "../../lib/ignoreUtils";
 import ircClient from "../../lib/ircClient";
 import { isChannelTarget } from "../../lib/ircUtils";
+import { isSilenced } from "../../lib/mutes";
 import {
   playNotificationSound,
   shouldPlayNotificationSound,
@@ -234,6 +235,9 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           response.sender !== currentServerUser?.username &&
           !isHistoricalMessage
         ) {
+          // A mention still notifies in a muted channel, not in a muted server.
+          const notifyMention =
+            hasMention && !isSilenced(server.id, channel.id, true);
           store.setState((state) => {
             const updatedServers = state.servers.map((s) => {
               if (s.id === server.id) {
@@ -243,8 +247,8 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
                       ...ch,
                       unreadCount: ch.unreadCount + 1,
                       mentionCount:
-                        (ch.mentionCount ?? 0) + (hasMention ? 1 : 0),
-                      isMentioned: hasMention || ch.isMentioned,
+                        (ch.mentionCount ?? 0) + (notifyMention ? 1 : 0),
+                      isMentioned: notifyMention || ch.isMentioned,
                     };
                   }
                   return ch;
@@ -257,7 +261,10 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           });
 
           // Show browser notification for mentions
-          if (hasMention && currentState.globalSettings.enableNotifications) {
+          if (
+            notifyMention &&
+            currentState.globalSettings.enableNotifications
+          ) {
             showMentionNotification(
               server.id,
               channelName,
@@ -556,6 +563,9 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           multilineCurrentState.ui.selectedServerId === server.id;
 
         if (!isActiveChannel && !isOwnMessage && !isHistoricalMessage) {
+          // A mention still notifies in a muted channel, not in a muted server.
+          const notifyMention =
+            hasMention && !isSilenced(server.id, channel.id, true);
           store.setState((state) => {
             const updatedServers = state.servers.map((s) => {
               if (s.id === server.id) {
@@ -565,8 +575,8 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
                       ...ch,
                       unreadCount: ch.unreadCount + 1,
                       mentionCount:
-                        (ch.mentionCount ?? 0) + (hasMention ? 1 : 0),
-                      isMentioned: hasMention || ch.isMentioned,
+                        (ch.mentionCount ?? 0) + (notifyMention ? 1 : 0),
+                      isMentioned: notifyMention || ch.isMentioned,
                     };
                   }
                   return ch;
@@ -579,7 +589,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           });
 
           if (
-            hasMention &&
+            notifyMention &&
             multilineCurrentState.globalSettings.enableNotifications
           ) {
             showMentionNotification(
@@ -1589,7 +1599,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
                     lastActivity: new Date(),
                     unreadCount: reset ? 0 : pc.unreadCount + 1,
                     mentionCount: reset ? 0 : (pc.mentionCount ?? 0) + 1,
-                    isMentioned: !isHistoricalMessage && true, // All PMs are considered mentions (except historical)
+                    // All PMs are considered mentions (except historical
+                    // ones and muted DMs/servers).
+                    isMentioned:
+                      !isHistoricalMessage &&
+                      !isSilenced(response.serverId, privateChat.id, true),
                   };
                 }
                 return pc;

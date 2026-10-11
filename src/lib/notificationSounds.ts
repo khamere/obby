@@ -2,6 +2,7 @@
  * Notification sound utilities for playing audio notifications
  */
 
+import { isSilenced } from "./mutes";
 import { containsWholeWord } from "./nickHighlight";
 
 // Play notification sound based on current settings
@@ -68,7 +69,13 @@ export const playNotificationSound = async (globalSettings: {
 
 // Check if message should trigger a notification sound
 export const shouldPlayNotificationSound = (
-  message: { userId: string; content: string; type: string },
+  message: {
+    userId: string;
+    content: string;
+    type: string;
+    serverId?: string;
+    channelId?: string;
+  },
   currentUser: { username: string } | null,
   globalSettings: {
     enableHighlights: boolean;
@@ -87,6 +94,16 @@ export const shouldPlayNotificationSound = (
 
   // Don't play sound for our own messages
   if (currentUser && message.userId === currentUser.username) {
+    return false;
+  }
+
+  const mentionsMe =
+    !!currentUser &&
+    (containsWholeWord(message.content, currentUser.username) ||
+      globalSettings.customMentions.some((mention) =>
+        containsWholeWord(message.content, mention),
+      ));
+  if (isSilenced(message.serverId, message.channelId, mentionsMe)) {
     return false;
   }
 

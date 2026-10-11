@@ -7,6 +7,7 @@
 
 import type { StoreApi } from "zustand";
 import ircClient from "../../lib/ircClient";
+import { isSilenced } from "../../lib/mutes";
 import {
   playNotificationSound,
   shouldPlayNotificationSound,
@@ -30,6 +31,7 @@ export function notePrivateMessageArrived(
   arrival: PrivateMessageArrival,
 ): void {
   const { serverId, privateChatId, sender, body, isHistorical } = arrival;
+  const silenced = isSilenced(serverId, privateChatId, true);
 
   if (!isHistorical) {
     const state = store.getState();
@@ -61,8 +63,8 @@ export function notePrivateMessageArrived(
               unreadCount: reset ? 0 : pc.unreadCount + 1,
               mentionCount: reset ? 0 : (pc.mentionCount ?? 0) + 1,
               // A PM is addressed to you by construction, so it counts as a
-              // mention.
-              isMentioned: !isHistorical,
+              // mention, unless the DM or its server is muted.
+              isMentioned: !isHistorical && !silenced,
             };
           }) || [],
       };
@@ -75,6 +77,7 @@ export function notePrivateMessageArrived(
   if (
     isActiveChat ||
     isHistorical ||
+    silenced ||
     !current.globalSettings.enableNotifications
   )
     return;

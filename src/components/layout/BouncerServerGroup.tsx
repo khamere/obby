@@ -6,6 +6,7 @@ import { GiGlassShot } from "react-icons/gi";
 import { useLongPress } from "../../hooks/useLongPress";
 import { serverFilehosts } from "../../lib/ircUtils";
 import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
+import { isServerMuted, useMutes } from "../../lib/mutes";
 import { networkHost } from "../../lib/networkHost";
 import { serverDisplayName } from "../../lib/serverDisplayName";
 import useStore from "../../store";
@@ -74,14 +75,13 @@ export const BouncerServerGroup: React.FC<BouncerServerGroupProps> = ({
     selectedServerId === control.id ||
     sortedChildren.some((c) => c.id === selectedServerId);
 
-  const hasGroupMentions =
-    control.channels.some((ch) => ch.isMentioned) ||
-    control.privateChats?.some((pc) => pc.isMentioned) ||
-    sortedChildren.some(
-      (s) =>
-        s.channels.some((ch) => ch.isMentioned) ||
-        s.privateChats?.some((pc) => pc.isMentioned),
-    );
+  useMutes(); // re-render when mutes change
+  const hasGroupMentions = [control, ...sortedChildren].some(
+    (s) =>
+      !isServerMuted(s.id) &&
+      (s.channels.some((ch) => ch.isMentioned) ||
+        s.privateChats?.some((pc) => pc.isMentioned)),
+  );
 
   const dividerColor = hexWithAlpha(accent, 0.2);
 
@@ -198,9 +198,11 @@ const GroupedAvatar: React.FC<GroupedAvatarProps> = ({
     mediaSettings,
   );
 
+  useMutes(); // re-render when mutes change
   const hasMentions =
-    server.channels.some((ch) => ch.isMentioned) ||
-    server.privateChats?.some((pc) => pc.isMentioned);
+    !isServerMuted(server.id) &&
+    (server.channels.some((ch) => ch.isMentioned) ||
+      server.privateChats?.some((pc) => pc.isMentioned));
 
   const handleLongPress = useCallback(() => {
     if (isSelected) setBottomSheetOpen(true);
