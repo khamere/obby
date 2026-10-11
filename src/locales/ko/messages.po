@@ -3047,10 +3047,6 @@ msgstr "자가 등록됨"
 msgid "Send a GIF"
 msgstr "GIF 보내기"
 
-#: src/lib/clientCommands.ts
-msgid "Send a message in rainbow colors"
-msgstr "무지개 색상으로 메시지 보내기"
-
 #: src/components/ui/ModerationModal.tsx
 msgid "Send a warning message to {username}"
 msgstr "{username}에게 경고 메시지 보내기"

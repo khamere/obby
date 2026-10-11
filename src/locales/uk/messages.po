@@ -3047,10 +3047,6 @@ msgstr "самостійно зареєстрований"
 msgid "Send a GIF"
 msgstr "Надіслати GIF"
 
-#: src/lib/clientCommands.ts
-msgid "Send a message in rainbow colors"
-msgstr "Надіслати повідомлення в кольорах веселки"
-
 #: src/components/ui/ModerationModal.tsx
 msgid "Send a warning message to {username}"
 msgstr "Надіслати попереджувальне повідомлення {username}"

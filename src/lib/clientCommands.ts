@@ -33,11 +33,6 @@ export interface ClientCommand {
 export function getClientCommands(): ClientCommand[] {
   return [
     {
-      name: "rainbow",
-      description: t`Send a message in rainbow colors`,
-      options: [{ name: "message", type: "string", required: true }],
-    },
-    {
       name: "me",
       description: t`Send an action / emote`,
       options: [
@@ -141,7 +136,6 @@ export function getClientCommands(): ClientCommand[] {
 
 // Name set is locale-independent so it can stay module-scope.
 export const CLIENT_COMMAND_NAMES: ReadonlySet<string> = new Set([
-  "rainbow",
   "me",
   "msg",
   "whisper",
