@@ -3047,10 +3047,6 @@ msgstr "auto-registrato"
 msgid "Send a GIF"
 msgstr "Invia un GIF"
 
-#: src/lib/clientCommands.ts
-msgid "Send a message in rainbow colors"
-msgstr "Invia un messaggio con i colori dell'arcobaleno"
-
 #: src/components/ui/ModerationModal.tsx
 msgid "Send a warning message to {username}"
 msgstr "Invia un messaggio di avviso a {username}"
