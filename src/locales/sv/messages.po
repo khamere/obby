@@ -288,6 +288,18 @@ msgstr "<0>💡 Rekommendation:</0> Fortsätt bara om du litar på den här serv
 msgid "<0>Risk:</0> Sensitive information (messages, private conversations, authentication details) could be exposed to network administrators or attackers positioned between IRC servers."
 msgstr "<0>Risk:</0> Känslig information (meddelanden, privata konversationer, autentiseringsuppgifter) kan exponeras för nätverksadministratörer eller angripare som befinner sig mellan IRC-servrar."
 
+#: src/components/ui/MuteModal.tsx
+msgid "1 hour"
+msgstr "1 timme"
+
+#: src/components/ui/MuteModal.tsx
+msgid "24 hours"
+msgstr "24 timmar"
+
+#: src/components/ui/MuteModal.tsx
+msgid "8 hours"
+msgstr "8 timmar"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "A stylesheet applied on top of Obby, from a shared link and/or your own. Sidebar rows carry data-network-host so you can style individual networks. Anything that would load other files is removed."
 msgstr "En formatmall ovanpå Obby, från en delad länk och/eller din egen. Raderna i sidofältet har data-network-host så att du kan formge enskilda nätverk. Allt som skulle ladda andra filer tas bort."
@@ -441,6 +453,10 @@ msgstr "Alla"
 #: src/components/ui/UserSettings.tsx
 msgid "All Content"
 msgstr "Allt innehåll"
+
+#: src/components/ui/MuteModal.tsx
+msgid "All notification sounds"
+msgstr "Alla aviseringsljud"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Allow entering multiple lines of text"
@@ -1361,13 +1377,6 @@ msgstr "Aktivera flerrads-inmatning"
 msgid "Enable Notification Sounds"
 msgstr "Aktivera aviseringsljud"
 
-#: src/components/layout/ChatHeader.tsx
-#: src/components/layout/ChatHeader.tsx
-#: src/components/layout/ChatHeader.tsx
-#: src/components/layout/ChatHeader.tsx
-msgid "Enable notifications"
-msgstr "Aktivera aviseringar"
-
 #: src/components/ui/E2EELockControl.tsx
 msgid "Encrypt (Obby)"
 msgstr "Kryptera (Obby)"
@@ -2199,12 +2208,21 @@ msgstr "Tysta"
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/ChatHeader.tsx
+#: src/components/ui/MuteModal.tsx
 msgid "Mute notifications"
 msgstr "Tysta aviseringar"
 
 #: src/components/ui/QuickActions/uiActionConfig.tsx
 msgid "Mute or unmute notification sounds"
 msgstr "Tysta eller aktivera aviseringsljud"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Muted until {endsAt}"
+msgstr "Tystad till {endsAt}"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Muted until you unmute"
+msgstr "Tystad tills du slår på igen"
 
 #: src/components/message/JsonLogMessage.tsx
 #: src/components/message/JsonLogMessage.tsx
@@ -2367,6 +2385,14 @@ msgstr "Ingen server är vald. Välj en server från sidofältet först; inbjudn
 #: src/components/ui/HomeScreen.tsx
 msgid "No servers found."
 msgstr "Inga servrar hittades."
+
+#: src/components/ui/MuteModal.tsx
+msgid "No sound, notification or red dot for messages from this person."
+msgstr "Inget ljud, ingen avisering och ingen röd prick för meddelanden från den här personen."
+
+#: src/components/ui/MuteModal.tsx
+msgid "No sound, notification or red dot from this channel, except when someone mentions you."
+msgstr "Inget ljud, ingen avisering och ingen röd prick från den här kanalen, utom när någon nämner dig."
 
 #: src/components/ui/ChannelListModal.tsx
 msgid "No topic"
@@ -3272,6 +3298,10 @@ msgstr "Inloggad"
 msgid "Signed On"
 msgstr "Inloggad sedan"
 
+#: src/components/ui/MuteModal.tsx
+msgid "Silences everything on this server, including mentions and private messages, and hides its red dot."
+msgstr "Tystar allt på den här servern, även omnämnanden och privata meddelanden, och döljer dess röda prick."
+
 #: src/lib/clientCommands.ts
 msgid "Slap someone around a bit with a large trout"
 msgstr "Daska till någon med en stor forell"
@@ -3556,6 +3586,14 @@ msgstr "Transport"
 msgid "Trusted Sources"
 msgstr "Betrodda källor"
 
+#: src/components/ui/MuteModal.tsx
+msgid "Turn all sounds off"
+msgstr "Stäng av alla ljud"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Turn all sounds on"
+msgstr "Slå på alla ljud"
+
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Type"
 msgstr "Typ"
@@ -3569,6 +3607,7 @@ msgid "Unignore User"
 msgstr "Sluta ignorera användare"
 
 #: src/components/message/MediaPreview.tsx
+#: src/components/ui/MuteModal.tsx
 msgid "Unmute"
 msgstr "Sluta tysta"
 
@@ -3589,6 +3628,10 @@ msgstr "Lossa den här privata meddelandekonversationen"
 #: src/components/ui/BotsModal.tsx
 msgid "Unsuspend"
 msgstr "Återaktivera"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Until I unmute"
+msgstr "Tills jag slår på igen"
 
 #: src/components/ui/UploadPreviewModal.tsx
 msgid "Upload"
@@ -3863,6 +3906,10 @@ msgstr "VISKNING"
 #: src/lib/clientCommands.ts
 msgid "Whisper to a user in the current channel context"
 msgstr "Viska till en användare i den aktuella kanalkontexten"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Whole server: {serverName}"
+msgstr "Hela servern: {serverName}"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Wide - Broader protection scope"

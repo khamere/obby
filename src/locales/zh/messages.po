@@ -288,6 +288,18 @@ msgstr "<0>💡 建议：</0> 仅在您信任此服务器并了解相关风险�
 msgid "<0>Risk:</0> Sensitive information (messages, private conversations, authentication details) could be exposed to network administrators or attackers positioned between IRC servers."
 msgstr "<0>风险：</0> 敏感信息（消息、私人对话、身份验证详情）可能会暴露给网络管理员或位于 IRC 服务器之间的攻击者。"
 
+#: src/components/ui/MuteModal.tsx
+msgid "1 hour"
+msgstr "1 小时"
+
+#: src/components/ui/MuteModal.tsx
+msgid "24 hours"
+msgstr "24 小时"
+
+#: src/components/ui/MuteModal.tsx
+msgid "8 hours"
+msgstr "8 小时"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "A stylesheet applied on top of Obby, from a shared link and/or your own. Sidebar rows carry data-network-host so you can style individual networks. Anything that would load other files is removed."
 msgstr "应用在 Obby 之上的样式表，来自共享链接和/或你自己的 CSS。侧边栏的行带有 data-network-host，可为各个网络单独设置样式。任何会加载其他文件的内容都会被移除。"
@@ -441,6 +453,10 @@ msgstr "全部"
 #: src/components/ui/UserSettings.tsx
 msgid "All Content"
 msgstr "所有内容"
+
+#: src/components/ui/MuteModal.tsx
+msgid "All notification sounds"
+msgstr "所有通知声音"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Allow entering multiple lines of text"
@@ -1361,13 +1377,6 @@ msgstr "启用多行输入"
 msgid "Enable Notification Sounds"
 msgstr "启用通知声音"
 
-#: src/components/layout/ChatHeader.tsx
-#: src/components/layout/ChatHeader.tsx
-#: src/components/layout/ChatHeader.tsx
-#: src/components/layout/ChatHeader.tsx
-msgid "Enable notifications"
-msgstr "启用通知"
-
 #: src/components/ui/E2EELockControl.tsx
 msgid "Encrypt (Obby)"
 msgstr "加密 (Obby)"
@@ -2199,12 +2208,21 @@ msgstr "静音"
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/ChatHeader.tsx
+#: src/components/ui/MuteModal.tsx
 msgid "Mute notifications"
 msgstr "静音通知"
 
 #: src/components/ui/QuickActions/uiActionConfig.tsx
 msgid "Mute or unmute notification sounds"
 msgstr "开启或关闭通知声音"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Muted until {endsAt}"
+msgstr "静音至 {endsAt}"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Muted until you unmute"
+msgstr "静音，直到你取消"
 
 #: src/components/message/JsonLogMessage.tsx
 #: src/components/message/JsonLogMessage.tsx
@@ -2367,6 +2385,14 @@ msgstr "未选择服务器。请先从侧边栏选择一个服务器；邀请链
 #: src/components/ui/HomeScreen.tsx
 msgid "No servers found."
 msgstr "未找到服务器。"
+
+#: src/components/ui/MuteModal.tsx
+msgid "No sound, notification or red dot for messages from this person."
+msgstr "此人的消息不再发出声音、通知或显示红点。"
+
+#: src/components/ui/MuteModal.tsx
+msgid "No sound, notification or red dot from this channel, except when someone mentions you."
+msgstr "此频道不再发出声音、通知或显示红点，有人提及你时除外。"
 
 #: src/components/ui/ChannelListModal.tsx
 msgid "No topic"
@@ -3272,6 +3298,10 @@ msgstr "登录时间"
 msgid "Signed On"
 msgstr "登录时间"
 
+#: src/components/ui/MuteModal.tsx
+msgid "Silences everything on this server, including mentions and private messages, and hides its red dot."
+msgstr "静音此服务器上的所有内容（包括提及和私信），并隐藏其红点。"
+
 #: src/lib/clientCommands.ts
 msgid "Slap someone around a bit with a large trout"
 msgstr "用一条大鳟鱼拍打某人"
@@ -3556,6 +3586,14 @@ msgstr "传输"
 msgid "Trusted Sources"
 msgstr "受信任来源"
 
+#: src/components/ui/MuteModal.tsx
+msgid "Turn all sounds off"
+msgstr "关闭所有声音"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Turn all sounds on"
+msgstr "开启所有声音"
+
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Type"
 msgstr "类型"
@@ -3569,6 +3607,7 @@ msgid "Unignore User"
 msgstr "取消忽略用户"
 
 #: src/components/message/MediaPreview.tsx
+#: src/components/ui/MuteModal.tsx
 msgid "Unmute"
 msgstr "取消静音"
 
@@ -3589,6 +3628,10 @@ msgstr "取消置顶此私信对话"
 #: src/components/ui/BotsModal.tsx
 msgid "Unsuspend"
 msgstr "取消停用"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Until I unmute"
+msgstr "直到我取消"
 
 #: src/components/ui/UploadPreviewModal.tsx
 msgid "Upload"
@@ -3863,6 +3906,10 @@ msgstr "WHISPER"
 #: src/lib/clientCommands.ts
 msgid "Whisper to a user in the current channel context"
 msgstr "在当前频道上下文中对用户进行私语"
+
+#: src/components/ui/MuteModal.tsx
+msgid "Whole server: {serverName}"
+msgstr "整个服务器：{serverName}"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Wide - Broader protection scope"
