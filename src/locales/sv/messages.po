@@ -3047,6 +3047,10 @@ msgstr "självregistrerad"
 msgid "Send a GIF"
 msgstr "Skicka en GIF"
 
+#: src/lib/clientCommands.ts
+msgid "Send a message in rainbow colors"
+msgstr "Skicka ett meddelande i regnbågens färger"
+
 #: src/components/ui/ModerationModal.tsx
 msgid "Send a warning message to {username}"
 msgstr "Skicka ett varningsmeddelande till {username}"

@@ -3047,6 +3047,10 @@ msgstr "自己登録"
 msgid "Send a GIF"
 msgstr "GIFを送信"
 
+#: src/lib/clientCommands.ts
+msgid "Send a message in rainbow colors"
+msgstr "虹色のメッセージを送信する"
+
 #: src/components/ui/ModerationModal.tsx
 msgid "Send a warning message to {username}"
 msgstr "{username} に警告メッセージを送る"
