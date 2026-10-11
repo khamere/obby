@@ -3073,6 +3073,10 @@ msgstr "auto-enregistré"
 msgid "Send a GIF"
 msgstr "Envoyer un GIF"
 
+#: src/lib/clientCommands.ts
+msgid "Send a message in rainbow colors"
+msgstr "Envoyer un message aux couleurs de l’arc-en-ciel"
+
 #: src/components/ui/ModerationModal.tsx
 msgid "Send a warning message to {username}"
 msgstr "Envoyer un message d'avertissement à {username}"
