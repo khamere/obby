@@ -30,7 +30,11 @@ import {
 } from "../../lib/mediaUtils";
 import { stripIrcFormatting } from "../../lib/messageFormatter";
 import { nickColor, useNickColor } from "../../lib/nickColor";
-import { buildNickMatcher, highlightNicks } from "../../lib/nickHighlight";
+import {
+  buildNickMatcher,
+  containsWholeWord,
+  highlightNicks,
+} from "../../lib/nickHighlight";
 import useStore, { loadSavedMetadata } from "../../store";
 import type { MessageType, PrivateChat, User } from "../../types";
 import MessageBottomSheet from "../mobile/MessageBottomSheet";
@@ -511,6 +515,17 @@ export const MessageItem = memo((props: MessageItemProps) => {
       openChannel,
     ],
   );
+  // A nick colored letter by letter is split across spans, so the rendered
+  // text can't find it; the raw text still can.
+  const mentionsSelfInText = useMemo(
+    () =>
+      highlightSelf &&
+      !!ircCurrentUser?.username &&
+      [ircCurrentUser.username, ...customMentions].some((word) =>
+        containsWholeWord(messageContent, word),
+      ),
+    [highlightSelf, ircCurrentUser?.username, customMentions, messageContent],
+  );
 
   // Ciphertext this device holds no key for keeps its place in the thread: a
   // dropped row would read as the peer having gone quiet, which is the one
@@ -839,7 +854,9 @@ export const MessageItem = memo((props: MessageItemProps) => {
       className={`px-4 hover:bg-discord-message-hover group relative transition-colors duration-150 ${
         showHeader ? "mt-4" : "py-0.5"
       }${isHighlighted ? " bg-primary/10 ring-1 ring-primary/30 rounded" : ""}${
-        mentionsSelf && !isUnprotected ? " obby-mention-row" : ""
+        (mentionsSelf || mentionsSelfInText) && !isUnprotected
+          ? " obby-mention-row"
+          : ""
       }${
         isUnprotected
           ? " border-l-2 border-amber-500/70 bg-amber-500/[0.06]"
