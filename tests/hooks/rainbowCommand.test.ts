@@ -8,6 +8,7 @@ import {
 import ircClient from "../../src/lib/ircClient";
 import { stripIrcFormatting } from "../../src/lib/messageFormatter";
 import { calculateProtocolOverhead } from "../../src/lib/messageProtocol";
+import { containsWholeWord } from "../../src/lib/nickHighlight";
 import { rainbowText, splitRainbowMessage } from "../../src/lib/rainbow";
 import useStore from "../../src/store";
 import { routeOutgoingPM } from "../../src/store/handlers/e2eeOutbound";
@@ -56,6 +57,28 @@ describe("rainbow text", () => {
       expect(chunk).not.toMatch(/\x03\d?$/);
       expect(stripIrcFormatting(chunk)).not.toContain("\ufffd");
     }
+  });
+  it("colors a known nick as one word so mentions still match", () => {
+    const result = rainbowText("hi Bob, bobby!", ["bob"]);
+    expect(result).toBe(
+      "\x0304h\x0307i \x0308\x02\x02Bob\x0309\x02\x02, \x0311b\x0312o\x0306b\x0304b\x0307y\x0308!\x0f",
+    );
+    expect(containsWholeWord(result, "bob")).toBe(true);
+    // without the nick list the name is colored letter by letter
+    expect(rainbowText("hi bob", [])).toContain("\x0308b\x0309o");
+  });
+  it("never splits a nick across messages", () => {
+    const text = "hello alice and bob ".repeat(60);
+    const chunks = splitRainbowMessage(
+      rainbowText(text, ["alice", "bob"]),
+      "#chat",
+    );
+    expect(chunks.length).toBeGreaterThan(1);
+    expect(chunks.map(stripIrcFormatting).join("")).toBe(text);
+    const count = (s: string, w: string) => s.split(w).length - 1;
+    const plain = chunks.map(stripIrcFormatting);
+    expect(plain.reduce((n, c) => n + count(c, "alice"), 0)).toBe(60);
+    expect(plain.reduce((n, c) => n + count(c, "bob"), 0)).toBe(60);
   });
   it("bounds long whitespace and pathological combining sequences", () => {
     for (const text of [`a${" ".repeat(1000)}b`, `a${"\u0301".repeat(1000)}`]) {
@@ -129,6 +152,36 @@ describe("/rainbow", () => {
     expect(ircClient.sendRaw).toHaveBeenCalledWith(
       "s1",
       `PRIVMSG #chat :${rainbowText("Hello!")}`,
+    );
+  });
+  it("keeps channel members, the DM peer and our own nick whole", () => {
+    const members = {
+      ...channel,
+      users: [{ id: "u1", username: "carol", isOnline: true }],
+    } as Channel;
+    const { result } = renderHook(() =>
+      useMessageSending({
+        selectedServerId: "s1",
+        selectedChannelId: members.id,
+        selectedPrivateChatId: null,
+        selectedChannel: members,
+        selectedPrivateChat: null,
+        currentUser: me,
+        selectedColor: null,
+        selectedFormatting: [],
+        localReplyTo: null,
+      }),
+    );
+    result.current.sendMessage("/rainbow hi carol and me");
+    expect(ircClient.sendRaw).toHaveBeenCalledWith(
+      "s1",
+      `PRIVMSG #chat :${rainbowText("hi carol and me", ["carol", "me"])}`,
+    );
+    vi.mocked(ircClient.sendRaw).mockClear();
+    send("/rainbow hey friend", true);
+    expect(ircClient.sendRaw).toHaveBeenCalledWith(
+      "s1",
+      `PRIVMSG friend :${rainbowText("hey friend", ["friend"])}`,
     );
   });
   it("does nothing for an empty argument", () => {

@@ -1,6 +1,7 @@
 import React from "react";
 import type { User } from "../types";
 import { getColorStyle } from "./ircUtils";
+import { stripIrcFormatting } from "./messageFormatter";
 
 // Characters RFC 2812 allows in a nickname. A run of them is one candidate
 // token, so "bob:", "@bob" and "bob's" all still find "bob".
@@ -106,11 +107,12 @@ function isNickChar(ch: string | undefined): boolean {
 // True when `word` appears in `text` with no nick character directly before
 // or after it, ignoring case: "bob!", "@bob" and "bob:" mention bob, "bobby"
 // doesn't. Shared by the highlighting and the notification/mention checks so
-// they always agree.
+// they always agree. Colors and other formatting are ignored, so a nick
+// colored letter by letter still counts.
 export function containsWholeWord(text: string, word: string): boolean {
   const needle = word.trim().toLowerCase();
   if (!needle) return false;
-  const haystack = text.toLowerCase();
+  const haystack = stripIrcFormatting(text).toLowerCase();
   for (
     let i = haystack.indexOf(needle);
     i !== -1;

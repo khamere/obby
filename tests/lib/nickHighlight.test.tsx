@@ -178,6 +178,16 @@ describe("whole-word mentions (sound, red dot, highlight agree)", () => {
     expect(checkForMention(text, me, settings)).toBe(false);
   });
 
+  it("ignores colors and formatting around and inside the word", () => {
+    // colored letter by letter, as rainbow scripts do
+    expect(containsWholeWord("\x0304b\x0307o\x0308b \x0309hi", "bob")).toBe(
+      true,
+    );
+    // one color right before the nick: its digits are not part of the word
+    expect(containsWholeWord("hi \x0304bob", "bob")).toBe(true);
+    expect(containsWholeWord("\x02bob\x02by", "bob")).toBe(false);
+  });
+
   it("custom mentions are whole words too", () => {
     expect(checkForMention("pizza time", me, settings)).toBe(true);
     expect(checkForMention("pizzas", me, settings)).toBe(false);
