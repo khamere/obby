@@ -2,6 +2,7 @@ import { msg } from "@lingui/core/macro";
 import { CustomCssField } from "../../../components/ui/settings/CustomCssField";
 import { CustomMentionsField } from "../../../components/ui/settings/CustomMentionsField";
 import { IgnoreListField } from "../../../components/ui/settings/IgnoreListField";
+import { UserFilehostField } from "../../../components/ui/settings/UserFilehostField";
 import settingsRegistry from "../registry";
 import type { SettingDefinition } from "../types";
 
@@ -421,6 +422,28 @@ const preferenceSettings: SettingDefinition[] = [
     searchKeywords: ["css", "custom", "style", "theme", "stylesheet", "logo"],
     priority: 12,
     customComponent: CustomCssField,
+  },
+  {
+    id: "preferences.userFilehost",
+    key: "userFilehost",
+    category: "preferences",
+    subcategory: "File uploads",
+    title: msg`Your own file host`,
+    description: msg`Upload pasted and dropped images to your own Zipline instead of the network's file host. Kept in this browser.`,
+    type: "custom",
+    // Display-only: the host lives in lib/userFilehost, not in settings.
+    defaultValue: "",
+    searchKeywords: [
+      "upload",
+      "paste",
+      "image",
+      "screenshot",
+      "zipline",
+      "filehost",
+      "file host",
+    ],
+    priority: 13,
+    customComponent: UserFilehostField,
   },
 ];
 

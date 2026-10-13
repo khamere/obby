@@ -1507,6 +1507,10 @@ msgstr "Wpisz prawdziwe imię i nazwisko"
 msgid "Enter reason (optional)"
 msgstr "Wpisz powód (opcjonalnie)"
 
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "Enter the http(s) address of your Zipline, like https://img.example.com"
+msgstr "Wpisz adres http(s) swojego Zipline, np. https://img.example.com"
+
 #: src/components/ui/InviteUserModal.tsx
 msgid "Enter username to invite"
 msgstr "Wpisz nazwę użytkownika do zaproszenia"
@@ -1550,6 +1554,15 @@ msgstr "niepowodzenie"
 #: src/components/ui/MiniMediaPlayer.tsx
 msgid "Failed to load audio"
 msgstr "Nie udało się załadować audio"
+
+#: src/components/ui/settings/UserFilehostField.tsx
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "File host removed."
+msgstr "Host plików usunięty."
+
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "File host saved."
+msgstr "Host plików zapisany."
 
 #: src/components/layout/ChatArea.tsx
 msgid "File not uploaded: encryption is still being set up. It can go once encryption is active, or after ending encryption."
@@ -2609,6 +2622,10 @@ msgstr "Hasło wymagane do dołączenia do kanału. Pozostaw puste, aby usunąć
 msgid "Paste CSS here or upload a .css file"
 msgstr "Wklej tu CSS lub prześlij plik .css"
 
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "Paste your Zipline token"
+msgstr "Wklej swój token Zipline"
+
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Pattern already exists"
 msgstr "Wzorzec już istnieje"
@@ -2851,6 +2868,7 @@ msgstr "Łagodny – mniej agresywna ochrona"
 #: src/components/ui/ChannelSettingsModal.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
+#: src/components/ui/settings/UserFilehostField.tsx
 msgid "Remove"
 msgstr "Usuń"
 
@@ -2933,6 +2951,7 @@ msgstr "Bezpieczne"
 #: src/components/ui/ChannelSettingsModal.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
+#: src/components/ui/settings/UserFilehostField.tsx
 #: src/components/ui/TopicModal.tsx
 #: src/components/ui/UserSettings.tsx
 msgid "Save"
@@ -3662,9 +3681,17 @@ msgstr "Prześlij pliki"
 msgid "Upload Image"
 msgstr "Prześlij obraz"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Upload pasted and dropped images to your own Zipline instead of the network's file host. Kept in this browser."
+msgstr "Przesyłaj wklejone i upuszczone obrazy na własny Zipline zamiast na host plików sieci. Zapisane w tej przeglądarce."
+
 #: src/components/ui/UploadPreviewModal.tsx
 msgid "Upload to the file host and send to {target}."
 msgstr "Prześlij na serwer plików i wyślij do {target}."
+
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "Upload token"
+msgstr "Token przesyłania"
 
 #: src/components/ui/AvatarUpload.tsx
 msgid "Uploading..."
@@ -3949,6 +3976,10 @@ msgstr "Praca w toku…"
 msgid "Works with other IRC clients"
 msgstr "Działa z innymi klientami IRC"
 
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "Works with Zipline v3 and v4. Copy the token from your Zipline user settings. The host must allow uploads from this site (CORS). Anyone with the token can upload as you, so only use it on your own device."
+msgstr "Działa z Zipline v3 i v4. Skopiuj token z ustawień użytkownika w Zipline. Host musi zezwalać na przesyłanie z tej strony (CORS). Każdy, kto ma token, może przesyłać pliki jako Ty, więc używaj go tylko na własnym urządzeniu."
+
 #: src/components/ui/BouncerNetworkForm.tsx
 msgid "Yes, delete"
 msgstr "Tak, usuń"
@@ -4055,6 +4086,10 @@ msgid "Your own CSS"
 msgstr "Twój własny CSS"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Your own file host"
+msgstr "Twój własny host plików"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Your personal website"
 msgstr "Twoja strona internetowa"
 
@@ -4089,6 +4124,10 @@ msgstr "twoj@email.com"
 #: src/components/ui/AddServerModal.tsx
 msgid "YourNickname"
 msgstr "TwójNick"
+
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "Zipline address"
+msgstr "Adres Zipline"
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Zoom in"

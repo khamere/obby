@@ -1507,6 +1507,10 @@ msgstr "输入真实姓名"
 msgid "Enter reason (optional)"
 msgstr "输入原因（可选）"
 
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "Enter the http(s) address of your Zipline, like https://img.example.com"
+msgstr "输入你的 Zipline 的 http(s) 地址，例如 https://img.example.com"
+
 #: src/components/ui/InviteUserModal.tsx
 msgid "Enter username to invite"
 msgstr "输入要邀请的用户名"
@@ -1550,6 +1554,15 @@ msgstr "失败"
 #: src/components/ui/MiniMediaPlayer.tsx
 msgid "Failed to load audio"
 msgstr "音频加载失败"
+
+#: src/components/ui/settings/UserFilehostField.tsx
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "File host removed."
+msgstr "已移除文件主机。"
+
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "File host saved."
+msgstr "已保存文件主机。"
 
 #: src/components/layout/ChatArea.tsx
 msgid "File not uploaded: encryption is still being set up. It can go once encryption is active, or after ending encryption."
@@ -2609,6 +2622,10 @@ msgstr "加入频道需要密码，留空可移除密钥。"
 msgid "Paste CSS here or upload a .css file"
 msgstr "在此粘贴 CSS 或上传 .css 文件"
 
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "Paste your Zipline token"
+msgstr "粘贴你的 Zipline 令牌"
+
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Pattern already exists"
 msgstr "模式已存在"
@@ -2851,6 +2868,7 @@ msgstr "宽松 – 较弱的保护"
 #: src/components/ui/ChannelSettingsModal.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
+#: src/components/ui/settings/UserFilehostField.tsx
 msgid "Remove"
 msgstr "移除"
 
@@ -2933,6 +2951,7 @@ msgstr "安全"
 #: src/components/ui/ChannelSettingsModal.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
+#: src/components/ui/settings/UserFilehostField.tsx
 #: src/components/ui/TopicModal.tsx
 #: src/components/ui/UserSettings.tsx
 msgid "Save"
@@ -3662,9 +3681,17 @@ msgstr "上传文件"
 msgid "Upload Image"
 msgstr "上传图片"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Upload pasted and dropped images to your own Zipline instead of the network's file host. Kept in this browser."
+msgstr "将粘贴和拖放的图片上传到你自己的 Zipline，而不是网络的文件主机。保存在此浏览器中。"
+
 #: src/components/ui/UploadPreviewModal.tsx
 msgid "Upload to the file host and send to {target}."
 msgstr "上传到文件服务器并发送到 {target}。"
+
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "Upload token"
+msgstr "上传令牌"
 
 #: src/components/ui/AvatarUpload.tsx
 msgid "Uploading..."
@@ -3949,6 +3976,10 @@ msgstr "处理中…"
 msgid "Works with other IRC clients"
 msgstr "可与其他 IRC 客户端配合使用"
 
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "Works with Zipline v3 and v4. Copy the token from your Zipline user settings. The host must allow uploads from this site (CORS). Anyone with the token can upload as you, so only use it on your own device."
+msgstr "支持 Zipline v3 和 v4。请从 Zipline 用户设置中复制令牌。主机必须允许来自本站点的上传（CORS）。任何持有令牌的人都可以以你的身份上传，因此请只在自己的设备上使用。"
+
 #: src/components/ui/BouncerNetworkForm.tsx
 msgid "Yes, delete"
 msgstr "是的，删除"
@@ -4055,6 +4086,10 @@ msgid "Your own CSS"
 msgstr "你自己的 CSS"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Your own file host"
+msgstr "你自己的文件主机"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Your personal website"
 msgstr "您的个人网站"
 
@@ -4089,6 +4124,10 @@ msgstr "your@email.com"
 #: src/components/ui/AddServerModal.tsx
 msgid "YourNickname"
 msgstr "YourNickname"
+
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "Zipline address"
+msgstr "Zipline 地址"
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Zoom in"

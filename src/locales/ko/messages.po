@@ -1507,6 +1507,10 @@ msgstr "실명 입력"
 msgid "Enter reason (optional)"
 msgstr "사유 입력 (선택 사항)"
 
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "Enter the http(s) address of your Zipline, like https://img.example.com"
+msgstr "Zipline의 http(s) 주소를 입력하세요. 예: https://img.example.com"
+
 #: src/components/ui/InviteUserModal.tsx
 msgid "Enter username to invite"
 msgstr "초대할 사용자 이름 입력"
@@ -1550,6 +1554,15 @@ msgstr "실패"
 #: src/components/ui/MiniMediaPlayer.tsx
 msgid "Failed to load audio"
 msgstr "오디오를 불러오지 못했습니다"
+
+#: src/components/ui/settings/UserFilehostField.tsx
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "File host removed."
+msgstr "파일 호스트를 제거했습니다."
+
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "File host saved."
+msgstr "파일 호스트를 저장했습니다."
 
 #: src/components/layout/ChatArea.tsx
 msgid "File not uploaded: encryption is still being set up. It can go once encryption is active, or after ending encryption."
@@ -2609,6 +2622,10 @@ msgstr "채널 참여에 필요한 비밀번호입니다. 키를 제거하려면
 msgid "Paste CSS here or upload a .css file"
 msgstr "여기에 CSS를 붙여넣거나 .css 파일을 업로드하세요"
 
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "Paste your Zipline token"
+msgstr "Zipline 토큰을 붙여넣으세요"
+
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Pattern already exists"
 msgstr "이미 존재하는 패턴입니다"
@@ -2851,6 +2868,7 @@ msgstr "완화 - 덜 공격적인 보호"
 #: src/components/ui/ChannelSettingsModal.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
+#: src/components/ui/settings/UserFilehostField.tsx
 msgid "Remove"
 msgstr "제거"
 
@@ -2933,6 +2951,7 @@ msgstr "안전"
 #: src/components/ui/ChannelSettingsModal.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
+#: src/components/ui/settings/UserFilehostField.tsx
 #: src/components/ui/TopicModal.tsx
 #: src/components/ui/UserSettings.tsx
 msgid "Save"
@@ -3662,9 +3681,17 @@ msgstr "파일 업로드"
 msgid "Upload Image"
 msgstr "이미지 업로드"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Upload pasted and dropped images to your own Zipline instead of the network's file host. Kept in this browser."
+msgstr "붙여넣거나 끌어다 놓은 이미지를 네트워크의 파일 호스트 대신 내 Zipline에 업로드합니다. 이 브라우저에 저장됩니다."
+
 #: src/components/ui/UploadPreviewModal.tsx
 msgid "Upload to the file host and send to {target}."
 msgstr "파일 호스트에 업로드하고 {target} 에 보냅니다."
+
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "Upload token"
+msgstr "업로드 토큰"
 
 #: src/components/ui/AvatarUpload.tsx
 msgid "Uploading..."
@@ -3949,6 +3976,10 @@ msgstr "작업 중…"
 msgid "Works with other IRC clients"
 msgstr "다른 IRC 클라이언트와 호환"
 
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "Works with Zipline v3 and v4. Copy the token from your Zipline user settings. The host must allow uploads from this site (CORS). Anyone with the token can upload as you, so only use it on your own device."
+msgstr "Zipline v3 및 v4에서 작동합니다. 토큰은 Zipline 사용자 설정에서 복사하세요. 호스트가 이 사이트의 업로드를 허용해야 합니다(CORS). 토큰이 있는 사람은 누구나 내 이름으로 업로드할 수 있으므로 본인 기기에서만 사용하세요."
+
 #: src/components/ui/BouncerNetworkForm.tsx
 msgid "Yes, delete"
 msgstr "예, 삭제합니다"
@@ -4055,6 +4086,10 @@ msgid "Your own CSS"
 msgstr "나만의 CSS"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Your own file host"
+msgstr "내 파일 호스트"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Your personal website"
 msgstr "개인 웹사이트"
 
@@ -4089,6 +4124,10 @@ msgstr "your@email.com"
 #: src/components/ui/AddServerModal.tsx
 msgid "YourNickname"
 msgstr "YourNickname"
+
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "Zipline address"
+msgstr "Zipline 주소"
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Zoom in"

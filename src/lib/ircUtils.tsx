@@ -4,6 +4,7 @@ import React from "react";
 /* eslint-disable no-control-regex */
 import type { Server, User } from "../types";
 import { isTauri } from "./platformUtils";
+import { userFilehostOrigin } from "./userFilehost";
 
 // highlight.js core + a curated ~25-language subset (see ./hljs) instead of the
 // full ~1.6MB build. Lazy-loaded as one chunk so it never blocks startup; the
@@ -1183,6 +1184,12 @@ export function isUrlFromTrustedSource(
 
   // Check against server filehost
   if (serverFilehost && isUrlFromFilehost(url, serverFilehost)) {
+    return true;
+  }
+
+  // The user's own upload host (Settings → File uploads)
+  const own = userFilehostOrigin();
+  if (own && isUrlFromFilehost(url, own)) {
     return true;
   }
 
