@@ -1507,6 +1507,10 @@ msgstr "Syötä oikea nimi"
 msgid "Enter reason (optional)"
 msgstr "Syötä syy (valinnainen)"
 
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "Enter the http(s) address of your Zipline, like https://img.example.com"
+msgstr "Anna Ziplinesi http(s)-osoite, esim. https://img.example.com"
+
 #: src/components/ui/InviteUserModal.tsx
 msgid "Enter username to invite"
 msgstr "Syötä kutsuttavan käyttäjänimi"
@@ -1550,6 +1554,15 @@ msgstr "epäonnistui"
 #: src/components/ui/MiniMediaPlayer.tsx
 msgid "Failed to load audio"
 msgstr "Äänen lataaminen epäonnistui"
+
+#: src/components/ui/settings/UserFilehostField.tsx
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "File host removed."
+msgstr "Tiedostopalvelin poistettu."
+
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "File host saved."
+msgstr "Tiedostopalvelin tallennettu."
 
 #: src/components/layout/ChatArea.tsx
 msgid "File not uploaded: encryption is still being set up. It can go once encryption is active, or after ending encryption."
@@ -2609,6 +2622,10 @@ msgstr "Salasana vaaditaan kanavalle liittymiseen. Jätä tyhjäksi poistaaksesi
 msgid "Paste CSS here or upload a .css file"
 msgstr "Liitä CSS tähän tai lataa .css-tiedosto"
 
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "Paste your Zipline token"
+msgstr "Liitä Zipline-tunnuksesi"
+
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Pattern already exists"
 msgstr "Malli on jo olemassa"
@@ -2851,6 +2868,7 @@ msgstr "Löysä – vähemmän aggressiivinen suojaus"
 #: src/components/ui/ChannelSettingsModal.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
+#: src/components/ui/settings/UserFilehostField.tsx
 msgid "Remove"
 msgstr "Poista"
 
@@ -2933,6 +2951,7 @@ msgstr "Turvallinen"
 #: src/components/ui/ChannelSettingsModal.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
+#: src/components/ui/settings/UserFilehostField.tsx
 #: src/components/ui/TopicModal.tsx
 #: src/components/ui/UserSettings.tsx
 msgid "Save"
@@ -3662,9 +3681,17 @@ msgstr "Lataa tiedostoja"
 msgid "Upload Image"
 msgstr "Lataa kuva"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Upload pasted and dropped images to your own Zipline instead of the network's file host. Kept in this browser."
+msgstr "Lähetä liitetyt ja pudotetut kuvat omaan Ziplineesi verkon tiedostopalvelimen sijaan. Tallennetaan tähän selaimeen."
+
 #: src/components/ui/UploadPreviewModal.tsx
 msgid "Upload to the file host and send to {target}."
 msgstr "Lähetä tiedostopalvelimelle ja edelleen kohteeseen {target}."
+
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "Upload token"
+msgstr "Lähetystunnus"
 
 #: src/components/ui/AvatarUpload.tsx
 msgid "Uploading..."
@@ -3949,6 +3976,10 @@ msgstr "Työstetään…"
 msgid "Works with other IRC clients"
 msgstr "Toimii muiden IRC-asiakkaiden kanssa"
 
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "Works with Zipline v3 and v4. Copy the token from your Zipline user settings. The host must allow uploads from this site (CORS). Anyone with the token can upload as you, so only use it on your own device."
+msgstr "Toimii Zipline v3:n ja v4:n kanssa. Kopioi tunnus Ziplinen käyttäjäasetuksista. Palvelimen on sallittava lähetykset tältä sivustolta (CORS). Kuka tahansa tunnuksen haltija voi lähettää tiedostoja sinun nimissäsi, joten käytä sitä vain omalla laitteellasi."
+
 #: src/components/ui/BouncerNetworkForm.tsx
 msgid "Yes, delete"
 msgstr "Kyllä, poista"
@@ -4055,6 +4086,10 @@ msgid "Your own CSS"
 msgstr "Oma CSS"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Your own file host"
+msgstr "Oma tiedostopalvelin"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Your personal website"
 msgstr "Henkilökohtainen verkkosivustosi"
 
@@ -4089,6 +4124,10 @@ msgstr "sinun@sahkoposti.fi"
 #: src/components/ui/AddServerModal.tsx
 msgid "YourNickname"
 msgstr "SinunNimimerkkisi"
+
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "Zipline address"
+msgstr "Ziplinen osoite"
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Zoom in"
