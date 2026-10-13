@@ -49,6 +49,7 @@ import {
 } from "../../lib/messageFormatter";
 import { GROUP_WINDOW_MS } from "../../lib/messageGrouping";
 import { isMobileDevice, isTauriMobile } from "../../lib/platformUtils";
+import { uploadToUserFilehost, useUserFilehost } from "../../lib/userFilehost";
 import useStore from "../../store";
 import { sendEncryptedMedia } from "../../store/handlers/e2ee";
 import { injectSystemNotice } from "../../store/handlers/e2eeConversation";
@@ -693,10 +694,16 @@ export const ChatArea: React.FC<{
     [servers, selectedServerId],
   );
 
-  // The server offers file uploads via either the vendor token uploader
-  // (obby.world/FILEHOST) or the standard tokenless one (draft/FILEHOST).
+  // Files can go to the user's own host (Settings → File uploads) or to one the
+  // server offers: the vendor token uploader (obby.world/FILEHOST) or the
+  // standard tokenless one (draft/FILEHOST). The user's own host wins, since
+  // they set it up deliberately.
+  const userFilehost = useUserFilehost();
+  const userHost = userFilehost.url ? userFilehost : null;
   const canUpload = !!(
-    selectedServer?.filehost || selectedServer?.fileHosts?.length
+    userHost ||
+    selectedServer?.filehost ||
+    selectedServer?.fileHosts?.length
   );
 
   const selectedChannel = useMemo(
@@ -1016,9 +1023,11 @@ export const ChatArea: React.FC<{
     if (!selectedServerId || files.length === 0) return;
     // Prefer the standard tokenless draft/FILEHOST when offered; otherwise
     // fall back to the vendor token-authenticated obby.world/FILEHOST.
-    const tokenlessEndpoint = selectedServer?.fileHosts?.[0];
-    const filehostUrl = selectedServer?.filehost;
-    if (!tokenlessEndpoint && !filehostUrl) return;
+    const tokenlessEndpoint = userHost
+      ? undefined
+      : selectedServer?.fileHosts?.[0];
+    const filehostUrl = userHost ? undefined : selectedServer?.filehost;
+    if (!userHost && !tokenlessEndpoint && !filehostUrl) return;
     const target = selectedChannel?.name ?? selectedPrivateChat?.username;
     if (!target) return;
     // A confirmation names the conversation it was given for. Answering it
@@ -1175,19 +1184,25 @@ export const ChatArea: React.FC<{
             });
             return null;
           }
-          const url = tokenlessEndpoint
-            ? await uploadFileTokenless(upload, {
-                endpoint: tokenlessEndpoint,
+          const url = userHost
+            ? await uploadToUserFilehost(upload, {
+                host: userHost,
                 signal: ac.signal,
                 onProgress,
               })
-            : await uploadFile(upload, {
-                // biome-ignore lint/style/noNonNullAssertion: filehostUrl is set when tokenlessEndpoint isn't (guarded above)
-                filehostUrl: filehostUrl!,
-                bearerToken: tokens[jobIdx],
-                signal: ac.signal,
-                onProgress,
-              });
+            : tokenlessEndpoint
+              ? await uploadFileTokenless(upload, {
+                  endpoint: tokenlessEndpoint,
+                  signal: ac.signal,
+                  onProgress,
+                })
+              : await uploadFile(upload, {
+                  // biome-ignore lint/style/noNonNullAssertion: filehostUrl is set when neither userHost nor tokenlessEndpoint is (guarded above)
+                  filehostUrl: filehostUrl!,
+                  bearerToken: tokens[jobIdx],
+                  signal: ac.signal,
+                  onProgress,
+                });
           updateJob(job.id, {
             status: "done",
             loaded: job.file.size,

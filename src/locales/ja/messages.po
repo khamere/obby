@@ -1507,6 +1507,10 @@ msgstr "本名を入力"
 msgid "Enter reason (optional)"
 msgstr "理由を入力（任意）"
 
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "Enter the http(s) address of your Zipline, like https://img.example.com"
+msgstr "Zipline の http(s) アドレスを入力してください（例: https://img.example.com）"
+
 #: src/components/ui/InviteUserModal.tsx
 msgid "Enter username to invite"
 msgstr "招待するユーザー名を入力"
@@ -1550,6 +1554,15 @@ msgstr "失敗"
 #: src/components/ui/MiniMediaPlayer.tsx
 msgid "Failed to load audio"
 msgstr "音声の読み込みに失敗しました"
+
+#: src/components/ui/settings/UserFilehostField.tsx
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "File host removed."
+msgstr "ファイルホストを削除しました。"
+
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "File host saved."
+msgstr "ファイルホストを保存しました。"
 
 #: src/components/layout/ChatArea.tsx
 msgid "File not uploaded: encryption is still being set up. It can go once encryption is active, or after ending encryption."
@@ -2609,6 +2622,10 @@ msgstr "チャンネルに参加するために必要なパスワード。キー
 msgid "Paste CSS here or upload a .css file"
 msgstr "ここに CSS を貼り付けるか .css ファイルをアップロード"
 
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "Paste your Zipline token"
+msgstr "Zipline のトークンを貼り付け"
+
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Pattern already exists"
 msgstr "パターンはすでに存在します"
@@ -2851,6 +2868,7 @@ msgstr "緩め — 控えめな保護"
 #: src/components/ui/ChannelSettingsModal.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
+#: src/components/ui/settings/UserFilehostField.tsx
 msgid "Remove"
 msgstr "削除"
 
@@ -2933,6 +2951,7 @@ msgstr "安全"
 #: src/components/ui/ChannelSettingsModal.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
+#: src/components/ui/settings/UserFilehostField.tsx
 #: src/components/ui/TopicModal.tsx
 #: src/components/ui/UserSettings.tsx
 msgid "Save"
@@ -3662,9 +3681,17 @@ msgstr "ファイルをアップロード"
 msgid "Upload Image"
 msgstr "画像をアップロード"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Upload pasted and dropped images to your own Zipline instead of the network's file host. Kept in this browser."
+msgstr "貼り付けやドロップした画像を、ネットワークのファイルホストではなく自分の Zipline にアップロードします。このブラウザーに保存されます。"
+
 #: src/components/ui/UploadPreviewModal.tsx
 msgid "Upload to the file host and send to {target}."
 msgstr "ファイルホストにアップロードして {target} に送信します。"
+
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "Upload token"
+msgstr "アップロードトークン"
 
 #: src/components/ui/AvatarUpload.tsx
 msgid "Uploading..."
@@ -3949,6 +3976,10 @@ msgstr "処理中…"
 msgid "Works with other IRC clients"
 msgstr "他のIRCクライアントで動作します"
 
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "Works with Zipline v3 and v4. Copy the token from your Zipline user settings. The host must allow uploads from this site (CORS). Anyone with the token can upload as you, so only use it on your own device."
+msgstr "Zipline v3 と v4 で動作します。トークンは Zipline のユーザー設定からコピーしてください。ホストはこのサイトからのアップロードを許可している必要があります（CORS）。トークンを持つ人は誰でもあなたとしてアップロードできるため、自分のデバイスでのみ使用してください。"
+
 #: src/components/ui/BouncerNetworkForm.tsx
 msgid "Yes, delete"
 msgstr "はい、削除します"
@@ -4055,6 +4086,10 @@ msgid "Your own CSS"
 msgstr "自分の CSS"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Your own file host"
+msgstr "自分のファイルホスト"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Your personal website"
 msgstr "個人ウェブサイト"
 
@@ -4089,6 +4124,10 @@ msgstr "your@email.com"
 #: src/components/ui/AddServerModal.tsx
 msgid "YourNickname"
 msgstr "YourNickname"
+
+#: src/components/ui/settings/UserFilehostField.tsx
+msgid "Zipline address"
+msgstr "Zipline のアドレス"
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Zoom in"
