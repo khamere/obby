@@ -30,6 +30,9 @@ export type PinnedPrivateChatsMap = Record<
 
 export type ChannelOrderMap = Record<string, string[]>;
 
+// serverId -> lowercased nick -> ISO time the user closed that private chat.
+export type ClosedPrivateChatsMap = Record<string, Record<string, string>>;
+
 export interface GlobalSettings {
   enableNotifications: boolean;
   notificationSound: string;
