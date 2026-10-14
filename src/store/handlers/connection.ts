@@ -628,10 +628,13 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
     }
   });
 
-  ircClient.on("CHATHISTORY_TARGET", ({ serverId, target }) => {
+  ircClient.on("CHATHISTORY_TARGET", ({ serverId, target, timestamp }) => {
     if (isChannelTarget(target)) return;
     const self = ircClient.getNick(serverId);
     if (self && self.toLowerCase() === target.toLowerCase()) return;
+    // The user closed this chat; only bring it back for newer activity.
+    const closedAt = storage.closedChats.closedAt(serverId, target);
+    if (closedAt && Date.parse(timestamp) <= Date.parse(closedAt)) return;
     const server = store.getState().servers.find((s) => s.id === serverId);
     if (!server) return;
     const exists = server.privateChats?.some(
