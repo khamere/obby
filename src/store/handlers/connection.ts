@@ -607,7 +607,52 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
       // Instead, we rely on metadata from shared channels (if user is in a channel with us)
       // or from localStorage if we previously got their metadata.
     }
+
+    // Unpinned private chats only live in memory, so a reload forgets
+    // them. Bouncers (soju) replay nothing to chathistory-aware clients
+    // and expect us to ask which conversations had activity; the
+    // CHATHISTORY_TARGET handler below reopens the direct-message ones.
+    const readyServer = store.getState().servers.find((s) => s.id === serverId);
+    if (
+      readyServer?.capabilities?.includes("draft/chathistory") &&
+      !readyServer.isBouncerControl
+    ) {
+      setTimeout(() => {
+        const to = new Date();
+        const from = new Date(to.getTime() - CHATHISTORY_TARGETS_WINDOW_MS);
+        ircClient.sendRaw(
+          serverId,
+          `CHATHISTORY TARGETS timestamp=${from.toISOString()} timestamp=${to.toISOString()} ${CHATHISTORY_TARGETS_LIMIT}`,
+        );
+      }, 50);
+    }
   });
+
+  ircClient.on("CHATHISTORY_TARGET", ({ serverId, target }) => {
+    if (isChannelTarget(target)) return;
+    const self = ircClient.getNick(serverId);
+    if (self && self.toLowerCase() === target.toLowerCase()) return;
+    const server = store.getState().servers.find((s) => s.id === serverId);
+    if (!server) return;
+    const exists = server.privateChats?.some(
+      (pc) => pc.username.toLowerCase() === target.toLowerCase(),
+    );
+    if (exists) return;
+    // openPrivateChat creates the (unpinned) chat, MONITORs the nick and
+    // requests CHATHISTORY LATEST for it.
+    store.getState().openPrivateChat(serverId, target);
+  });
+}
+
+// How far back to look for conversations on connect, and how many targets
+// to ask for. Channels come back too and are ignored, so the limit must
+// leave room for them.
+const CHATHISTORY_TARGETS_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+const CHATHISTORY_TARGETS_LIMIT = 100;
+
+// RFC 1459 / common CHANTYPES; Obby doesn't track ISUPPORT CHANTYPES.
+function isChannelTarget(target: string): boolean {
+  return /^[#&+!]/.test(target);
 }
 
 // Inlined from fetchAndMergeOwnMetadata in index.ts — uses store instead of useStore
