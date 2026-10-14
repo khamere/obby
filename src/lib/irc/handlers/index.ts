@@ -31,6 +31,7 @@ import {
   handleRplTopicWhoTime,
   handleTopic,
 } from "./channels";
+import { handleChathistory } from "./chathistory";
 import { handleCmdslist } from "./cmdslist";
 import {
   handleCap,
@@ -344,6 +345,9 @@ export const IRC_DISPATCH: Record<string, HandlerFn> = {
     handleInvitelink(ctx, serverId, source, parv, mtags),
   MARKREAD: (ctx, serverId, source, parv, mtags) =>
     handleMarkread(ctx, serverId, source, parv, mtags),
+  // draft/chathistory: `CHATHISTORY TARGETS <target> <timestamp>` replies.
+  CHATHISTORY: (ctx, serverId, source, parv, mtags) =>
+    handleChathistory(ctx, serverId, source, parv, mtags),
   CMDSLIST: (ctx, serverId, source, parv, mtags) =>
     handleCmdslist(ctx, serverId, source, parv, mtags),
 
