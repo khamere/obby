@@ -383,6 +383,13 @@ export interface EventMap {
     target?: string;
     message: string;
   };
+  // draft/chathistory: one `CHATHISTORY TARGETS <target> <timestamp>`
+  // reply line, i.e. a conversation that had activity in the window
+  // we asked about.
+  CHATHISTORY_TARGET: BaseIRCEvent & {
+    target: string;
+    timestamp: string;
+  };
   // obsidianirc/cmdslist: server is reporting an add/remove delta of
   // commands the user can invoke right now.  Ops are individual
   // tokens of the form "+cmd" or "-cmd" (multiple per wire line).
