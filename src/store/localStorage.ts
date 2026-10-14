@@ -1,6 +1,7 @@
 import type { ServerConfig } from "../types";
 import type {
   ChannelOrderMap,
+  ClosedPrivateChatsMap,
   GlobalSettings,
   PinnedPrivateChatsMap,
   SavedMetadata,
@@ -13,6 +14,7 @@ const KEYS = {
   SETTINGS: "globalSettings",
   CHANNEL_ORDER: "channelOrder",
   PINNED_PMS: "pinnedPrivateChats",
+  CLOSED_PMS: "closedPrivateChats",
   UI_SELECTION: "uiSelections",
   MIGRATION_VERSION: "migrationVersion",
   BOUNCER_GROUP_ACCENTS: "bouncerGroupAccents",
@@ -120,6 +122,43 @@ export const pinnedChats = {
 
   save: (data: PinnedPrivateChatsMap) => {
     localStorage.setItem(KEYS.PINNED_PMS, JSON.stringify(data));
+  },
+};
+
+// Private chats the user closed, with the time of the close. CHATHISTORY
+// TARGETS keeps listing a conversation forever, so this is what stops a
+// closed chat from coming back on the next reload until there is newer
+// activity.
+export const closedChats = {
+  load: (): ClosedPrivateChatsMap => {
+    try {
+      return JSON.parse(localStorage.getItem(KEYS.CLOSED_PMS) || "{}");
+    } catch {
+      return {};
+    }
+  },
+
+  save: (data: ClosedPrivateChatsMap) => {
+    localStorage.setItem(KEYS.CLOSED_PMS, JSON.stringify(data));
+  },
+
+  closedAt: (serverId: string, username: string): string | undefined =>
+    closedChats.load()[serverId]?.[username.toLowerCase()],
+
+  record: (serverId: string, username: string, closedAt: Date) => {
+    const data = closedChats.load();
+    data[serverId] = {
+      ...(data[serverId] ?? {}),
+      [username.toLowerCase()]: closedAt.toISOString(),
+    };
+    closedChats.save(data);
+  },
+
+  forget: (serverId: string, username: string) => {
+    const data = closedChats.load();
+    if (!data[serverId]?.[username.toLowerCase()]) return;
+    delete data[serverId][username.toLowerCase()];
+    closedChats.save(data);
   },
 };
 
