@@ -16,13 +16,24 @@ function earlierHistoryTime(
 
 // Chathistory messages are buffered here (outside the store) to avoid one
 // store.setState per incoming PRIVMSG.  Only flushed at BATCH_END.
+// Batch ids are only unique per connection (soju numbers them per
+// downstream), so the buffers are keyed by server + batch id.
 export const chathistoryBuffers = new Map<string, Message[]>();
 
-export function bufferChathistoryMessage(batchId: string, msg: Message): void {
-  let buf = chathistoryBuffers.get(batchId);
+export function historyBufferKey(serverId: string, batchId: string): string {
+  return `${serverId}\u0000${batchId}`;
+}
+
+export function bufferChathistoryMessage(
+  serverId: string,
+  batchId: string,
+  msg: Message,
+): void {
+  const key = historyBufferKey(serverId, batchId);
+  let buf = chathistoryBuffers.get(key);
   if (!buf) {
     buf = [];
-    chathistoryBuffers.set(batchId, buf);
+    chathistoryBuffers.set(key, buf);
   }
   buf.push(msg);
 }
@@ -39,13 +50,15 @@ interface BufferedReaction {
 export const reactionBuffers = new Map<string, BufferedReaction[]>();
 
 export function bufferChathistoryReaction(
+  serverId: string,
   batchId: string,
   r: BufferedReaction,
 ): void {
-  let buf = reactionBuffers.get(batchId);
+  const key = historyBufferKey(serverId, batchId);
+  let buf = reactionBuffers.get(key);
   if (!buf) {
     buf = [];
-    reactionBuffers.set(batchId, buf);
+    reactionBuffers.set(key, buf);
   }
   buf.push(r);
 }
@@ -223,6 +236,7 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
   ircClient.on("BATCH_END", (response) => {
     const { serverId, batchId, historyMessageCount, historyOldestTime } =
       response;
+    const bufKey = historyBufferKey(serverId, batchId);
     // Capture chathistory channel name so we can fire the loading event AFTER setState.
     // Calling triggerEvent inside store.setState causes a nested setState race: the inner
     // call sets isLoadingHistory=false, but the outer callback then returns stale servers
@@ -288,8 +302,8 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
         );
         if (channel) {
           const key = `${serverId}-${channel.id}`;
-          const pending = chathistoryBuffers.get(batchId) ?? [];
-          chathistoryBuffers.delete(batchId);
+          const pending = chathistoryBuffers.get(bufKey) ?? [];
+          chathistoryBuffers.delete(bufKey);
           const existing = state.messages[key] || [];
 
           // Dedup buffered messages against what's already in the store (event messages
@@ -316,8 +330,8 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
 
           // Apply buffered reactions and re-resolve reply references now that
           // all messages from the batch are in `merged` and visible to each other.
-          const pendingReactions = reactionBuffers.get(batchId) ?? [];
-          reactionBuffers.delete(batchId);
+          const pendingReactions = reactionBuffers.get(bufKey) ?? [];
+          reactionBuffers.delete(bufKey);
 
           const finalMessages = merged.map((m) => {
             let updated = m;
@@ -402,10 +416,10 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
         );
         if (privateChat) {
           const key = `${serverId}-${privateChat.id}`;
-          const pending = chathistoryBuffers.get(batchId) ?? [];
-          chathistoryBuffers.delete(batchId);
-          const pendingReactions = reactionBuffers.get(batchId) ?? [];
-          reactionBuffers.delete(batchId);
+          const pending = chathistoryBuffers.get(bufKey) ?? [];
+          chathistoryBuffers.delete(bufKey);
+          const pendingReactions = reactionBuffers.get(bufKey) ?? [];
+          reactionBuffers.delete(bufKey);
           const existing = state.messages[key] || [];
 
           const existingIds = new Set(
@@ -505,8 +519,8 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
         }
 
         // Unknown target — still clean up buffers to prevent dangling data
-        chathistoryBuffers.delete(batchId);
-        reactionBuffers.delete(batchId);
+        chathistoryBuffers.delete(bufKey);
+        reactionBuffers.delete(bufKey);
       }
 
       return {

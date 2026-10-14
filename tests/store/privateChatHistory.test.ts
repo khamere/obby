@@ -3,6 +3,7 @@ import ircClient from "../../src/lib/ircClient";
 import useStore from "../../src/store";
 import {
   chathistoryBuffers,
+  historyBufferKey,
   reactionBuffers,
 } from "../../src/store/handlers/batches";
 import { MAX_MESSAGES_PER_CHANNEL } from "../../src/store/helpers";
@@ -46,7 +47,7 @@ function completePage(pending: Message[]) {
     type: "chathistory",
     parameters: ["Mrkmrtns"],
   });
-  chathistoryBuffers.set("pm-history", pending);
+  chathistoryBuffers.set(historyBufferKey("s1", "pm-history"), pending);
   ircClient.triggerEvent("BATCH_END", {
     serverId: "s1",
     batchId: "pm-history",
@@ -182,7 +183,9 @@ describe("private chat history batches", () => {
     expect(messages().map((m) => m.id)).toEqual(["older", "recent"]);
     expect(pm()?.isLoadingHistory).toBe(false);
     expect(pm()?.hasMoreHistory).toBe(true);
-    expect(chathistoryBuffers.has("pm-history")).toBe(false);
+    expect(chathistoryBuffers.has(historyBufferKey("s1", "pm-history"))).toBe(
+      false,
+    );
   });
 
   it("stops at an empty batch without removing existing messages", () => {
