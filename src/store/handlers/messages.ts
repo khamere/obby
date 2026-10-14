@@ -225,7 +225,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           const batch =
             store.getState().activeBatches[response.serverId]?.[batchId];
           if (batch?.type === "chathistory") {
-            bufferChathistoryMessage(batchId, newMessage);
+            bufferChathistoryMessage(response.serverId, batchId, newMessage);
             return;
           }
         }
@@ -533,7 +533,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
         }
 
         if (historyBatch) {
-          bufferChathistoryMessage(historyBatch, newMessage);
+          bufferChathistoryMessage(response.serverId, historyBatch, newMessage);
           return;
         }
 
@@ -704,7 +704,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
                   ? [mtags.msgid]
                   : [];
             if (historyBatch) {
-              bufferChathistoryMessage(historyBatch, newMessage);
+              bufferChathistoryMessage(
+                response.serverId,
+                historyBatch,
+                newMessage,
+              );
               return;
             }
             if (idsToTrack.length > 0) {
@@ -776,7 +780,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
               ? [mtags.msgid]
               : [];
         if (historyBatch) {
-          bufferChathistoryMessage(historyBatch, newMessage);
+          bufferChathistoryMessage(response.serverId, historyBatch, newMessage);
           return;
         }
         if (idsToTrack.length > 0) {
@@ -1072,7 +1076,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
             tags: mtags,
           };
           if (historyBatch) {
-            bufferChathistoryMessage(historyBatch, newMessage);
+            bufferChathistoryMessage(
+              response.serverId,
+              historyBatch,
+              newMessage,
+            );
             return;
           }
           store.getState().addMessage(newMessage);
@@ -1130,7 +1138,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
         };
 
         if (historyBatch) {
-          bufferChathistoryMessage(historyBatch, newMessage);
+          bufferChathistoryMessage(response.serverId, historyBatch, newMessage);
           return;
         }
 
@@ -1797,7 +1805,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
         const batch =
           store.getState().activeBatches[response.serverId]?.[batchId];
         if (batch?.type === "chathistory") {
-          bufferChathistoryReaction(batchId, {
+          bufferChathistoryReaction(response.serverId, batchId, {
             emoji: mtags["+draft/react"],
             userId: sender,
             targetMsgId: reactTargetId,
@@ -1881,7 +1889,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
         const batch =
           store.getState().activeBatches[response.serverId]?.[batchId];
         if (batch?.type === "chathistory") {
-          bufferChathistoryReaction(batchId, {
+          bufferChathistoryReaction(response.serverId, batchId, {
             emoji: mtags["+draft/unreact"],
             userId: sender,
             targetMsgId: unreactTargetId,

@@ -4,6 +4,7 @@ import type { AppState } from "../../src/store";
 import useStore from "../../src/store";
 import {
   chathistoryBuffers,
+  historyBufferKey,
   reactionBuffers,
 } from "../../src/store/handlers/batches";
 import type { Channel, Message } from "../../src/types";
@@ -194,7 +195,7 @@ describe("chathistory batch end — hasMoreHistory", () => {
         },
       },
     });
-    chathistoryBuffers.set("batchH", [
+    chathistoryBuffers.set(historyBufferKey("srv-1", "batchH"), [
       makeMessage({ id: "fetched-1", msgid: "fetched-1" }),
     ]);
 
@@ -257,7 +258,7 @@ describe("chathistory batch end — hasMoreHistory", () => {
         },
       },
     });
-    chathistoryBuffers.set("batchSort", [older]);
+    chathistoryBuffers.set(historyBufferKey("srv-1", "batchSort"), [older]);
 
     ircClient.triggerEvent("BATCH_END", {
       serverId: "srv-1",
@@ -306,10 +307,12 @@ describe("chathistory batch — CHANMSG buffering", () => {
     const msgs = useStore.getState().messages["srv-1-chan-1"];
     expect(msgs ?? []).toHaveLength(0);
     // Message IS in the buffer
-    expect(chathistoryBuffers.get("batchCH")).toHaveLength(1);
-    expect(chathistoryBuffers.get("batchCH")?.[0].content).toBe(
-      "historical message",
-    );
+    expect(
+      chathistoryBuffers.get(historyBufferKey("srv-1", "batchCH")),
+    ).toHaveLength(1);
+    expect(
+      chathistoryBuffers.get(historyBufferKey("srv-1", "batchCH"))?.[0].content,
+    ).toBe("historical message");
   });
 
   it("buffer is flushed to the store at BATCH_END", () => {
@@ -357,7 +360,7 @@ describe("chathistory batch — CHANMSG buffering", () => {
         },
       },
     });
-    chathistoryBuffers.set("batchClean", [
+    chathistoryBuffers.set(historyBufferKey("srv-1", "batchClean"), [
       makeMessage({ id: "m1", msgid: "m1" }),
     ]);
 
@@ -366,7 +369,9 @@ describe("chathistory batch — CHANMSG buffering", () => {
       batchId: "batchClean",
     });
 
-    expect(chathistoryBuffers.has("batchClean")).toBe(false);
+    expect(
+      chathistoryBuffers.has(historyBufferKey("srv-1", "batchClean")),
+    ).toBe(false);
   });
 
   it("msgid dedup: message already in store is not added again at BATCH_END", () => {
@@ -389,7 +394,7 @@ describe("chathistory batch — CHANMSG buffering", () => {
       },
     });
     // Same message arrives via history
-    chathistoryBuffers.set("batchDedup", [
+    chathistoryBuffers.set(historyBufferKey("srv-1", "batchDedup"), [
       makeMessage({ id: "hist-1", msgid: "live-msgid-1", content: "live" }),
     ]);
 
@@ -509,7 +514,7 @@ describe("chathistory batch — reactions and replies", () => {
     });
 
     // Manually set the buffered message to have an existing reaction
-    const buf = chathistoryBuffers.get("batchRR");
+    const buf = chathistoryBuffers.get(historyBufferKey("srv-1", "batchRR"));
     if (buf) {
       const m = buf.find((m) => m.msgid === "msg-unreact-1");
       if (m) m.reactions = [{ emoji: "👍", userId: "bob" }];
