@@ -2811,6 +2811,9 @@ const useStore = create<AppState>((set, get) => ({
       const server = state.servers.find((s) => s.id === serverId);
       if (!server) return {};
 
+      // Opening (or receiving a message in) a chat cancels an earlier close.
+      storage.closedChats.forget(serverId, username);
+
       // Get the current user for this specific server
       const currentUser = ircClient.getCurrentUser(serverId);
 
@@ -3001,6 +3004,12 @@ const useStore = create<AppState>((set, get) => ({
       // If unpinned, remove MONITOR (but don't UNSUB from metadata - that's global)
       if (privateChat && !privateChat.isPinned) {
         ircClient.monitorRemove(serverId, [privateChat.username]);
+      }
+
+      // Keep it closed across reloads: CHATHISTORY TARGETS would otherwise
+      // bring it straight back on the next connect.
+      if (privateChat) {
+        storage.closedChats.record(serverId, privateChat.username, new Date());
       }
 
       // If the deleted private chat was selected, clear the selection
