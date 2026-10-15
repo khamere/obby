@@ -254,6 +254,9 @@ export interface ServerConfig {
     | "EXTERNAL";
   skipLinkSecurityWarning?: boolean;
   skipLocalhostWarning?: boolean;
+  // Per-network accent colour (hex), overrides the global accent while
+  // this network is selected.
+  accentColor?: string;
   operUsername?: string;
   operPassword?: string;
   operOnConnect?: boolean;

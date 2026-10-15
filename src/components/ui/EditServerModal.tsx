@@ -57,6 +57,9 @@ export const EditServerModal: React.FC<EditServerModalProps> = ({
     serverConfig?.port?.toString() || server?.port?.toString() || "443",
   );
   const [nickname, setNickname] = useState(serverConfig?.nickname || "");
+  const [accentColor, setAccentColor] = useState(
+    serverConfig?.accentColor || "",
+  );
   const [password, setPassword] = useState("");
 
   const [saslAccountName, setSaslAccountName] = useState(
@@ -150,6 +153,7 @@ export const EditServerModal: React.FC<EditServerModalProps> = ({
         host: serverHost.trim(),
         port: Number.parseInt(serverPort, 10),
         nickname: nickname.trim(),
+        accentColor: accentColor || "",
         password: password.trim() || undefined,
         saslAccountName: finalSaslAccountName || undefined,
         // The existing storage format keeps SASL passwords base64-encoded.
@@ -225,6 +229,32 @@ export const EditServerModal: React.FC<EditServerModalProps> = ({
             placeholder="443"
             className={inputClass}
           />
+        </div>
+      </div>
+      <div>
+        <label className={labelClass}>Accent colour</label>
+        <div className="flex items-center gap-2">
+          <input
+            type="color"
+            value={accentColor || "#5865f2"}
+            onChange={(e) => setAccentColor(e.target.value)}
+            aria-label="Accent colour"
+            className="w-9 h-8 rounded border-none bg-transparent cursor-pointer"
+          />
+          <span className="text-sm text-discord-text-muted">
+            {accentColor
+              ? "Used while this network is selected"
+              : "Using the theme's accent"}
+          </span>
+          {accentColor && (
+            <button
+              type="button"
+              onClick={() => setAccentColor("")}
+              className="text-sm text-discord-text-link hover:underline"
+            >
+              Clear
+            </button>
+          )}
         </div>
       </div>
       <div>
