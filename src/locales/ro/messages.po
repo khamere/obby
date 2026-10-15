@@ -301,6 +301,14 @@ msgid "8 hours"
 msgstr "8 ore"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "A font installed on this device, e.g. JetBrains Mono. Used when Font is set to Custom."
+msgstr "Un font instalat pe acest dispozitiv, de ex. JetBrains Mono. Folosit când Font este setat pe Personalizat."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "A font installed on this device. Used when Chat font is set to Custom."
+msgstr "Un font instalat pe acest dispozitiv. Folosit când Fontul chatului este setat pe Personalizat."
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "A stylesheet applied on top of Obby, from a shared link and/or your own. Sidebar rows carry data-network-host so you can style individual networks. Anything that would load other files is removed."
 msgstr "O foaie de stil aplicată peste Obby, dintr-un link partajat și/sau a ta. Rândurile din bara laterală au data-network-host, ca să poți stiliza fiecare rețea. Orice ar încărca alte fișiere este eliminat."
 
@@ -641,6 +649,10 @@ msgstr "Banează utilizator (după poreclă)"
 msgid "Bans"
 msgstr "Banuri"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Base text size; everything scales with it"
+msgstr "Dimensiunea de bază a textului; totul se scalează cu ea"
+
 #: src/components/layout/ChannelList.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/ui/BotsModal.tsx
@@ -855,6 +867,10 @@ msgstr "Canale"
 msgid "Channels on {networkName}"
 msgstr "Canale pe {networkName}"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Chat font"
+msgstr "Fontul chatului"
+
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Choose a predefined flood protection profile. These profiles provide balanced protection settings for different use cases."
 msgstr "Alegeți un profil de protecție flood predefinit. Aceste profiluri oferă setări de protecție echilibrate pentru diferite cazuri de utilizare."
@@ -991,6 +1007,11 @@ msgstr "Comentarii"
 msgid "Comments ({commentCount})"
 msgstr "Comentarii ({commentCount})"
 
+#: src/lib/settings/definitions/allSettings.ts
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Compact"
+msgstr "Compact"
+
 #: src/components/ui/BotToolsHistoryButton.tsx
 msgid "complete"
 msgstr "finalizat"
@@ -1100,6 +1121,14 @@ msgstr "Copiază linkul"
 msgid "Copy URL"
 msgstr "Copiază URL"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Cosy"
+msgstr "Confortabil"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Cosy shows avatars and spacing between messages; Compact packs them like a classic IRC client"
+msgstr "Confortabil afișează avatare și spațiu între mesaje; Compact le înghesuie ca un client IRC clasic"
+
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Could not load this link. It must point to the raw .css file."
 msgstr "Acest link nu a putut fi încărcat. Trebuie să ducă direct la fișierul .css."
@@ -1137,6 +1166,10 @@ msgid "Current avatar"
 msgstr "Avatar curent"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Custom chat font name"
+msgstr "Numele fontului de chat personalizat"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Custom CSS"
 msgstr "CSS personalizat"
 
@@ -1145,12 +1178,20 @@ msgid "Custom Flood Rules (+f)"
 msgstr "Reguli flood personalizate (+f)"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Custom font name"
+msgstr "Numele fontului personalizat"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Custom Mentions"
 msgstr "Mențiuni personalizate"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Custom notification sound file"
 msgstr "Fișier audio de notificare personalizat"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Custom…"
+msgstr "Personalizat…"
 
 #: src/components/ui/UserSettings.tsx
 msgid "Customize your IRC client experience"
@@ -1605,6 +1646,14 @@ msgstr "Profil flood (+F)"
 msgid "Flood Protection Settings"
 msgstr "Setări de protecție flood"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Font"
+msgstr "Font"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Font size"
+msgstr "Dimensiunea fontului"
+
 #. placeholder {0}: filteredMessages.length
 #: src/components/layout/ChannelMessageList.tsx
 msgid "Found {0} messages matching \"{searchQuery}\""
@@ -1782,6 +1831,10 @@ msgstr "Informațiile despre cine a invocat această comandă sunt furnizate de 
 msgid "Insert emoji"
 msgstr "Inserează emoji"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Inter"
+msgstr "Inter"
+
 #: src/lib/settings/registry.ts
 msgid "Invalid format"
 msgstr "Format invalid"
@@ -1851,6 +1904,10 @@ msgstr "Servere IRC:"
 #: src/store/handlers/users.ts
 msgid "is now known as **{newNick}**"
 msgstr "acum este cunoscut ca **{newNick}**"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "JetBrains Mono"
+msgstr "JetBrains Mono"
 
 #: src/components/message/JsonLogMessage.tsx
 #: src/components/ui/QuickActions.tsx
@@ -1963,6 +2020,10 @@ msgstr "Anunțați ceilalți când scrieți"
 #: src/components/ui/BouncerNetworkForm.tsx
 msgid "Libera Chat"
 msgstr "Libera Chat"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Line spacing"
+msgstr "Spațiere între rânduri"
 
 #: src/components/message/LinkPreview.tsx
 msgid "Link preview"
@@ -2138,6 +2199,10 @@ msgstr "Mesaj @{0} (Shift+Enter pentru linie nouă)"
 #: src/components/ui/AddPrivateChatModal.tsx
 msgid "Message <0>{0}</0>"
 msgstr "Mesaj <0>{0}</0>"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Message density"
+msgstr "Densitatea mesajelor"
 
 #: src/store/handlers/e2eeOutbound.ts
 msgid "Message not sent: encryption isn't active yet. Wait for the lock to turn green, or end encryption to send unencrypted."
@@ -2440,6 +2505,7 @@ msgid "None"
 msgstr "Niciunul"
 
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Normal"
 msgstr "Normal"
 
@@ -2858,6 +2924,7 @@ msgid "Reject"
 msgstr "Respinge"
 
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Relaxed"
 msgstr "Relaxat"
 
@@ -2934,6 +3001,10 @@ msgstr "Verifică cheia schimbată…"
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Review key"
 msgstr "Verifică cheia"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Roboto Mono (default)"
+msgstr "Roboto Mono (implicit)"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Rules"
@@ -3360,6 +3431,10 @@ msgstr "Player SoundCloud"
 msgid "Source"
 msgstr "Sursă"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Space between lines of text"
+msgstr "Spațiul dintre rândurile de text"
+
 #: src/components/ui/AddPrivateChatModal.tsx
 msgid "Start Private Message"
 msgstr "Începe un mesaj privat"
@@ -3409,6 +3484,18 @@ msgstr "suspendat"
 msgid "System"
 msgstr "Sistem"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System monospace"
+msgstr "Monospațiat de sistem"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System sans-serif"
+msgstr "Sans-serif de sistem"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System serif"
+msgstr "Serif de sistem"
+
 #: src/components/ui/BotToolsCard.tsx
 msgid "Text"
 msgstr "Text"
@@ -3428,6 +3515,14 @@ msgstr "Conexiunea la <0>{serverName}</0> prezintă următoarele probleme de sec
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "The file host stores it readable, and anyone who obtains the link can open it. Switch to Obby encryption to send files encrypted."
 msgstr "Serverul de fișiere îl stochează lizibil, iar oricine obține linkul îl poate deschide. Treci la criptarea Obby pentru a trimite fișiere criptate."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "The font used for messages, if different from the app font"
+msgstr "Fontul mesajelor, dacă diferă de fontul aplicației"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "The font used for the whole app"
+msgstr "Fontul folosit în toată aplicația"
 
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The IRC server has reported that its server-to-server links have a low security level. This means that when your messages are relayed between IRC servers in the network, they may not be properly encrypted or the SSL/TLS certificates may not be validated correctly."

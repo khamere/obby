@@ -301,6 +301,14 @@ msgid "8 hours"
 msgstr "8 saat"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "A font installed on this device, e.g. JetBrains Mono. Used when Font is set to Custom."
+msgstr "Bu cihazda yüklü bir yazı tipi, ör. JetBrains Mono. Yazı tipi Özel olarak ayarlandığında kullanılır."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "A font installed on this device. Used when Chat font is set to Custom."
+msgstr "Bu cihazda yüklü bir yazı tipi. Sohbet yazı tipi Özel olarak ayarlandığında kullanılır."
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "A stylesheet applied on top of Obby, from a shared link and/or your own. Sidebar rows carry data-network-host so you can style individual networks. Anything that would load other files is removed."
 msgstr "Obby'nin üzerine uygulanan, paylaşılan bir bağlantıdan ve/veya kendi CSS'inizden oluşan stil dosyası. Kenar çubuğu satırlarında data-network-host bulunur, böylece ağları tek tek biçimlendirebilirsiniz. Başka dosya yükleyecek her şey kaldırılır."
 
@@ -641,6 +649,10 @@ msgstr "Kullanıcıyı Yasakla (Takma Adıyla)"
 msgid "Bans"
 msgstr "Yasaklar"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Base text size; everything scales with it"
+msgstr "Temel metin boyutu; her şey buna göre ölçeklenir"
+
 #: src/components/layout/ChannelList.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/ui/BotsModal.tsx
@@ -855,6 +867,10 @@ msgstr "Kanallar"
 msgid "Channels on {networkName}"
 msgstr "{networkName} üzerindeki kanallar"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Chat font"
+msgstr "Sohbet yazı tipi"
+
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Choose a predefined flood protection profile. These profiles provide balanced protection settings for different use cases."
 msgstr "Önceden tanımlanmış bir flood koruma profili seçin. Bu profiller, farklı kullanım durumları için dengeli koruma ayarları sunar."
@@ -991,6 +1007,11 @@ msgstr "Yorumlar"
 msgid "Comments ({commentCount})"
 msgstr "Yorumlar ({commentCount})"
 
+#: src/lib/settings/definitions/allSettings.ts
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Compact"
+msgstr "Sıkışık"
+
 #: src/components/ui/BotToolsHistoryButton.tsx
 msgid "complete"
 msgstr "tamamlandı"
@@ -1100,6 +1121,14 @@ msgstr "Bağlantıyı kopyala"
 msgid "Copy URL"
 msgstr "URL'yi Kopyala"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Cosy"
+msgstr "Rahat"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Cosy shows avatars and spacing between messages; Compact packs them like a classic IRC client"
+msgstr "Rahat, avatarları ve mesajlar arasındaki boşlukları gösterir; Sıkışık, klasik bir IRC istemcisi gibi sıkıştırır"
+
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Could not load this link. It must point to the raw .css file."
 msgstr "Bu bağlantı yüklenemedi. Doğrudan .css dosyasına işaret etmelidir."
@@ -1137,6 +1166,10 @@ msgid "Current avatar"
 msgstr "Mevcut avatar"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Custom chat font name"
+msgstr "Özel sohbet yazı tipi adı"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Custom CSS"
 msgstr "Özel CSS"
 
@@ -1145,12 +1178,20 @@ msgid "Custom Flood Rules (+f)"
 msgstr "Özel Flood Kuralları (+f)"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Custom font name"
+msgstr "Özel yazı tipi adı"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Custom Mentions"
 msgstr "Özel Bahsediler"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Custom notification sound file"
 msgstr "Özel bildirim sesi dosyası"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Custom…"
+msgstr "Özel…"
 
 #: src/components/ui/UserSettings.tsx
 msgid "Customize your IRC client experience"
@@ -1605,6 +1646,14 @@ msgstr "Flood Profili (+F)"
 msgid "Flood Protection Settings"
 msgstr "Flood Koruma Ayarları"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Font"
+msgstr "Yazı tipi"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Font size"
+msgstr "Yazı tipi boyutu"
+
 #. placeholder {0}: filteredMessages.length
 #: src/components/layout/ChannelMessageList.tsx
 msgid "Found {0} messages matching \"{searchQuery}\""
@@ -1782,6 +1831,10 @@ msgstr "Bu komutu kimin çağırdığına dair bilgi bot tarafından sağlanır 
 msgid "Insert emoji"
 msgstr "Emoji ekle"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Inter"
+msgstr "Inter"
+
 #: src/lib/settings/registry.ts
 msgid "Invalid format"
 msgstr "Geçersiz biçim"
@@ -1851,6 +1904,10 @@ msgstr "IRC Sunucuları:"
 #: src/store/handlers/users.ts
 msgid "is now known as **{newNick}**"
 msgstr "artık **{newNick}** olarak bilinmektedir"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "JetBrains Mono"
+msgstr "JetBrains Mono"
 
 #: src/components/message/JsonLogMessage.tsx
 #: src/components/ui/QuickActions.tsx
@@ -1963,6 +2020,10 @@ msgstr "Yazarken diğerlerini bilgilendir"
 #: src/components/ui/BouncerNetworkForm.tsx
 msgid "Libera Chat"
 msgstr "Libera Chat"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Line spacing"
+msgstr "Satır aralığı"
 
 #: src/components/message/LinkPreview.tsx
 msgid "Link preview"
@@ -2138,6 +2199,10 @@ msgstr "@{0}'a mesaj (yeni satır için Shift+Enter)"
 #: src/components/ui/AddPrivateChatModal.tsx
 msgid "Message <0>{0}</0>"
 msgstr "<0>{0}</0>'a mesaj"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Message density"
+msgstr "Mesaj yoğunluğu"
 
 #: src/store/handlers/e2eeOutbound.ts
 msgid "Message not sent: encryption isn't active yet. Wait for the lock to turn green, or end encryption to send unencrypted."
@@ -2440,6 +2505,7 @@ msgid "None"
 msgstr "Yok"
 
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Normal"
 msgstr "Normal"
 
@@ -2858,6 +2924,7 @@ msgid "Reject"
 msgstr "Reddet"
 
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Relaxed"
 msgstr "Rahat"
 
@@ -2934,6 +3001,10 @@ msgstr "Değişen anahtarı incele…"
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Review key"
 msgstr "Anahtarı incele"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Roboto Mono (default)"
+msgstr "Roboto Mono (varsayılan)"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Rules"
@@ -3360,6 +3431,10 @@ msgstr "SoundCloud oynatıcı"
 msgid "Source"
 msgstr "Kaynak"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Space between lines of text"
+msgstr "Metin satırları arasındaki boşluk"
+
 #: src/components/ui/AddPrivateChatModal.tsx
 msgid "Start Private Message"
 msgstr "Özel Mesaj Başlat"
@@ -3409,6 +3484,18 @@ msgstr "askıya alındı"
 msgid "System"
 msgstr "Sistem"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System monospace"
+msgstr "Sistem eş aralıklı"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System sans-serif"
+msgstr "Sistem sans-serif"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System serif"
+msgstr "Sistem serif"
+
 #: src/components/ui/BotToolsCard.tsx
 msgid "Text"
 msgstr "Metin"
@@ -3428,6 +3515,14 @@ msgstr "<0>{serverName}</0> bağlantısında aşağıdaki güvenlik endişeleri 
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "The file host stores it readable, and anyone who obtains the link can open it. Switch to Obby encryption to send files encrypted."
 msgstr "Dosya sunucusu dosyayı okunabilir biçimde saklar ve bağlantıyı ele geçiren herkes açabilir. Dosyaları şifreli göndermek için Obby şifrelemesine geçin."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "The font used for messages, if different from the app font"
+msgstr "Uygulama yazı tipinden farklıysa mesajlar için kullanılan yazı tipi"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "The font used for the whole app"
+msgstr "Tüm uygulamada kullanılan yazı tipi"
 
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The IRC server has reported that its server-to-server links have a low security level. This means that when your messages are relayed between IRC servers in the network, they may not be properly encrypted or the SSL/TLS certificates may not be validated correctly."

@@ -14,9 +14,22 @@ import "@fontsource/roboto-mono/700-italic.css";
 import "./index.css";
 import { loadCustomCss } from "./lib/customCss";
 import { registerHostedServiceWorker } from "./lib/registerServiceWorker";
+import { applyTypography } from "./lib/typography";
+import useStore from "./store";
 
 registerHostedServiceWorker();
 loadCustomCss();
+
+// Fonts, size, spacing and density are CSS variables on <html>, written
+// from the settings here and whenever they change.
+applyTypography(useStore.getState().globalSettings);
+let lastTypographySettings = useStore.getState().globalSettings;
+useStore.subscribe((state) => {
+  if (state.globalSettings !== lastTypographySettings) {
+    lastTypographySettings = state.globalSettings;
+    applyTypography(state.globalSettings);
+  }
+});
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {

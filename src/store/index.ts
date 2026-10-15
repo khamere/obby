@@ -7,6 +7,7 @@ import { e2eeSessionKey } from "../lib/e2ee/session";
 import ircClient from "../lib/ircClient";
 import { makeLabel } from "../lib/labeledResponse";
 import type { MediaType } from "../lib/mediaUtils";
+import { DEFAULT_TYPOGRAPHY } from "../lib/typography";
 import {
   clearServerConnectionTimeout,
   registerAllProtocolHandlers,
@@ -1367,6 +1368,8 @@ const useStore = create<AppState>((set, get) => ({
     // Status messages
     awayMessage: "",
     quitMessage: "",
+    // Typography
+    ...DEFAULT_TYPOGRAPHY,
     ...loadSavedGlobalSettings(), // Load saved settings from localStorage
   },
 

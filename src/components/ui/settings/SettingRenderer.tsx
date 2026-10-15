@@ -175,7 +175,9 @@ export const SettingRenderer: React.FC<SettingRendererProps> = ({
               value={option.value}
               disabled={option.disabled}
             >
-              {option.label}
+              {typeof option.label === "string"
+                ? option.label
+                : i18n._(option.label)}
             </option>
           ))}
         </select>
@@ -198,7 +200,11 @@ export const SettingRenderer: React.FC<SettingRendererProps> = ({
                 className="mr-3 accent-discord-primary disabled:opacity-50"
               />
               <div>
-                <div className="text-discord-text-normal">{option.label}</div>
+                <div className="text-discord-text-normal">
+                  {typeof option.label === "string"
+                    ? option.label
+                    : i18n._(option.label)}
+                </div>
                 {option.description && (
                   <div className="text-sm text-discord-text-muted">
                     {option.description}

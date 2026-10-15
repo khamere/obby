@@ -3,12 +3,21 @@ import { CustomCssField } from "../../../components/ui/settings/CustomCssField";
 import { CustomMentionsField } from "../../../components/ui/settings/CustomMentionsField";
 import { IgnoreListField } from "../../../components/ui/settings/IgnoreListField";
 import { UserFilehostField } from "../../../components/ui/settings/UserFilehostField";
+import { FONT_SIZE_MAX, FONT_SIZE_MIN } from "../../typography";
 import settingsRegistry from "../registry";
 import type { SettingDefinition } from "../types";
 
 /**
  * Profile Settings
  */
+const FONT_OPTIONS = [
+  { value: "roboto-mono", label: msg`Roboto Mono (default)` },
+  { value: "system-mono", label: msg`System monospace` },
+  { value: "system-sans", label: msg`System sans-serif` },
+  { value: "system-serif", label: msg`System serif` },
+  { value: "custom", label: msg`Custom…` },
+];
+
 const profileSettings: SettingDefinition[] = [
   {
     id: "profile.nickname",
@@ -228,6 +237,123 @@ const notificationSettings: SettingDefinition[] = [
  * Preference Settings
  */
 const preferenceSettings: SettingDefinition[] = [
+  {
+    id: "preferences.fontFamily",
+    key: "fontFamily",
+    category: "preferences",
+    subcategory: "Appearance",
+    title: msg`Font`,
+    description: msg`The font used for the whole app`,
+    type: "select",
+    defaultValue: "roboto-mono",
+    options: FONT_OPTIONS,
+    searchKeywords: ["font", "typeface", "typography", "appearance"],
+    priority: 20,
+  },
+  {
+    id: "preferences.fontFamilyCustom",
+    key: "fontFamilyCustom",
+    category: "preferences",
+    subcategory: "Appearance",
+    title: msg`Custom font name`,
+    description: msg`A font installed on this device, e.g. JetBrains Mono. Used when Font is set to Custom.`,
+    type: "text",
+    defaultValue: "",
+    placeholder: msg`JetBrains Mono`,
+    dependencies: [
+      { settingId: "preferences.fontFamily", condition: (v) => v === "custom" },
+    ],
+    searchKeywords: ["font", "custom", "typography"],
+    priority: 21,
+  },
+  {
+    id: "preferences.chatFontFamily",
+    key: "chatFontFamily",
+    category: "preferences",
+    subcategory: "Appearance",
+    title: msg`Chat font`,
+    description: msg`The font used for messages, if different from the app font`,
+    type: "select",
+    defaultValue: "roboto-mono",
+    options: FONT_OPTIONS,
+    searchKeywords: ["font", "chat", "messages", "typography"],
+    priority: 22,
+  },
+  {
+    id: "preferences.chatFontFamilyCustom",
+    key: "chatFontFamilyCustom",
+    category: "preferences",
+    subcategory: "Appearance",
+    title: msg`Custom chat font name`,
+    description: msg`A font installed on this device. Used when Chat font is set to Custom.`,
+    type: "text",
+    defaultValue: "",
+    placeholder: msg`Inter`,
+    dependencies: [
+      {
+        settingId: "preferences.chatFontFamily",
+        condition: (v) => v === "custom",
+      },
+    ],
+    searchKeywords: ["font", "chat", "custom", "typography"],
+    priority: 23,
+  },
+  {
+    id: "preferences.fontSize",
+    key: "fontSize",
+    category: "preferences",
+    subcategory: "Appearance",
+    title: msg`Font size`,
+    description: msg`Base text size; everything scales with it`,
+    type: "range",
+    defaultValue: 14,
+    min: FONT_SIZE_MIN,
+    max: FONT_SIZE_MAX,
+    step: 1,
+    unit: "px",
+    searchKeywords: ["font", "size", "zoom", "bigger", "smaller"],
+    priority: 24,
+  },
+  {
+    id: "preferences.lineSpacing",
+    key: "lineSpacing",
+    category: "preferences",
+    subcategory: "Appearance",
+    title: msg`Line spacing`,
+    description: msg`Space between lines of text`,
+    type: "select",
+    defaultValue: "normal",
+    options: [
+      { value: "compact", label: msg`Compact` },
+      { value: "normal", label: msg`Normal` },
+      { value: "relaxed", label: msg`Relaxed` },
+    ],
+    searchKeywords: ["line", "spacing", "height", "leading"],
+    priority: 25,
+  },
+  {
+    id: "preferences.messageDensity",
+    key: "messageDensity",
+    category: "preferences",
+    subcategory: "Appearance",
+    title: msg`Message density`,
+    description: msg`Cosy shows avatars and spacing between messages; Compact packs them like a classic IRC client`,
+    type: "select",
+    defaultValue: "cosy",
+    options: [
+      { value: "cosy", label: msg`Cosy` },
+      { value: "compact", label: msg`Compact` },
+    ],
+    searchKeywords: [
+      "density",
+      "compact",
+      "cosy",
+      "cozy",
+      "spacing",
+      "avatars",
+    ],
+    priority: 26,
+  },
   {
     id: "preferences.sendTyping",
     key: "sendTypingNotifications",

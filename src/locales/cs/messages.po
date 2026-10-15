@@ -301,6 +301,14 @@ msgid "8 hours"
 msgstr "8 hodin"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "A font installed on this device, e.g. JetBrains Mono. Used when Font is set to Custom."
+msgstr "Písmo nainstalované v tomto zařízení, např. JetBrains Mono. Použije se, když je Písmo nastaveno na Vlastní."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "A font installed on this device. Used when Chat font is set to Custom."
+msgstr "Písmo nainstalované v tomto zařízení. Použije se, když je Písmo chatu nastaveno na Vlastní."
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "A stylesheet applied on top of Obby, from a shared link and/or your own. Sidebar rows carry data-network-host so you can style individual networks. Anything that would load other files is removed."
 msgstr "Styl použitý nad Obby, ze sdíleného odkazu a/nebo váš vlastní. Řádky postranního panelu mají data-network-host, takže můžete stylovat jednotlivé sítě. Vše, co by načítalo jiné soubory, je odstraněno."
 
@@ -641,6 +649,10 @@ msgstr "Zabanovat uživatele (podle přezdívky)"
 msgid "Bans"
 msgstr "Bany"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Base text size; everything scales with it"
+msgstr "Základní velikost textu; vše se podle ní škáluje"
+
 #: src/components/layout/ChannelList.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/ui/BotsModal.tsx
@@ -855,6 +867,10 @@ msgstr "Kanály"
 msgid "Channels on {networkName}"
 msgstr "Kanály na {networkName}"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Chat font"
+msgstr "Písmo chatu"
+
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Choose a predefined flood protection profile. These profiles provide balanced protection settings for different use cases."
 msgstr "Vyberte předdefinovaný profil ochrany před floodem. Tyto profily poskytují vyvážená nastavení ochrany pro různé případy použití."
@@ -991,6 +1007,11 @@ msgstr "Komentáře"
 msgid "Comments ({commentCount})"
 msgstr "Komentáře ({commentCount})"
 
+#: src/lib/settings/definitions/allSettings.ts
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Compact"
+msgstr "Kompaktní"
+
 #: src/components/ui/BotToolsHistoryButton.tsx
 msgid "complete"
 msgstr "dokončeno"
@@ -1100,6 +1121,14 @@ msgstr "Kopírovat odkaz"
 msgid "Copy URL"
 msgstr "Kopírovat URL"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Cosy"
+msgstr "Útulné"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Cosy shows avatars and spacing between messages; Compact packs them like a classic IRC client"
+msgstr "Útulné zobrazuje avatary a mezery mezi zprávami; Kompaktní je skládá těsně jako klasický IRC klient"
+
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Could not load this link. It must point to the raw .css file."
 msgstr "Tento odkaz nelze načíst. Musí vést přímo na soubor .css."
@@ -1137,6 +1166,10 @@ msgid "Current avatar"
 msgstr "Aktuální avatar"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Custom chat font name"
+msgstr "Název vlastního písma chatu"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Custom CSS"
 msgstr "Vlastní CSS"
 
@@ -1145,12 +1178,20 @@ msgid "Custom Flood Rules (+f)"
 msgstr "Vlastní pravidla floodingu (+f)"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Custom font name"
+msgstr "Název vlastního písma"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Custom Mentions"
 msgstr "Vlastní zmínky"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Custom notification sound file"
 msgstr "Vlastní soubor zvuku oznámení"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Custom…"
+msgstr "Vlastní…"
 
 #: src/components/ui/UserSettings.tsx
 msgid "Customize your IRC client experience"
@@ -1605,6 +1646,14 @@ msgstr "Profil floodingu (+F)"
 msgid "Flood Protection Settings"
 msgstr "Nastavení ochrany proti floodingu"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Font"
+msgstr "Písmo"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Font size"
+msgstr "Velikost písma"
+
 #. placeholder {0}: filteredMessages.length
 #: src/components/layout/ChannelMessageList.tsx
 msgid "Found {0} messages matching \"{searchQuery}\""
@@ -1782,6 +1831,10 @@ msgstr "Informace o tom, kdo tento příkaz vyvolal, poskytuje bot a odesílatel
 msgid "Insert emoji"
 msgstr "Vložit emoji"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Inter"
+msgstr "Inter"
+
 #: src/lib/settings/registry.ts
 msgid "Invalid format"
 msgstr "Neplatný formát"
@@ -1851,6 +1904,10 @@ msgstr "IRC servery:"
 #: src/store/handlers/users.ts
 msgid "is now known as **{newNick}**"
 msgstr "je nyní znám jako **{newNick}**"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "JetBrains Mono"
+msgstr "JetBrains Mono"
 
 #: src/components/message/JsonLogMessage.tsx
 #: src/components/ui/QuickActions.tsx
@@ -1963,6 +2020,10 @@ msgstr "Informovat ostatní, když píšete"
 #: src/components/ui/BouncerNetworkForm.tsx
 msgid "Libera Chat"
 msgstr "Libera Chat"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Line spacing"
+msgstr "Řádkování"
 
 #: src/components/message/LinkPreview.tsx
 msgid "Link preview"
@@ -2138,6 +2199,10 @@ msgstr "Zpráva @{0} (Shift+Enter pro nový řádek)"
 #: src/components/ui/AddPrivateChatModal.tsx
 msgid "Message <0>{0}</0>"
 msgstr "Zpráva <0>{0}</0>"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Message density"
+msgstr "Hustota zpráv"
 
 #: src/store/handlers/e2eeOutbound.ts
 msgid "Message not sent: encryption isn't active yet. Wait for the lock to turn green, or end encryption to send unencrypted."
@@ -2440,6 +2505,7 @@ msgid "None"
 msgstr "Žádné"
 
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Normal"
 msgstr "Normální"
 
@@ -2858,6 +2924,7 @@ msgid "Reject"
 msgstr "Zamítnout"
 
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Relaxed"
 msgstr "Uvolněný"
 
@@ -2934,6 +3001,10 @@ msgstr "Zkontrolovat změněný klíč…"
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Review key"
 msgstr "Zkontrolovat klíč"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Roboto Mono (default)"
+msgstr "Roboto Mono (výchozí)"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Rules"
@@ -3360,6 +3431,10 @@ msgstr "Přehrávač SoundCloud"
 msgid "Source"
 msgstr "Zdroj"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Space between lines of text"
+msgstr "Mezera mezi řádky textu"
+
 #: src/components/ui/AddPrivateChatModal.tsx
 msgid "Start Private Message"
 msgstr "Začít soukromou zprávu"
@@ -3409,6 +3484,18 @@ msgstr "pozastaveno"
 msgid "System"
 msgstr "Systém"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System monospace"
+msgstr "Systémové neproporcionální"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System sans-serif"
+msgstr "Systémové bezpatkové"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System serif"
+msgstr "Systémové patkové"
+
 #: src/components/ui/BotToolsCard.tsx
 msgid "Text"
 msgstr "Text"
@@ -3428,6 +3515,14 @@ msgstr "Připojení k <0>{serverName}</0> má následující bezpečnostní prob
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "The file host stores it readable, and anyone who obtains the link can open it. Switch to Obby encryption to send files encrypted."
 msgstr "Souborový server jej uloží čitelný a kdokoli, kdo získá odkaz, jej může otevřít. Chcete-li soubory posílat zašifrované, přepněte na šifrování Obby."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "The font used for messages, if different from the app font"
+msgstr "Písmo pro zprávy, pokud se liší od písma aplikace"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "The font used for the whole app"
+msgstr "Písmo použité v celé aplikaci"
 
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The IRC server has reported that its server-to-server links have a low security level. This means that when your messages are relayed between IRC servers in the network, they may not be properly encrypted or the SSL/TLS certificates may not be validated correctly."
