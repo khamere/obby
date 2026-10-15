@@ -316,6 +316,10 @@ msgstr "Obby'nin üzerine uygulanan, paylaşılan bir bağlantıdan ve/veya kend
 msgid "About this attribution"
 msgstr "Bu atıf hakkında"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Accent colour"
+msgstr "Vurgu rengi"
+
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Accept"
 msgstr "Kabul et"
@@ -993,6 +997,10 @@ msgstr "Renk ve Biçimlendirme"
 msgid "Colored Nicknames"
 msgstr "Renkli takma adlar"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Colours for the whole app. Your custom CSS still applies on top."
+msgstr "Tüm uygulamanın renkleri. Özel CSS'iniz yine de üstüne uygulanır."
+
 #: src/components/ui/BotsModal.tsx
 msgid "Commands are loading…"
 msgstr "Komutlar yükleniyor…"
@@ -1164,6 +1172,10 @@ msgstr "Şu kadar dakika önce önce oluşturulan"
 #: src/components/ui/AvatarUpload.tsx
 msgid "Current avatar"
 msgstr "Mevcut avatar"
+
+#: src/components/ui/settings/AccentColorField.tsx
+msgid "Custom accent colour"
+msgstr "Özel vurgu rengi"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Custom chat font name"
@@ -3018,6 +3030,10 @@ msgstr "Çalıştır"
 msgid "Safe"
 msgstr "Güvenli"
 
+#: src/components/ui/settings/ThemeField.tsx
+msgid "Sample message"
+msgstr "Örnek mesaj"
+
 #: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/ChannelSettingsModal.tsx
 #: src/components/ui/settings/CustomCssField.tsx
@@ -3415,6 +3431,10 @@ msgstr "Yazılım:"
 msgid "soju bouncer (control)"
 msgstr "soju bouncer (kontrol)"
 
+#: src/components/ui/settings/ThemeField.tsx
+msgid "someone"
+msgstr "birisi"
+
 #: src/components/ui/ChannelListModal.tsx
 msgid "Sort by Name"
 msgstr "Ada Göre Sırala"
@@ -3543,6 +3563,10 @@ msgstr "Kullanıcı {channelName} kanalına katılmak için davet alacak."
 #: src/components/message/BotToolsMessagePill.tsx
 msgid "The workflow that produced this message is no longer in state"
 msgstr "Bu mesajı oluşturan iş akışı artık durumda değil"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Theme"
+msgstr "Tema"
 
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "This account is connected from {sessionCount} sessions. Per-session details are only disclosed to the account holder or IRC operators."
@@ -3812,6 +3836,10 @@ msgstr "Sunucu şifresini kullan"
 msgid "Use Shift+Enter for new lines (Enter sends)"
 msgstr "Yeni satır için Shift+Enter kullanın (Enter gönderir)"
 
+#: src/components/ui/settings/AccentColorField.tsx
+msgid "Use the theme's accent colour"
+msgstr "Temanın vurgu rengini kullan"
+
 #: src/components/ui/AddServerModal.tsx
 msgid "Use WebSocket instead of raw TCP"
 msgstr "Ham TCP yerine WebSocket kullan"
@@ -3823,6 +3851,10 @@ msgstr "Joker karakter kullanın: * herhangi bir diziyle eşleşir, ? herhangi b
 #: src/components/ui/InvitationsPanel.tsx
 msgid "used"
 msgstr "kullanıldı"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Used for buttons, selection and your own highlights"
+msgstr "Düğmeler, seçim ve kendi vurgularınız için kullanılır"
 
 #: src/components/message/JsonLogMessage.tsx
 #: src/components/ui/UserProfileModal.tsx

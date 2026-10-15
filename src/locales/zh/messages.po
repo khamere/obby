@@ -316,6 +316,10 @@ msgstr "应用在 Obby 之上的样式表，来自共享链接和/或你自己�
 msgid "About this attribution"
 msgstr "关于此归属"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Accent colour"
+msgstr "强调色"
+
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Accept"
 msgstr "接受"
@@ -993,6 +997,10 @@ msgstr "颜色与格式"
 msgid "Colored Nicknames"
 msgstr "彩色昵称"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Colours for the whole app. Your custom CSS still applies on top."
+msgstr "整个应用的配色。你的自定义 CSS 仍会在其上生效。"
+
 #: src/components/ui/BotsModal.tsx
 msgid "Commands are loading…"
 msgstr "正在加载命令…"
@@ -1164,6 +1172,10 @@ msgstr "创建时间早于（分钟前）"
 #: src/components/ui/AvatarUpload.tsx
 msgid "Current avatar"
 msgstr "当前头像"
+
+#: src/components/ui/settings/AccentColorField.tsx
+msgid "Custom accent colour"
+msgstr "自定义强调色"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Custom chat font name"
@@ -3018,6 +3030,10 @@ msgstr "运行"
 msgid "Safe"
 msgstr "安全"
 
+#: src/components/ui/settings/ThemeField.tsx
+msgid "Sample message"
+msgstr "示例消息"
+
 #: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/ChannelSettingsModal.tsx
 #: src/components/ui/settings/CustomCssField.tsx
@@ -3415,6 +3431,10 @@ msgstr "软件："
 msgid "soju bouncer (control)"
 msgstr "soju bouncer（控制）"
 
+#: src/components/ui/settings/ThemeField.tsx
+msgid "someone"
+msgstr "某人"
+
 #: src/components/ui/ChannelListModal.tsx
 msgid "Sort by Name"
 msgstr "按名称排序"
@@ -3543,6 +3563,10 @@ msgstr "用户将收到加入 {channelName} 的邀请。"
 #: src/components/message/BotToolsMessagePill.tsx
 msgid "The workflow that produced this message is no longer in state"
 msgstr "生成此消息的工作流已不在状态中"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Theme"
+msgstr "主题"
 
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "This account is connected from {sessionCount} sessions. Per-session details are only disclosed to the account holder or IRC operators."
@@ -3812,6 +3836,10 @@ msgstr "使用服务器密码"
 msgid "Use Shift+Enter for new lines (Enter sends)"
 msgstr "Shift+Enter 换行（Enter 发送）"
 
+#: src/components/ui/settings/AccentColorField.tsx
+msgid "Use the theme's accent colour"
+msgstr "使用主题的强调色"
+
 #: src/components/ui/AddServerModal.tsx
 msgid "Use WebSocket instead of raw TCP"
 msgstr "使用 WebSocket 而非原始 TCP"
@@ -3823,6 +3851,10 @@ msgstr "通配符：* 匹配任意字符，? 匹配单个字符。示例：nick!
 #: src/components/ui/InvitationsPanel.tsx
 msgid "used"
 msgstr "已使用"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Used for buttons, selection and your own highlights"
+msgstr "用于按钮、选中项和你自己的高亮"
 
 #: src/components/message/JsonLogMessage.tsx
 #: src/components/ui/UserProfileModal.tsx

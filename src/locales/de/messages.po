@@ -316,6 +316,10 @@ msgstr "Ein Stylesheet über Obby, aus einem geteilten Link und/oder dein eigene
 msgid "About this attribution"
 msgstr "Über diese Zuordnung"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Accent colour"
+msgstr "Akzentfarbe"
+
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Accept"
 msgstr "Annehmen"
@@ -993,6 +997,10 @@ msgstr "Farbe & Formatierung"
 msgid "Colored Nicknames"
 msgstr "Farbige Nicknamen"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Colours for the whole app. Your custom CSS still applies on top."
+msgstr "Farben für die gesamte App. Dein eigenes CSS gilt weiterhin darüber."
+
 #: src/components/ui/BotsModal.tsx
 msgid "Commands are loading…"
 msgstr "Befehle werden geladen…"
@@ -1164,6 +1172,10 @@ msgstr "Erstellt vor (Min.)"
 #: src/components/ui/AvatarUpload.tsx
 msgid "Current avatar"
 msgstr "Aktueller Avatar"
+
+#: src/components/ui/settings/AccentColorField.tsx
+msgid "Custom accent colour"
+msgstr "Eigene Akzentfarbe"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Custom chat font name"
@@ -3018,6 +3030,10 @@ msgstr "Ausführen"
 msgid "Safe"
 msgstr "Sicher"
 
+#: src/components/ui/settings/ThemeField.tsx
+msgid "Sample message"
+msgstr "Beispielnachricht"
+
 #: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/ChannelSettingsModal.tsx
 #: src/components/ui/settings/CustomCssField.tsx
@@ -3415,6 +3431,10 @@ msgstr "Software:"
 msgid "soju bouncer (control)"
 msgstr "soju bouncer (Steuerung)"
 
+#: src/components/ui/settings/ThemeField.tsx
+msgid "someone"
+msgstr "jemand"
+
 #: src/components/ui/ChannelListModal.tsx
 msgid "Sort by Name"
 msgstr "Nach Name sortieren"
@@ -3543,6 +3563,10 @@ msgstr "Der Benutzer erhält eine Einladung, {channelName} beizutreten."
 #: src/components/message/BotToolsMessagePill.tsx
 msgid "The workflow that produced this message is no longer in state"
 msgstr "Der Workflow, der diese Nachricht erzeugt hat, ist nicht mehr im Zustand vorhanden"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Theme"
+msgstr "Design"
 
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "This account is connected from {sessionCount} sessions. Per-session details are only disclosed to the account holder or IRC operators."
@@ -3812,6 +3836,10 @@ msgstr "Server-Passwort verwenden"
 msgid "Use Shift+Enter for new lines (Enter sends)"
 msgstr "Shift+Enter für neue Zeilen (Enter sendet)"
 
+#: src/components/ui/settings/AccentColorField.tsx
+msgid "Use the theme's accent colour"
+msgstr "Akzentfarbe des Designs verwenden"
+
 #: src/components/ui/AddServerModal.tsx
 msgid "Use WebSocket instead of raw TCP"
 msgstr "WebSocket statt rohem TCP verwenden"
@@ -3823,6 +3851,10 @@ msgstr "Platzhalter: * beliebige Zeichen, ? ein einzelnes Zeichen. Beispiele: ni
 #: src/components/ui/InvitationsPanel.tsx
 msgid "used"
 msgstr "verwendet"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Used for buttons, selection and your own highlights"
+msgstr "Für Buttons, Auswahl und deine eigenen Hervorhebungen"
 
 #: src/components/message/JsonLogMessage.tsx
 #: src/components/ui/UserProfileModal.tsx

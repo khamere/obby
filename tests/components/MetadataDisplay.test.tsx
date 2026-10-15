@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ChatArea } from "../../src/components/layout/ChatArea";
 import { MemberList } from "../../src/components/layout/MemberList";
 import { getColorStyle } from "../../src/lib/ircUtils";
+import { DEFAULT_THEME_SETTINGS } from "../../src/lib/theme";
 import { DEFAULT_TYPOGRAPHY } from "../../src/lib/typography";
 import useStore from "../../src/store";
 import type { Channel, Server, User } from "../../src/types";
@@ -171,6 +172,7 @@ describe("Metadata Display Features", () => {
       },
       typingUsers: {},
       globalSettings: {
+        ...DEFAULT_THEME_SETTINGS,
         ...DEFAULT_TYPOGRAPHY,
         enableNotifications: true,
         notificationSound: "pop",

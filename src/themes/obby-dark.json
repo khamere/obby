@@ -1,0 +1,28 @@
+{
+  "id": "obby-dark",
+  "name": "Obby Dark",
+  "appearance": "dark",
+  "colors": {
+    "primary": "#5865f2",
+    "green": "#428f8d",
+    "yellow": "#fee75c",
+    "fuchsia": "#eb459e",
+    "red": "#ed4245",
+    "bg-input": "#2f3136",
+    "bg-base": "#36393f",
+    "bg-sidebar": "#202225",
+    "bg-deep": "#18191c",
+    "icon": "#4f545c",
+    "bg-member": "#2f3136",
+    "bg-hover": "#2a2d33",
+    "fg": "#dcddde",
+    "fg-muted": "#a3a6aa",
+    "link": "#00aff4",
+    "fg-channel": "#8e9297",
+    "fg-channel-active": "#ffffff",
+    "success": "#57f287",
+    "success-hover": "#4caf50",
+    "button-secondary": "#4f545c",
+    "reply": "#60a5fa"
+  }
+}
