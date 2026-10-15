@@ -427,7 +427,7 @@ export const ChannelMessageList = forwardRef<
       <>
         <div
           ref={messagesContainerRef}
-          className="flex-grow overflow-y-auto overflow-x-hidden flex flex-col bg-discord-dark-200 text-discord-text-normal relative"
+          className="obby-chat-area flex-grow overflow-y-auto overflow-x-hidden flex flex-col bg-discord-dark-200 text-discord-text-normal relative"
           // Disable CSS scroll anchoring — it compounds with our useLayoutEffect delta correction causing double-jumps in browser.
           style={{ overflowAnchor: "none" }}
           onCopy={(e) => {

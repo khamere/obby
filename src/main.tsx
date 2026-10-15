@@ -12,21 +12,32 @@ import "@fontsource/roboto-mono/700.css";
 import "@fontsource/roboto-mono/400-italic.css";
 import "@fontsource/roboto-mono/700-italic.css";
 import "./index.css";
+import { applyChatLook } from "./lib/chatLook";
 import { loadCustomCss } from "./lib/customCss";
 import { registerHostedServiceWorker } from "./lib/registerServiceWorker";
-import { applyTheme, getTheme } from "./lib/theme";
+import { applyTheme, resolveTheme } from "./lib/theme";
+import {
+  getThemeLinkState,
+  loadThemeLink,
+  subscribeThemeLink,
+} from "./lib/themeLink";
 import { applyTypography } from "./lib/typography";
 import useStore from "./store";
 import type { GlobalSettings } from "./store/types";
 
 registerHostedServiceWorker();
 loadCustomCss();
+loadThemeLink();
 
 // Theme colours, fonts, size, spacing and density are CSS variables on
 // <html>, written from the settings here and whenever they change.
 function applyAppearance(settings: GlobalSettings) {
-  applyTheme(getTheme(settings.theme), settings.accentColor);
+  applyTheme(
+    resolveTheme(settings, getThemeLinkState().theme),
+    settings.accentColor,
+  );
   applyTypography(settings);
+  applyChatLook(settings);
 }
 applyAppearance(useStore.getState().globalSettings);
 let lastAppearanceSettings = useStore.getState().globalSettings;
@@ -36,6 +47,7 @@ useStore.subscribe((state) => {
     applyAppearance(state.globalSettings);
   }
 });
+subscribeThemeLink(() => applyAppearance(useStore.getState().globalSettings));
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {

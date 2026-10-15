@@ -41,8 +41,8 @@ msgid "(unchanged)"
 msgstr "(변경 없음)"
 
 #. placeholder {0}: filteredMessages.length
-#. placeholder {1}: import { plural } from "@lingui/core/macro"; import { useLingui } from "@lingui/react/macro"; import type * as React from "react"; import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, } from "react"; import { SCROLL_TOLERANCE, useScrollToBottom, } from "../../hooks/useScrollToBottom"; import { buildMarkdownFromSelection } from "../../lib/chatMarkdownCopy"; import { groupConsecutiveEvents } from "../../lib/eventGrouping"; import ircClient from "../../lib/ircClient"; import { shouldShowMessageHeader } from "../../lib/messageGrouping"; import useStore from "../../store"; import type { Message as MessageType } from "../../types"; import { CollapsedEventMessage } from "../message/CollapsedEventMessage"; import { MessageItem } from "../message/MessageItem"; import LoadingSpinner from "../ui/LoadingSpinner"; import { ScrollToBottomButton } from "../ui/ScrollToBottomButton"; export const DEFAULT_VISIBLE_MESSAGE_COUNT = 100; // Stable empty array — prevents selector from returning a new [] on every render // when the channel has no messages yet (undefined ?? [] would create a new ref each time). const EMPTY_MESSAGES: import("../../types").Message[] = []; export interface ChannelMessageListHandle { setAtBottom: () => void; scrollToBottom: () => void; getScrollState: () => { scrollTop: number; isAtBottom: boolean; visibleCount: number; }; } interface ChannelMessageListProps { channelKey: string; serverId: string; channelId: string | null; privateChatId: string | null; isActive: boolean; searchQuery: string; isMemberListVisible: boolean; onReply: (msg: MessageType | null) => void; onUsernameContextMenu: ( e: React.MouseEvent, username: string, serverId: string, channelId: string, avatarEl?: Element | null, ) => void; onIrcLinkClick: (url: string) => void; onReactClick: (msg: MessageType, el: Element) => void; onReactionUnreact: (emoji: string, msg: MessageType) => void; onOpenReactionModal: ( msg: MessageType, position: { x: number; y: number }, ) => void; onDirectReaction: (emoji: string, msg: MessageType) => void; onRedactMessage: (msg: MessageType) => void; onOpenProfile: (username: string) => void; joinChannel: (serverId: string, channelName: string) => void; onClearSearch: () => void; highlightedMessageId?: string; // undefined = first visit; null = was at bottom; object = restore to saved position initialScrollState?: { scrollTop: number; visibleCount: number } | null; } export const ChannelMessageList = forwardRef< ChannelMessageListHandle, ChannelMessageListProps >( ( { channelKey, serverId, channelId, privateChatId, isActive, searchQuery, isMemberListVisible, onReply, onUsernameContextMenu, onIrcLinkClick, onReactClick, onReactionUnreact, onOpenReactionModal, onDirectReaction, onRedactMessage, onOpenProfile, joinChannel, onClearSearch, highlightedMessageId, initialScrollState, }, ref, ) => { const { t } = useLingui(); const [visibleMessageCount, setVisibleMessageCount] = useState( initialScrollState?.visibleCount ?? DEFAULT_VISIBLE_MESSAGE_COUNT, ); // Ref mirror so getScrollState closure always reads the current value without needing it as a dep. const visibleMessageCountRef = useRef(visibleMessageCount); visibleMessageCountRef.current = visibleMessageCount; // Distinguishes initial join (full-screen spinner) from subsequent "load more" (button spinner). const [isFetchingMore, setIsFetchingMore] = useState(false); const isFetchingMoreRef = useRef(false); const messagesEndRef = useRef<HTMLDivElement>(null); const messagesContainerRef = useRef<HTMLDivElement>(null); const messagesInnerRef = useRef<HTMLDivElement>(null); // prev scrollHeight for prepend delta-correction. const prevScrollHeightRef = useRef(0); // Ref mirror of isScrolledUp — lets useLayoutEffect closures read current value // without listing isScrolledUp as a dep (which would re-run effects on every scroll). const isScrolledUpRef = useRef(false); const prevFilteredLengthRef = useRef(0); const prevFirstMsgIdRef = useRef<string | null>(null); // Set by the window-growth layoutEffect (or button handler) when a true prepend is detected. // Consumed by the delta-correction layoutEffect one render later (after visibleCount grows). // Using a flag instead of tracking displayedMessages[0]?.id because slice(-N) slides the // window on every bottom append, changing displayedMessages[0] even for non-prepend renders. const pendingPrependRef = useRef(false); // Shared scrollHeight baseline between the delta-correction layout effect and the inner // ResizeObserver. When scrollTop is corrected after a prepend, we update this so the RO's // "was at bottom" check is not fooled by the adjusted scrollTop vs its stale prevSH. const resizeObserverPrevSHRef = useRef(0); const channelMessages = useStore( useCallback( (state) => state.messages[channelKey] ?? EMPTY_MESSAGES, [channelKey], ), ); const servers = useStore((state) => state.servers); const mobileViewActiveColumn = useStore( (state) => state.ui.mobileViewActiveColumn, ); const channel = useMemo( () => channelId ? (servers .find((s) => s.id === serverId) ?.channels.find((c) => c.id === channelId) ?? null) : null, [servers, serverId, channelId], ); const server = servers.find((s) => s.id === serverId); const privateChat = privateChatId ? server?.privateChats?.find((chat) => chat.id === privateChatId) : undefined; const historyTarget = channel?.name ?? privateChat?.username; const historyState = channel ?? privateChat; const canRequestHistory = server?.isConnected && !server.isBouncerControl && server.capabilities?.includes("draft/chathistory"); const { isScrolledUp, wasAtBottomRef, scrollToBottom } = useScrollToBottom( messagesContainerRef, messagesEndRef, { channelId: `${channelId || privateChatId}-${isMemberListVisible}` }, ); // Snapshot of the last known scroll position captured while the container was visible. // getScrollState() reads this instead of the live DOM because React commits display:none // before running cleanup effects, collapsing scrollTop/scrollHeight/clientHeight to 0. const lastScrollTopRef = useRef(initialScrollState?.scrollTop ?? 0); useEffect(() => { const container = messagesContainerRef.current; if (!container) return; const onScroll = () => { if (container.clientHeight > 0) lastScrollTopRef.current = container.scrollTop; }; container.addEventListener("scroll", onScroll, { passive: true }); return () => container.removeEventListener("scroll", onScroll); }, []); // Restore scroll position when a keep-alive channel transitions from hidden to visible. // display:none may reset scrollTop to 0; lastScrollTopRef was captured while visible. const prevActiveRef = useRef(isActive); useLayoutEffect(() => { if (isActive && !prevActiveRef.current) { const container = messagesContainerRef.current; if (container && lastScrollTopRef.current > 0) { container.scrollTop = lastScrollTopRef.current; } } prevActiveRef.current = isActive; }, [isActive]); useImperativeHandle(ref, () => ({ setAtBottom: () => { wasAtBottomRef.current = true; }, scrollToBottom, getScrollState: () => ({ scrollTop: lastScrollTopRef.current, isAtBottom: wasAtBottomRef.current, visibleCount: visibleMessageCountRef.current, }), })); const filteredMessages = useMemo(() => { if (!searchQuery.trim()) return channelMessages; const query = searchQuery.toLowerCase(); return channelMessages.filter( (msg) => msg.content.toLowerCase().includes(query) || msg.userId.toLowerCase().includes(query), ); }, [channelMessages, searchQuery]); useEffect(() => { isScrolledUpRef.current = isScrolledUp; // When the user returns to the bottom, shrink the window back to the base so // slice(-N) resumes trimming old messages from the top (memory optimization). // Only shrink if we grew above the base — preserves a sub-default saved visibleCount. if (!isScrolledUp) { setVisibleMessageCount((prev) => prev > DEFAULT_VISIBLE_MESSAGE_COUNT ? DEFAULT_VISIBLE_MESSAGE_COUNT : prev, ); } }, [isScrolledUp]); // Reset ref-tracked windowing state when switching channels. // visibleMessageCount is NOT reset here — useState(initialScrollState?.visibleCount ?? DEFAULT_VISIBLE_MESSAGE_COUNT) // already initializes it correctly on mount, and this effect runs once on mount for the // same channelKey (each instance is bound to exactly one channel by the parent key={}). // biome-ignore lint/correctness/useExhaustiveDependencies: intentional full reset on channel change useEffect(() => { prevFilteredLengthRef.current = 0; prevFirstMsgIdRef.current = null; prevScrollHeightRef.current = 0; pendingPrependRef.current = false; resizeObserverPrevSHRef.current = 0; }, [channelKey]); const displayedMessages = useMemo(() => { if (searchQuery.trim()) return filteredMessages; return filteredMessages.slice(-visibleMessageCount); }, [filteredMessages, visibleMessageCount, searchQuery]); const locallyHidden = filteredMessages.length > displayedMessages.length; const serverHasMore = canRequestHistory && (channel?.hasMoreHistory === true || (privateChat && privateChat.hasMoreHistory !== false)) && (channelMessages.length > 0 || !!historyState?.historyOldestTime); const hasMoreMessages = locallyHidden || serverHasMore; const eventGroups = useMemo( () => groupConsecutiveEvents(displayedMessages), [displayedMessages], ); const isLoadingHistory = historyState?.isLoadingHistory ?? false; // Scroll to bottom on initial mount, unless a saved position was passed in. // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount only useEffect(() => { const container = messagesContainerRef.current; if (!container) return; if (initialScrollState) { container.scrollTop = initialScrollState.scrollTop; lastScrollTopRef.current = initialScrollState.scrollTop; wasAtBottomRef.current = false; } else { container.scrollTop = container.scrollHeight; lastScrollTopRef.current = container.scrollHeight; wasAtBottomRef.current = true; } }, []); // Scroll to bottom after initial join history loads; clear fetch spinner at batch end. const wasLoadingHistoryRef = useRef(false); // biome-ignore lint/correctness/useExhaustiveDependencies: scrollToBottom is stable via useCallback; refs and setters are stable useLayoutEffect(() => { if (wasLoadingHistoryRef.current && !isLoadingHistory) { if (isFetchingMoreRef.current) { // delta correction for scroll position is handled by useLayoutEffect([displayedMessages]) isFetchingMoreRef.current = false; setIsFetchingMore(false); } else { scrollToBottom(); wasAtBottomRef.current = true; } } wasLoadingHistoryRef.current = isLoadingHistory; }, [isLoadingHistory]); // When older messages are prepended, grow the window so they enter displayedMessages. // When new messages arrive at the bottom while the user is scrolled up, also grow the // window to keep the current top messages visible — slice(-N) otherwise slides the // window forward and hides them, incrementing the "N older messages" counter on every // incoming message. Only let the slice trim from the top when the user is at the bottom // (where auto-scroll handles keeping them current). useLayoutEffect(() => { const newLength = filteredMessages.length; const newFirstId = filteredMessages[0]?.id ?? null; const delta = newLength - prevFilteredLengthRef.current; if (prevFilteredLengthRef.current > 0 && delta > 0) { if (newFirstId !== prevFirstMsgIdRef.current) { // Messages prepended (load-more): signal delta-correction to compensate scrollTop. pendingPrependRef.current = true; setVisibleMessageCount((prev) => prev + delta); } else if (isScrolledUpRef.current) { // Messages appended at bottom while user is scrolled up reading history. // Expand the window to prevent top messages from dropping out of the slice. setVisibleMessageCount((prev) => prev + delta); } } prevFilteredLengthRef.current = newLength; prevFirstMsgIdRef.current = newFirstId; }, [filteredMessages]); // Compensate scrollTop when content is prepended above the viewport. // biome-ignore lint/correctness/useExhaustiveDependencies: runs on every displayedMessages render to capture the resulting scrollHeight; refs are stable useLayoutEffect(() => { const container = messagesContainerRef.current; if (!container) return; // Skip while container is display:none — scrollHeight collapses to 0 and would // poison prevScrollHeightRef, causing a huge spurious delta on the next visible render. if (container.clientHeight === 0) return; const prevHeight = prevScrollHeightRef.current; const newHeight = container.scrollHeight; // Only correct when a true load-more prepend happened (flag set by the window-growth // layoutEffect or button handler). Bottom appends slide the slice(-N) window which also // changes displayedMessages[0] — ID-comparison can't distinguish the two cases. const wasPrepend = pendingPrependRef.current; // Only consume the flag when scrollHeight actually changed — the server-side load-more // path goes through two renders: Render A (filteredMessages grows, visibleCount unchanged, // same displayedMessages content, same scrollHeight) then Render B (visibleCount grows, // new messages enter displayedMessages, scrollHeight grows). The flag must survive Render A // so it's still set when Render B fires the actual correction. if (wasPrepend && newHeight !== prevHeight) { pendingPrependRef.current = false; } if ( isScrolledUpRef.current && prevHeight > 0 && newHeight > prevHeight && wasPrepend ) { const delta = newHeight - prevHeight; container.scrollTop += delta; resizeObserverPrevSHRef.current = newHeight; } prevScrollHeightRef.current = newHeight; }, [displayedMessages]); // Re-stick to bottom when inner message content grows (media/audio previews loading). // Uses prevScrollHeight instead of wasAtBottomRef to avoid stale-flag race where the // ref is true while the user is actively scrolling up. // When the container width changes (member list toggle, window resize), text reflows // and scrollHeight changes; preserve proportional scroll position for scrolled-up users. // biome-ignore lint/correctness/useExhaustiveDependencies: scrollToBottom is a stable ref useEffect(() => { const container = messagesContainerRef.current; const inner = messagesInnerRef.current; if (!inner || !container) return; resizeObserverPrevSHRef.current = container.scrollHeight; let prevClientWidth = container.clientWidth; const observer = new ResizeObserver(() => { if (container.clientHeight === 0) return; // Effect may re-initialize while container is display:none (ref=0). // Re-seed with current dimensions and skip — no reliable "was at bottom" data. if (resizeObserverPrevSHRef.current === 0) { resizeObserverPrevSHRef.current = container.scrollHeight; prevClientWidth = container.clientWidth; return; } const currentClientWidth = container.clientWidth; const widthChanged = currentClientWidth !== prevClientWidth; prevClientWidth = currentClientWidth; const prevSH = resizeObserverPrevSHRef.current; const wasAtPrevBottom = container.scrollTop + container.clientHeight >= prevSH - SCROLL_TOLERANCE; resizeObserverPrevSHRef.current = container.scrollHeight; if (wasAtPrevBottom) { scrollToBottom(); } else if (widthChanged && prevSH > 0) { const ratio = container.scrollTop / prevSH; container.scrollTop = Math.round(ratio * container.scrollHeight); } }); observer.observe(inner); return () => observer.disconnect(); }, [isLoadingHistory, channelId, privateChatId]); // Auto-scroll on new messages — skip when this channel is hidden (display:none). // biome-ignore lint/correctness/useExhaustiveDependencies: only scroll when messages change, not when isActive changes useEffect(() => { if (!isActive) return; const isNarrowView = window.matchMedia("(max-width: 768px)").matches; const isChatVisible = !isNarrowView || mobileViewActiveColumn === "chatView"; if (wasAtBottomRef.current && isChatVisible) { scrollToBottom(); } }, [displayedMessages, mobileViewActiveColumn, scrollToBottom, isActive]); return ( <> <div ref={messagesContainerRef} className="flex-grow overflow-y-auto overflow-x-hidden flex flex-col bg-discord-dark-200 text-discord-text-normal relative" // Disable CSS scroll anchoring — it compounds with our useLayoutEffect delta correction causing double-jumps in browser. style={{ overflowAnchor: "none" }} onCopy={(e) => { const root = messagesContainerRef.current; if (!root) return; const markdown = buildMarkdownFromSelection( window.getSelection(), root, ); if (markdown !== null) { e.preventDefault(); e.clipboardData.setData("text/plain", markdown); } }} > {isLoadingHistory && !isFetchingMore ? ( <div className="flex-grow flex items-center justify-center"> <LoadingSpinner size="lg" text="Loading chat history..." className="text-discord-text-muted" /> </div> ) : ( <div ref={messagesInnerRef} className="flex flex-col"> {hasMoreMessages && !searchQuery && ( <div className="flex justify-center py-2"> <button type="button" onClick={() => { if (locallyHidden) { pendingPrependRef.current = true; setVisibleMessageCount( (prev) => prev + DEFAULT_VISIBLE_MESSAGE_COUNT, ); } else if (serverHasMore && historyTarget) { const oldest = channelMessages[0]; const oldestTime = oldest?.timestamp ? new Date(oldest.timestamp).toISOString() : undefined; const replayTime = historyState?.historyOldestTime; const ts = !oldestTime ? replayTime : !replayTime ? oldestTime : Date.parse(replayTime) < Date.parse(oldestTime) ? replayTime : oldestTime; if (ts) { // WebSocket responses are macrotasks; the click handler's React batch // always commits before the response arrives, so flushSync is unnecessary. isFetchingMoreRef.current = true; setIsFetchingMore(true); ircClient.requestChathistoryBefore( serverId, historyTarget, ts, ); } } }} disabled={isFetchingMore || isLoadingHistory} className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full text-discord-text-muted hover:text-discord-text-normal bg-discord-dark-400 hover:bg-discord-dark-300 border border-white/5 transition-all" > {isFetchingMore ? ( <LoadingSpinner size="sm" text="" className="text-discord-text-muted" /> ) : ( <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3" aria-hidden="true" > <path d="M12 19V5M5 12l7-7 7 7" /> </svg> )} {isFetchingMore ? t`Getting more messages...` : locallyHidden ? t`${filteredMessages.length - displayedMessages.length} older messages` : t`Load older messages`} </button> </div> )} {searchQuery && ( <div className="flex justify-center items-center gap-2 py-2 bg-discord-dark-300 text-discord-text-muted text-sm"> <span> {plural(filteredMessages.length, { one: t`Found 1 message matching "${searchQuery}"`, other: t`Found ${filteredMessages.length} messages matching "${searchQuery}"`, })} </span> <button type="button" onClick={onClearSearch} className="text-red-400 hover:text-red-300" title={t`Clear search`} > ✕ </button> </div> )} {eventGroups.map((group) => { if (group.type === "eventGroup") { const firstId = group.messages[0]?.id || ""; const lastId = group.messages[group.messages.length - 1]?.id || ""; const groupKey = `group-${firstId}-${lastId}`; return ( <CollapsedEventMessage key={groupKey} eventGroup={group} users={channel?.users || []} onUsernameContextMenu={onUsernameContextMenu} /> ); } const message = group.messages[0]; const originalIndex = channelMessages.findIndex( (m) => m.id === message.id, ); const previousMessage = channelMessages[originalIndex - 1]; const showHeader = shouldShowMessageHeader( previousMessage, message, ); return ( <MessageItem key={message.id} message={message} showDate={ originalIndex === 0 || new Date(message.timestamp).toDateString() !== new Date( channelMessages[originalIndex - 1]?.timestamp, ).toDateString() } showHeader={showHeader} setReplyTo={onReply} isHighlighted={message.id === highlightedMessageId} onUsernameContextMenu={onUsernameContextMenu} onIrcLinkClick={onIrcLinkClick} onReactClick={onReactClick} joinChannel={joinChannel} onReactionUnreact={onReactionUnreact} onOpenReactionModal={onOpenReactionModal} onDirectReaction={onDirectReaction} serverId={serverId} channelId={channelId || undefined} privateChatId={privateChatId || undefined} onRedactMessage={onRedactMessage} onOpenProfile={onOpenProfile} /> ); })} </div> )} <div ref={messagesEndRef} className="h-px" /> </div> <ScrollToBottomButton isVisible={isScrolledUp} onClick={scrollToBottom} /> </> ); }, ); ChannelMessageList.displayName = "ChannelMessageList"; // Wrap with memo so hidden keep-alive channels skip re-renders when their props // haven't changed (e.g. when messageText changes in the input — the only thing // that changes on typing is local state inside ChatArea, not the props we pass here). export const MemoChannelMessageList = memo(ChannelMessageList); 
-#. placeholder {2}: import { plural } from "@lingui/core/macro"; import { useLingui } from "@lingui/react/macro"; import type * as React from "react"; import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, } from "react"; import { SCROLL_TOLERANCE, useScrollToBottom, } from "../../hooks/useScrollToBottom"; import { buildMarkdownFromSelection } from "../../lib/chatMarkdownCopy"; import { groupConsecutiveEvents } from "../../lib/eventGrouping"; import ircClient from "../../lib/ircClient"; import { shouldShowMessageHeader } from "../../lib/messageGrouping"; import useStore from "../../store"; import type { Message as MessageType } from "../../types"; import { CollapsedEventMessage } from "../message/CollapsedEventMessage"; import { MessageItem } from "../message/MessageItem"; import LoadingSpinner from "../ui/LoadingSpinner"; import { ScrollToBottomButton } from "../ui/ScrollToBottomButton"; export const DEFAULT_VISIBLE_MESSAGE_COUNT = 100; // Stable empty array — prevents selector from returning a new [] on every render // when the channel has no messages yet (undefined ?? [] would create a new ref each time). const EMPTY_MESSAGES: import("../../types").Message[] = []; export interface ChannelMessageListHandle { setAtBottom: () => void; scrollToBottom: () => void; getScrollState: () => { scrollTop: number; isAtBottom: boolean; visibleCount: number; }; } interface ChannelMessageListProps { channelKey: string; serverId: string; channelId: string | null; privateChatId: string | null; isActive: boolean; searchQuery: string; isMemberListVisible: boolean; onReply: (msg: MessageType | null) => void; onUsernameContextMenu: ( e: React.MouseEvent, username: string, serverId: string, channelId: string, avatarEl?: Element | null, ) => void; onIrcLinkClick: (url: string) => void; onReactClick: (msg: MessageType, el: Element) => void; onReactionUnreact: (emoji: string, msg: MessageType) => void; onOpenReactionModal: ( msg: MessageType, position: { x: number; y: number }, ) => void; onDirectReaction: (emoji: string, msg: MessageType) => void; onRedactMessage: (msg: MessageType) => void; onOpenProfile: (username: string) => void; joinChannel: (serverId: string, channelName: string) => void; onClearSearch: () => void; highlightedMessageId?: string; // undefined = first visit; null = was at bottom; object = restore to saved position initialScrollState?: { scrollTop: number; visibleCount: number } | null; } export const ChannelMessageList = forwardRef< ChannelMessageListHandle, ChannelMessageListProps >( ( { channelKey, serverId, channelId, privateChatId, isActive, searchQuery, isMemberListVisible, onReply, onUsernameContextMenu, onIrcLinkClick, onReactClick, onReactionUnreact, onOpenReactionModal, onDirectReaction, onRedactMessage, onOpenProfile, joinChannel, onClearSearch, highlightedMessageId, initialScrollState, }, ref, ) => { const { t } = useLingui(); const [visibleMessageCount, setVisibleMessageCount] = useState( initialScrollState?.visibleCount ?? DEFAULT_VISIBLE_MESSAGE_COUNT, ); // Ref mirror so getScrollState closure always reads the current value without needing it as a dep. const visibleMessageCountRef = useRef(visibleMessageCount); visibleMessageCountRef.current = visibleMessageCount; // Distinguishes initial join (full-screen spinner) from subsequent "load more" (button spinner). const [isFetchingMore, setIsFetchingMore] = useState(false); const isFetchingMoreRef = useRef(false); const messagesEndRef = useRef<HTMLDivElement>(null); const messagesContainerRef = useRef<HTMLDivElement>(null); const messagesInnerRef = useRef<HTMLDivElement>(null); // prev scrollHeight for prepend delta-correction. const prevScrollHeightRef = useRef(0); // Ref mirror of isScrolledUp — lets useLayoutEffect closures read current value // without listing isScrolledUp as a dep (which would re-run effects on every scroll). const isScrolledUpRef = useRef(false); const prevFilteredLengthRef = useRef(0); const prevFirstMsgIdRef = useRef<string | null>(null); // Set by the window-growth layoutEffect (or button handler) when a true prepend is detected. // Consumed by the delta-correction layoutEffect one render later (after visibleCount grows). // Using a flag instead of tracking displayedMessages[0]?.id because slice(-N) slides the // window on every bottom append, changing displayedMessages[0] even for non-prepend renders. const pendingPrependRef = useRef(false); // Shared scrollHeight baseline between the delta-correction layout effect and the inner // ResizeObserver. When scrollTop is corrected after a prepend, we update this so the RO's // "was at bottom" check is not fooled by the adjusted scrollTop vs its stale prevSH. const resizeObserverPrevSHRef = useRef(0); const channelMessages = useStore( useCallback( (state) => state.messages[channelKey] ?? EMPTY_MESSAGES, [channelKey], ), ); const servers = useStore((state) => state.servers); const mobileViewActiveColumn = useStore( (state) => state.ui.mobileViewActiveColumn, ); const channel = useMemo( () => channelId ? (servers .find((s) => s.id === serverId) ?.channels.find((c) => c.id === channelId) ?? null) : null, [servers, serverId, channelId], ); const server = servers.find((s) => s.id === serverId); const privateChat = privateChatId ? server?.privateChats?.find((chat) => chat.id === privateChatId) : undefined; const historyTarget = channel?.name ?? privateChat?.username; const historyState = channel ?? privateChat; const canRequestHistory = server?.isConnected && !server.isBouncerControl && server.capabilities?.includes("draft/chathistory"); const { isScrolledUp, wasAtBottomRef, scrollToBottom } = useScrollToBottom( messagesContainerRef, messagesEndRef, { channelId: `${channelId || privateChatId}-${isMemberListVisible}` }, ); // Snapshot of the last known scroll position captured while the container was visible. // getScrollState() reads this instead of the live DOM because React commits display:none // before running cleanup effects, collapsing scrollTop/scrollHeight/clientHeight to 0. const lastScrollTopRef = useRef(initialScrollState?.scrollTop ?? 0); useEffect(() => { const container = messagesContainerRef.current; if (!container) return; const onScroll = () => { if (container.clientHeight > 0) lastScrollTopRef.current = container.scrollTop; }; container.addEventListener("scroll", onScroll, { passive: true }); return () => container.removeEventListener("scroll", onScroll); }, []); // Restore scroll position when a keep-alive channel transitions from hidden to visible. // display:none may reset scrollTop to 0; lastScrollTopRef was captured while visible. const prevActiveRef = useRef(isActive); useLayoutEffect(() => { if (isActive && !prevActiveRef.current) { const container = messagesContainerRef.current; if (container && lastScrollTopRef.current > 0) { container.scrollTop = lastScrollTopRef.current; } } prevActiveRef.current = isActive; }, [isActive]); useImperativeHandle(ref, () => ({ setAtBottom: () => { wasAtBottomRef.current = true; }, scrollToBottom, getScrollState: () => ({ scrollTop: lastScrollTopRef.current, isAtBottom: wasAtBottomRef.current, visibleCount: visibleMessageCountRef.current, }), })); const filteredMessages = useMemo(() => { if (!searchQuery.trim()) return channelMessages; const query = searchQuery.toLowerCase(); return channelMessages.filter( (msg) => msg.content.toLowerCase().includes(query) || msg.userId.toLowerCase().includes(query), ); }, [channelMessages, searchQuery]); useEffect(() => { isScrolledUpRef.current = isScrolledUp; // When the user returns to the bottom, shrink the window back to the base so // slice(-N) resumes trimming old messages from the top (memory optimization). // Only shrink if we grew above the base — preserves a sub-default saved visibleCount. if (!isScrolledUp) { setVisibleMessageCount((prev) => prev > DEFAULT_VISIBLE_MESSAGE_COUNT ? DEFAULT_VISIBLE_MESSAGE_COUNT : prev, ); } }, [isScrolledUp]); // Reset ref-tracked windowing state when switching channels. // visibleMessageCount is NOT reset here — useState(initialScrollState?.visibleCount ?? DEFAULT_VISIBLE_MESSAGE_COUNT) // already initializes it correctly on mount, and this effect runs once on mount for the // same channelKey (each instance is bound to exactly one channel by the parent key={}). // biome-ignore lint/correctness/useExhaustiveDependencies: intentional full reset on channel change useEffect(() => { prevFilteredLengthRef.current = 0; prevFirstMsgIdRef.current = null; prevScrollHeightRef.current = 0; pendingPrependRef.current = false; resizeObserverPrevSHRef.current = 0; }, [channelKey]); const displayedMessages = useMemo(() => { if (searchQuery.trim()) return filteredMessages; return filteredMessages.slice(-visibleMessageCount); }, [filteredMessages, visibleMessageCount, searchQuery]); const locallyHidden = filteredMessages.length > displayedMessages.length; const serverHasMore = canRequestHistory && (channel?.hasMoreHistory === true || (privateChat && privateChat.hasMoreHistory !== false)) && (channelMessages.length > 0 || !!historyState?.historyOldestTime); const hasMoreMessages = locallyHidden || serverHasMore; const eventGroups = useMemo( () => groupConsecutiveEvents(displayedMessages), [displayedMessages], ); const isLoadingHistory = historyState?.isLoadingHistory ?? false; // Scroll to bottom on initial mount, unless a saved position was passed in. // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount only useEffect(() => { const container = messagesContainerRef.current; if (!container) return; if (initialScrollState) { container.scrollTop = initialScrollState.scrollTop; lastScrollTopRef.current = initialScrollState.scrollTop; wasAtBottomRef.current = false; } else { container.scrollTop = container.scrollHeight; lastScrollTopRef.current = container.scrollHeight; wasAtBottomRef.current = true; } }, []); // Scroll to bottom after initial join history loads; clear fetch spinner at batch end. const wasLoadingHistoryRef = useRef(false); // biome-ignore lint/correctness/useExhaustiveDependencies: scrollToBottom is stable via useCallback; refs and setters are stable useLayoutEffect(() => { if (wasLoadingHistoryRef.current && !isLoadingHistory) { if (isFetchingMoreRef.current) { // delta correction for scroll position is handled by useLayoutEffect([displayedMessages]) isFetchingMoreRef.current = false; setIsFetchingMore(false); } else { scrollToBottom(); wasAtBottomRef.current = true; } } wasLoadingHistoryRef.current = isLoadingHistory; }, [isLoadingHistory]); // When older messages are prepended, grow the window so they enter displayedMessages. // When new messages arrive at the bottom while the user is scrolled up, also grow the // window to keep the current top messages visible — slice(-N) otherwise slides the // window forward and hides them, incrementing the "N older messages" counter on every // incoming message. Only let the slice trim from the top when the user is at the bottom // (where auto-scroll handles keeping them current). useLayoutEffect(() => { const newLength = filteredMessages.length; const newFirstId = filteredMessages[0]?.id ?? null; const delta = newLength - prevFilteredLengthRef.current; if (prevFilteredLengthRef.current > 0 && delta > 0) { if (newFirstId !== prevFirstMsgIdRef.current) { // Messages prepended (load-more): signal delta-correction to compensate scrollTop. pendingPrependRef.current = true; setVisibleMessageCount((prev) => prev + delta); } else if (isScrolledUpRef.current) { // Messages appended at bottom while user is scrolled up reading history. // Expand the window to prevent top messages from dropping out of the slice. setVisibleMessageCount((prev) => prev + delta); } } prevFilteredLengthRef.current = newLength; prevFirstMsgIdRef.current = newFirstId; }, [filteredMessages]); // Compensate scrollTop when content is prepended above the viewport. // biome-ignore lint/correctness/useExhaustiveDependencies: runs on every displayedMessages render to capture the resulting scrollHeight; refs are stable useLayoutEffect(() => { const container = messagesContainerRef.current; if (!container) return; // Skip while container is display:none — scrollHeight collapses to 0 and would // poison prevScrollHeightRef, causing a huge spurious delta on the next visible render. if (container.clientHeight === 0) return; const prevHeight = prevScrollHeightRef.current; const newHeight = container.scrollHeight; // Only correct when a true load-more prepend happened (flag set by the window-growth // layoutEffect or button handler). Bottom appends slide the slice(-N) window which also // changes displayedMessages[0] — ID-comparison can't distinguish the two cases. const wasPrepend = pendingPrependRef.current; // Only consume the flag when scrollHeight actually changed — the server-side load-more // path goes through two renders: Render A (filteredMessages grows, visibleCount unchanged, // same displayedMessages content, same scrollHeight) then Render B (visibleCount grows, // new messages enter displayedMessages, scrollHeight grows). The flag must survive Render A // so it's still set when Render B fires the actual correction. if (wasPrepend && newHeight !== prevHeight) { pendingPrependRef.current = false; } if ( isScrolledUpRef.current && prevHeight > 0 && newHeight > prevHeight && wasPrepend ) { const delta = newHeight - prevHeight; container.scrollTop += delta; resizeObserverPrevSHRef.current = newHeight; } prevScrollHeightRef.current = newHeight; }, [displayedMessages]); // Re-stick to bottom when inner message content grows (media/audio previews loading). // Uses prevScrollHeight instead of wasAtBottomRef to avoid stale-flag race where the // ref is true while the user is actively scrolling up. // When the container width changes (member list toggle, window resize), text reflows // and scrollHeight changes; preserve proportional scroll position for scrolled-up users. // biome-ignore lint/correctness/useExhaustiveDependencies: scrollToBottom is a stable ref useEffect(() => { const container = messagesContainerRef.current; const inner = messagesInnerRef.current; if (!inner || !container) return; resizeObserverPrevSHRef.current = container.scrollHeight; let prevClientWidth = container.clientWidth; const observer = new ResizeObserver(() => { if (container.clientHeight === 0) return; // Effect may re-initialize while container is display:none (ref=0). // Re-seed with current dimensions and skip — no reliable "was at bottom" data. if (resizeObserverPrevSHRef.current === 0) { resizeObserverPrevSHRef.current = container.scrollHeight; prevClientWidth = container.clientWidth; return; } const currentClientWidth = container.clientWidth; const widthChanged = currentClientWidth !== prevClientWidth; prevClientWidth = currentClientWidth; const prevSH = resizeObserverPrevSHRef.current; const wasAtPrevBottom = container.scrollTop + container.clientHeight >= prevSH - SCROLL_TOLERANCE; resizeObserverPrevSHRef.current = container.scrollHeight; if (wasAtPrevBottom) { scrollToBottom(); } else if (widthChanged && prevSH > 0) { const ratio = container.scrollTop / prevSH; container.scrollTop = Math.round(ratio * container.scrollHeight); } }); observer.observe(inner); return () => observer.disconnect(); }, [isLoadingHistory, channelId, privateChatId]); // Auto-scroll on new messages — skip when this channel is hidden (display:none). // biome-ignore lint/correctness/useExhaustiveDependencies: only scroll when messages change, not when isActive changes useEffect(() => { if (!isActive) return; const isNarrowView = window.matchMedia("(max-width: 768px)").matches; const isChatVisible = !isNarrowView || mobileViewActiveColumn === "chatView"; if (wasAtBottomRef.current && isChatVisible) { scrollToBottom(); } }, [displayedMessages, mobileViewActiveColumn, scrollToBottom, isActive]); return ( <> <div ref={messagesContainerRef} className="flex-grow overflow-y-auto overflow-x-hidden flex flex-col bg-discord-dark-200 text-discord-text-normal relative" // Disable CSS scroll anchoring — it compounds with our useLayoutEffect delta correction causing double-jumps in browser. style={{ overflowAnchor: "none" }} onCopy={(e) => { const root = messagesContainerRef.current; if (!root) return; const markdown = buildMarkdownFromSelection( window.getSelection(), root, ); if (markdown !== null) { e.preventDefault(); e.clipboardData.setData("text/plain", markdown); } }} > {isLoadingHistory && !isFetchingMore ? ( <div className="flex-grow flex items-center justify-center"> <LoadingSpinner size="lg" text="Loading chat history..." className="text-discord-text-muted" /> </div> ) : ( <div ref={messagesInnerRef} className="flex flex-col"> {hasMoreMessages && !searchQuery && ( <div className="flex justify-center py-2"> <button type="button" onClick={() => { if (locallyHidden) { pendingPrependRef.current = true; setVisibleMessageCount( (prev) => prev + DEFAULT_VISIBLE_MESSAGE_COUNT, ); } else if (serverHasMore && historyTarget) { const oldest = channelMessages[0]; const oldestTime = oldest?.timestamp ? new Date(oldest.timestamp).toISOString() : undefined; const replayTime = historyState?.historyOldestTime; const ts = !oldestTime ? replayTime : !replayTime ? oldestTime : Date.parse(replayTime) < Date.parse(oldestTime) ? replayTime : oldestTime; if (ts) { // WebSocket responses are macrotasks; the click handler's React batch // always commits before the response arrives, so flushSync is unnecessary. isFetchingMoreRef.current = true; setIsFetchingMore(true); ircClient.requestChathistoryBefore( serverId, historyTarget, ts, ); } } }} disabled={isFetchingMore || isLoadingHistory} className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full text-discord-text-muted hover:text-discord-text-normal bg-discord-dark-400 hover:bg-discord-dark-300 border border-white/5 transition-all" > {isFetchingMore ? ( <LoadingSpinner size="sm" text="" className="text-discord-text-muted" /> ) : ( <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3" aria-hidden="true" > <path d="M12 19V5M5 12l7-7 7 7" /> </svg> )} {isFetchingMore ? t`Getting more messages...` : locallyHidden ? t`${filteredMessages.length - displayedMessages.length} older messages` : t`Load older messages`} </button> </div> )} {searchQuery && ( <div className="flex justify-center items-center gap-2 py-2 bg-discord-dark-300 text-discord-text-muted text-sm"> <span> {plural(filteredMessages.length, { one: t`Found 1 message matching "${searchQuery}"`, other: t`Found ${filteredMessages.length} messages matching "${searchQuery}"`, })} </span> <button type="button" onClick={onClearSearch} className="text-red-400 hover:text-red-300" title={t`Clear search`} > ✕ </button> </div> )} {eventGroups.map((group) => { if (group.type === "eventGroup") { const firstId = group.messages[0]?.id || ""; const lastId = group.messages[group.messages.length - 1]?.id || ""; const groupKey = `group-${firstId}-${lastId}`; return ( <CollapsedEventMessage key={groupKey} eventGroup={group} users={channel?.users || []} onUsernameContextMenu={onUsernameContextMenu} /> ); } const message = group.messages[0]; const originalIndex = channelMessages.findIndex( (m) => m.id === message.id, ); const previousMessage = channelMessages[originalIndex - 1]; const showHeader = shouldShowMessageHeader( previousMessage, message, ); return ( <MessageItem key={message.id} message={message} showDate={ originalIndex === 0 || new Date(message.timestamp).toDateString() !== new Date( channelMessages[originalIndex - 1]?.timestamp, ).toDateString() } showHeader={showHeader} setReplyTo={onReply} isHighlighted={message.id === highlightedMessageId} onUsernameContextMenu={onUsernameContextMenu} onIrcLinkClick={onIrcLinkClick} onReactClick={onReactClick} joinChannel={joinChannel} onReactionUnreact={onReactionUnreact} onOpenReactionModal={onOpenReactionModal} onDirectReaction={onDirectReaction} serverId={serverId} channelId={channelId || undefined} privateChatId={privateChatId || undefined} onRedactMessage={onRedactMessage} onOpenProfile={onOpenProfile} /> ); })} </div> )} <div ref={messagesEndRef} className="h-px" /> </div> <ScrollToBottomButton isVisible={isScrolledUp} onClick={scrollToBottom} /> </> ); }, ); ChannelMessageList.displayName = "ChannelMessageList"; // Wrap with memo so hidden keep-alive channels skip re-renders when their props // haven't changed (e.g. when messageText changes in the input — the only thing // that changes on typing is local state inside ChatArea, not the props we pass here). export const MemoChannelMessageList = memo(ChannelMessageList); 
+#. placeholder {1}: import { plural } from "@lingui/core/macro"; import { useLingui } from "@lingui/react/macro"; import type * as React from "react"; import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, } from "react"; import { SCROLL_TOLERANCE, useScrollToBottom, } from "../../hooks/useScrollToBottom"; import { buildMarkdownFromSelection } from "../../lib/chatMarkdownCopy"; import { groupConsecutiveEvents } from "../../lib/eventGrouping"; import ircClient from "../../lib/ircClient"; import { shouldShowMessageHeader } from "../../lib/messageGrouping"; import useStore from "../../store"; import type { Message as MessageType } from "../../types"; import { CollapsedEventMessage } from "../message/CollapsedEventMessage"; import { MessageItem } from "../message/MessageItem"; import LoadingSpinner from "../ui/LoadingSpinner"; import { ScrollToBottomButton } from "../ui/ScrollToBottomButton"; export const DEFAULT_VISIBLE_MESSAGE_COUNT = 100; // Stable empty array — prevents selector from returning a new [] on every render // when the channel has no messages yet (undefined ?? [] would create a new ref each time). const EMPTY_MESSAGES: import("../../types").Message[] = []; export interface ChannelMessageListHandle { setAtBottom: () => void; scrollToBottom: () => void; getScrollState: () => { scrollTop: number; isAtBottom: boolean; visibleCount: number; }; } interface ChannelMessageListProps { channelKey: string; serverId: string; channelId: string | null; privateChatId: string | null; isActive: boolean; searchQuery: string; isMemberListVisible: boolean; onReply: (msg: MessageType | null) => void; onUsernameContextMenu: ( e: React.MouseEvent, username: string, serverId: string, channelId: string, avatarEl?: Element | null, ) => void; onIrcLinkClick: (url: string) => void; onReactClick: (msg: MessageType, el: Element) => void; onReactionUnreact: (emoji: string, msg: MessageType) => void; onOpenReactionModal: ( msg: MessageType, position: { x: number; y: number }, ) => void; onDirectReaction: (emoji: string, msg: MessageType) => void; onRedactMessage: (msg: MessageType) => void; onOpenProfile: (username: string) => void; joinChannel: (serverId: string, channelName: string) => void; onClearSearch: () => void; highlightedMessageId?: string; // undefined = first visit; null = was at bottom; object = restore to saved position initialScrollState?: { scrollTop: number; visibleCount: number } | null; } export const ChannelMessageList = forwardRef< ChannelMessageListHandle, ChannelMessageListProps >( ( { channelKey, serverId, channelId, privateChatId, isActive, searchQuery, isMemberListVisible, onReply, onUsernameContextMenu, onIrcLinkClick, onReactClick, onReactionUnreact, onOpenReactionModal, onDirectReaction, onRedactMessage, onOpenProfile, joinChannel, onClearSearch, highlightedMessageId, initialScrollState, }, ref, ) => { const { t } = useLingui(); const [visibleMessageCount, setVisibleMessageCount] = useState( initialScrollState?.visibleCount ?? DEFAULT_VISIBLE_MESSAGE_COUNT, ); // Ref mirror so getScrollState closure always reads the current value without needing it as a dep. const visibleMessageCountRef = useRef(visibleMessageCount); visibleMessageCountRef.current = visibleMessageCount; // Distinguishes initial join (full-screen spinner) from subsequent "load more" (button spinner). const [isFetchingMore, setIsFetchingMore] = useState(false); const isFetchingMoreRef = useRef(false); const messagesEndRef = useRef<HTMLDivElement>(null); const messagesContainerRef = useRef<HTMLDivElement>(null); const messagesInnerRef = useRef<HTMLDivElement>(null); // prev scrollHeight for prepend delta-correction. const prevScrollHeightRef = useRef(0); // Ref mirror of isScrolledUp — lets useLayoutEffect closures read current value // without listing isScrolledUp as a dep (which would re-run effects on every scroll). const isScrolledUpRef = useRef(false); const prevFilteredLengthRef = useRef(0); const prevFirstMsgIdRef = useRef<string | null>(null); // Set by the window-growth layoutEffect (or button handler) when a true prepend is detected. // Consumed by the delta-correction layoutEffect one render later (after visibleCount grows). // Using a flag instead of tracking displayedMessages[0]?.id because slice(-N) slides the // window on every bottom append, changing displayedMessages[0] even for non-prepend renders. const pendingPrependRef = useRef(false); // Shared scrollHeight baseline between the delta-correction layout effect and the inner // ResizeObserver. When scrollTop is corrected after a prepend, we update this so the RO's // "was at bottom" check is not fooled by the adjusted scrollTop vs its stale prevSH. const resizeObserverPrevSHRef = useRef(0); const channelMessages = useStore( useCallback( (state) => state.messages[channelKey] ?? EMPTY_MESSAGES, [channelKey], ), ); const servers = useStore((state) => state.servers); const mobileViewActiveColumn = useStore( (state) => state.ui.mobileViewActiveColumn, ); const channel = useMemo( () => channelId ? (servers .find((s) => s.id === serverId) ?.channels.find((c) => c.id === channelId) ?? null) : null, [servers, serverId, channelId], ); const server = servers.find((s) => s.id === serverId); const privateChat = privateChatId ? server?.privateChats?.find((chat) => chat.id === privateChatId) : undefined; const historyTarget = channel?.name ?? privateChat?.username; const historyState = channel ?? privateChat; const canRequestHistory = server?.isConnected && !server.isBouncerControl && server.capabilities?.includes("draft/chathistory"); const { isScrolledUp, wasAtBottomRef, scrollToBottom } = useScrollToBottom( messagesContainerRef, messagesEndRef, { channelId: `${channelId || privateChatId}-${isMemberListVisible}` }, ); // Snapshot of the last known scroll position captured while the container was visible. // getScrollState() reads this instead of the live DOM because React commits display:none // before running cleanup effects, collapsing scrollTop/scrollHeight/clientHeight to 0. const lastScrollTopRef = useRef(initialScrollState?.scrollTop ?? 0); useEffect(() => { const container = messagesContainerRef.current; if (!container) return; const onScroll = () => { if (container.clientHeight > 0) lastScrollTopRef.current = container.scrollTop; }; container.addEventListener("scroll", onScroll, { passive: true }); return () => container.removeEventListener("scroll", onScroll); }, []); // Restore scroll position when a keep-alive channel transitions from hidden to visible. // display:none may reset scrollTop to 0; lastScrollTopRef was captured while visible. const prevActiveRef = useRef(isActive); useLayoutEffect(() => { if (isActive && !prevActiveRef.current) { const container = messagesContainerRef.current; if (container && lastScrollTopRef.current > 0) { container.scrollTop = lastScrollTopRef.current; } } prevActiveRef.current = isActive; }, [isActive]); useImperativeHandle(ref, () => ({ setAtBottom: () => { wasAtBottomRef.current = true; }, scrollToBottom, getScrollState: () => ({ scrollTop: lastScrollTopRef.current, isAtBottom: wasAtBottomRef.current, visibleCount: visibleMessageCountRef.current, }), })); const filteredMessages = useMemo(() => { if (!searchQuery.trim()) return channelMessages; const query = searchQuery.toLowerCase(); return channelMessages.filter( (msg) => msg.content.toLowerCase().includes(query) || msg.userId.toLowerCase().includes(query), ); }, [channelMessages, searchQuery]); useEffect(() => { isScrolledUpRef.current = isScrolledUp; // When the user returns to the bottom, shrink the window back to the base so // slice(-N) resumes trimming old messages from the top (memory optimization). // Only shrink if we grew above the base — preserves a sub-default saved visibleCount. if (!isScrolledUp) { setVisibleMessageCount((prev) => prev > DEFAULT_VISIBLE_MESSAGE_COUNT ? DEFAULT_VISIBLE_MESSAGE_COUNT : prev, ); } }, [isScrolledUp]); // Reset ref-tracked windowing state when switching channels. // visibleMessageCount is NOT reset here — useState(initialScrollState?.visibleCount ?? DEFAULT_VISIBLE_MESSAGE_COUNT) // already initializes it correctly on mount, and this effect runs once on mount for the // same channelKey (each instance is bound to exactly one channel by the parent key={}). // biome-ignore lint/correctness/useExhaustiveDependencies: intentional full reset on channel change useEffect(() => { prevFilteredLengthRef.current = 0; prevFirstMsgIdRef.current = null; prevScrollHeightRef.current = 0; pendingPrependRef.current = false; resizeObserverPrevSHRef.current = 0; }, [channelKey]); const displayedMessages = useMemo(() => { if (searchQuery.trim()) return filteredMessages; return filteredMessages.slice(-visibleMessageCount); }, [filteredMessages, visibleMessageCount, searchQuery]); const locallyHidden = filteredMessages.length > displayedMessages.length; const serverHasMore = canRequestHistory && (channel?.hasMoreHistory === true || (privateChat && privateChat.hasMoreHistory !== false)) && (channelMessages.length > 0 || !!historyState?.historyOldestTime); const hasMoreMessages = locallyHidden || serverHasMore; const eventGroups = useMemo( () => groupConsecutiveEvents(displayedMessages), [displayedMessages], ); const isLoadingHistory = historyState?.isLoadingHistory ?? false; // Scroll to bottom on initial mount, unless a saved position was passed in. // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount only useEffect(() => { const container = messagesContainerRef.current; if (!container) return; if (initialScrollState) { container.scrollTop = initialScrollState.scrollTop; lastScrollTopRef.current = initialScrollState.scrollTop; wasAtBottomRef.current = false; } else { container.scrollTop = container.scrollHeight; lastScrollTopRef.current = container.scrollHeight; wasAtBottomRef.current = true; } }, []); // Scroll to bottom after initial join history loads; clear fetch spinner at batch end. const wasLoadingHistoryRef = useRef(false); // biome-ignore lint/correctness/useExhaustiveDependencies: scrollToBottom is stable via useCallback; refs and setters are stable useLayoutEffect(() => { if (wasLoadingHistoryRef.current && !isLoadingHistory) { if (isFetchingMoreRef.current) { // delta correction for scroll position is handled by useLayoutEffect([displayedMessages]) isFetchingMoreRef.current = false; setIsFetchingMore(false); } else { scrollToBottom(); wasAtBottomRef.current = true; } } wasLoadingHistoryRef.current = isLoadingHistory; }, [isLoadingHistory]); // When older messages are prepended, grow the window so they enter displayedMessages. // When new messages arrive at the bottom while the user is scrolled up, also grow the // window to keep the current top messages visible — slice(-N) otherwise slides the // window forward and hides them, incrementing the "N older messages" counter on every // incoming message. Only let the slice trim from the top when the user is at the bottom // (where auto-scroll handles keeping them current). useLayoutEffect(() => { const newLength = filteredMessages.length; const newFirstId = filteredMessages[0]?.id ?? null; const delta = newLength - prevFilteredLengthRef.current; if (prevFilteredLengthRef.current > 0 && delta > 0) { if (newFirstId !== prevFirstMsgIdRef.current) { // Messages prepended (load-more): signal delta-correction to compensate scrollTop. pendingPrependRef.current = true; setVisibleMessageCount((prev) => prev + delta); } else if (isScrolledUpRef.current) { // Messages appended at bottom while user is scrolled up reading history. // Expand the window to prevent top messages from dropping out of the slice. setVisibleMessageCount((prev) => prev + delta); } } prevFilteredLengthRef.current = newLength; prevFirstMsgIdRef.current = newFirstId; }, [filteredMessages]); // Compensate scrollTop when content is prepended above the viewport. // biome-ignore lint/correctness/useExhaustiveDependencies: runs on every displayedMessages render to capture the resulting scrollHeight; refs are stable useLayoutEffect(() => { const container = messagesContainerRef.current; if (!container) return; // Skip while container is display:none — scrollHeight collapses to 0 and would // poison prevScrollHeightRef, causing a huge spurious delta on the next visible render. if (container.clientHeight === 0) return; const prevHeight = prevScrollHeightRef.current; const newHeight = container.scrollHeight; // Only correct when a true load-more prepend happened (flag set by the window-growth // layoutEffect or button handler). Bottom appends slide the slice(-N) window which also // changes displayedMessages[0] — ID-comparison can't distinguish the two cases. const wasPrepend = pendingPrependRef.current; // Only consume the flag when scrollHeight actually changed — the server-side load-more // path goes through two renders: Render A (filteredMessages grows, visibleCount unchanged, // same displayedMessages content, same scrollHeight) then Render B (visibleCount grows, // new messages enter displayedMessages, scrollHeight grows). The flag must survive Render A // so it's still set when Render B fires the actual correction. if (wasPrepend && newHeight !== prevHeight) { pendingPrependRef.current = false; } if ( isScrolledUpRef.current && prevHeight > 0 && newHeight > prevHeight && wasPrepend ) { const delta = newHeight - prevHeight; container.scrollTop += delta; resizeObserverPrevSHRef.current = newHeight; } prevScrollHeightRef.current = newHeight; }, [displayedMessages]); // Re-stick to bottom when inner message content grows (media/audio previews loading). // Uses prevScrollHeight instead of wasAtBottomRef to avoid stale-flag race where the // ref is true while the user is actively scrolling up. // When the container width changes (member list toggle, window resize), text reflows // and scrollHeight changes; preserve proportional scroll position for scrolled-up users. // biome-ignore lint/correctness/useExhaustiveDependencies: scrollToBottom is a stable ref useEffect(() => { const container = messagesContainerRef.current; const inner = messagesInnerRef.current; if (!inner || !container) return; resizeObserverPrevSHRef.current = container.scrollHeight; let prevClientWidth = container.clientWidth; const observer = new ResizeObserver(() => { if (container.clientHeight === 0) return; // Effect may re-initialize while container is display:none (ref=0). // Re-seed with current dimensions and skip — no reliable "was at bottom" data. if (resizeObserverPrevSHRef.current === 0) { resizeObserverPrevSHRef.current = container.scrollHeight; prevClientWidth = container.clientWidth; return; } const currentClientWidth = container.clientWidth; const widthChanged = currentClientWidth !== prevClientWidth; prevClientWidth = currentClientWidth; const prevSH = resizeObserverPrevSHRef.current; const wasAtPrevBottom = container.scrollTop + container.clientHeight >= prevSH - SCROLL_TOLERANCE; resizeObserverPrevSHRef.current = container.scrollHeight; if (wasAtPrevBottom) { scrollToBottom(); } else if (widthChanged && prevSH > 0) { const ratio = container.scrollTop / prevSH; container.scrollTop = Math.round(ratio * container.scrollHeight); } }); observer.observe(inner); return () => observer.disconnect(); }, [isLoadingHistory, channelId, privateChatId]); // Auto-scroll on new messages — skip when this channel is hidden (display:none). // biome-ignore lint/correctness/useExhaustiveDependencies: only scroll when messages change, not when isActive changes useEffect(() => { if (!isActive) return; const isNarrowView = window.matchMedia("(max-width: 768px)").matches; const isChatVisible = !isNarrowView || mobileViewActiveColumn === "chatView"; if (wasAtBottomRef.current && isChatVisible) { scrollToBottom(); } }, [displayedMessages, mobileViewActiveColumn, scrollToBottom, isActive]); return ( <> <div ref={messagesContainerRef} className="obby-chat-area flex-grow overflow-y-auto overflow-x-hidden flex flex-col bg-discord-dark-200 text-discord-text-normal relative" // Disable CSS scroll anchoring — it compounds with our useLayoutEffect delta correction causing double-jumps in browser. style={{ overflowAnchor: "none" }} onCopy={(e) => { const root = messagesContainerRef.current; if (!root) return; const markdown = buildMarkdownFromSelection( window.getSelection(), root, ); if (markdown !== null) { e.preventDefault(); e.clipboardData.setData("text/plain", markdown); } }} > {isLoadingHistory && !isFetchingMore ? ( <div className="flex-grow flex items-center justify-center"> <LoadingSpinner size="lg" text="Loading chat history..." className="text-discord-text-muted" /> </div> ) : ( <div ref={messagesInnerRef} className="flex flex-col"> {hasMoreMessages && !searchQuery && ( <div className="flex justify-center py-2"> <button type="button" onClick={() => { if (locallyHidden) { pendingPrependRef.current = true; setVisibleMessageCount( (prev) => prev + DEFAULT_VISIBLE_MESSAGE_COUNT, ); } else if (serverHasMore && historyTarget) { const oldest = channelMessages[0]; const oldestTime = oldest?.timestamp ? new Date(oldest.timestamp).toISOString() : undefined; const replayTime = historyState?.historyOldestTime; const ts = !oldestTime ? replayTime : !replayTime ? oldestTime : Date.parse(replayTime) < Date.parse(oldestTime) ? replayTime : oldestTime; if (ts) { // WebSocket responses are macrotasks; the click handler's React batch // always commits before the response arrives, so flushSync is unnecessary. isFetchingMoreRef.current = true; setIsFetchingMore(true); ircClient.requestChathistoryBefore( serverId, historyTarget, ts, ); } } }} disabled={isFetchingMore || isLoadingHistory} className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full text-discord-text-muted hover:text-discord-text-normal bg-discord-dark-400 hover:bg-discord-dark-300 border border-white/5 transition-all" > {isFetchingMore ? ( <LoadingSpinner size="sm" text="" className="text-discord-text-muted" /> ) : ( <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3" aria-hidden="true" > <path d="M12 19V5M5 12l7-7 7 7" /> </svg> )} {isFetchingMore ? t`Getting more messages...` : locallyHidden ? t`${filteredMessages.length - displayedMessages.length} older messages` : t`Load older messages`} </button> </div> )} {searchQuery && ( <div className="flex justify-center items-center gap-2 py-2 bg-discord-dark-300 text-discord-text-muted text-sm"> <span> {plural(filteredMessages.length, { one: t`Found 1 message matching "${searchQuery}"`, other: t`Found ${filteredMessages.length} messages matching "${searchQuery}"`, })} </span> <button type="button" onClick={onClearSearch} className="text-red-400 hover:text-red-300" title={t`Clear search`} > ✕ </button> </div> )} {eventGroups.map((group) => { if (group.type === "eventGroup") { const firstId = group.messages[0]?.id || ""; const lastId = group.messages[group.messages.length - 1]?.id || ""; const groupKey = `group-${firstId}-${lastId}`; return ( <CollapsedEventMessage key={groupKey} eventGroup={group} users={channel?.users || []} onUsernameContextMenu={onUsernameContextMenu} /> ); } const message = group.messages[0]; const originalIndex = channelMessages.findIndex( (m) => m.id === message.id, ); const previousMessage = channelMessages[originalIndex - 1]; const showHeader = shouldShowMessageHeader( previousMessage, message, ); return ( <MessageItem key={message.id} message={message} showDate={ originalIndex === 0 || new Date(message.timestamp).toDateString() !== new Date( channelMessages[originalIndex - 1]?.timestamp, ).toDateString() } showHeader={showHeader} setReplyTo={onReply} isHighlighted={message.id === highlightedMessageId} onUsernameContextMenu={onUsernameContextMenu} onIrcLinkClick={onIrcLinkClick} onReactClick={onReactClick} joinChannel={joinChannel} onReactionUnreact={onReactionUnreact} onOpenReactionModal={onOpenReactionModal} onDirectReaction={onDirectReaction} serverId={serverId} channelId={channelId || undefined} privateChatId={privateChatId || undefined} onRedactMessage={onRedactMessage} onOpenProfile={onOpenProfile} /> ); })} </div> )} <div ref={messagesEndRef} className="h-px" /> </div> <ScrollToBottomButton isVisible={isScrolledUp} onClick={scrollToBottom} /> </> ); }, ); ChannelMessageList.displayName = "ChannelMessageList"; // Wrap with memo so hidden keep-alive channels skip re-renders when their props // haven't changed (e.g. when messageText changes in the input — the only thing // that changes on typing is local state inside ChatArea, not the props we pass here). export const MemoChannelMessageList = memo(ChannelMessageList); 
+#. placeholder {2}: import { plural } from "@lingui/core/macro"; import { useLingui } from "@lingui/react/macro"; import type * as React from "react"; import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, } from "react"; import { SCROLL_TOLERANCE, useScrollToBottom, } from "../../hooks/useScrollToBottom"; import { buildMarkdownFromSelection } from "../../lib/chatMarkdownCopy"; import { groupConsecutiveEvents } from "../../lib/eventGrouping"; import ircClient from "../../lib/ircClient"; import { shouldShowMessageHeader } from "../../lib/messageGrouping"; import useStore from "../../store"; import type { Message as MessageType } from "../../types"; import { CollapsedEventMessage } from "../message/CollapsedEventMessage"; import { MessageItem } from "../message/MessageItem"; import LoadingSpinner from "../ui/LoadingSpinner"; import { ScrollToBottomButton } from "../ui/ScrollToBottomButton"; export const DEFAULT_VISIBLE_MESSAGE_COUNT = 100; // Stable empty array — prevents selector from returning a new [] on every render // when the channel has no messages yet (undefined ?? [] would create a new ref each time). const EMPTY_MESSAGES: import("../../types").Message[] = []; export interface ChannelMessageListHandle { setAtBottom: () => void; scrollToBottom: () => void; getScrollState: () => { scrollTop: number; isAtBottom: boolean; visibleCount: number; }; } interface ChannelMessageListProps { channelKey: string; serverId: string; channelId: string | null; privateChatId: string | null; isActive: boolean; searchQuery: string; isMemberListVisible: boolean; onReply: (msg: MessageType | null) => void; onUsernameContextMenu: ( e: React.MouseEvent, username: string, serverId: string, channelId: string, avatarEl?: Element | null, ) => void; onIrcLinkClick: (url: string) => void; onReactClick: (msg: MessageType, el: Element) => void; onReactionUnreact: (emoji: string, msg: MessageType) => void; onOpenReactionModal: ( msg: MessageType, position: { x: number; y: number }, ) => void; onDirectReaction: (emoji: string, msg: MessageType) => void; onRedactMessage: (msg: MessageType) => void; onOpenProfile: (username: string) => void; joinChannel: (serverId: string, channelName: string) => void; onClearSearch: () => void; highlightedMessageId?: string; // undefined = first visit; null = was at bottom; object = restore to saved position initialScrollState?: { scrollTop: number; visibleCount: number } | null; } export const ChannelMessageList = forwardRef< ChannelMessageListHandle, ChannelMessageListProps >( ( { channelKey, serverId, channelId, privateChatId, isActive, searchQuery, isMemberListVisible, onReply, onUsernameContextMenu, onIrcLinkClick, onReactClick, onReactionUnreact, onOpenReactionModal, onDirectReaction, onRedactMessage, onOpenProfile, joinChannel, onClearSearch, highlightedMessageId, initialScrollState, }, ref, ) => { const { t } = useLingui(); const [visibleMessageCount, setVisibleMessageCount] = useState( initialScrollState?.visibleCount ?? DEFAULT_VISIBLE_MESSAGE_COUNT, ); // Ref mirror so getScrollState closure always reads the current value without needing it as a dep. const visibleMessageCountRef = useRef(visibleMessageCount); visibleMessageCountRef.current = visibleMessageCount; // Distinguishes initial join (full-screen spinner) from subsequent "load more" (button spinner). const [isFetchingMore, setIsFetchingMore] = useState(false); const isFetchingMoreRef = useRef(false); const messagesEndRef = useRef<HTMLDivElement>(null); const messagesContainerRef = useRef<HTMLDivElement>(null); const messagesInnerRef = useRef<HTMLDivElement>(null); // prev scrollHeight for prepend delta-correction. const prevScrollHeightRef = useRef(0); // Ref mirror of isScrolledUp — lets useLayoutEffect closures read current value // without listing isScrolledUp as a dep (which would re-run effects on every scroll). const isScrolledUpRef = useRef(false); const prevFilteredLengthRef = useRef(0); const prevFirstMsgIdRef = useRef<string | null>(null); // Set by the window-growth layoutEffect (or button handler) when a true prepend is detected. // Consumed by the delta-correction layoutEffect one render later (after visibleCount grows). // Using a flag instead of tracking displayedMessages[0]?.id because slice(-N) slides the // window on every bottom append, changing displayedMessages[0] even for non-prepend renders. const pendingPrependRef = useRef(false); // Shared scrollHeight baseline between the delta-correction layout effect and the inner // ResizeObserver. When scrollTop is corrected after a prepend, we update this so the RO's // "was at bottom" check is not fooled by the adjusted scrollTop vs its stale prevSH. const resizeObserverPrevSHRef = useRef(0); const channelMessages = useStore( useCallback( (state) => state.messages[channelKey] ?? EMPTY_MESSAGES, [channelKey], ), ); const servers = useStore((state) => state.servers); const mobileViewActiveColumn = useStore( (state) => state.ui.mobileViewActiveColumn, ); const channel = useMemo( () => channelId ? (servers .find((s) => s.id === serverId) ?.channels.find((c) => c.id === channelId) ?? null) : null, [servers, serverId, channelId], ); const server = servers.find((s) => s.id === serverId); const privateChat = privateChatId ? server?.privateChats?.find((chat) => chat.id === privateChatId) : undefined; const historyTarget = channel?.name ?? privateChat?.username; const historyState = channel ?? privateChat; const canRequestHistory = server?.isConnected && !server.isBouncerControl && server.capabilities?.includes("draft/chathistory"); const { isScrolledUp, wasAtBottomRef, scrollToBottom } = useScrollToBottom( messagesContainerRef, messagesEndRef, { channelId: `${channelId || privateChatId}-${isMemberListVisible}` }, ); // Snapshot of the last known scroll position captured while the container was visible. // getScrollState() reads this instead of the live DOM because React commits display:none // before running cleanup effects, collapsing scrollTop/scrollHeight/clientHeight to 0. const lastScrollTopRef = useRef(initialScrollState?.scrollTop ?? 0); useEffect(() => { const container = messagesContainerRef.current; if (!container) return; const onScroll = () => { if (container.clientHeight > 0) lastScrollTopRef.current = container.scrollTop; }; container.addEventListener("scroll", onScroll, { passive: true }); return () => container.removeEventListener("scroll", onScroll); }, []); // Restore scroll position when a keep-alive channel transitions from hidden to visible. // display:none may reset scrollTop to 0; lastScrollTopRef was captured while visible. const prevActiveRef = useRef(isActive); useLayoutEffect(() => { if (isActive && !prevActiveRef.current) { const container = messagesContainerRef.current; if (container && lastScrollTopRef.current > 0) { container.scrollTop = lastScrollTopRef.current; } } prevActiveRef.current = isActive; }, [isActive]); useImperativeHandle(ref, () => ({ setAtBottom: () => { wasAtBottomRef.current = true; }, scrollToBottom, getScrollState: () => ({ scrollTop: lastScrollTopRef.current, isAtBottom: wasAtBottomRef.current, visibleCount: visibleMessageCountRef.current, }), })); const filteredMessages = useMemo(() => { if (!searchQuery.trim()) return channelMessages; const query = searchQuery.toLowerCase(); return channelMessages.filter( (msg) => msg.content.toLowerCase().includes(query) || msg.userId.toLowerCase().includes(query), ); }, [channelMessages, searchQuery]); useEffect(() => { isScrolledUpRef.current = isScrolledUp; // When the user returns to the bottom, shrink the window back to the base so // slice(-N) resumes trimming old messages from the top (memory optimization). // Only shrink if we grew above the base — preserves a sub-default saved visibleCount. if (!isScrolledUp) { setVisibleMessageCount((prev) => prev > DEFAULT_VISIBLE_MESSAGE_COUNT ? DEFAULT_VISIBLE_MESSAGE_COUNT : prev, ); } }, [isScrolledUp]); // Reset ref-tracked windowing state when switching channels. // visibleMessageCount is NOT reset here — useState(initialScrollState?.visibleCount ?? DEFAULT_VISIBLE_MESSAGE_COUNT) // already initializes it correctly on mount, and this effect runs once on mount for the // same channelKey (each instance is bound to exactly one channel by the parent key={}). // biome-ignore lint/correctness/useExhaustiveDependencies: intentional full reset on channel change useEffect(() => { prevFilteredLengthRef.current = 0; prevFirstMsgIdRef.current = null; prevScrollHeightRef.current = 0; pendingPrependRef.current = false; resizeObserverPrevSHRef.current = 0; }, [channelKey]); const displayedMessages = useMemo(() => { if (searchQuery.trim()) return filteredMessages; return filteredMessages.slice(-visibleMessageCount); }, [filteredMessages, visibleMessageCount, searchQuery]); const locallyHidden = filteredMessages.length > displayedMessages.length; const serverHasMore = canRequestHistory && (channel?.hasMoreHistory === true || (privateChat && privateChat.hasMoreHistory !== false)) && (channelMessages.length > 0 || !!historyState?.historyOldestTime); const hasMoreMessages = locallyHidden || serverHasMore; const eventGroups = useMemo( () => groupConsecutiveEvents(displayedMessages), [displayedMessages], ); const isLoadingHistory = historyState?.isLoadingHistory ?? false; // Scroll to bottom on initial mount, unless a saved position was passed in. // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount only useEffect(() => { const container = messagesContainerRef.current; if (!container) return; if (initialScrollState) { container.scrollTop = initialScrollState.scrollTop; lastScrollTopRef.current = initialScrollState.scrollTop; wasAtBottomRef.current = false; } else { container.scrollTop = container.scrollHeight; lastScrollTopRef.current = container.scrollHeight; wasAtBottomRef.current = true; } }, []); // Scroll to bottom after initial join history loads; clear fetch spinner at batch end. const wasLoadingHistoryRef = useRef(false); // biome-ignore lint/correctness/useExhaustiveDependencies: scrollToBottom is stable via useCallback; refs and setters are stable useLayoutEffect(() => { if (wasLoadingHistoryRef.current && !isLoadingHistory) { if (isFetchingMoreRef.current) { // delta correction for scroll position is handled by useLayoutEffect([displayedMessages]) isFetchingMoreRef.current = false; setIsFetchingMore(false); } else { scrollToBottom(); wasAtBottomRef.current = true; } } wasLoadingHistoryRef.current = isLoadingHistory; }, [isLoadingHistory]); // When older messages are prepended, grow the window so they enter displayedMessages. // When new messages arrive at the bottom while the user is scrolled up, also grow the // window to keep the current top messages visible — slice(-N) otherwise slides the // window forward and hides them, incrementing the "N older messages" counter on every // incoming message. Only let the slice trim from the top when the user is at the bottom // (where auto-scroll handles keeping them current). useLayoutEffect(() => { const newLength = filteredMessages.length; const newFirstId = filteredMessages[0]?.id ?? null; const delta = newLength - prevFilteredLengthRef.current; if (prevFilteredLengthRef.current > 0 && delta > 0) { if (newFirstId !== prevFirstMsgIdRef.current) { // Messages prepended (load-more): signal delta-correction to compensate scrollTop. pendingPrependRef.current = true; setVisibleMessageCount((prev) => prev + delta); } else if (isScrolledUpRef.current) { // Messages appended at bottom while user is scrolled up reading history. // Expand the window to prevent top messages from dropping out of the slice. setVisibleMessageCount((prev) => prev + delta); } } prevFilteredLengthRef.current = newLength; prevFirstMsgIdRef.current = newFirstId; }, [filteredMessages]); // Compensate scrollTop when content is prepended above the viewport. // biome-ignore lint/correctness/useExhaustiveDependencies: runs on every displayedMessages render to capture the resulting scrollHeight; refs are stable useLayoutEffect(() => { const container = messagesContainerRef.current; if (!container) return; // Skip while container is display:none — scrollHeight collapses to 0 and would // poison prevScrollHeightRef, causing a huge spurious delta on the next visible render. if (container.clientHeight === 0) return; const prevHeight = prevScrollHeightRef.current; const newHeight = container.scrollHeight; // Only correct when a true load-more prepend happened (flag set by the window-growth // layoutEffect or button handler). Bottom appends slide the slice(-N) window which also // changes displayedMessages[0] — ID-comparison can't distinguish the two cases. const wasPrepend = pendingPrependRef.current; // Only consume the flag when scrollHeight actually changed — the server-side load-more // path goes through two renders: Render A (filteredMessages grows, visibleCount unchanged, // same displayedMessages content, same scrollHeight) then Render B (visibleCount grows, // new messages enter displayedMessages, scrollHeight grows). The flag must survive Render A // so it's still set when Render B fires the actual correction. if (wasPrepend && newHeight !== prevHeight) { pendingPrependRef.current = false; } if ( isScrolledUpRef.current && prevHeight > 0 && newHeight > prevHeight && wasPrepend ) { const delta = newHeight - prevHeight; container.scrollTop += delta; resizeObserverPrevSHRef.current = newHeight; } prevScrollHeightRef.current = newHeight; }, [displayedMessages]); // Re-stick to bottom when inner message content grows (media/audio previews loading). // Uses prevScrollHeight instead of wasAtBottomRef to avoid stale-flag race where the // ref is true while the user is actively scrolling up. // When the container width changes (member list toggle, window resize), text reflows // and scrollHeight changes; preserve proportional scroll position for scrolled-up users. // biome-ignore lint/correctness/useExhaustiveDependencies: scrollToBottom is a stable ref useEffect(() => { const container = messagesContainerRef.current; const inner = messagesInnerRef.current; if (!inner || !container) return; resizeObserverPrevSHRef.current = container.scrollHeight; let prevClientWidth = container.clientWidth; const observer = new ResizeObserver(() => { if (container.clientHeight === 0) return; // Effect may re-initialize while container is display:none (ref=0). // Re-seed with current dimensions and skip — no reliable "was at bottom" data. if (resizeObserverPrevSHRef.current === 0) { resizeObserverPrevSHRef.current = container.scrollHeight; prevClientWidth = container.clientWidth; return; } const currentClientWidth = container.clientWidth; const widthChanged = currentClientWidth !== prevClientWidth; prevClientWidth = currentClientWidth; const prevSH = resizeObserverPrevSHRef.current; const wasAtPrevBottom = container.scrollTop + container.clientHeight >= prevSH - SCROLL_TOLERANCE; resizeObserverPrevSHRef.current = container.scrollHeight; if (wasAtPrevBottom) { scrollToBottom(); } else if (widthChanged && prevSH > 0) { const ratio = container.scrollTop / prevSH; container.scrollTop = Math.round(ratio * container.scrollHeight); } }); observer.observe(inner); return () => observer.disconnect(); }, [isLoadingHistory, channelId, privateChatId]); // Auto-scroll on new messages — skip when this channel is hidden (display:none). // biome-ignore lint/correctness/useExhaustiveDependencies: only scroll when messages change, not when isActive changes useEffect(() => { if (!isActive) return; const isNarrowView = window.matchMedia("(max-width: 768px)").matches; const isChatVisible = !isNarrowView || mobileViewActiveColumn === "chatView"; if (wasAtBottomRef.current && isChatVisible) { scrollToBottom(); } }, [displayedMessages, mobileViewActiveColumn, scrollToBottom, isActive]); return ( <> <div ref={messagesContainerRef} className="obby-chat-area flex-grow overflow-y-auto overflow-x-hidden flex flex-col bg-discord-dark-200 text-discord-text-normal relative" // Disable CSS scroll anchoring — it compounds with our useLayoutEffect delta correction causing double-jumps in browser. style={{ overflowAnchor: "none" }} onCopy={(e) => { const root = messagesContainerRef.current; if (!root) return; const markdown = buildMarkdownFromSelection( window.getSelection(), root, ); if (markdown !== null) { e.preventDefault(); e.clipboardData.setData("text/plain", markdown); } }} > {isLoadingHistory && !isFetchingMore ? ( <div className="flex-grow flex items-center justify-center"> <LoadingSpinner size="lg" text="Loading chat history..." className="text-discord-text-muted" /> </div> ) : ( <div ref={messagesInnerRef} className="flex flex-col"> {hasMoreMessages && !searchQuery && ( <div className="flex justify-center py-2"> <button type="button" onClick={() => { if (locallyHidden) { pendingPrependRef.current = true; setVisibleMessageCount( (prev) => prev + DEFAULT_VISIBLE_MESSAGE_COUNT, ); } else if (serverHasMore && historyTarget) { const oldest = channelMessages[0]; const oldestTime = oldest?.timestamp ? new Date(oldest.timestamp).toISOString() : undefined; const replayTime = historyState?.historyOldestTime; const ts = !oldestTime ? replayTime : !replayTime ? oldestTime : Date.parse(replayTime) < Date.parse(oldestTime) ? replayTime : oldestTime; if (ts) { // WebSocket responses are macrotasks; the click handler's React batch // always commits before the response arrives, so flushSync is unnecessary. isFetchingMoreRef.current = true; setIsFetchingMore(true); ircClient.requestChathistoryBefore( serverId, historyTarget, ts, ); } } }} disabled={isFetchingMore || isLoadingHistory} className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full text-discord-text-muted hover:text-discord-text-normal bg-discord-dark-400 hover:bg-discord-dark-300 border border-white/5 transition-all" > {isFetchingMore ? ( <LoadingSpinner size="sm" text="" className="text-discord-text-muted" /> ) : ( <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3" aria-hidden="true" > <path d="M12 19V5M5 12l7-7 7 7" /> </svg> )} {isFetchingMore ? t`Getting more messages...` : locallyHidden ? t`${filteredMessages.length - displayedMessages.length} older messages` : t`Load older messages`} </button> </div> )} {searchQuery && ( <div className="flex justify-center items-center gap-2 py-2 bg-discord-dark-300 text-discord-text-muted text-sm"> <span> {plural(filteredMessages.length, { one: t`Found 1 message matching "${searchQuery}"`, other: t`Found ${filteredMessages.length} messages matching "${searchQuery}"`, })} </span> <button type="button" onClick={onClearSearch} className="text-red-400 hover:text-red-300" title={t`Clear search`} > ✕ </button> </div> )} {eventGroups.map((group) => { if (group.type === "eventGroup") { const firstId = group.messages[0]?.id || ""; const lastId = group.messages[group.messages.length - 1]?.id || ""; const groupKey = `group-${firstId}-${lastId}`; return ( <CollapsedEventMessage key={groupKey} eventGroup={group} users={channel?.users || []} onUsernameContextMenu={onUsernameContextMenu} /> ); } const message = group.messages[0]; const originalIndex = channelMessages.findIndex( (m) => m.id === message.id, ); const previousMessage = channelMessages[originalIndex - 1]; const showHeader = shouldShowMessageHeader( previousMessage, message, ); return ( <MessageItem key={message.id} message={message} showDate={ originalIndex === 0 || new Date(message.timestamp).toDateString() !== new Date( channelMessages[originalIndex - 1]?.timestamp, ).toDateString() } showHeader={showHeader} setReplyTo={onReply} isHighlighted={message.id === highlightedMessageId} onUsernameContextMenu={onUsernameContextMenu} onIrcLinkClick={onIrcLinkClick} onReactClick={onReactClick} joinChannel={joinChannel} onReactionUnreact={onReactionUnreact} onOpenReactionModal={onOpenReactionModal} onDirectReaction={onDirectReaction} serverId={serverId} channelId={channelId || undefined} privateChatId={privateChatId || undefined} onRedactMessage={onRedactMessage} onOpenProfile={onOpenProfile} /> ); })} </div> )} <div ref={messagesEndRef} className="h-px" /> </div> <ScrollToBottomButton isVisible={isScrolledUp} onClick={scrollToBottom} /> </> ); }, ); ChannelMessageList.displayName = "ChannelMessageList"; // Wrap with memo so hidden keep-alive channels skip re-renders when their props // haven't changed (e.g. when messageText changes in the input — the only thing // that changes on typing is local state inside ChatArea, not the props we pass here). export const MemoChannelMessageList = memo(ChannelMessageList); 
 #: src/components/layout/ChannelMessageList.tsx
 msgid "{0, plural, one {{1}} other {{2}}}"
 msgstr "{0, plural, one {{1}} other {{2}}}"
@@ -312,9 +312,17 @@ msgstr "이 기기에 설치된 글꼴. 채팅 글꼴이 사용자 지정일 때
 msgid "A stylesheet applied on top of Obby, from a shared link and/or your own. Sidebar rows carry data-network-host so you can style individual networks. Anything that would load other files is removed."
 msgstr "공유 링크 및/또는 직접 작성한 CSS를 Obby 위에 적용하는 스타일시트입니다. 사이드바 행에 data-network-host가 있어 네트워크별로 스타일을 지정할 수 있습니다. 다른 파일을 불러오는 항목은 모두 제거됩니다."
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "A theme .json file by URL, fetched when Obby starts (no cookies or referrer). Pick \"From link\" in the theme list to use it."
+msgstr "URL로 지정한 테마 .json 파일로, Obby 시작 시 가져옵니다(쿠키나 리퍼러 없음). 사용하려면 테마 목록에서 \"링크에서\"를 선택하세요."
+
 #: src/components/message/BotInvocationChip.tsx
 msgid "About this attribution"
 msgstr "이 출처 표시에 관하여"
+
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Accent"
+msgstr "강조"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Accent colour"
@@ -371,6 +379,10 @@ msgstr "작업"
 #: src/components/ui/BotsModal.tsx
 msgid "active"
 msgstr "활성"
+
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Active channel name"
+msgstr "활성 채널 이름"
 
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "Activity"
@@ -619,6 +631,10 @@ msgstr "이미지로 돌아가기"
 msgid "Back to network list"
 msgstr "네트워크 목록으로 돌아가기"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Background opacity"
+msgstr "배경 불투명도"
+
 #: src/components/ui/ModerationModal.tsx
 msgid "Ban {username} by hostmask (prevents them from rejoining from the same IP/host)"
 msgstr "호스트마스크로 {username} 차단 (동일 IP/호스트에서 재입장 방지)"
@@ -826,6 +842,10 @@ msgstr "채널 이름"
 msgid "Channel Name Mask"
 msgstr "채널 이름 마스크"
 
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Channel names"
+msgstr "채널 이름"
+
 #: src/components/layout/MemberList.tsx
 msgid "Channel Operator"
 msgstr "채널 Op"
@@ -871,6 +891,14 @@ msgstr "채널"
 msgid "Channels on {networkName}"
 msgstr "{networkName}의 채널"
 
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Chat background"
+msgstr "채팅 배경"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Chat background image"
+msgstr "채팅 배경 이미지"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Chat font"
 msgstr "채팅 글꼴"
@@ -886,6 +914,10 @@ msgstr "안전한 비밀번호를 선택하세요"
 #: src/components/ui/settings/SettingRenderer.tsx
 msgid "Choose file"
 msgstr "파일 선택"
+
+#: src/components/ui/settings/ChatBackgroundField.tsx
+msgid "Choose image…"
+msgstr "이미지 선택…"
 
 #: src/components/ui/AvatarUpload.tsx
 #: src/components/ui/RawLogViewer.tsx
@@ -1137,6 +1169,10 @@ msgstr "아늑하게"
 msgid "Cosy shows avatars and spacing between messages; Compact packs them like a classic IRC client"
 msgstr "아늑하게는 아바타와 메시지 간격을 표시하고, 조밀하게는 고전 IRC 클라이언트처럼 빽빽하게 표시합니다"
 
+#: src/components/ui/settings/ThemeLinkField.tsx
+msgid "Could not load this link."
+msgstr "이 링크를 불러올 수 없습니다."
+
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Could not load this link. It must point to the raw .css file."
 msgstr "이 링크를 불러올 수 없습니다. 원본 .css 파일을 가리켜야 합니다."
@@ -1201,6 +1237,11 @@ msgstr "사용자 정의 멘션"
 msgid "Custom notification sound file"
 msgstr "사용자 정의 알림 소리 파일"
 
+#. placeholder {0}: custom.name
+#: src/components/ui/settings/ThemeField.tsx
+msgid "Custom: {0}"
+msgstr "사용자 지정: {0}"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Custom…"
 msgstr "사용자 지정…"
@@ -1225,6 +1266,10 @@ msgstr "암호화 거절"
 #: src/components/message/EncryptedMediaPreview.tsx
 msgid "Decrypting {safeName}…"
 msgstr "{safeName} 복호화 중…"
+
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Deep background"
+msgstr "가장 어두운 배경"
 
 #: src/components/message/JsonLogMessage.tsx
 msgid "Deep dive"
@@ -1396,6 +1441,14 @@ msgstr "편집"
 msgid "Edit {0}"
 msgstr "{0} 편집"
 
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Edit colours"
+msgstr "색상 편집"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Edit every colour, or import a theme file. Pick \"Custom\" in the theme list to use it; export to share it."
+msgstr "모든 색상을 편집하거나 테마 파일을 가져옵니다. 사용하려면 테마 목록에서 \"사용자 지정\"을 선택하고, 공유하려면 내보내세요."
+
 #: src/components/ui/UserProfileModal.tsx
 msgid "Edit Profile"
 msgstr "프로필 편집"
@@ -1518,6 +1571,10 @@ msgstr "계정 이름 입력..."
 msgid "Enter an http(s) link to a .css file."
 msgstr ".css 파일의 http(s) 링크를 입력하세요."
 
+#: src/components/ui/settings/ThemeLinkField.tsx
+msgid "Enter an http(s) link to a theme .json file."
+msgstr "테마 .json 파일의 http(s) 링크를 입력하세요."
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Enter default nickname..."
 msgstr "기본 닉네임 입력..."
@@ -1590,6 +1647,10 @@ msgstr "채널 목록 펼치기"
 #: src/components/layout/ChatHeader.tsx
 msgid "Expand member list"
 msgstr "멤버 목록 펼치기"
+
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Export"
+msgstr "내보내기"
 
 #: src/components/ui/UserSettings.tsx
 msgid "Extended Profile"
@@ -1680,6 +1741,11 @@ msgstr "\"{searchQuery}\"와 일치하는 메시지 1개 발견"
 msgid "from"
 msgstr "보낸 사람"
 
+#. placeholder {0}: linked.name
+#: src/components/ui/settings/ThemeField.tsx
+msgid "From link: {0}"
+msgstr "링크에서: {0}"
+
 #: src/components/message/JsonLogMessage.tsx
 msgid "G-Line"
 msgstr "G-Line"
@@ -1720,6 +1786,10 @@ msgstr "GitHub:"
 msgid "Give each nickname its own color, the same everywhere it appears"
 msgstr "닉네임마다 고유한 색을 지정하며 어디서나 같은 색으로 표시합니다"
 
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Green"
+msgstr "녹색"
+
 #: src/components/message/JsonLogMessage.tsx
 msgid "GZ-Line"
 msgstr "GZ-Line"
@@ -1731,6 +1801,10 @@ msgstr "GZ-Line (글로벌 Z-Line)"
 #: src/components/ui/UserProfileModal.tsx
 msgid "Halfop"
 msgstr "Halfop"
+
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Hide colours"
+msgstr "색상 숨기기"
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Hide comments"
@@ -1792,6 +1866,10 @@ msgstr "https://example.com/avatar/{size}/channel.jpg"
 msgid "I'm Back"
 msgstr "돌아왔습니다"
 
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Icons and borders"
+msgstr "아이콘과 테두리"
+
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "Ident"
 msgstr "Ident"
@@ -1827,6 +1905,10 @@ msgstr "{1}개 중 {0}번째 이미지"
 msgid "Image preview"
 msgstr "이미지 미리보기"
 
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Import…"
+msgstr "가져오기…"
+
 #: src/components/ui/BotToolsCard.tsx
 msgid "IN"
 msgstr "수신"
@@ -1838,6 +1920,10 @@ msgstr "정보:"
 #: src/components/message/BotInvocationChip.tsx
 msgid "Information regarding who invoked this command is provided by the bot and the sender cannot be verified by the server."
 msgstr "이 명령어를 실행한 사람에 관한 정보는 bot이 제공하며, 서버는 발신자를 확인할 수 없습니다."
+
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Input background"
+msgstr "입력창 배경"
 
 #: src/components/ui/InputToolbar.tsx
 msgid "Insert emoji"
@@ -2041,6 +2127,14 @@ msgstr "줄 간격"
 msgid "Link preview"
 msgstr "링크 미리보기"
 
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Links"
+msgstr "링크"
+
+#: src/components/ui/settings/ThemeLinkField.tsx
+msgid "Load"
+msgstr "불러오기"
+
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Load from a link"
 msgstr "링크에서 불러오기"
@@ -2052,6 +2146,11 @@ msgstr "이전 메시지 불러오기"
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Loaded and up to date."
 msgstr "불러왔으며 최신 상태입니다."
+
+#. placeholder {0}: theme.name
+#: src/components/ui/settings/ThemeLinkField.tsx
+msgid "Loaded: {0}"
+msgstr "불러옴: {0}"
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Loading"
@@ -2082,6 +2181,7 @@ msgid "Loading WHOIS data..."
 msgstr "WHOIS 데이터 불러오는 중..."
 
 #: src/components/ui/settings/CustomCssField.tsx
+#: src/components/ui/settings/ThemeLinkField.tsx
 msgid "Loading…"
 msgstr "불러오는 중…"
 
@@ -2168,6 +2268,10 @@ msgstr "미디어"
 msgid "Media Previews"
 msgstr "미디어 미리보기"
 
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Member list background"
+msgstr "멤버 목록 배경"
+
 #. placeholder {0}: sortedUsers?.length || 0
 #: src/components/layout/MemberList.tsx
 msgid "Members — {0}"
@@ -2215,6 +2319,10 @@ msgstr "<0>{0}</0>에게 메시지"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Message density"
 msgstr "메시지 밀도"
+
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Message hover"
+msgstr "메시지 호버"
 
 #: src/store/handlers/e2eeOutbound.ts
 msgid "Message not sent: encryption isn't active yet. Wait for the lock to turn green, or end encryption to send unencrypted."
@@ -2276,6 +2384,10 @@ msgstr "발언권 제한 (+m)"
 msgid "Modes:"
 msgstr "모드:"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Monochrome"
+msgstr "단색"
+
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/ChatHeader.tsx
 msgid "More"
@@ -2305,6 +2417,10 @@ msgstr "알림 음소거"
 #: src/components/ui/QuickActions/uiActionConfig.tsx
 msgid "Mute or unmute notification sounds"
 msgstr "알림 소리 음소거 또는 해제"
+
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Muted text"
+msgstr "흐린 텍스트"
 
 #: src/components/ui/MuteModal.tsx
 msgid "Muted until {endsAt}"
@@ -2377,6 +2493,10 @@ msgstr "닉네임"
 #: src/store/handlers/users.ts
 msgid "Nickname '{nick}' already in use, retrying with '{newNick}'"
 msgstr "닉네임 '{nick}'이(가) 이미 사용 중입니다. '{newNick}'(으)로 다시 시도합니다"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Nickname colours"
+msgstr "닉네임 색상"
 
 #: src/components/ui/AddServerModal.tsx
 #: src/components/ui/EditServerModal.tsx
@@ -2704,6 +2824,10 @@ msgstr "여기에 CSS를 붙여넣거나 .css 파일을 업로드하세요"
 msgid "Paste your Zipline token"
 msgstr "Zipline 토큰을 붙여넣으세요"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Pastel"
+msgstr "파스텔"
+
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Pattern already exists"
 msgstr "이미 존재하는 패턴입니다"
@@ -2750,6 +2874,10 @@ msgstr "비공개 채팅 고정"
 #: src/components/ui/QuickActions/uiActionConfig.tsx
 msgid "Pin this private message conversation"
 msgstr "이 비공개 메시지 대화 고정"
+
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Pink"
+msgstr "분홍"
 
 #: src/components/ui/BouncerNetworkForm.tsx
 msgid "Plaintext"
@@ -2917,6 +3045,10 @@ msgstr "명령어 목록 수신 중…"
 msgid "Reconnect to server"
 msgstr "서버에 재연결"
 
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Red"
+msgstr "빨강"
+
 #: src/components/ui/InvitationsPanel.tsx
 #: src/components/ui/InvitationsPanel.tsx
 msgid "Refresh"
@@ -2945,6 +3077,7 @@ msgid "Relaxed - Less aggressive protection"
 msgstr "완화 - 덜 공격적인 보호"
 
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/components/ui/settings/ChatBackgroundField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/UserFilehostField.tsx
@@ -2988,10 +3121,18 @@ msgstr "이 메시지를 생성한 워크플로 다시 열기 ({stepCount}단계
 msgid "Reply"
 msgstr "답장"
 
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Reply accent"
+msgstr "답장 강조"
+
 #: src/components/ui/SlashCommandParamModal.tsx
 #: src/components/ui/SlashParamHint.tsx
 msgid "required"
 msgstr "필수"
+
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Reset to the current theme"
+msgstr "현재 테마로 재설정"
 
 #: src/components/ui/BotToolsCard.tsx
 msgid "Responded in chat"
@@ -3116,6 +3257,10 @@ msgstr "사용자 검색..."
 #: src/components/ui/GifSelector.tsx
 msgid "Searching..."
 msgstr "검색 중..."
+
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Secondary buttons"
+msgstr "보조 버튼"
 
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "Secret"
@@ -3392,6 +3537,10 @@ msgstr "QUIT 표시"
 msgid "Showing {displayedChannelsCount} of {0} channels"
 msgstr "{0}개 채널 중 {displayedChannelsCount}개 표시"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Shown behind messages, kept in this browser"
+msgstr "메시지 뒤에 표시되며 이 브라우저에 보관됩니다"
+
 #: src/components/ui/UserSettings.tsx
 msgid "Shows all external media. Any URL may cause a request to an unknown server."
 msgstr "모든 외부 미디어를 표시합니다. 모든 URL이 알 수 없는 서버에 요청을 보낼 수 있습니다."
@@ -3399,6 +3548,10 @@ msgstr "모든 외부 미디어를 표시합니다. 모든 URL이 알 수 없는
 #: src/components/ui/UserSettings.tsx
 msgid "Shows media from your server's trusted file host. No requests are made to external services."
 msgstr "서버의 신뢰할 수 있는 파일 호스트의 미디어를 표시합니다. 외부 서비스에 요청이 전송되지 않습니다."
+
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Sidebar background"
+msgstr "사이드바 배경"
 
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "Signed on"
@@ -3455,6 +3608,10 @@ msgstr "소스"
 msgid "Space between lines of text"
 msgstr "텍스트 줄 사이의 간격"
 
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Start from the current theme"
+msgstr "현재 테마에서 시작"
+
 #: src/components/ui/AddPrivateChatModal.tsx
 msgid "Start Private Message"
 msgstr "비공개 메시지 시작"
@@ -3492,6 +3649,14 @@ msgstr "엄격 - 더 강력한 보호"
 msgid "Strongest, but only with other Obby users"
 msgstr "가장 강력하지만 다른 Obby 사용자와만 가능합니다"
 
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Success"
+msgstr "성공"
+
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Success hover"
+msgstr "성공 호버"
+
 #: src/components/ui/BotsModal.tsx
 msgid "Suspend"
 msgstr "정지"
@@ -3517,12 +3682,21 @@ msgid "System serif"
 msgstr "시스템 세리프"
 
 #: src/components/ui/BotToolsCard.tsx
+#: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Text"
 msgstr "텍스트"
 
 #: src/components/layout/ChannelList.tsx
 msgid "Text Channels"
 msgstr "텍스트 채널"
+
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "That file is not an Obby theme."
+msgstr "해당 파일은 Obby 테마가 아닙니다."
+
+#: src/components/ui/settings/ChatBackgroundField.tsx
+msgid "That image is too large (2 MB at most)."
+msgstr "이미지가 너무 큽니다(최대 2MB)."
 
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "That stylesheet is too large."
@@ -3552,6 +3726,10 @@ msgstr "IRC 서버에서 서버 간 링크의 보안 수준이 낮다고 보고�
 msgid "The network split and rejoined. ✅"
 msgstr "네트워크가 분리되었다가 재연결되었습니다. ✅"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "The palette used when Colored Nicknames is on"
+msgstr "색상 닉네임이 켜져 있을 때 사용하는 팔레트"
+
 #: src/components/ui/ChannelSettingsModal.tsx
 msgid "The topic that will be displayed for this channel. All users can see the topic."
 msgstr "이 채널에 표시될 주제입니다. 모든 사용자가 주제를 볼 수 있습니다."
@@ -3567,6 +3745,14 @@ msgstr "이 메시지를 생성한 워크플로가 더 이상 상태에 없습�
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Theme"
 msgstr "테마"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Theme from a link"
+msgstr "링크의 테마"
+
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Theme name"
+msgstr "테마 이름"
 
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "This account is connected from {sessionCount} sessions. Per-session details are only disclosed to the account holder or IRC operators."
@@ -3828,6 +4014,10 @@ msgstr "동적 크기 조정을 위한 {size} 대체가 있는 URL. 예: https:/
 msgid "Use * for wildcards. Examples: baduser!*@*, *!*@spammer.com, troll*!*@*"
 msgstr "와일드카드로 *를 사용하세요. 예: baduser!*@*, *!*@spammer.com, troll*!*@*"
 
+#: src/components/ui/settings/ChatBackgroundField.tsx
+msgid "Use a PNG, JPEG, WebP or GIF image."
+msgstr "PNG, JPEG, WebP 또는 GIF 이미지를 사용하세요."
+
 #: src/components/ui/AddServerModal.tsx
 msgid "Use server password"
 msgstr "서버 비밀번호 사용"
@@ -3911,6 +4101,11 @@ msgstr "채널 외부 사용자는 메시지를 보낼 수 없습니다"
 msgid "Users:"
 msgstr "사용자:"
 
+#. placeholder {0}: theme.name
+#: src/components/ui/settings/ThemeLinkField.tsx
+msgid "Using the last copy of {0}; the link could not be reached."
+msgstr "{0}의 마지막 사본을 사용합니다. 링크에 접속할 수 없습니다."
+
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Using the last saved copy; the link could not be reached."
 msgstr "마지막으로 저장된 사본을 사용 중입니다. 링크에 연결할 수 없었습니다."
@@ -3982,6 +4177,10 @@ msgstr "프로필 보기"
 #: src/components/ui/QuickActions/uiActionConfig.tsx
 msgid "View user profile information"
 msgstr "사용자 프로필 정보 보기"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Vivid"
+msgstr "선명"
 
 #: src/components/ui/UserProfileModal.tsx
 msgid "Voice"
@@ -4107,6 +4306,10 @@ msgstr "다른 IRC 클라이언트와 호환"
 msgid "Works with Zipline v3 and v4. Copy the token from your Zipline user settings. The host must allow uploads from this site (CORS). Anyone with the token can upload as you, so only use it on your own device."
 msgstr "Zipline v3 및 v4에서 작동합니다. 토큰은 Zipline 사용자 설정에서 복사하세요. 호스트가 이 사이트의 업로드를 허용해야 합니다(CORS). 토큰이 있는 사람은 누구나 내 이름으로 업로드할 수 있으므로 본인 기기에서만 사용하세요."
 
+#: src/components/ui/settings/ThemeEditorField.tsx
+msgid "Yellow"
+msgstr "노랑"
+
 #: src/components/ui/BouncerNetworkForm.tsx
 msgid "Yes, delete"
 msgstr "예, 삭제합니다"
@@ -4215,6 +4418,10 @@ msgstr "나만의 CSS"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your own file host"
 msgstr "내 파일 호스트"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Your own theme"
+msgstr "나만의 테마"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your personal website"

@@ -6,6 +6,7 @@ import {
   getTheme,
   hexToHsl,
   hexToTriplet,
+  resolveTheme,
   THEME_TOKENS,
   validateTheme,
 } from "../../src/lib/theme";
@@ -127,7 +128,7 @@ describe("applyTheme", () => {
       hexToHsl(getTheme("dracula").colors.primary),
     );
     expect(root.attrs.get("data-appearance")).toBe("dark");
-    expect(root.attrs.get("data-theme")).toBe("dracula");
+    expect(root.attrs.get("data-obby-theme")).toBe("dracula");
   });
 
   it("an accent override replaces the primary colour only", () => {
@@ -142,5 +143,42 @@ describe("applyTheme", () => {
     const root = fakeRoot();
     applyTheme(getTheme(DEFAULT_THEME_ID), "red", root as never);
     expect(root.vars.get("--obby-primary")).toBe("88 101 242");
+  });
+});
+
+describe("resolveTheme", () => {
+  const custom = {
+    id: "custom",
+    name: "Mine",
+    appearance: "dark",
+    colors: Object.fromEntries(THEME_TOKENS.map((t) => [t, "#010203"])),
+  };
+  const linked = validateTheme({ ...custom, id: "shared", name: "Shared" });
+
+  it("returns the preset for a preset id", () => {
+    expect(resolveTheme({ theme: "nord", customTheme: "" }, null).id).toBe(
+      "nord",
+    );
+  });
+
+  it("returns the stored custom theme when selected and valid", () => {
+    expect(
+      resolveTheme(
+        { theme: "custom", customTheme: JSON.stringify(custom) },
+        null,
+      ).name,
+    ).toBe("Mine");
+    expect(
+      resolveTheme({ theme: "custom", customTheme: "{bad" }, null).id,
+    ).toBe(DEFAULT_THEME_ID);
+  });
+
+  it("returns the linked theme when selected, else the default", () => {
+    expect(resolveTheme({ theme: "link", customTheme: "" }, linked).id).toBe(
+      "shared",
+    );
+    expect(resolveTheme({ theme: "link", customTheme: "" }, null).id).toBe(
+      DEFAULT_THEME_ID,
+    );
   });
 });

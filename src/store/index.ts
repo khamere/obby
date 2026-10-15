@@ -2,6 +2,7 @@ import { v4 as uuidv4, v5 as uuidv5 } from "uuid";
 import { create } from "zustand";
 import { BOT_TOOLS_TAG, encodeBotToolsValue } from "../lib/botTools";
 import { encodeBouncerAttrs } from "../lib/bouncerAttrs";
+import { DEFAULT_CHAT_LOOK } from "../lib/chatLook";
 import type { E2EEScheme, E2EESessionState } from "../lib/e2ee/session";
 import { e2eeSessionKey } from "../lib/e2ee/session";
 import ircClient from "../lib/ircClient";
@@ -1372,6 +1373,7 @@ const useStore = create<AppState>((set, get) => ({
     // Theme and typography
     ...DEFAULT_THEME_SETTINGS,
     ...DEFAULT_TYPOGRAPHY,
+    ...DEFAULT_CHAT_LOOK,
     ...loadSavedGlobalSettings(), // Load saved settings from localStorage
   },
 
