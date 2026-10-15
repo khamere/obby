@@ -23,6 +23,13 @@
     "success": "#50fa7b",
     "success-hover": "#45d96b",
     "button-secondary": "#44475a",
-    "reply": "#8be9fd"
+    "reply": "#8be9fd",
+    "text-strong": "#f8f8f2",
+    "text-soft": "#f8f8f2",
+    "text-dim": "#9ea1b8",
+    "text-faint": "#6272a4",
+    "surface-raised": "#343746",
+    "surface-hover": "#44475a",
+    "surface-sunken": "#191a21"
   }
 }

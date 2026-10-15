@@ -127,17 +127,17 @@ const ServerIcon: React.FC<ServerIconProps> = ({
         {(server.connectionState === "disconnected" ||
           server.connectionState === "connecting" ||
           server.connectionState === "reconnecting") && (
-          <div className="absolute inset-0 bg-gray-500 bg-opacity-50 rounded-lg" />
+          <div className="absolute inset-0 bg-discord-text-faint bg-opacity-50 rounded-lg" />
         )}
 
         {(server.connectionState === "connecting" ||
           server.connectionState === "reconnecting") && (
-          <FaRedo className="absolute inset-0 m-auto text-white animate-spin text-lg" />
+          <FaRedo className="absolute inset-0 m-auto text-discord-text-strong animate-spin text-lg" />
         )}
 
         {server.connectionState === "disconnected" && (
           <FaRedo
-            className="absolute inset-0 m-auto text-white text-lg cursor-pointer hover:text-gray-300 transition-colors"
+            className="absolute inset-0 m-auto text-discord-text-strong text-lg cursor-pointer hover:text-discord-text-soft transition-colors"
             onClick={(e) => {
               e.stopPropagation();
               onReconnect();
@@ -148,7 +148,7 @@ const ServerIcon: React.FC<ServerIconProps> = ({
 
         <div
           className={`
-            absolute left-0 w-1 bg-white rounded-r-full transition-all duration-200
+            absolute left-0 w-1 bg-discord-text-strong rounded-r-full transition-all duration-200
             ${isSelected ? "h-10" : "h-0 group-hover:h-5"}
           `}
         />
@@ -160,7 +160,7 @@ const ServerIcon: React.FC<ServerIconProps> = ({
             draggable={false}
           />
         ) : (
-          <div className="text-xl font-semibold text-white">
+          <div className="text-xl font-semibold text-discord-text-strong">
             {getServerInitial(server)}
           </div>
         )}
@@ -296,11 +296,11 @@ export const ServerList: React.FC<{
       >
         <div
           className={`
-          absolute left-0 w-1 bg-white rounded-r-full transition-all duration-200
+          absolute left-0 w-1 bg-discord-text-strong rounded-r-full transition-all duration-200
           ${selectedServerId === null ? "h-10" : "h-0 group-hover:h-5"}
         `}
         />
-        <div className="text-white text-xl">
+        <div className="text-discord-text-strong text-xl">
           <img
             src="./images/obby.png"
             alt={t`Home`}

@@ -89,6 +89,16 @@ module.exports = {
           "button-secondary-default": "rgb(var(--obby-button-secondary) / <alpha-value>)",
           // Unified reply accent — used for reply bar, quote line, swipe icon, toolbar button
           "reply": "rgb(var(--obby-reply) / <alpha-value>)",
+          // Light-aware replacements for the plain Tailwind greys the
+          // components used to hardcode (white, gray-300/400/500 text,
+          // gray-700/600/800 surfaces). Dark values equal those greys.
+          "text-strong": "rgb(var(--obby-text-strong) / <alpha-value>)",
+          "text-soft": "rgb(var(--obby-text-soft) / <alpha-value>)",
+          "text-dim": "rgb(var(--obby-text-dim) / <alpha-value>)",
+          "text-faint": "rgb(var(--obby-text-faint) / <alpha-value>)",
+          "surface-raised": "rgb(var(--obby-surface-raised) / <alpha-value>)",
+          "surface-hover": "rgb(var(--obby-surface-hover) / <alpha-value>)",
+          "surface-sunken": "rgb(var(--obby-surface-sunken) / <alpha-value>)",
         },
       },
       fontFamily: {

@@ -71,7 +71,7 @@ export const ServerNoticesPopup: React.FC<ServerNoticesPopupProps> = ({
   if (isMinimized) {
     return (
       <div
-        className="fixed z-50 bg-gray-800 border border-gray-600 rounded-lg shadow-lg cursor-move"
+        className="fixed z-50 bg-discord-surface-sunken border border-discord-surface-hover rounded-lg shadow-lg cursor-move"
         style={{
           left: position.x,
           top: position.y,
@@ -85,19 +85,21 @@ export const ServerNoticesPopup: React.FC<ServerNoticesPopupProps> = ({
             <div className="text-green-400 font-medium text-sm">
               📋 <Trans>Server Notices</Trans>
             </div>
-            <div className="text-gray-400 text-xs">({messages.length})</div>
+            <div className="text-discord-text-dim text-xs">
+              ({messages.length})
+            </div>
           </div>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setIsMinimized(false)}
-              className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white"
+              className="p-1 hover:bg-discord-surface-raised rounded text-discord-text-dim hover:text-discord-text-strong"
               title={t`Maximize`}
             >
               <FaWindowMaximize className="text-xs" />
             </button>
             <button
               onClick={onClose}
-              className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-red-400"
+              className="p-1 hover:bg-discord-surface-raised rounded text-discord-text-dim hover:text-red-400"
               title={t`Close`}
             >
               <FaTimes className="text-xs" />
@@ -110,7 +112,7 @@ export const ServerNoticesPopup: React.FC<ServerNoticesPopupProps> = ({
 
   return (
     <div
-      className="fixed z-50 bg-gray-900 border border-gray-600 rounded-lg shadow-2xl"
+      className="fixed z-50 bg-gray-900 border border-discord-surface-hover rounded-lg shadow-2xl"
       style={{
         left: position.x,
         top: position.y,
@@ -121,28 +123,28 @@ export const ServerNoticesPopup: React.FC<ServerNoticesPopupProps> = ({
     >
       {/* Header */}
       <div
-        className="flex items-center justify-between px-4 py-3 border-b border-gray-600 cursor-move bg-gray-800 rounded-t-lg"
+        className="flex items-center justify-between px-4 py-3 border-b border-discord-surface-hover cursor-move bg-discord-surface-sunken rounded-t-lg"
         onMouseDown={handleMouseDown}
       >
         <div className="flex items-center gap-2">
           <div className="text-green-400 font-medium">
             📋 <Trans>Server Notices</Trans>
           </div>
-          <div className="text-gray-400 text-sm">
+          <div className="text-discord-text-dim text-sm">
             ({messages.length} <Trans>logs</Trans>)
           </div>
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={() => setIsMinimized(true)}
-            className="p-2 hover:bg-gray-700 rounded text-gray-400 hover:text-white"
+            className="p-2 hover:bg-discord-surface-raised rounded text-discord-text-dim hover:text-discord-text-strong"
             title={t`Minimize`}
           >
             <FaWindowMinimize className="text-sm" />
           </button>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-700 rounded text-gray-400 hover:text-red-400"
+            className="p-2 hover:bg-discord-surface-raised rounded text-discord-text-dim hover:text-red-400"
             title={t`Close`}
           >
             <FaTimes className="text-sm" />

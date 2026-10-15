@@ -84,7 +84,8 @@ const RawLogViewer: React.FC = () => {
                 <div
                   key={entry.seq}
                   className={`whitespace-pre-wrap break-all ${
-                    directionColor[entry.direction] ?? "text-white"
+                    directionColor[entry.direction] ??
+                    "text-discord-text-strong"
                   }`}
                 >
                   <span className="text-discord-text-muted">{t}</span>{" "}

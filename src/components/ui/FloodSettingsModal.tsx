@@ -277,12 +277,12 @@ const FloodSettingsModal: React.FC<FloodSettingsModalProps> = ({
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-discord-dark-500 flex-shrink-0">
-          <h2 className="text-xl font-semibold text-white">
+          <h2 className="text-xl font-semibold text-discord-text-strong">
             <Trans>Flood Protection Settings</Trans>
           </h2>
           <button
             onClick={onClose}
-            className="text-discord-text-muted hover:text-white"
+            className="text-discord-text-muted hover:text-discord-text-strong"
           >
             <FaTimes size={20} />
           </button>
@@ -296,7 +296,7 @@ const FloodSettingsModal: React.FC<FloodSettingsModalProps> = ({
           {/* Flood Profile Section */}
           <div className="space-y-3">
             <div>
-              <h3 className="text-lg font-medium text-white mb-2">
+              <h3 className="text-lg font-medium text-discord-text-strong mb-2">
                 <Trans>Flood Profile (+F)</Trans>
               </h3>
               <p className="text-sm text-discord-text-muted mb-4">
@@ -316,13 +316,13 @@ const FloodSettingsModal: React.FC<FloodSettingsModalProps> = ({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white block">
+              <label className="text-sm font-medium text-discord-text-strong block">
                 <Trans>Profile</Trans>
               </label>
               <select
                 value={floodProfile}
                 onChange={(e) => setFloodProfile(e.target.value)}
-                className="w-full px-3 py-2 bg-discord-darker border border-discord-border rounded-md text-white focus:outline-none focus:ring-2 focus:ring-discord-blue focus:border-transparent"
+                className="w-full px-3 py-2 bg-discord-darker border border-discord-border rounded-md text-discord-text-strong focus:outline-none focus:ring-2 focus:ring-discord-blue focus:border-transparent"
               >
                 {floodProfiles.map((profile) => (
                   <option key={profile.value} value={profile.value}>
@@ -336,7 +336,7 @@ const FloodSettingsModal: React.FC<FloodSettingsModalProps> = ({
           {/* Custom Flood Rules Section */}
           <div className="space-y-3">
             <div>
-              <h3 className="text-lg font-medium text-white mb-2">
+              <h3 className="text-lg font-medium text-discord-text-strong mb-2">
                 <Trans>Custom Flood Rules (+f)</Trans>
               </h3>
               <p className="text-sm text-discord-text-muted mb-4">
@@ -358,7 +358,7 @@ const FloodSettingsModal: React.FC<FloodSettingsModalProps> = ({
 
             {/* Global Settings */}
             <div className="p-4 bg-discord-dark rounded-lg">
-              <label className="text-sm font-medium text-white block mb-2">
+              <label className="text-sm font-medium text-discord-text-strong block mb-2">
                 <Trans>Time Window (seconds)</Trans>
               </label>
               <p className="text-xs text-discord-text-muted mb-3">
@@ -375,14 +375,14 @@ const FloodSettingsModal: React.FC<FloodSettingsModalProps> = ({
                 }
                 min="10"
                 max="3600"
-                className="w-full px-3 py-2 bg-discord-darker border border-discord-border rounded-md text-white placeholder-discord-text-muted focus:outline-none focus:ring-2 focus:ring-discord-blue focus:border-transparent"
+                className="w-full px-3 py-2 bg-discord-darker border border-discord-border rounded-md text-discord-text-strong placeholder-discord-text-muted focus:outline-none focus:ring-2 focus:ring-discord-blue focus:border-transparent"
               />
             </div>
 
             {/* Rules List */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="text-md font-medium text-white">
+                <h4 className="text-md font-medium text-discord-text-strong">
                   <Trans>Rules</Trans>
                 </h4>
               </div>
@@ -391,7 +391,7 @@ const FloodSettingsModal: React.FC<FloodSettingsModalProps> = ({
                 <div className="flex justify-center py-8">
                   <button
                     onClick={addFloodRule}
-                    className="px-4 py-2 bg-discord-blue text-white rounded-md hover:bg-discord-blue-hover text-sm flex items-center gap-2"
+                    className="px-4 py-2 bg-discord-blue text-discord-text-strong rounded-md hover:bg-discord-blue-hover text-sm flex items-center gap-2"
                   >
                     <FaPlus size={14} />
                     <Trans>Add Rule</Trans>
@@ -420,7 +420,7 @@ const FloodSettingsModal: React.FC<FloodSettingsModalProps> = ({
                               })
                             }
                             min="1"
-                            className="w-full px-2 py-1 bg-discord-darker border border-discord-border rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-discord-blue"
+                            className="w-full px-2 py-1 bg-discord-darker border border-discord-border rounded text-discord-text-strong text-sm focus:outline-none focus:ring-1 focus:ring-discord-blue"
                           />
                         </div>
 
@@ -436,7 +436,7 @@ const FloodSettingsModal: React.FC<FloodSettingsModalProps> = ({
                                 type: e.target.value as FloodRule["type"],
                               })
                             }
-                            className="w-full px-2 py-1 bg-discord-darker border border-discord-border rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-discord-blue"
+                            className="w-full px-2 py-1 bg-discord-darker border border-discord-border rounded text-discord-text-strong text-sm focus:outline-none focus:ring-1 focus:ring-discord-blue"
                           >
                             <option value="c">
                               CTCP ({getTypeDescription("c")})
@@ -474,7 +474,7 @@ const FloodSettingsModal: React.FC<FloodSettingsModalProps> = ({
                                 action: e.target.value,
                               })
                             }
-                            className="w-full px-2 py-1 bg-discord-darker border border-discord-border rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-discord-blue"
+                            className="w-full px-2 py-1 bg-discord-darker border border-discord-border rounded text-discord-text-strong text-sm focus:outline-none focus:ring-1 focus:ring-discord-blue"
                           >
                             <option value={getDefaultAction(rule.type)}>
                               {getDefaultAction(rule.type)} (default)
@@ -509,7 +509,7 @@ const FloodSettingsModal: React.FC<FloodSettingsModalProps> = ({
                             }
                             placeholder={t`Permanent`}
                             min="1"
-                            className="w-full px-2 py-1 bg-discord-darker border border-discord-border rounded text-white text-sm placeholder-discord-text-muted focus:outline-none focus:ring-1 focus:ring-discord-blue"
+                            className="w-full px-2 py-1 bg-discord-darker border border-discord-border rounded text-discord-text-strong text-sm placeholder-discord-text-muted focus:outline-none focus:ring-1 focus:ring-discord-blue"
                           />
                         </div>
                       </div>
@@ -534,7 +534,7 @@ const FloodSettingsModal: React.FC<FloodSettingsModalProps> = ({
                 <div className="flex justify-center pt-4">
                   <button
                     onClick={addFloodRule}
-                    className="px-4 py-2 bg-discord-blue text-white rounded-md hover:bg-discord-blue-hover text-sm flex items-center gap-2"
+                    className="px-4 py-2 bg-discord-blue text-discord-text-strong rounded-md hover:bg-discord-blue-hover text-sm flex items-center gap-2"
                   >
                     <FaPlus size={14} />
                     <Trans>Add Rule</Trans>
@@ -549,14 +549,14 @@ const FloodSettingsModal: React.FC<FloodSettingsModalProps> = ({
         <div className="flex justify-end gap-3 p-6 border-t border-discord-dark-500 flex-shrink-0">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-discord-text-muted hover:text-white"
+            className="px-4 py-2 text-discord-text-muted hover:text-discord-text-strong"
           >
             <Trans>Cancel</Trans>
           </button>
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="px-4 py-2 bg-discord-blue text-white rounded-md hover:bg-discord-blue-hover disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-4 py-2 bg-discord-blue text-discord-text-strong rounded-md hover:bg-discord-blue-hover disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {isSaving ? (
               <>

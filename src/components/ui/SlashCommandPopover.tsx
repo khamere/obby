@@ -238,7 +238,7 @@ export const SlashCommandPopover: React.FC<SlashCommandPopoverProps> = ({
                   /{cmd.name}
                   {sig && (
                     <span
-                      className={`ml-1 font-mono text-xs ${isSelected ? "text-white/70" : "text-discord-text-muted"}`}
+                      className={`ml-1 font-mono text-xs ${isSelected ? "text-discord-text-strong/70" : "text-discord-text-muted"}`}
                     >
                       {sig}
                     </span>
@@ -247,7 +247,7 @@ export const SlashCommandPopover: React.FC<SlashCommandPopoverProps> = ({
                 {sourceBadge(cmd.source, t)}
                 {cmd.source.kind === "bot" && (
                   <span
-                    className={`text-xs ${isSelected ? "text-white/70" : "text-discord-text-muted"}`}
+                    className={`text-xs ${isSelected ? "text-discord-text-strong/70" : "text-discord-text-muted"}`}
                   >
                     @{cmd.source.botNick}
                   </span>
@@ -255,7 +255,7 @@ export const SlashCommandPopover: React.FC<SlashCommandPopoverProps> = ({
               </div>
               {cmd.description && (
                 <div
-                  className={`text-xs ${isSelected ? "text-white/85" : "text-discord-text-muted"}`}
+                  className={`text-xs ${isSelected ? "text-discord-text-strong/85" : "text-discord-text-muted"}`}
                 >
                   {cmd.description}
                 </div>

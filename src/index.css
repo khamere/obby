@@ -37,6 +37,13 @@
   --obby-success-hover: 76 175 80;
   --obby-button-secondary: 79 84 92;
   --obby-reply: 96 165 250;
+  --obby-text-strong: 255 255 255;
+  --obby-text-soft: 209 213 219;
+  --obby-text-dim: 156 163 175;
+  --obby-text-faint: 107 114 128;
+  --obby-surface-raised: 55 65 81;
+  --obby-surface-hover: 75 85 99;
+  --obby-surface-sunken: 31 41 55;
 
   /* Typography (lib/typography writes these from the settings) */
   --obby-font-ui: 'Roboto Mono', monospace;
@@ -84,6 +91,24 @@ html[data-nick-palette="vivid"] {
   --obby-nick-14: #ff7eb3;
   --obby-nick-15: #ff8c69;
 }
+html[data-appearance="light"][data-nick-palette="vivid"] {
+  --obby-nick-0: #c0392b;
+  --obby-nick-1: #d35400;
+  --obby-nick-2: #b7791f;
+  --obby-nick-3: #7a9a01;
+  --obby-nick-4: #2e8b57;
+  --obby-nick-5: #1e8449;
+  --obby-nick-6: #148f77;
+  --obby-nick-7: #1c7fa6;
+  --obby-nick-8: #2874d4;
+  --obby-nick-9: #3f51b5;
+  --obby-nick-10: #5e35b1;
+  --obby-nick-11: #7b1fa2;
+  --obby-nick-12: #9c27b0;
+  --obby-nick-13: #c2185b;
+  --obby-nick-14: #d81b60;
+  --obby-nick-15: #bf360c;
+}
 html[data-nick-palette="mono"] {
   --obby-nick-0: #ffffff;
   --obby-nick-1: #f0f0f0;
@@ -102,6 +127,24 @@ html[data-nick-palette="mono"] {
   --obby-nick-14: #aeaeae;
   --obby-nick-15: #a2a2a2;
 }
+html[data-appearance="light"][data-nick-palette="mono"] {
+  --obby-nick-0: #111111;
+  --obby-nick-1: #1f1f1f;
+  --obby-nick-2: #2b2b2b;
+  --obby-nick-3: #373737;
+  --obby-nick-4: #434343;
+  --obby-nick-5: #4f4f4f;
+  --obby-nick-6: #5b5b5b;
+  --obby-nick-7: #676767;
+  --obby-nick-8: #161616;
+  --obby-nick-9: #252525;
+  --obby-nick-10: #313131;
+  --obby-nick-11: #3d3d3d;
+  --obby-nick-12: #494949;
+  --obby-nick-13: #555555;
+  --obby-nick-14: #616161;
+  --obby-nick-15: #6d6d6d;
+}
 
 body {
   font-family: var(--obby-font-ui);
@@ -110,6 +153,11 @@ body {
   overflow: hidden;
   font-size: var(--obby-font-size);
   background-color: rgb(var(--obby-bg-sidebar));
+}
+
+/* Light themes: native controls, scrollbars and form widgets follow */
+html[data-appearance="light"] {
+  color-scheme: light;
 }
 
 /* Chat text uses its own font and spacing */
@@ -240,7 +288,9 @@ html {
   --obby-nick-14: #e694c6;
   --obby-nick-15: #e694a7;
 }
-body.light {
+/* Light themes: deeper shades of the same hues (lib/theme sets data-appearance) */
+body.light,
+html[data-appearance="light"] {
   --obby-nick-0: #953223;
   --obby-nick-1: #955d23;
   --obby-nick-2: #7e731e;

@@ -60,7 +60,7 @@ export const BotToolsMessagePill: React.FC<BotToolsMessagePillProps> = ({
       }}
       className={`inline-flex items-center justify-center w-3.5 h-3.5 transition-colors ${
         available
-          ? "text-discord-text-muted hover:text-white cursor-pointer"
+          ? "text-discord-text-muted hover:text-discord-text-strong cursor-pointer"
           : "text-discord-text-muted/40 cursor-not-allowed"
       }`}
       title={

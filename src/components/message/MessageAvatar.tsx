@@ -84,13 +84,15 @@ export const MessageAvatar: React.FC<MessageAvatarProps> = ({
         )}
         {(userStatus || pronouns) && (
           <div className="absolute bottom-full left-0 mb-2 z-50 pointer-events-none hidden group-hover/avatar:block">
-            <div className="bg-discord-dark-100 ring-1 ring-white/10 text-white rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.7)] px-3 py-2 whitespace-nowrap text-sm">
+            <div className="bg-discord-dark-100 ring-1 ring-discord-text-strong/10 text-discord-text-strong rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.7)] px-3 py-2 whitespace-nowrap text-sm">
               {userStatus && <span>{userStatus}</span>}
               {userStatus && pronouns && (
-                <span className="text-white/40 mx-1">·</span>
+                <span className="text-discord-text-strong/40 mx-1">·</span>
               )}
               {pronouns && (
-                <span className="italic text-white/70">{pronouns}</span>
+                <span className="italic text-discord-text-strong/70">
+                  {pronouns}
+                </span>
               )}
             </div>
           </div>

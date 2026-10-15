@@ -2955,7 +2955,7 @@ export const ChatArea: React.FC<{
             >
               <div className="flex items-center">
                 <FaList className="text-discord-text-muted mr-2" />
-                <h2 className="font-bold text-white">
+                <h2 className="font-bold text-discord-text-strong">
                   <Trans>Server Notices</Trans>
                 </h2>
               </div>

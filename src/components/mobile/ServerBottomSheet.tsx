@@ -25,7 +25,7 @@ const ServerBottomSheet: React.FC<ServerBottomSheetProps> = ({
       </div>
       <div className="px-2 pb-2">
         <button
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg active:bg-discord-dark-400 text-left text-white"
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg active:bg-discord-dark-400 text-left text-discord-text-strong"
           style={{ minHeight: "48px" }}
           onClick={() => {
             onEdit();
