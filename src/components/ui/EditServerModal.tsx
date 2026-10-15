@@ -349,7 +349,7 @@ export const EditServerModal: React.FC<EditServerModalProps> = ({
             <button
               type="button"
               onClick={() => setShowRecovery(true)}
-              className="px-3 py-2 rounded bg-discord-dark-400 text-discord-text-muted hover:bg-discord-dark-300 hover:text-white text-sm"
+              className="px-3 py-2 rounded bg-discord-dark-400 text-discord-text-muted hover:bg-discord-dark-300 hover:text-discord-text-strong text-sm"
             >
               Forgot password?
             </button>
@@ -443,7 +443,7 @@ export const EditServerModal: React.FC<EditServerModalProps> = ({
               className={`px-3 py-1 text-sm rounded font-medium ${
                 forgetOperCredentials
                   ? "bg-red-600 text-white hover:bg-red-700"
-                  : "bg-gray-600 text-gray-300 hover:bg-gray-500"
+                  : "bg-discord-surface-hover text-discord-text-soft hover:bg-discord-text-faint"
               }`}
             >
               {forgetOperCredentials ? "Will Forget" : "Forget Credentials"}
@@ -456,7 +456,7 @@ export const EditServerModal: React.FC<EditServerModalProps> = ({
             className={`px-3 py-1 text-sm rounded font-medium ${
               operName.trim() && operPassword.trim()
                 ? "bg-discord-primary text-white hover:bg-opacity-80"
-                : "bg-gray-600 text-gray-400 cursor-not-allowed"
+                : "bg-discord-surface-hover text-discord-text-dim cursor-not-allowed"
             }`}
           >
             Oper Up
@@ -518,10 +518,12 @@ export const EditServerModal: React.FC<EditServerModalProps> = ({
         {mobileView === "categories" ? (
           <>
             <div className="flex items-center justify-between p-4 border-b border-discord-dark-500 flex-shrink-0">
-              <h2 className="text-white text-lg font-semibold">Edit server</h2>
+              <h2 className="text-discord-text-strong text-lg font-semibold">
+                Edit server
+              </h2>
               <button
                 onClick={onClose}
-                className="p-1 rounded-lg hover:bg-discord-dark-400 text-discord-text-muted hover:text-white"
+                className="p-1 rounded-lg hover:bg-discord-dark-400 text-discord-text-muted hover:text-discord-text-strong"
                 aria-label="Close"
               >
                 <FaTimes />
@@ -540,7 +542,7 @@ export const EditServerModal: React.FC<EditServerModalProps> = ({
                     className="w-full flex items-center gap-4 px-4 py-4 border-b border-discord-dark-400 hover:bg-discord-dark-300 text-left transition-colors"
                   >
                     <Icon className="text-discord-text-muted text-lg flex-shrink-0" />
-                    <div className="min-w-0 flex-1 text-white font-medium">
+                    <div className="min-w-0 flex-1 text-discord-text-strong font-medium">
                       {tab.label}
                     </div>
                     <FaChevronRight className="text-discord-text-muted flex-shrink-0" />
@@ -556,18 +558,18 @@ export const EditServerModal: React.FC<EditServerModalProps> = ({
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setMobileView("categories")}
-                  className="p-1 rounded-lg hover:bg-discord-dark-400 text-discord-text-muted hover:text-white"
+                  className="p-1 rounded-lg hover:bg-discord-dark-400 text-discord-text-muted hover:text-discord-text-strong"
                   aria-label="Back"
                 >
                   <FaChevronLeft />
                 </button>
-                <h2 className="text-white text-lg font-semibold">
+                <h2 className="text-discord-text-strong text-lg font-semibold">
                   {tabs.find((t) => t.id === activeTab)?.label}
                 </h2>
               </div>
               <button
                 onClick={onClose}
-                className="p-1 rounded-lg hover:bg-discord-dark-400 text-discord-text-muted hover:text-white"
+                className="p-1 rounded-lg hover:bg-discord-dark-400 text-discord-text-muted hover:text-discord-text-strong"
                 aria-label="Close"
               >
                 <FaTimes />
@@ -604,7 +606,9 @@ export const EditServerModal: React.FC<EditServerModalProps> = ({
         {/* Sidebar */}
         <div className="bg-discord-dark-300 w-56 flex flex-col flex-shrink-0">
           <div className="p-4 border-b border-discord-dark-500 flex justify-center">
-            <h2 className="text-white text-lg font-bold">Edit server</h2>
+            <h2 className="text-discord-text-strong text-lg font-bold">
+              Edit server
+            </h2>
           </div>
           <div className="flex-1 overflow-y-auto">
             <nav className="p-2">
@@ -633,13 +637,13 @@ export const EditServerModal: React.FC<EditServerModalProps> = ({
         {/* Main content */}
         <div className="flex-1 flex flex-col min-w-0">
           <div className="flex justify-between items-center p-4 border-b border-discord-dark-500 flex-shrink-0">
-            <h3 className="text-white text-lg font-semibold">
+            <h3 className="text-discord-text-strong text-lg font-semibold">
               {tabs.find((t) => t.id === activeTab)?.label}
             </h3>
             <button
               type="button"
               onClick={onClose}
-              className="text-discord-text-muted hover:text-white"
+              className="text-discord-text-muted hover:text-discord-text-strong"
               aria-label="Close"
             >
               <FaTimes />

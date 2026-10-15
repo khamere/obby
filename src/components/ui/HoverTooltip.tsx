@@ -39,7 +39,7 @@ const TooltipPanel: React.FC<{
         maxWidth: TOOLTIP_MAX_WIDTH,
         ...pos,
       }}
-      className="pointer-events-none rounded-lg bg-discord-dark-100 px-3 py-2 text-sm text-white shadow-[0_8px_32px_rgba(0,0,0,0.7)] ring-1 ring-white/10"
+      className="pointer-events-none rounded-lg bg-discord-dark-100 px-3 py-2 text-sm text-discord-text-strong shadow-[0_8px_32px_rgba(0,0,0,0.7)] ring-1 ring-discord-text-strong/10"
     >
       {children}
     </div>

@@ -142,7 +142,7 @@ const InvitationsPanel: React.FC<Props> = ({ serverId }) => {
     <div className="space-y-4">
       {/* Create form */}
       <div className="rounded-lg bg-discord-dark-300 p-4">
-        <h3 className="text-sm font-semibold text-white mb-3">
+        <h3 className="text-sm font-semibold text-discord-text-strong mb-3">
           <Trans>Create a new invite link</Trans>
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_2fr_auto] gap-2 items-stretch">
@@ -151,7 +151,7 @@ const InvitationsPanel: React.FC<Props> = ({ serverId }) => {
             value={channel}
             onChange={(e) => setChannel(e.target.value)}
             placeholder={t`#channel (optional)`}
-            className="bg-discord-dark-400 text-white rounded px-3 py-2 text-sm border border-discord-dark-300 focus:outline-none focus:border-discord-primary placeholder:text-discord-text-muted/70"
+            className="bg-discord-dark-400 text-discord-text-strong rounded px-3 py-2 text-sm border border-discord-dark-300 focus:outline-none focus:border-discord-primary placeholder:text-discord-text-muted/70"
             maxLength={64}
           />
           <input
@@ -159,7 +159,7 @@ const InvitationsPanel: React.FC<Props> = ({ serverId }) => {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder={t`Description (optional, e.g. "Beta testers Q3")`}
-            className="bg-discord-dark-400 text-white rounded px-3 py-2 text-sm border border-discord-dark-300 focus:outline-none focus:border-discord-primary placeholder:text-discord-text-muted/70"
+            className="bg-discord-dark-400 text-discord-text-strong rounded px-3 py-2 text-sm border border-discord-dark-300 focus:outline-none focus:border-discord-primary placeholder:text-discord-text-muted/70"
             maxLength={200}
           />
           <button
@@ -181,7 +181,7 @@ const InvitationsPanel: React.FC<Props> = ({ serverId }) => {
 
       {/* Header + refresh */}
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-white">
+        <h3 className="text-sm font-semibold text-discord-text-strong">
           <Trans>Your invite links</Trans>
           {data && (
             <span className="text-discord-text-muted font-normal ml-1.5">
@@ -193,7 +193,7 @@ const InvitationsPanel: React.FC<Props> = ({ serverId }) => {
           type="button"
           onClick={() => loadInvitations(serverId)}
           disabled={data?.loading}
-          className="text-discord-text-muted hover:text-white text-xs inline-flex items-center gap-1 disabled:opacity-50"
+          className="text-discord-text-muted hover:text-discord-text-strong text-xs inline-flex items-center gap-1 disabled:opacity-50"
           title={t`Refresh`}
         >
           <FaSync size={10} className={data?.loading ? "animate-spin" : ""} />
@@ -232,7 +232,7 @@ const InvitationsPanel: React.FC<Props> = ({ serverId }) => {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-1">
                 {entry.channel ? (
-                  <span className="inline-flex items-center gap-1 bg-discord-dark-400 text-white text-xs font-mono px-2 py-0.5 rounded">
+                  <span className="inline-flex items-center gap-1 bg-discord-dark-400 text-discord-text-strong text-xs font-mono px-2 py-0.5 rounded">
                     <FaHashtag size={9} className="text-discord-text-muted" />
                     {entry.channel.replace(/^#/, "")}
                   </span>
@@ -254,7 +254,7 @@ const InvitationsPanel: React.FC<Props> = ({ serverId }) => {
                 )}
               </div>
               {entry.description && (
-                <div className="text-sm text-white/80 mb-1 break-words">
+                <div className="text-sm text-discord-text-strong/80 mb-1 break-words">
                   {entry.description}
                 </div>
               )}
@@ -266,7 +266,7 @@ const InvitationsPanel: React.FC<Props> = ({ serverId }) => {
               <button
                 type="button"
                 onClick={() => handleCopy(entry.url, entry.shareId)}
-                className="bg-discord-dark-400 hover:bg-discord-dark-100 text-white rounded px-3 py-1.5 text-xs inline-flex items-center gap-1.5"
+                className="bg-discord-dark-400 hover:bg-discord-dark-100 text-discord-text-strong rounded px-3 py-1.5 text-xs inline-flex items-center gap-1.5"
                 title={t`Copy link`}
               >
                 {copiedId === entry.shareId ? (

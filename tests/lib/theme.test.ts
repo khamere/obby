@@ -3,6 +3,7 @@ import {
   applyTheme,
   BUILT_IN_THEMES,
   DEFAULT_THEME_ID,
+  DERIVED_TOKENS,
   effectiveAccent,
   getTheme,
   hexToHsl,
@@ -190,5 +191,53 @@ describe("effectiveAccent", () => {
     expect(effectiveAccent("", "#445566")).toBe("#445566");
     expect(effectiveAccent(undefined, "")).toBe("");
     expect(effectiveAccent("red", "#445566")).toBe("#445566");
+  });
+});
+
+describe("light themes and derived tokens", () => {
+  it("derives the text and surface tokens when a theme file predates them", () => {
+    const old = {
+      id: "old",
+      name: "Old",
+      appearance: "dark",
+      colors: Object.fromEntries(
+        THEME_TOKENS.filter((t) => !DERIVED_TOKENS[t]).map((t) => [
+          t,
+          "#102030",
+        ]),
+      ),
+    };
+    const v = validateTheme(old);
+    expect(v).not.toBeNull();
+    expect(v?.colors["text-strong"]).toBe("#102030");
+    expect(v?.colors["surface-raised"]).toBe("#102030");
+  });
+
+  it("ships light presets that validate", () => {
+    for (const id of ["obby-light", "catppuccin-latte", "solarized-light"]) {
+      const t = getTheme(id);
+      expect(t.id).toBe(id);
+      expect(t.appearance).toBe("light");
+    }
+  });
+
+  it("the Obby Dark preset keeps the exact legacy greys", () => {
+    const d = getTheme(DEFAULT_THEME_ID).colors;
+    expect(d["text-strong"]).toBe("#ffffff");
+    expect(d["text-soft"]).toBe("#d1d5db");
+    expect(d["text-dim"]).toBe("#9ca3af");
+    expect(d["text-faint"]).toBe("#6b7280");
+    expect(d["surface-raised"]).toBe("#374151");
+    expect(d["surface-hover"]).toBe("#4b5563");
+    expect(d["surface-sunken"]).toBe("#1f2937");
+  });
+
+  it("'system' follows the OS preference", () => {
+    expect(
+      resolveTheme({ theme: "system", customTheme: "" }, null, true).id,
+    ).toBe("obby-dark");
+    expect(
+      resolveTheme({ theme: "system", customTheme: "" }, null, false).id,
+    ).toBe("obby-light");
   });
 });

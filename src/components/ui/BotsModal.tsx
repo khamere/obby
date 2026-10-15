@@ -157,7 +157,7 @@ const BotRow: React.FC<BotRowProps> = ({
       )}
       {bot.realname && (
         <div
-          className={`text-xs mt-0.5 truncate ${selected ? "text-white/80" : "text-discord-text-muted"}`}
+          className={`text-xs mt-0.5 truncate ${selected ? "text-discord-text-strong/80" : "text-discord-text-muted"}`}
         >
           {bot.realname}
         </div>
@@ -186,7 +186,9 @@ const BotDetail: React.FC<BotDetailProps> = ({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-baseline gap-2 flex-wrap">
-        <h3 className="text-white text-xl font-bold">{bot.nick}</h3>
+        <h3 className="text-discord-text-strong text-xl font-bold">
+          {bot.nick}
+        </h3>
         <span
           className={`px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${SCOPE_BADGE[bot.scope].cls}`}
         >
@@ -563,14 +565,14 @@ const BotsModal: React.FC<BotsModalProps> = ({
         {mobileView === "list" ? (
           <>
             <div className="flex items-center justify-between p-4 border-b border-discord-dark-500 flex-shrink-0">
-              <h2 className="text-white text-lg font-semibold flex items-center gap-2">
+              <h2 className="text-discord-text-strong text-lg font-semibold flex items-center gap-2">
                 <FaRobot className="text-discord-text-muted" />
                 <Trans>Bots</Trans>
               </h2>
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1 rounded-lg hover:bg-discord-dark-400 text-discord-text-muted hover:text-white"
+                className="p-1 rounded-lg hover:bg-discord-dark-400 text-discord-text-muted hover:text-discord-text-strong"
                 aria-label={t`Close`}
               >
                 <FaTimes />
@@ -585,19 +587,19 @@ const BotsModal: React.FC<BotsModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setMobileView("list")}
-                  className="p-1 rounded-lg hover:bg-discord-dark-400 text-discord-text-muted hover:text-white flex-shrink-0"
+                  className="p-1 rounded-lg hover:bg-discord-dark-400 text-discord-text-muted hover:text-discord-text-strong flex-shrink-0"
                   aria-label={t`Back`}
                 >
                   <FaChevronLeft />
                 </button>
-                <h2 className="text-white text-lg font-semibold truncate">
+                <h2 className="text-discord-text-strong text-lg font-semibold truncate">
                   {selected?.nick ?? t`Bot`}
                 </h2>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1 rounded-lg hover:bg-discord-dark-400 text-discord-text-muted hover:text-white"
+                className="p-1 rounded-lg hover:bg-discord-dark-400 text-discord-text-muted hover:text-discord-text-strong"
                 aria-label={t`Close`}
               >
                 <FaTimes />
@@ -625,8 +627,8 @@ const BotsModal: React.FC<BotsModalProps> = ({
         {/* Sidebar — list of bots */}
         <div className="bg-discord-dark-300 flex flex-col w-72 flex-shrink-0">
           <div className="p-4 border-b border-discord-dark-500 flex items-center justify-center gap-2 flex-shrink-0">
-            <FaRobot className="text-white" />
-            <h2 className="text-white text-base font-bold">
+            <FaRobot className="text-discord-text-strong" />
+            <h2 className="text-discord-text-strong text-base font-bold">
               <Trans>Bots</Trans>
             </h2>
           </div>
@@ -636,13 +638,13 @@ const BotsModal: React.FC<BotsModalProps> = ({
         {/* Main content — bot detail */}
         <div className="flex-1 flex flex-col bg-discord-dark-200">
           <div className="flex justify-between items-center p-4 border-b border-discord-dark-500 flex-shrink-0">
-            <h3 className="text-white text-lg font-semibold truncate">
+            <h3 className="text-discord-text-strong text-lg font-semibold truncate">
               {selected ? selected.nick : t`Bots on this network`}
             </h3>
             <button
               type="button"
               onClick={onClose}
-              className="text-discord-text-muted hover:text-white"
+              className="text-discord-text-muted hover:text-discord-text-strong"
               aria-label={t`Close`}
             >
               <FaTimes />

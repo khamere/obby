@@ -154,12 +154,12 @@ const GifSelector: React.FC<GifSelectorProps> = ({
       >
         {/* Header */}
         <div className="p-4 border-b border-discord-dark-300 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-white">
+          <h2 className="text-lg font-semibold text-discord-text-strong">
             <Trans>Send a GIF</Trans>
           </h2>
           <button
             onClick={onClose}
-            className="text-discord-text-muted hover:text-white"
+            className="text-discord-text-muted hover:text-discord-text-strong"
           >
             <FaTimes />
           </button>
@@ -171,8 +171,8 @@ const GifSelector: React.FC<GifSelectorProps> = ({
             <button
               className={`px-4 py-2 rounded ${
                 activeProvider === "giphy"
-                  ? "bg-discord-blue text-white"
-                  : "bg-discord-dark-200 text-discord-text-muted hover:text-white"
+                  ? "bg-discord-blue text-discord-text-strong"
+                  : "bg-discord-dark-200 text-discord-text-muted hover:text-discord-text-strong"
               }`}
               onClick={() => handleProviderChange("giphy")}
             >
@@ -181,8 +181,8 @@ const GifSelector: React.FC<GifSelectorProps> = ({
             <button
               className={`px-4 py-2 rounded ${
                 activeProvider === "tenor"
-                  ? "bg-discord-blue text-white"
-                  : "bg-discord-dark-200 text-discord-text-muted hover:text-white"
+                  ? "bg-discord-blue text-discord-text-strong"
+                  : "bg-discord-dark-200 text-discord-text-muted hover:text-discord-text-strong"
               }`}
               onClick={() => handleProviderChange("tenor")}
             >
@@ -199,12 +199,12 @@ const GifSelector: React.FC<GifSelectorProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-              className="flex-1 px-3 py-2 bg-discord-dark-200 border border-discord-dark-300 rounded text-white placeholder-discord-text-muted focus:outline-none focus:border-discord-blue"
+              className="flex-1 px-3 py-2 bg-discord-dark-200 border border-discord-dark-300 rounded text-discord-text-strong placeholder-discord-text-muted focus:outline-none focus:border-discord-blue"
             />
             <button
               onClick={handleSearch}
               disabled={isLoading}
-              className="px-4 py-2 bg-discord-blue text-white rounded hover:bg-discord-blue-hover disabled:opacity-50"
+              className="px-4 py-2 bg-discord-blue text-discord-text-strong rounded hover:bg-discord-blue-hover disabled:opacity-50"
             >
               {isLoading ? <Trans>Searching...</Trans> : <Trans>Search</Trans>}
             </button>

@@ -36,10 +36,10 @@ const ReactionButton: React.FC<{
       content={
         <div className="text-center">
           <div className="mb-1 text-2xl">{emoji}</div>
-          <div className="text-xs font-semibold leading-relaxed text-white/90">
+          <div className="text-xs font-semibold leading-relaxed text-discord-text-strong/90">
             {names}
           </div>
-          <div className="mt-1 text-[11px] text-white/40">
+          <div className="mt-1 text-[11px] text-discord-text-strong/40">
             <Trans>reacted to this message</Trans>
           </div>
         </div>

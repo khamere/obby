@@ -55,7 +55,7 @@ export const CollapsedEventMessage: React.FC<CollapsedEventMessageProps> = ({
     return (
       <div
         key={username}
-        className={`${dim} bg-discord-dark-400 border border-discord-dark-200 rounded-full flex-shrink-0 flex items-center justify-center text-white cursor-pointer hover:opacity-80 overflow-hidden`}
+        className={`${dim} bg-discord-dark-400 border border-discord-dark-200 rounded-full flex-shrink-0 flex items-center justify-center text-discord-text-strong cursor-pointer hover:opacity-80 overflow-hidden`}
         onClick={(e) =>
           onUsernameContextMenu(
             e,
@@ -125,7 +125,7 @@ export const CollapsedEventMessage: React.FC<CollapsedEventMessageProps> = ({
         })}
 
         {showTooltip && tooltip && (
-          <div className="absolute bottom-full left-4 mb-1 px-2 py-1 bg-discord-dark-100 text-white text-xs rounded shadow-lg z-20 whitespace-pre-line">
+          <div className="absolute bottom-full left-4 mb-1 px-2 py-1 bg-discord-dark-100 text-discord-text-strong text-xs rounded shadow-lg z-20 whitespace-pre-line">
             {tooltip}
           </div>
         )}
@@ -168,7 +168,7 @@ export const CollapsedEventMessage: React.FC<CollapsedEventMessageProps> = ({
         {formatTime(eventGroup.timestamp)}
       </div>
       {showTooltip && tooltip && (
-        <div className="absolute bottom-full left-12 mb-1 px-2 py-1 bg-discord-dark-100 text-white text-xs rounded shadow-lg z-20 whitespace-pre-line">
+        <div className="absolute bottom-full left-12 mb-1 px-2 py-1 bg-discord-dark-100 text-discord-text-strong text-xs rounded shadow-lg z-20 whitespace-pre-line">
           {tooltip}
         </div>
       )}

@@ -172,7 +172,7 @@ export const BouncerNetworksPanel: React.FC<BouncerNetworksPanelProps> = ({
               setMode({ kind: "list" });
               setPendingFor(null);
             }}
-            className="w-9 h-9 rounded-lg bg-discord-dark-300 hover:bg-discord-dark-400 text-discord-text-muted hover:text-white flex items-center justify-center transition-colors"
+            className="w-9 h-9 rounded-lg bg-discord-dark-300 hover:bg-discord-dark-400 text-discord-text-muted hover:text-discord-text-strong flex items-center justify-center transition-colors"
             aria-label={t`Back to network list`}
           >
             <FaArrowLeft />
@@ -183,7 +183,7 @@ export const BouncerNetworksPanel: React.FC<BouncerNetworksPanelProps> = ({
           </span>
         )}
         <div className="min-w-0 flex-1">
-          <h2 className="text-lg font-semibold text-white truncate">
+          <h2 className="text-lg font-semibold text-discord-text-strong truncate">
             {mode.kind === "add" ? (
               <Trans>Add Network</Trans>
             ) : mode.kind === "edit" ? (
@@ -282,7 +282,7 @@ export const BouncerNetworksPanel: React.FC<BouncerNetworksPanelProps> = ({
                       </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2">
-                          <span className="font-semibold text-white truncate">
+                          <span className="font-semibold text-discord-text-strong truncate">
                             {net.attributes.name || net.netid}
                           </span>
                           <span className="text-xs text-discord-text-muted">
@@ -310,7 +310,7 @@ export const BouncerNetworksPanel: React.FC<BouncerNetworksPanelProps> = ({
                         onClick={() =>
                           setMode({ kind: "edit", netid: net.netid })
                         }
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded text-discord-text-muted hover:text-white hover:bg-discord-dark-300"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded text-discord-text-muted hover:text-discord-text-strong hover:bg-discord-dark-300"
                         aria-label={t`Edit`}
                         data-testid={`bouncer-row-edit-${net.netid}`}
                       >

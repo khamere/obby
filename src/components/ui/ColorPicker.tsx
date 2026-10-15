@@ -50,7 +50,7 @@ const ColorPicker: React.FC<{
             className={`${isNarrowView ? "w-9 h-9" : "w-6 h-6"} rounded border-2 flex items-center justify-center ${
               isSelected
                 ? "border-purple-500 shadow-md shadow-purple-500"
-                : "border-gray-700"
+                : "border-discord-surface-raised"
             }`}
             style={{
               backgroundColor: color === "inherit" ? "transparent" : color,
@@ -73,8 +73,8 @@ const ColorPicker: React.FC<{
       <button
         className={`${isNarrowView ? "w-11 h-11" : "w-6 h-6"} rounded border-2 flex items-center justify-center ${
           selectedFormatting.includes("bold")
-            ? "bg-discord-dark-200 text-white border-purple-500"
-            : "bg-discord-dark-400 text-discord-text-muted hover:bg-discord-dark-300 border-gray-700"
+            ? "bg-discord-dark-200 text-discord-text-strong border-purple-500"
+            : "bg-discord-dark-400 text-discord-text-muted hover:bg-discord-dark-300 border-discord-surface-raised"
         }`}
         onClick={() => toggleFormatting("bold")}
       >
@@ -83,8 +83,8 @@ const ColorPicker: React.FC<{
       <button
         className={`${isNarrowView ? "w-11 h-11" : "w-6 h-6"} rounded border-2 flex items-center justify-center ${
           selectedFormatting.includes("italic")
-            ? "bg-discord-dark-200 text-white border-purple-500"
-            : "bg-discord-dark-400 text-discord-text-muted hover:bg-discord-dark-300 border-gray-700"
+            ? "bg-discord-dark-200 text-discord-text-strong border-purple-500"
+            : "bg-discord-dark-400 text-discord-text-muted hover:bg-discord-dark-300 border-discord-surface-raised"
         }`}
         onClick={() => toggleFormatting("italic")}
       >
@@ -93,8 +93,8 @@ const ColorPicker: React.FC<{
       <button
         className={`${isNarrowView ? "w-11 h-11" : "w-6 h-6"} rounded border-2 flex items-center justify-center ${
           selectedFormatting.includes("underline")
-            ? "bg-discord-dark-200 text-white border-purple-500"
-            : "bg-discord-dark-400 text-discord-text-muted hover:bg-discord-dark-300 border-gray-700"
+            ? "bg-discord-dark-200 text-discord-text-strong border-purple-500"
+            : "bg-discord-dark-400 text-discord-text-muted hover:bg-discord-dark-300 border-discord-surface-raised"
         }`}
         onClick={() => toggleFormatting("underline")}
       >
@@ -103,8 +103,8 @@ const ColorPicker: React.FC<{
       <button
         className={`${isNarrowView ? "w-11 h-11" : "w-6 h-6"} rounded border-2 flex items-center justify-center ${
           selectedFormatting.includes("strikethrough")
-            ? "bg-discord-dark-200 text-white border-purple-500"
-            : "bg-discord-dark-400 text-discord-text-muted hover:bg-discord-dark-300 border-gray-700"
+            ? "bg-discord-dark-200 text-discord-text-strong border-purple-500"
+            : "bg-discord-dark-400 text-discord-text-muted hover:bg-discord-dark-300 border-discord-surface-raised"
         }`}
         onClick={() => toggleFormatting("strikethrough")}
       >
@@ -113,8 +113,8 @@ const ColorPicker: React.FC<{
       <button
         className={`${isNarrowView ? "w-11 h-11" : "w-6 h-6"} rounded border-2 flex items-center justify-center ${
           selectedFormatting.includes("monospace")
-            ? "bg-discord-dark-200 text-white border-purple-500"
-            : "bg-discord-dark-400 text-discord-text-muted hover:bg-discord-dark-300 border-gray-700"
+            ? "bg-discord-dark-200 text-discord-text-strong border-purple-500"
+            : "bg-discord-dark-400 text-discord-text-muted hover:bg-discord-dark-300 border-discord-surface-raised"
         }`}
         onClick={() => toggleFormatting("monospace")}
       >

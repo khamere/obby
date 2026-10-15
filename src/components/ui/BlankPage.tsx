@@ -24,7 +24,7 @@ const BlankPage: React.FC = () => {
 
       <button
         onClick={() => toggleChannelListModal(true)}
-        className="mt-6 flex items-center gap-2 px-4 py-2 bg-discord-dark-400 hover:bg-discord-dark-300 text-discord-text-normal hover:text-white rounded-lg transition-colors duration-200"
+        className="mt-6 flex items-center gap-2 px-4 py-2 bg-discord-dark-400 hover:bg-discord-dark-300 text-discord-text-normal hover:text-discord-text-strong rounded-lg transition-colors duration-200"
         title={t`Server Channels`}
       >
         <FaList />

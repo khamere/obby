@@ -597,7 +597,7 @@ const VideoPlayer: React.FC<{
               : "opacity-100"
           }`}
         >
-          <div className="flex items-center gap-2 text-white">
+          <div className="flex items-center gap-2 text-discord-text-strong">
             <button
               type="button"
               aria-label={isPlaying ? t`Pause` : t`Play`}
@@ -612,7 +612,7 @@ const VideoPlayer: React.FC<{
             </button>
             <span
               ref={timeDisplayRef}
-              className="text-xs tabular-nums shrink-0 text-white/75"
+              className="text-xs tabular-nums shrink-0 text-discord-text-strong/75"
             />
             <input
               ref={seekRef}
@@ -625,14 +625,14 @@ const VideoPlayer: React.FC<{
               className="flex-1 h-0.5 accent-white cursor-pointer rounded-full"
               aria-label={t`Seek`}
             />
-            <span className="text-xs tabular-nums shrink-0 text-white/40">
+            <span className="text-xs tabular-nums shrink-0 text-discord-text-strong/40">
               {formatVideoTime(duration)}
             </span>
             <div className="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
                 aria-label={volume === 0 ? t`Unmute` : t`Mute`}
-                className="shrink-0 hover:scale-110 transition-transform text-white/75 hover:text-white"
+                className="shrink-0 hover:scale-110 transition-transform text-discord-text-strong/75 hover:text-discord-text-strong"
                 onClick={handleToggleMute}
               >
                 {volume === 0 ? (

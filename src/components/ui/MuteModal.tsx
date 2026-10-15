@@ -56,7 +56,9 @@ function MuteSection({
 
   return (
     <section className="space-y-2">
-      <h3 className="text-sm font-semibold text-white">{title}</h3>
+      <h3 className="text-sm font-semibold text-discord-text-strong">
+        {title}
+      </h3>
       <p className="text-xs text-discord-text-muted">{hint}</p>
       {until !== undefined ? (
         <div className="flex flex-wrap items-center gap-3">
@@ -151,7 +153,7 @@ export const MuteModal: React.FC<MuteModalProps> = ({
             onUnmute={() => unmuteServer(serverId)}
           />
           <section className="space-y-2 border-t border-discord-dark-400 pt-4">
-            <h3 className="text-sm font-semibold text-white">
+            <h3 className="text-sm font-semibold text-discord-text-strong">
               <Trans>All notification sounds</Trans>
             </h3>
             <button

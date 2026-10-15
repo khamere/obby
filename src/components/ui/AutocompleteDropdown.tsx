@@ -214,7 +214,7 @@ export const AutocompleteDropdown: React.FC<AutocompleteDropdownProps> = ({
             placeholder={t`Filter members…`}
             value={filterText}
             onChange={(e) => setFilterText(e.target.value)}
-            className="w-full bg-discord-dark-400 text-white text-sm rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-discord-text-link mb-3 flex-shrink-0"
+            className="w-full bg-discord-dark-400 text-discord-text-strong text-sm rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-discord-text-link mb-3 flex-shrink-0"
           />
           <div className="flex-1 overflow-y-auto min-h-0">
             {filteredUsers.map((user, index) => (
@@ -223,13 +223,13 @@ export const AutocompleteDropdown: React.FC<AutocompleteDropdownProps> = ({
                 data-user-index={index}
                 className={`px-3 py-3 cursor-pointer flex items-center gap-3 transition-colors duration-150 rounded ${
                   index === selectedIndex
-                    ? "bg-discord-text-link text-white"
-                    : "text-discord-text-normal hover:bg-discord-dark-400 hover:text-white"
+                    ? "bg-discord-text-link text-discord-text-strong"
+                    : "text-discord-text-normal hover:bg-discord-dark-400 hover:text-discord-text-strong"
                 }`}
                 onClick={() => onSelect(user.username)}
                 onMouseEnter={() => setSelectedIndex(index)}
               >
-                <div className="w-8 h-8 rounded-full bg-discord-dark-400 flex items-center justify-center text-sm text-white flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-discord-dark-400 flex items-center justify-center text-sm text-discord-text-strong flex-shrink-0">
                   {user.username.charAt(0).toUpperCase()}
                 </div>
                 <span className="truncate font-medium text-base">
@@ -287,13 +287,13 @@ export const AutocompleteDropdown: React.FC<AutocompleteDropdownProps> = ({
             data-user-index={index}
             className={`px-3 py-2 cursor-pointer flex items-center gap-2 transition-colors duration-150 ${
               index === selectedIndex
-                ? "bg-discord-text-link text-white"
-                : "text-discord-text-normal hover:bg-discord-dark-200 hover:text-white"
+                ? "bg-discord-text-link text-discord-text-strong"
+                : "text-discord-text-normal hover:bg-discord-dark-200 hover:text-discord-text-strong"
             }`}
             onClick={() => onSelect(user.username)}
             onMouseEnter={() => setSelectedIndex(index)}
           >
-            <div className="w-6 h-6 rounded-full bg-discord-dark-400 flex items-center justify-center text-xs text-white flex-shrink-0">
+            <div className="w-6 h-6 rounded-full bg-discord-dark-400 flex items-center justify-center text-xs text-discord-text-strong flex-shrink-0">
               {user.username.charAt(0).toUpperCase()}
             </div>
             <span className="truncate font-medium">{user.username}</span>

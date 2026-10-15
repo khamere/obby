@@ -224,7 +224,7 @@ export const VoiceChannelView: React.FC<Props> = ({
             {statusBanner}
             {!statusBanner && isStreamRoom && state.phase === "connected" && (
               <>
-                <span className="px-1.5 py-0.5 rounded bg-discord-blue text-white mr-2">
+                <span className="px-1.5 py-0.5 rounded bg-discord-blue text-discord-text-strong mr-2">
                   {role}
                 </span>
                 {streamerMembers.length}/{streamMaxStreamers} streaming ·{" "}
@@ -428,8 +428,8 @@ export const VoiceChannelView: React.FC<Props> = ({
             }
             className={`px-3 h-12 rounded-full text-xs font-medium transition-colors ${
               pttMode
-                ? "bg-discord-blue text-white"
-                : "bg-discord-dark-300 text-white hover:bg-discord-dark-400"
+                ? "bg-discord-blue text-discord-text-strong"
+                : "bg-discord-dark-300 text-discord-text-strong hover:bg-discord-dark-400"
             }`}
           >
             PTT
@@ -553,7 +553,7 @@ function ParticipantTile({
           />
         ) : (
           <div
-            className={`${large ? "w-32 h-32 text-5xl" : "w-16 h-16 text-2xl"} rounded-full bg-discord-dark-100 flex items-center justify-center text-white font-bold`}
+            className={`${large ? "w-32 h-32 text-5xl" : "w-16 h-16 text-2xl"} rounded-full bg-discord-dark-100 flex items-center justify-center text-discord-text-strong font-bold`}
           >
             {member.nick[0]?.toUpperCase() ?? "?"}
           </div>
@@ -631,7 +631,7 @@ function ParticipantTile({
           <button
             type="button"
             onClick={onMuteClick}
-            className="text-discord-text-muted hover:text-white flex-shrink-0"
+            className="text-discord-text-muted hover:text-discord-text-strong flex-shrink-0"
             title={muted ? "Unmute (local)" : "Mute for me only"}
           >
             {muted ? <FaVolumeMute /> : <FaVolumeUp />}

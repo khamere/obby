@@ -195,7 +195,11 @@ function renderSegments(
       );
       if (!onNickClick || nick.toLowerCase() === ownNick) {
         return (
-          <span key={key} className="font-bold text-white" style={style}>
+          <span
+            key={key}
+            className="font-bold text-discord-text-strong"
+            style={style}
+          >
             {seg.text}
           </span>
         );
@@ -204,7 +208,7 @@ function renderSegments(
         <button
           key={key}
           type="button"
-          className="obby-nick-link font-bold text-white"
+          className="obby-nick-link font-bold text-discord-text-strong"
           style={style}
           title={nick}
           onClick={(e) => {

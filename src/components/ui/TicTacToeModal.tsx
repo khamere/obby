@@ -29,13 +29,13 @@ export const TicTacToeModal: React.FC = () => {
     <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
       <div className="bg-discord-dark-200 rounded-lg w-full max-w-sm p-5">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold text-white">
+          <h2 className="text-lg font-semibold text-discord-text-strong">
             Tic-Tac-Toe vs {open.opponent}
           </h2>
           <button
             type="button"
             onClick={() => closeModal()}
-            className="text-discord-text-muted hover:text-white"
+            className="text-discord-text-muted hover:text-discord-text-strong"
             aria-label="Close"
           >
             ✕
@@ -44,14 +44,14 @@ export const TicTacToeModal: React.FC = () => {
 
         {game.inviteIncoming && (
           <div className="mb-4 p-3 rounded bg-discord-dark-300">
-            <p className="text-sm text-white mb-3">
+            <p className="text-sm text-discord-text-strong mb-3">
               {open.opponent} has invited you to play.
             </p>
             <div className="flex gap-2 justify-end">
               <button
                 type="button"
                 onClick={() => decline(open.serverId, open.opponent)}
-                className="px-3 py-2 rounded bg-discord-dark-100 text-white text-sm"
+                className="px-3 py-2 rounded bg-discord-dark-100 text-discord-text-strong text-sm"
               >
                 Decline
               </button>
@@ -67,7 +67,7 @@ export const TicTacToeModal: React.FC = () => {
         )}
 
         {game.invitePending && !game.active && (
-          <div className="mb-4 p-3 rounded bg-discord-dark-300 text-sm text-white">
+          <div className="mb-4 p-3 rounded bg-discord-dark-300 text-sm text-discord-text-strong">
             Waiting for {open.opponent} to accept…
           </div>
         )}
@@ -119,7 +119,7 @@ export const TicTacToeModal: React.FC = () => {
           </div>
         )}
 
-        <div className="text-center text-sm text-white min-h-[1.25rem]">
+        <div className="text-center text-sm text-discord-text-strong min-h-[1.25rem]">
           {game.statusMessage}
         </div>
 
@@ -128,7 +128,7 @@ export const TicTacToeModal: React.FC = () => {
             <button
               type="button"
               onClick={() => closeModal()}
-              className="px-4 py-2 rounded bg-discord-blue text-white text-sm"
+              className="px-4 py-2 rounded bg-discord-blue text-discord-text-strong text-sm"
             >
               Close
             </button>

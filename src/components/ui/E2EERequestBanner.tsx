@@ -82,7 +82,7 @@ export const E2EERequestBanner: React.FC<{
         </button>
         <button
           type="button"
-          className="px-2 py-1 text-xs text-discord-text-muted hover:text-white"
+          className="px-2 py-1 text-xs text-discord-text-muted hover:text-discord-text-strong"
           onClick={() => rejectE2EEOffer(serverId, nick)}
         >
           <Trans>Decline</Trans>
@@ -100,7 +100,7 @@ export const E2EERequestBanner: React.FC<{
         </span>
         <button
           type="button"
-          className="px-2 py-1 text-xs text-discord-text-muted hover:text-white"
+          className="px-2 py-1 text-xs text-discord-text-muted hover:text-discord-text-strong"
           onClick={() => resetE2EESession(serverId, nick)}
         >
           <Trans>Cancel</Trans>
@@ -129,7 +129,7 @@ export const E2EERequestBanner: React.FC<{
         </button>
         <button
           type="button"
-          className="px-2 py-1 text-xs text-discord-text-muted hover:text-white"
+          className="px-2 py-1 text-xs text-discord-text-muted hover:text-discord-text-strong"
           onClick={() => setDismissed((d) => new Set(d).add(verifyKey))}
         >
           <Trans>Dismiss</Trans>
@@ -197,7 +197,7 @@ export const E2EERequestBanner: React.FC<{
         )}
         <button
           type="button"
-          className="px-2 py-1 text-xs text-discord-text-muted hover:text-white"
+          className="px-2 py-1 text-xs text-discord-text-muted hover:text-discord-text-strong"
           onClick={() => setDismissed((d) => new Set(d).add(errorKey))}
         >
           <Trans>Dismiss</Trans>

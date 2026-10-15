@@ -70,7 +70,9 @@ const UnencryptedUploadConfirmModal: React.FC<
               >
                 <FaLockOpen className="text-yellow-500 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm text-white truncate">{file.name}</div>
+                  <div className="text-sm text-discord-text-strong truncate">
+                    {file.name}
+                  </div>
                   <div className="text-xs text-discord-text-muted">
                     {formatFileSize(file.size)}
                   </div>

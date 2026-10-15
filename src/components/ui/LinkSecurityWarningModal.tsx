@@ -207,7 +207,7 @@ const SingleWarningModal: React.FC<WarningModalProps> = ({
         <div className="p-4 border-b border-discord-dark-300 flex-shrink-0">
           <div className="flex items-center gap-3">
             <FaExclamationTriangle className="text-yellow-500 text-xl flex-shrink-0" />
-            <h2 className="text-lg font-semibold text-white">
+            <h2 className="text-lg font-semibold text-discord-text-strong">
               <Trans>Security Warning</Trans>
             </h2>
           </div>
@@ -381,7 +381,7 @@ const SingleWarningModal: React.FC<WarningModalProps> = ({
         <div className="p-4 border-t border-discord-dark-300 flex-shrink-0">
           <button
             onClick={handleCancel}
-            className="w-full px-4 py-2 rounded transition-colors bg-discord-dark-300 hover:bg-discord-dark-200 text-white cursor-pointer"
+            className="w-full px-4 py-2 rounded transition-colors bg-discord-dark-300 hover:bg-discord-dark-200 text-discord-text-strong cursor-pointer"
           >
             <Trans>Cancel Connection</Trans>
           </button>

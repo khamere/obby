@@ -114,7 +114,7 @@ export const TopicMediaStrip: React.FC = () => {
   return (
     <div className="h-8 flex items-center gap-1 px-2.5 shrink-0 border-b border-black/30 bg-[#1a1b1e] animate-in slide-in-from-top-2 duration-200">
       {/* thin left accent line */}
-      <div className="w-0.5 h-4 rounded-full bg-white/10 shrink-0 mr-1" />
+      <div className="w-0.5 h-4 rounded-full bg-discord-text-strong/10 shrink-0 mr-1" />
       <div className="flex items-center gap-1 overflow-x-auto min-w-0 scrollbar-none">
         {visible.map((entry) => {
           const type = resolveType(entry);
@@ -131,7 +131,7 @@ export const TopicMediaStrip: React.FC = () => {
           );
         })}
         {overflow > 0 && (
-          <span className="text-white/30 text-[10px] shrink-0 pl-0.5">
+          <span className="text-discord-text-strong/30 text-[10px] shrink-0 pl-0.5">
             +{overflow}
           </span>
         )}
@@ -166,7 +166,10 @@ const Tile: React.FC<{ type: MediaType | null; url: string }> = ({
       <div className="relative w-6 h-6 rounded bg-discord-dark-200 overflow-hidden">
         <img src={url} alt="" className="w-6 h-6 object-cover" loading="lazy" />
         <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-          <FaPlay className="text-white" style={{ fontSize: 8 }} />
+          <FaPlay
+            className="text-discord-text-strong"
+            style={{ fontSize: 8 }}
+          />
         </div>
       </div>
     );
@@ -183,7 +186,10 @@ const Tile: React.FC<{ type: MediaType | null; url: string }> = ({
           loading="lazy"
         />
         <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-          <FaPlay className="text-white" style={{ fontSize: 8 }} />
+          <FaPlay
+            className="text-discord-text-strong"
+            style={{ fontSize: 8 }}
+          />
         </div>
       </div>
     ) : (

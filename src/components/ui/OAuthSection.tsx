@@ -243,7 +243,7 @@ export const OAuthSection: React.FC<OAuthSectionProps> = ({
             disabled={signingIn}
             className={`px-3 py-1 text-sm rounded font-medium ${
               signingIn
-                ? "bg-gray-600 text-gray-300 cursor-not-allowed"
+                ? "bg-discord-surface-hover text-discord-text-soft cursor-not-allowed"
                 : "bg-discord-primary text-white hover:bg-opacity-80"
             }`}
           >
@@ -257,7 +257,7 @@ export const OAuthSection: React.FC<OAuthSectionProps> = ({
             <button
               type="button"
               onClick={handleSignOut}
-              className="px-3 py-1 text-sm rounded font-medium bg-gray-600 text-gray-300 hover:bg-gray-500"
+              className="px-3 py-1 text-sm rounded font-medium bg-discord-surface-hover text-discord-text-soft hover:bg-discord-text-faint"
             >
               Sign out
             </button>
@@ -457,7 +457,7 @@ export const OAuthSection: React.FC<OAuthSectionProps> = ({
               disabled={signingIn}
               className={`px-3 py-1 text-sm rounded font-medium ${
                 signingIn
-                  ? "bg-gray-600 text-gray-300 cursor-not-allowed"
+                  ? "bg-discord-surface-hover text-discord-text-soft cursor-not-allowed"
                   : "bg-discord-primary text-white hover:bg-opacity-80"
               }`}
             >
@@ -471,7 +471,7 @@ export const OAuthSection: React.FC<OAuthSectionProps> = ({
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="px-3 py-1 text-sm rounded font-medium bg-gray-600 text-gray-300 hover:bg-gray-500"
+                className="px-3 py-1 text-sm rounded font-medium bg-discord-surface-hover text-discord-text-soft hover:bg-discord-text-faint"
               >
                 Sign out
               </button>

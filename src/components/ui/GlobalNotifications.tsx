@@ -97,13 +97,13 @@ export const GlobalNotifications: React.FC = () => {
                   </div>
                   <button
                     onClick={() => removeGlobalNotification(notification.id)}
-                    className="ml-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
+                    className="ml-2 text-discord-text-dim hover:text-gray-600 dark:hover:text-discord-text-soft flex-shrink-0"
                     aria-label={t`Dismiss notification`}
                   >
                     ×
                   </button>
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <div className="text-xs text-discord-text-faint dark:text-discord-text-dim mt-1">
                   {formatTime(notification.timestamp)}
                 </div>
               </div>

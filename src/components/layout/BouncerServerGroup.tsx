@@ -270,12 +270,12 @@ const GroupedAvatar: React.FC<GroupedAvatarProps> = ({
 
         {(server.connectionState === "connecting" ||
           server.connectionState === "reconnecting") && (
-          <FaRedo className="absolute inset-0 m-auto text-white animate-spin text-sm z-10" />
+          <FaRedo className="absolute inset-0 m-auto text-discord-text-strong animate-spin text-sm z-10" />
         )}
 
         {server.connectionState === "disconnected" && (
           <FaRedo
-            className="absolute inset-0 m-auto text-white text-sm cursor-pointer hover:text-gray-300 transition-colors z-10"
+            className="absolute inset-0 m-auto text-discord-text-strong text-sm cursor-pointer hover:text-discord-text-soft transition-colors z-10"
             onClick={(e) => {
               e.stopPropagation();
               onReconnect();
@@ -306,7 +306,7 @@ const GroupedAvatar: React.FC<GroupedAvatarProps> = ({
             />
           </div>
         ) : (
-          <div className="w-9 h-9 rounded-full bg-discord-dark-400 flex items-center justify-center text-sm font-semibold text-white">
+          <div className="w-9 h-9 rounded-full bg-discord-dark-400 flex items-center justify-center text-sm font-semibold text-discord-text-strong">
             {initial}
           </div>
         )}

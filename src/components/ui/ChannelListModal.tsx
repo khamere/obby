@@ -317,12 +317,12 @@ const ChannelListModal: React.FC = () => {
             placeholder={t`Filter channels...`}
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="flex-1 bg-discord-dark-300 text-white px-3 py-2 rounded"
+            className="flex-1 bg-discord-dark-300 text-discord-text-strong px-3 py-2 rounded"
           />
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as "alpha" | "users")}
-            className="bg-discord-dark-300 text-white px-3 py-2 rounded"
+            className="bg-discord-dark-300 text-discord-text-strong px-3 py-2 rounded"
           >
             <option value="alpha">{t`Sort by Name`}</option>
             <option value="users">{t`Sort by Users`}</option>
@@ -333,7 +333,7 @@ const ChannelListModal: React.FC = () => {
         <div className="mb-4 flex-shrink-0">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="text-gray-300 hover:text-white text-sm mb-2 flex items-center gap-2"
+            className="text-discord-text-soft hover:text-discord-text-strong text-sm mb-2 flex items-center gap-2"
           >
             <span>
               {showFilters ? "▼" : "▶"} <Trans>Advanced Filters</Trans>
@@ -346,7 +346,7 @@ const ChannelListModal: React.FC = () => {
                 {elist.includes("U") && (
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs text-gray-400 mb-1">
+                      <label className="block text-xs text-discord-text-dim mb-1">
                         {t`Min Users`}
                       </label>
                       <input
@@ -356,12 +356,12 @@ const ChannelListModal: React.FC = () => {
                         onChange={(e) =>
                           setMinUsers(Number.parseInt(e.target.value, 10) || 0)
                         }
-                        className="w-full bg-discord-dark-400 text-white px-2 py-1 rounded text-sm"
+                        className="w-full bg-discord-dark-400 text-discord-text-strong px-2 py-1 rounded text-sm"
                         placeholder="0"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-400 mb-1">
+                      <label className="block text-xs text-discord-text-dim mb-1">
                         {t`Max Users`}
                       </label>
                       <input
@@ -371,7 +371,7 @@ const ChannelListModal: React.FC = () => {
                         onChange={(e) =>
                           setMaxUsers(Number.parseInt(e.target.value, 10) || 0)
                         }
-                        className="w-full bg-discord-dark-400 text-white px-2 py-1 rounded text-sm"
+                        className="w-full bg-discord-dark-400 text-discord-text-strong px-2 py-1 rounded text-sm"
                         placeholder="0"
                       />
                     </div>
@@ -381,7 +381,7 @@ const ChannelListModal: React.FC = () => {
                 {elist.includes("C") && (
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs text-gray-400 mb-1">
+                      <label className="block text-xs text-discord-text-dim mb-1">
                         {t`Created After (min ago)`}
                       </label>
                       <input
@@ -393,12 +393,12 @@ const ChannelListModal: React.FC = () => {
                             Number.parseInt(e.target.value, 10) || 0,
                           )
                         }
-                        className="w-full bg-discord-dark-400 text-white px-2 py-1 rounded text-sm"
+                        className="w-full bg-discord-dark-400 text-discord-text-strong px-2 py-1 rounded text-sm"
                         placeholder="0"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-400 mb-1">
+                      <label className="block text-xs text-discord-text-dim mb-1">
                         {t`Created Before (min ago)`}
                       </label>
                       <input
@@ -410,7 +410,7 @@ const ChannelListModal: React.FC = () => {
                             Number.parseInt(e.target.value, 10) || 0,
                           )
                         }
-                        className="w-full bg-discord-dark-400 text-white px-2 py-1 rounded text-sm"
+                        className="w-full bg-discord-dark-400 text-discord-text-strong px-2 py-1 rounded text-sm"
                         placeholder="0"
                       />
                     </div>
@@ -420,7 +420,7 @@ const ChannelListModal: React.FC = () => {
                 {elist.includes("T") && (
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs text-gray-400 mb-1">
+                      <label className="block text-xs text-discord-text-dim mb-1">
                         {t`Topic Set After (min ago)`}
                       </label>
                       <input
@@ -432,12 +432,12 @@ const ChannelListModal: React.FC = () => {
                             Number.parseInt(e.target.value, 10) || 0,
                           )
                         }
-                        className="w-full bg-discord-dark-400 text-white px-2 py-1 rounded text-sm"
+                        className="w-full bg-discord-dark-400 text-discord-text-strong px-2 py-1 rounded text-sm"
                         placeholder="0"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-400 mb-1">
+                      <label className="block text-xs text-discord-text-dim mb-1">
                         {t`Topic Set Before (min ago)`}
                       </label>
                       <input
@@ -449,7 +449,7 @@ const ChannelListModal: React.FC = () => {
                             Number.parseInt(e.target.value, 10) || 0,
                           )
                         }
-                        className="w-full bg-discord-dark-400 text-white px-2 py-1 rounded text-sm"
+                        className="w-full bg-discord-dark-400 text-discord-text-strong px-2 py-1 rounded text-sm"
                         placeholder="0"
                       />
                     </div>
@@ -458,13 +458,13 @@ const ChannelListModal: React.FC = () => {
 
                 {elist.includes("M") && (
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1">
+                    <label className="block text-xs text-discord-text-dim mb-1">
                       {t`Channel Name Mask`}
                     </label>
                     <TextInput
                       value={mask}
                       onChange={(e) => setMask(e.target.value)}
-                      className="w-full bg-discord-dark-400 text-white px-2 py-1 rounded text-sm"
+                      className="w-full bg-discord-dark-400 text-discord-text-strong px-2 py-1 rounded text-sm"
                       placeholder={t`*channel*`}
                     />
                   </div>
@@ -472,20 +472,20 @@ const ChannelListModal: React.FC = () => {
 
                 {elist.includes("N") && (
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1">
+                    <label className="block text-xs text-discord-text-dim mb-1">
                       {t`Exclude Channel Name Mask`}
                     </label>
                     <TextInput
                       value={notMask}
                       onChange={(e) => setNotMask(e.target.value)}
-                      className="w-full bg-discord-dark-400 text-white px-2 py-1 rounded text-sm"
+                      className="w-full bg-discord-dark-400 text-discord-text-strong px-2 py-1 rounded text-sm"
                       placeholder={t`*spam*`}
                     />
                   </div>
                 )}
 
                 {elist.length === 0 && (
-                  <div className="text-sm text-gray-400 text-center py-2">
+                  <div className="text-sm text-discord-text-dim text-center py-2">
                     {t`Server doesn't support advanced LIST filtering`}
                   </div>
                 )}
@@ -502,7 +502,7 @@ const ChannelListModal: React.FC = () => {
         </div>
 
         {selectedServerId && listingInProgress[selectedServerId] && (
-          <p className="text-gray-400 mb-4 flex-shrink-0">
+          <p className="text-discord-text-dim mb-4 flex-shrink-0">
             <Trans>Loading channels...</Trans>
           </p>
         )}
@@ -514,7 +514,7 @@ const ChannelListModal: React.FC = () => {
           <div className="space-y-2">
             {filteredChannels.length === 0 &&
               !(selectedServerId && listingInProgress[selectedServerId]) && (
-                <p className="text-gray-400">
+                <p className="text-discord-text-dim">
                   <Trans>No channels found.</Trans>
                 </p>
               )}
@@ -598,24 +598,24 @@ const ChannelListModal: React.FC = () => {
                               </span>
                             );
                           })()}
-                          <span className="text-white font-medium truncate">
+                          <span className="text-discord-text-strong font-medium truncate">
                             {displayName ||
                               channel.channel.replace(/^[#^$]/, "")}
                           </span>
                           {hasMetadata &&
                             displayName &&
                             displayName !== channel.channel.substring(1) && (
-                              <span className="text-xs bg-discord-dark-400 text-gray-300 px-2 py-0.5 rounded flex-shrink-0">
+                              <span className="text-xs bg-discord-dark-400 text-discord-text-soft px-2 py-0.5 rounded flex-shrink-0">
                                 {channel.channel}
                               </span>
                             )}
                         </div>
-                        <span className="text-gray-400 text-sm flex-shrink-0 flex items-center gap-1">
+                        <span className="text-discord-text-dim text-sm flex-shrink-0 flex items-center gap-1">
                           <FaUsers size={12} />
                           {channel.userCount}
                         </span>
                       </div>
-                      <p className="text-gray-400 text-sm break-words mt-0.5">
+                      <p className="text-discord-text-dim text-sm break-words mt-0.5">
                         {channel.topic || t`No topic`}
                       </p>
                     </div>
@@ -624,7 +624,7 @@ const ChannelListModal: React.FC = () => {
               })}
             {loadingMore && (
               <div className="text-center py-4">
-                <p className="text-gray-400 text-sm">
+                <p className="text-discord-text-dim text-sm">
                   <Trans>Loading more channels...</Trans>
                 </p>
               </div>
@@ -632,7 +632,7 @@ const ChannelListModal: React.FC = () => {
             {displayedChannelsCount < filteredChannels.length &&
               !loadingMore && (
                 <div className="text-center py-4">
-                  <p className="text-gray-500 text-xs">
+                  <p className="text-discord-text-faint text-xs">
                     <Trans>
                       Showing {displayedChannelsCount} of{" "}
                       {filteredChannels.length} channels

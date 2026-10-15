@@ -13,7 +13,7 @@ interface ButtonProps {
 }
 
 const variantStyles = {
-  primary: "bg-discord-primary hover:bg-opacity-80 text-white",
+  primary: "bg-discord-primary hover:bg-opacity-80 text-discord-text-strong",
   secondary:
     "bg-discord-dark-400 hover:bg-discord-dark-500 text-discord-text-normal",
   danger: "bg-discord-red hover:bg-opacity-80 text-white",

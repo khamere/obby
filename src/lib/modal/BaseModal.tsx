@@ -89,14 +89,17 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   const header = (title || showCloseButton) && (
     <div className="flex items-center justify-between p-4 border-b border-discord-dark-500 flex-shrink-0">
       {title && (
-        <h2 id="modal-title" className="text-lg font-semibold text-white">
+        <h2
+          id="modal-title"
+          className="text-lg font-semibold text-discord-text-strong"
+        >
           {title}
         </h2>
       )}
       {showCloseButton && (
         <button
           onClick={onClose}
-          className="p-1 rounded-lg hover:bg-discord-dark-400 transition-colors text-discord-text-muted hover:text-white"
+          className="p-1 rounded-lg hover:bg-discord-dark-400 transition-colors text-discord-text-muted hover:text-discord-text-strong"
           aria-label={t`Close modal`}
         >
           <XMarkIcon className="w-5 h-5" />

@@ -51,7 +51,7 @@ export const AccentColorField: React.FC<SettingComponentProps> = ({
               onClick={() => onChange(hex)}
               className={`w-7 h-7 rounded-full border-2 ${
                 current.toLowerCase() === hex
-                  ? "border-white"
+                  ? "border-discord-text-strong"
                   : "border-transparent"
               }`}
               style={{ background: hex }}

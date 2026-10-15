@@ -86,7 +86,7 @@ export const ActionMessage: React.FC<ActionMessageProps> = ({
           isClickable={true}
           serverId={message.serverId}
         />
-        <div className="flex-1 text-white">
+        <div className="flex-1 text-discord-text-strong">
           <div className="flex items-center">
             <span className="ml-2 text-xs text-discord-text-muted">
               {formatTime(new Date(message.timestamp))}
@@ -98,7 +98,7 @@ export const ActionMessage: React.FC<ActionMessageProps> = ({
           {message.replyMessage && (
             <MessageReply replyMessage={message.replyMessage} theme="discord" />
           )}
-          <span className="italic text-white">
+          <span className="italic text-discord-text-strong">
             {message.userId === "system"
               ? t`System`
               : (displayName || username) +
