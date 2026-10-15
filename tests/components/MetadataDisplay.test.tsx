@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ChatArea } from "../../src/components/layout/ChatArea";
 import { MemberList } from "../../src/components/layout/MemberList";
+import { DEFAULT_CHAT_LOOK } from "../../src/lib/chatLook";
 import { getColorStyle } from "../../src/lib/ircUtils";
 import { DEFAULT_THEME_SETTINGS } from "../../src/lib/theme";
 import { DEFAULT_TYPOGRAPHY } from "../../src/lib/typography";
@@ -173,6 +174,7 @@ describe("Metadata Display Features", () => {
       typingUsers: {},
       globalSettings: {
         ...DEFAULT_THEME_SETTINGS,
+        ...DEFAULT_CHAT_LOOK,
         ...DEFAULT_TYPOGRAPHY,
         enableNotifications: true,
         notificationSound: "pop",
