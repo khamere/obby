@@ -1,3 +1,4 @@
+import type { NickPalette } from "../lib/chatLook";
 import type { MediaVisibilityLevel } from "../lib/mediaUtils";
 import type {
   FontPreset,
@@ -42,6 +43,11 @@ export interface GlobalSettings {
   // Theme (see lib/theme)
   theme: string;
   accentColor: string;
+  customTheme: string;
+  // Chat look (see lib/chatLook)
+  nickPalette: NickPalette;
+  chatBackground: string;
+  chatBackgroundOpacity: number;
   // Typography (see lib/typography)
   fontFamily: FontPreset;
   fontFamilyCustom: string;

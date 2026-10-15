@@ -1,0 +1,28 @@
+{
+  "id": "bubblegum",
+  "name": "Bubblegum",
+  "appearance": "dark",
+  "colors": {
+    "primary": "#ff6fb5",
+    "green": "#9ef0c4",
+    "yellow": "#ffe08a",
+    "fuchsia": "#ff8ad8",
+    "red": "#ff6b7a",
+    "bg-input": "#3a2a3e",
+    "bg-base": "#2b1f2e",
+    "bg-sidebar": "#221824",
+    "bg-deep": "#1a121c",
+    "icon": "#8a6f8f",
+    "bg-member": "#221824",
+    "bg-hover": "#352739",
+    "fg": "#f8e8f5",
+    "fg-muted": "#c9a9c6",
+    "link": "#7fd7ff",
+    "fg-channel": "#a98aa8",
+    "fg-channel-active": "#ffffff",
+    "success": "#9ef0c4",
+    "success-hover": "#86dcb0",
+    "button-secondary": "#5a4360",
+    "reply": "#ff9ad0"
+  }
+}
