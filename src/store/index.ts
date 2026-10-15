@@ -805,6 +805,9 @@ export interface AppState {
   // UI state
   ui: UIState;
   globalSettings: GlobalSettings;
+  // serverId -> hex accent, mirrored from the saved server configs so the
+  // appearance can follow the selected network without a reload.
+  serverAccents: Record<string, string>;
   // Actions
   connect: (
     name: string,
@@ -1337,6 +1340,11 @@ const useStore = create<AppState>((set, get) => ({
     openedMedia: null,
     activeMedia: null,
   },
+  serverAccents: Object.fromEntries(
+    loadSavedServers()
+      .filter((s) => s.accentColor)
+      .map((s) => [s.id, s.accentColor as string]),
+  ),
   globalSettings: {
     enableNotifications: false,
     notificationSound: "/sounds/notif1.mp3",
@@ -3433,6 +3441,16 @@ const useStore = create<AppState>((set, get) => ({
     if (serverIndex !== -1) {
       savedServers[serverIndex] = { ...savedServers[serverIndex], ...config };
       saveServersToLocalStorage(savedServers);
+    }
+    if (config.accentColor !== undefined) {
+      set((state) => {
+        const { [serverId]: _old, ...rest } = state.serverAccents;
+        return {
+          serverAccents: config.accentColor
+            ? { ...rest, [serverId]: config.accentColor }
+            : rest,
+        };
+      });
     }
   },
 
