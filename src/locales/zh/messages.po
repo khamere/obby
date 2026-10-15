@@ -301,6 +301,14 @@ msgid "8 hours"
 msgstr "8 小时"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "A font installed on this device, e.g. JetBrains Mono. Used when Font is set to Custom."
+msgstr "此设备上已安装的字体，例如 JetBrains Mono。当字体设为“自定义”时使用。"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "A font installed on this device. Used when Chat font is set to Custom."
+msgstr "此设备上已安装的字体。当聊天字体设为“自定义”时使用。"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "A stylesheet applied on top of Obby, from a shared link and/or your own. Sidebar rows carry data-network-host so you can style individual networks. Anything that would load other files is removed."
 msgstr "应用在 Obby 之上的样式表，来自共享链接和/或你自己的 CSS。侧边栏的行带有 data-network-host，可为各个网络单独设置样式。任何会加载其他文件的内容都会被移除。"
 
@@ -641,6 +649,10 @@ msgstr "封禁用户（按昵称）"
 msgid "Bans"
 msgstr "封禁"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Base text size; everything scales with it"
+msgstr "基础文字大小；所有内容随之缩放"
+
 #: src/components/layout/ChannelList.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/ui/BotsModal.tsx
@@ -855,6 +867,10 @@ msgstr "频道"
 msgid "Channels on {networkName}"
 msgstr "{networkName} 上的频道"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Chat font"
+msgstr "聊天字体"
+
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Choose a predefined flood protection profile. These profiles provide balanced protection settings for different use cases."
 msgstr "选择预定义的洪水保护配置文件。这些配置文件为不同使用场景提供均衡的保护设置。"
@@ -991,6 +1007,11 @@ msgstr "评论"
 msgid "Comments ({commentCount})"
 msgstr "评论 ({commentCount})"
 
+#: src/lib/settings/definitions/allSettings.ts
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Compact"
+msgstr "紧凑"
+
 #: src/components/ui/BotToolsHistoryButton.tsx
 msgid "complete"
 msgstr "已完成"
@@ -1100,6 +1121,14 @@ msgstr "复制链接"
 msgid "Copy URL"
 msgstr "复制链接"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Cosy"
+msgstr "舒适"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Cosy shows avatars and spacing between messages; Compact packs them like a classic IRC client"
+msgstr "舒适模式显示头像和消息间距；紧凑模式像传统 IRC 客户端一样紧密排列"
+
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Could not load this link. It must point to the raw .css file."
 msgstr "无法加载此链接。它必须指向原始 .css 文件。"
@@ -1137,6 +1166,10 @@ msgid "Current avatar"
 msgstr "当前头像"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Custom chat font name"
+msgstr "自定义聊天字体名称"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Custom CSS"
 msgstr "自定义 CSS"
 
@@ -1145,12 +1178,20 @@ msgid "Custom Flood Rules (+f)"
 msgstr "自定义洪水规则 (+f)"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Custom font name"
+msgstr "自定义字体名称"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Custom Mentions"
 msgstr "自定义提及"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Custom notification sound file"
 msgstr "自定义通知音频文件"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Custom…"
+msgstr "自定义…"
 
 #: src/components/ui/UserSettings.tsx
 msgid "Customize your IRC client experience"
@@ -1605,6 +1646,14 @@ msgstr "洪水配置文件 (+F)"
 msgid "Flood Protection Settings"
 msgstr "洪水保护设置"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Font"
+msgstr "字体"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Font size"
+msgstr "字体大小"
+
 #. placeholder {0}: filteredMessages.length
 #: src/components/layout/ChannelMessageList.tsx
 msgid "Found {0} messages matching \"{searchQuery}\""
@@ -1782,6 +1831,10 @@ msgstr "关于是谁调用此命令的信息由 bot 提供，服务器无法验�
 msgid "Insert emoji"
 msgstr "插入表情"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Inter"
+msgstr "Inter"
+
 #: src/lib/settings/registry.ts
 msgid "Invalid format"
 msgstr "格式无效"
@@ -1851,6 +1904,10 @@ msgstr "IRC 服务器："
 #: src/store/handlers/users.ts
 msgid "is now known as **{newNick}**"
 msgstr "现在称为 **{newNick}**"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "JetBrains Mono"
+msgstr "JetBrains Mono"
 
 #: src/components/message/JsonLogMessage.tsx
 #: src/components/ui/QuickActions.tsx
@@ -1963,6 +2020,10 @@ msgstr "让其他人知道您正在输入"
 #: src/components/ui/BouncerNetworkForm.tsx
 msgid "Libera Chat"
 msgstr "Libera Chat"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Line spacing"
+msgstr "行距"
 
 #: src/components/message/LinkPreview.tsx
 msgid "Link preview"
@@ -2138,6 +2199,10 @@ msgstr "发消息给 @{0}（Shift+Enter 换行）"
 #: src/components/ui/AddPrivateChatModal.tsx
 msgid "Message <0>{0}</0>"
 msgstr "发消息给 <0>{0}</0>"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Message density"
+msgstr "消息密度"
 
 #: src/store/handlers/e2eeOutbound.ts
 msgid "Message not sent: encryption isn't active yet. Wait for the lock to turn green, or end encryption to send unencrypted."
@@ -2440,6 +2505,7 @@ msgid "None"
 msgstr "无"
 
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Normal"
 msgstr "普通"
 
@@ -2858,6 +2924,7 @@ msgid "Reject"
 msgstr "拒绝"
 
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Relaxed"
 msgstr "宽松"
 
@@ -2934,6 +3001,10 @@ msgstr "查看已更改的密钥…"
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Review key"
 msgstr "查看密钥"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Roboto Mono (default)"
+msgstr "Roboto Mono（默认）"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Rules"
@@ -3360,6 +3431,10 @@ msgstr "SoundCloud 播放器"
 msgid "Source"
 msgstr "来源"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Space between lines of text"
+msgstr "文本行之间的间距"
+
 #: src/components/ui/AddPrivateChatModal.tsx
 msgid "Start Private Message"
 msgstr "发起私信"
@@ -3409,6 +3484,18 @@ msgstr "已停用"
 msgid "System"
 msgstr "系统"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System monospace"
+msgstr "系统等宽"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System sans-serif"
+msgstr "系统无衬线"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System serif"
+msgstr "系统衬线"
+
 #: src/components/ui/BotToolsCard.tsx
 msgid "Text"
 msgstr "文本"
@@ -3428,6 +3515,14 @@ msgstr "与 <0>{serverName}</0> 的连接存在以下安全问题："
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "The file host stores it readable, and anyone who obtains the link can open it. Switch to Obby encryption to send files encrypted."
 msgstr "文件主机以可读形式保存它，拿到链接的人都能打开。若要加密发送文件，请改用 Obby 加密。"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "The font used for messages, if different from the app font"
+msgstr "消息使用的字体（如与应用字体不同）"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "The font used for the whole app"
+msgstr "整个应用使用的字体"
 
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The IRC server has reported that its server-to-server links have a low security level. This means that when your messages are relayed between IRC servers in the network, they may not be properly encrypted or the SSL/TLS certificates may not be validated correctly."

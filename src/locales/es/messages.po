@@ -301,6 +301,14 @@ msgid "8 hours"
 msgstr "8 horas"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "A font installed on this device, e.g. JetBrains Mono. Used when Font is set to Custom."
+msgstr "Una fuente instalada en este dispositivo, p. ej. JetBrains Mono. Se usa cuando Fuente está en Personalizada."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "A font installed on this device. Used when Chat font is set to Custom."
+msgstr "Una fuente instalada en este dispositivo. Se usa cuando Fuente del chat está en Personalizada."
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "A stylesheet applied on top of Obby, from a shared link and/or your own. Sidebar rows carry data-network-host so you can style individual networks. Anything that would load other files is removed."
 msgstr "Una hoja de estilos aplicada sobre Obby, desde un enlace compartido y/o la tuya propia. Las filas de la barra lateral tienen data-network-host para que puedas dar estilo a cada red. Se elimina todo lo que cargaría otros archivos."
 
@@ -641,6 +649,10 @@ msgstr "Banear usuario (por apodo)"
 msgid "Bans"
 msgstr "Bans"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Base text size; everything scales with it"
+msgstr "Tamaño base del texto; todo se escala con él"
+
 #: src/components/layout/ChannelList.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/ui/BotsModal.tsx
@@ -855,6 +867,10 @@ msgstr "Canales"
 msgid "Channels on {networkName}"
 msgstr "Canales en {networkName}"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Chat font"
+msgstr "Fuente del chat"
+
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Choose a predefined flood protection profile. These profiles provide balanced protection settings for different use cases."
 msgstr "Elige un perfil de protección contra flood predefinido. Estos perfiles ofrecen configuraciones de protección equilibradas para diferentes casos de uso."
@@ -991,6 +1007,11 @@ msgstr "Comentarios"
 msgid "Comments ({commentCount})"
 msgstr "Comentarios ({commentCount})"
 
+#: src/lib/settings/definitions/allSettings.ts
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Compact"
+msgstr "Compacto"
+
 #: src/components/ui/BotToolsHistoryButton.tsx
 msgid "complete"
 msgstr "completado"
@@ -1100,6 +1121,14 @@ msgstr "Copiar enlace"
 msgid "Copy URL"
 msgstr "Copiar URL"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Cosy"
+msgstr "Acogedor"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Cosy shows avatars and spacing between messages; Compact packs them like a classic IRC client"
+msgstr "Acogedor muestra avatares y espacio entre mensajes; Compacto los junta como un cliente IRC clásico"
+
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Could not load this link. It must point to the raw .css file."
 msgstr "No se pudo cargar este enlace. Debe apuntar al archivo .css sin procesar."
@@ -1137,6 +1166,10 @@ msgid "Current avatar"
 msgstr "Avatar actual"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Custom chat font name"
+msgstr "Nombre de fuente del chat personalizada"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Custom CSS"
 msgstr "CSS personalizado"
 
@@ -1145,12 +1178,20 @@ msgid "Custom Flood Rules (+f)"
 msgstr "Reglas de flood personalizadas (+f)"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Custom font name"
+msgstr "Nombre de fuente personalizada"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Custom Mentions"
 msgstr "Menciones personalizadas"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Custom notification sound file"
 msgstr "Archivo de sonido de notificación personalizado"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Custom…"
+msgstr "Personalizada…"
 
 #: src/components/ui/UserSettings.tsx
 msgid "Customize your IRC client experience"
@@ -1605,6 +1646,14 @@ msgstr "Perfil de flood (+F)"
 msgid "Flood Protection Settings"
 msgstr "Configuración de protección contra flood"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Font"
+msgstr "Fuente"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Font size"
+msgstr "Tamaño de fuente"
+
 #. placeholder {0}: filteredMessages.length
 #: src/components/layout/ChannelMessageList.tsx
 msgid "Found {0} messages matching \"{searchQuery}\""
@@ -1782,6 +1831,10 @@ msgstr "La información sobre quién invocó este comando la proporciona el bot 
 msgid "Insert emoji"
 msgstr "Insertar emoji"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Inter"
+msgstr "Inter"
+
 #: src/lib/settings/registry.ts
 msgid "Invalid format"
 msgstr "Formato no válido"
@@ -1851,6 +1904,10 @@ msgstr "Servidores IRC:"
 #: src/store/handlers/users.ts
 msgid "is now known as **{newNick}**"
 msgstr "ahora se llama **{newNick}**"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "JetBrains Mono"
+msgstr "JetBrains Mono"
 
 #: src/components/message/JsonLogMessage.tsx
 #: src/components/ui/QuickActions.tsx
@@ -1963,6 +2020,10 @@ msgstr "Avisar a otros cuando estás escribiendo"
 #: src/components/ui/BouncerNetworkForm.tsx
 msgid "Libera Chat"
 msgstr "Libera Chat"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Line spacing"
+msgstr "Interlineado"
 
 #: src/components/message/LinkPreview.tsx
 msgid "Link preview"
@@ -2138,6 +2199,10 @@ msgstr "Mensaje a @{0} (Mayús+Intro para nueva línea)"
 #: src/components/ui/AddPrivateChatModal.tsx
 msgid "Message <0>{0}</0>"
 msgstr "Mensaje a <0>{0}</0>"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Message density"
+msgstr "Densidad de mensajes"
 
 #: src/store/handlers/e2eeOutbound.ts
 msgid "Message not sent: encryption isn't active yet. Wait for the lock to turn green, or end encryption to send unencrypted."
@@ -2440,6 +2505,7 @@ msgid "None"
 msgstr "Ninguno"
 
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Normal"
 msgstr "Normal"
 
@@ -2858,6 +2924,7 @@ msgid "Reject"
 msgstr "Rechazar"
 
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Relaxed"
 msgstr "Relajado"
 
@@ -2934,6 +3001,10 @@ msgstr "Revisar la clave cambiada…"
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Review key"
 msgstr "Revisar la clave"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Roboto Mono (default)"
+msgstr "Roboto Mono (predeterminada)"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Rules"
@@ -3360,6 +3431,10 @@ msgstr "Reproductor de SoundCloud"
 msgid "Source"
 msgstr "Origen"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Space between lines of text"
+msgstr "Espacio entre líneas de texto"
+
 #: src/components/ui/AddPrivateChatModal.tsx
 msgid "Start Private Message"
 msgstr "Iniciar mensaje privado"
@@ -3409,6 +3484,18 @@ msgstr "suspendido"
 msgid "System"
 msgstr "Sistema"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System monospace"
+msgstr "Monoespaciada del sistema"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System sans-serif"
+msgstr "Sans-serif del sistema"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System serif"
+msgstr "Serif del sistema"
+
 #: src/components/ui/BotToolsCard.tsx
 msgid "Text"
 msgstr "Texto"
@@ -3428,6 +3515,14 @@ msgstr "La conexión a <0>{serverName}</0> presenta los siguientes problemas de 
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "The file host stores it readable, and anyone who obtains the link can open it. Switch to Obby encryption to send files encrypted."
 msgstr "El servidor de archivos lo guarda legible y cualquiera que obtenga el enlace puede abrirlo. Cambia al cifrado de Obby para enviar archivos cifrados."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "The font used for messages, if different from the app font"
+msgstr "La fuente de los mensajes, si es distinta de la de la aplicación"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "The font used for the whole app"
+msgstr "La fuente usada en toda la aplicación"
 
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The IRC server has reported that its server-to-server links have a low security level. This means that when your messages are relayed between IRC servers in the network, they may not be properly encrypted or the SSL/TLS certificates may not be validated correctly."

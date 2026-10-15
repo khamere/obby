@@ -61,32 +61,34 @@ module.exports = {
           ring: "hsl(var(--sidebar-ring))",
         },
         discord: {
-          primary: "#5865F2",
-          green: "#428f8d",
-          yellow: "#FEE75C",
-          fuchsia: "#EB459E",
-          red: "#ED4245",
+          // Every colour is a CSS variable (see :root in index.css) so
+          // themes can change them without touching components.
+          primary: "rgb(var(--obby-primary) / <alpha-value>)",
+          green: "rgb(var(--obby-green) / <alpha-value>)",
+          yellow: "rgb(var(--obby-yellow) / <alpha-value>)",
+          fuchsia: "rgb(var(--obby-fuchsia) / <alpha-value>)",
+          red: "rgb(var(--obby-red) / <alpha-value>)",
           // Discord UI Colors
-          "dark-100": "#2F3136", // chat input background
-          "dark-200": "#36393F", // main background
-          "dark-300": "#202225", // server list background
-          "dark-400": "#18191C", // very dark background
-          "dark-500": "#4F545C", // icons
-          "dark-600": "#2F3136", // server member list
+          "dark-100": "rgb(var(--obby-bg-input) / <alpha-value>)", // chat input background
+          "dark-200": "rgb(var(--obby-bg-base) / <alpha-value>)", // main background
+          "dark-300": "rgb(var(--obby-bg-sidebar) / <alpha-value>)", // server list background
+          "dark-400": "rgb(var(--obby-bg-deep) / <alpha-value>)", // very dark background
+          "dark-500": "rgb(var(--obby-icon) / <alpha-value>)", // icons
+          "dark-600": "rgb(var(--obby-bg-member) / <alpha-value>)", // server member list
           // Message colors
-          "message-hover": "#2A2D33",
+          "message-hover": "rgb(var(--obby-bg-hover) / <alpha-value>)",
           // Text colors
-          "text-normal": "#DCDDDE",
-          "text-muted": "#A3A6AA",
-          "text-link": "#00AFF4",
-          "channels-default": "#8E9297",
-          "channels-active": "#FFFFFF",
+          "text-normal": "rgb(var(--obby-fg) / <alpha-value>)",
+          "text-muted": "rgb(var(--obby-fg-muted) / <alpha-value>)",
+          "text-link": "rgb(var(--obby-link) / <alpha-value>)",
+          "channels-default": "rgb(var(--obby-fg-channel) / <alpha-value>)",
+          "channels-active": "rgb(var(--obby-fg-channel-active) / <alpha-value>)",
           // Button colors
-          "button-success-default": "#57F287",
-          "button-success-hover": "#4CAF50",
-          "button-secondary-default": "#4F545C",
+          "button-success-default": "rgb(var(--obby-success) / <alpha-value>)",
+          "button-success-hover": "rgb(var(--obby-success-hover) / <alpha-value>)",
+          "button-secondary-default": "rgb(var(--obby-button-secondary) / <alpha-value>)",
           // Unified reply accent — used for reply bar, quote line, swipe icon, toolbar button
-          "reply": "#60a5fa",
+          "reply": "rgb(var(--obby-reply) / <alpha-value>)",
         },
       },
       fontFamily: {

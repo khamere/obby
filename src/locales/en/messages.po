@@ -300,6 +300,14 @@ msgid "8 hours"
 msgstr "8 hours"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "A font installed on this device, e.g. JetBrains Mono. Used when Font is set to Custom."
+msgstr "A font installed on this device, e.g. JetBrains Mono. Used when Font is set to Custom."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "A font installed on this device. Used when Chat font is set to Custom."
+msgstr "A font installed on this device. Used when Chat font is set to Custom."
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "A stylesheet applied on top of Obby, from a shared link and/or your own. Sidebar rows carry data-network-host so you can style individual networks. Anything that would load other files is removed."
 msgstr "A stylesheet applied on top of Obby, from a shared link and/or your own. Sidebar rows carry data-network-host so you can style individual networks. Anything that would load other files is removed."
 
@@ -640,6 +648,10 @@ msgstr "Ban User (by Nickname)"
 msgid "Bans"
 msgstr "Bans"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Base text size; everything scales with it"
+msgstr "Base text size; everything scales with it"
+
 #: src/components/layout/ChannelList.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/ui/BotsModal.tsx
@@ -854,6 +866,10 @@ msgstr "Channels"
 msgid "Channels on {networkName}"
 msgstr "Channels on {networkName}"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Chat font"
+msgstr "Chat font"
+
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Choose a predefined flood protection profile. These profiles provide balanced protection settings for different use cases."
 msgstr "Choose a predefined flood protection profile. These profiles provide balanced protection settings for different use cases."
@@ -990,6 +1006,11 @@ msgstr "Comments"
 msgid "Comments ({commentCount})"
 msgstr "Comments ({commentCount})"
 
+#: src/lib/settings/definitions/allSettings.ts
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Compact"
+msgstr "Compact"
+
 #: src/components/ui/BotToolsHistoryButton.tsx
 msgid "complete"
 msgstr "complete"
@@ -1099,6 +1120,14 @@ msgstr "Copy link"
 msgid "Copy URL"
 msgstr "Copy URL"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Cosy"
+msgstr "Cosy"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Cosy shows avatars and spacing between messages; Compact packs them like a classic IRC client"
+msgstr "Cosy shows avatars and spacing between messages; Compact packs them like a classic IRC client"
+
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Could not load this link. It must point to the raw .css file."
 msgstr "Could not load this link. It must point to the raw .css file."
@@ -1136,6 +1165,10 @@ msgid "Current avatar"
 msgstr "Current avatar"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Custom chat font name"
+msgstr "Custom chat font name"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Custom CSS"
 msgstr "Custom CSS"
 
@@ -1144,12 +1177,20 @@ msgid "Custom Flood Rules (+f)"
 msgstr "Custom Flood Rules (+f)"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Custom font name"
+msgstr "Custom font name"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Custom Mentions"
 msgstr "Custom Mentions"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Custom notification sound file"
 msgstr "Custom notification sound file"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Custom…"
+msgstr "Custom…"
 
 #: src/components/ui/UserSettings.tsx
 msgid "Customize your IRC client experience"
@@ -1604,6 +1645,14 @@ msgstr "Flood Profile (+F)"
 msgid "Flood Protection Settings"
 msgstr "Flood Protection Settings"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Font"
+msgstr "Font"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Font size"
+msgstr "Font size"
+
 #. placeholder {0}: filteredMessages.length
 #: src/components/layout/ChannelMessageList.tsx
 msgid "Found {0} messages matching \"{searchQuery}\""
@@ -1781,6 +1830,10 @@ msgstr "Information regarding who invoked this command is provided by the bot an
 msgid "Insert emoji"
 msgstr "Insert emoji"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Inter"
+msgstr "Inter"
+
 #: src/lib/settings/registry.ts
 msgid "Invalid format"
 msgstr "Invalid format"
@@ -1850,6 +1903,10 @@ msgstr "IRC Servers:"
 #: src/store/handlers/users.ts
 msgid "is now known as **{newNick}**"
 msgstr "is now known as **{newNick}**"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "JetBrains Mono"
+msgstr "JetBrains Mono"
 
 #: src/components/message/JsonLogMessage.tsx
 #: src/components/ui/QuickActions.tsx
@@ -1962,6 +2019,10 @@ msgstr "Let others know when you are typing"
 #: src/components/ui/BouncerNetworkForm.tsx
 msgid "Libera Chat"
 msgstr "Libera Chat"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Line spacing"
+msgstr "Line spacing"
 
 #: src/components/message/LinkPreview.tsx
 msgid "Link preview"
@@ -2137,6 +2198,10 @@ msgstr "Message @{0} (Shift+Enter for new line)"
 #: src/components/ui/AddPrivateChatModal.tsx
 msgid "Message <0>{0}</0>"
 msgstr "Message <0>{0}</0>"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Message density"
+msgstr "Message density"
 
 #: src/store/handlers/e2eeOutbound.ts
 msgid "Message not sent: encryption isn't active yet. Wait for the lock to turn green, or end encryption to send unencrypted."
@@ -2439,6 +2504,7 @@ msgid "None"
 msgstr "None"
 
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Normal"
 msgstr "Normal"
 
@@ -2857,6 +2923,7 @@ msgid "Reject"
 msgstr "Reject"
 
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Relaxed"
 msgstr "Relaxed"
 
@@ -2933,6 +3000,10 @@ msgstr "Review changed key…"
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Review key"
 msgstr "Review key"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Roboto Mono (default)"
+msgstr "Roboto Mono (default)"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Rules"
@@ -3359,6 +3430,10 @@ msgstr "SoundCloud player"
 msgid "Source"
 msgstr "Source"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Space between lines of text"
+msgstr "Space between lines of text"
+
 #: src/components/ui/AddPrivateChatModal.tsx
 msgid "Start Private Message"
 msgstr "Start Private Message"
@@ -3408,6 +3483,18 @@ msgstr "suspended"
 msgid "System"
 msgstr "System"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System monospace"
+msgstr "System monospace"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System sans-serif"
+msgstr "System sans-serif"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System serif"
+msgstr "System serif"
+
 #: src/components/ui/BotToolsCard.tsx
 msgid "Text"
 msgstr "Text"
@@ -3427,6 +3514,14 @@ msgstr "The connection to <0>{serverName}</0> has the following security concern
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "The file host stores it readable, and anyone who obtains the link can open it. Switch to Obby encryption to send files encrypted."
 msgstr "The file host stores it readable, and anyone who obtains the link can open it. Switch to Obby encryption to send files encrypted."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "The font used for messages, if different from the app font"
+msgstr "The font used for messages, if different from the app font"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "The font used for the whole app"
+msgstr "The font used for the whole app"
 
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The IRC server has reported that its server-to-server links have a low security level. This means that when your messages are relayed between IRC servers in the network, they may not be properly encrypted or the SSL/TLS certificates may not be validated correctly."

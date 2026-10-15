@@ -115,7 +115,7 @@ export interface SettingDefinition {
  */
 export interface SettingOption {
   value: string | number;
-  label: string;
+  label: string | MessageDescriptor;
   description?: string;
   icon?: ReactNode;
   disabled?: boolean;

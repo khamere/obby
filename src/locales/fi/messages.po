@@ -301,6 +301,14 @@ msgid "8 hours"
 msgstr "8 tuntia"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "A font installed on this device, e.g. JetBrains Mono. Used when Font is set to Custom."
+msgstr "Tälle laitteelle asennettu fontti, esim. JetBrains Mono. Käytetään, kun Fontti on asetettu Mukautetuksi."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "A font installed on this device. Used when Chat font is set to Custom."
+msgstr "Tälle laitteelle asennettu fontti. Käytetään, kun Keskustelun fontti on asetettu Mukautetuksi."
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "A stylesheet applied on top of Obby, from a shared link and/or your own. Sidebar rows carry data-network-host so you can style individual networks. Anything that would load other files is removed."
 msgstr "Obbyn päälle lisättävä tyylitiedosto jaetusta linkistä ja/tai omasi. Sivupalkin riveillä on data-network-host, joten voit muotoilla yksittäisiä verkkoja. Kaikki, mikä lataisi muita tiedostoja, poistetaan."
 
@@ -641,6 +649,10 @@ msgstr "Estä käyttäjä (nimimerkin perusteella)"
 msgid "Bans"
 msgstr "Estot"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Base text size; everything scales with it"
+msgstr "Tekstin peruskoko; kaikki skaalautuu sen mukaan"
+
 #: src/components/layout/ChannelList.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/ui/BotsModal.tsx
@@ -855,6 +867,10 @@ msgstr "Kanavat"
 msgid "Channels on {networkName}"
 msgstr "Kanavat verkossa {networkName}"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Chat font"
+msgstr "Keskustelun fontti"
+
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Choose a predefined flood protection profile. These profiles provide balanced protection settings for different use cases."
 msgstr "Valitse valmis tulvasuojausprofiili. Nämä profiilit tarjoavat tasapainoisia suojausasetuksia eri käyttötarkoituksiin."
@@ -991,6 +1007,11 @@ msgstr "Kommentit"
 msgid "Comments ({commentCount})"
 msgstr "Kommentit ({commentCount})"
 
+#: src/lib/settings/definitions/allSettings.ts
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Compact"
+msgstr "Tiivis"
+
 #: src/components/ui/BotToolsHistoryButton.tsx
 msgid "complete"
 msgstr "valmis"
@@ -1100,6 +1121,14 @@ msgstr "Kopioi linkki"
 msgid "Copy URL"
 msgstr "Kopioi URL"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Cosy"
+msgstr "Väljä"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Cosy shows avatars and spacing between messages; Compact packs them like a classic IRC client"
+msgstr "Väljä näyttää avatarit ja välit viestien välillä; Tiivis pakkaa ne kuin perinteinen IRC-asiakas"
+
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Could not load this link. It must point to the raw .css file."
 msgstr "Linkkiä ei voitu ladata. Sen on osoitettava suoraan .css-tiedostoon."
@@ -1137,6 +1166,10 @@ msgid "Current avatar"
 msgstr "Nykyinen avatar"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Custom chat font name"
+msgstr "Mukautetun keskustelufontin nimi"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Custom CSS"
 msgstr "Oma CSS"
 
@@ -1145,12 +1178,20 @@ msgid "Custom Flood Rules (+f)"
 msgstr "Mukautetut tulvasäännöt (+f)"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Custom font name"
+msgstr "Mukautetun fontin nimi"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Custom Mentions"
 msgstr "Mukautetut maininnat"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Custom notification sound file"
 msgstr "Mukautettu ilmoitusäänitiedosto"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Custom…"
+msgstr "Mukautettu…"
 
 #: src/components/ui/UserSettings.tsx
 msgid "Customize your IRC client experience"
@@ -1605,6 +1646,14 @@ msgstr "Tulvasuojausprofiili (+F)"
 msgid "Flood Protection Settings"
 msgstr "Tulvasuojausasetukset"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Font"
+msgstr "Fontti"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Font size"
+msgstr "Fonttikoko"
+
 #. placeholder {0}: filteredMessages.length
 #: src/components/layout/ChannelMessageList.tsx
 msgid "Found {0} messages matching \"{searchQuery}\""
@@ -1782,6 +1831,10 @@ msgstr "Tiedot siitä, kuka kutsui tämän komennon, tulevat botilta, eikä palv
 msgid "Insert emoji"
 msgstr "Lisää emoji"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Inter"
+msgstr "Inter"
+
 #: src/lib/settings/registry.ts
 msgid "Invalid format"
 msgstr "Virheellinen muoto"
@@ -1851,6 +1904,10 @@ msgstr "IRC-palvelimet:"
 #: src/store/handlers/users.ts
 msgid "is now known as **{newNick}**"
 msgstr "on nyt tunnettu nimellä **{newNick}**"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "JetBrains Mono"
+msgstr "JetBrains Mono"
 
 #: src/components/message/JsonLogMessage.tsx
 #: src/components/ui/QuickActions.tsx
@@ -1963,6 +2020,10 @@ msgstr "Ilmoita muille, kun kirjoitat"
 #: src/components/ui/BouncerNetworkForm.tsx
 msgid "Libera Chat"
 msgstr "Libera Chat"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Line spacing"
+msgstr "Riviväli"
 
 #: src/components/message/LinkPreview.tsx
 msgid "Link preview"
@@ -2138,6 +2199,10 @@ msgstr "Viesti @{0} (Shift+Enter = uusi rivi)"
 #: src/components/ui/AddPrivateChatModal.tsx
 msgid "Message <0>{0}</0>"
 msgstr "Viesti <0>{0}</0>"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Message density"
+msgstr "Viestien tiheys"
 
 #: src/store/handlers/e2eeOutbound.ts
 msgid "Message not sent: encryption isn't active yet. Wait for the lock to turn green, or end encryption to send unencrypted."
@@ -2440,6 +2505,7 @@ msgid "None"
 msgstr "Ei mitään"
 
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Normal"
 msgstr "Normaali"
 
@@ -2858,6 +2924,7 @@ msgid "Reject"
 msgstr "Hylkää"
 
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Relaxed"
 msgstr "Löysä"
 
@@ -2934,6 +3001,10 @@ msgstr "Tarkista muuttunut avain…"
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Review key"
 msgstr "Tarkista avain"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Roboto Mono (default)"
+msgstr "Roboto Mono (oletus)"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Rules"
@@ -3360,6 +3431,10 @@ msgstr "SoundCloud-soitin"
 msgid "Source"
 msgstr "Lähde"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Space between lines of text"
+msgstr "Tekstirivien välinen tila"
+
 #: src/components/ui/AddPrivateChatModal.tsx
 msgid "Start Private Message"
 msgstr "Aloita yksityiskeskustelu"
@@ -3409,6 +3484,18 @@ msgstr "jäädytetty"
 msgid "System"
 msgstr "Järjestelmä"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System monospace"
+msgstr "Järjestelmän tasalevyinen"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System sans-serif"
+msgstr "Järjestelmän päätteetön"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System serif"
+msgstr "Järjestelmän päätteellinen"
+
 #: src/components/ui/BotToolsCard.tsx
 msgid "Text"
 msgstr "Teksti"
@@ -3428,6 +3515,14 @@ msgstr "Yhteydessä palvelimeen <0>{serverName}</0> on seuraavia tietoturvaongel
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "The file host stores it readable, and anyone who obtains the link can open it. Switch to Obby encryption to send files encrypted."
 msgstr "Tiedostopalvelin tallentaa sen luettavana, ja kuka tahansa linkin saanut voi avata sen. Vaihda Obby-salaukseen, jos haluat lähettää tiedostot salattuina."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "The font used for messages, if different from the app font"
+msgstr "Viesteissä käytettävä fontti, jos eri kuin sovelluksen fontti"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "The font used for the whole app"
+msgstr "Koko sovelluksessa käytettävä fontti"
 
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The IRC server has reported that its server-to-server links have a low security level. This means that when your messages are relayed between IRC servers in the network, they may not be properly encrypted or the SSL/TLS certificates may not be validated correctly."
