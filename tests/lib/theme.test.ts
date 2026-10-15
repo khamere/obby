@@ -3,6 +3,7 @@ import {
   applyTheme,
   BUILT_IN_THEMES,
   DEFAULT_THEME_ID,
+  effectiveAccent,
   getTheme,
   hexToHsl,
   hexToTriplet,
@@ -180,5 +181,14 @@ describe("resolveTheme", () => {
     expect(resolveTheme({ theme: "link", customTheme: "" }, null).id).toBe(
       DEFAULT_THEME_ID,
     );
+  });
+});
+
+describe("effectiveAccent", () => {
+  it("prefers the selected network's accent, then the global one, else none", () => {
+    expect(effectiveAccent("#112233", "#445566")).toBe("#112233");
+    expect(effectiveAccent("", "#445566")).toBe("#445566");
+    expect(effectiveAccent(undefined, "")).toBe("");
+    expect(effectiveAccent("red", "#445566")).toBe("#445566");
   });
 });
