@@ -316,6 +316,10 @@ msgstr "공유 링크 및/또는 직접 작성한 CSS를 Obby 위에 적용하�
 msgid "About this attribution"
 msgstr "이 출처 표시에 관하여"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Accent colour"
+msgstr "강조 색상"
+
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Accept"
 msgstr "수락"
@@ -993,6 +997,10 @@ msgstr "색상 및 서식"
 msgid "Colored Nicknames"
 msgstr "색상 닉네임"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Colours for the whole app. Your custom CSS still applies on top."
+msgstr "앱 전체의 색상. 사용자 지정 CSS는 그 위에 계속 적용됩니다."
+
 #: src/components/ui/BotsModal.tsx
 msgid "Commands are loading…"
 msgstr "명령어를 불러오는 중…"
@@ -1164,6 +1172,10 @@ msgstr "생성 시각 이전 (분 전)"
 #: src/components/ui/AvatarUpload.tsx
 msgid "Current avatar"
 msgstr "현재 아바타"
+
+#: src/components/ui/settings/AccentColorField.tsx
+msgid "Custom accent colour"
+msgstr "사용자 지정 강조 색상"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Custom chat font name"
@@ -3018,6 +3030,10 @@ msgstr "실행"
 msgid "Safe"
 msgstr "안전"
 
+#: src/components/ui/settings/ThemeField.tsx
+msgid "Sample message"
+msgstr "예시 메시지"
+
 #: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/ChannelSettingsModal.tsx
 #: src/components/ui/settings/CustomCssField.tsx
@@ -3415,6 +3431,10 @@ msgstr "소프트웨어:"
 msgid "soju bouncer (control)"
 msgstr "soju bouncer (제어)"
 
+#: src/components/ui/settings/ThemeField.tsx
+msgid "someone"
+msgstr "누군가"
+
 #: src/components/ui/ChannelListModal.tsx
 msgid "Sort by Name"
 msgstr "이름순 정렬"
@@ -3543,6 +3563,10 @@ msgstr "사용자가 {channelName} 참여 초대를 받게 됩니다."
 #: src/components/message/BotToolsMessagePill.tsx
 msgid "The workflow that produced this message is no longer in state"
 msgstr "이 메시지를 생성한 워크플로가 더 이상 상태에 없습니다"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Theme"
+msgstr "테마"
 
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "This account is connected from {sessionCount} sessions. Per-session details are only disclosed to the account holder or IRC operators."
@@ -3812,6 +3836,10 @@ msgstr "서버 비밀번호 사용"
 msgid "Use Shift+Enter for new lines (Enter sends)"
 msgstr "줄 바꿈은 Shift+Enter (Enter로 전송)"
 
+#: src/components/ui/settings/AccentColorField.tsx
+msgid "Use the theme's accent colour"
+msgstr "테마의 강조 색상 사용"
+
 #: src/components/ui/AddServerModal.tsx
 msgid "Use WebSocket instead of raw TCP"
 msgstr "원시 TCP 대신 WebSocket 사용"
@@ -3823,6 +3851,10 @@ msgstr "와일드카드 사용: *는 임의의 문자열, ?는 임의의 단일 
 #: src/components/ui/InvitationsPanel.tsx
 msgid "used"
 msgstr "사용됨"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Used for buttons, selection and your own highlights"
+msgstr "버튼, 선택 항목, 내 강조 표시에 사용됩니다"
 
 #: src/components/message/JsonLogMessage.tsx
 #: src/components/ui/UserProfileModal.tsx

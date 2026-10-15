@@ -316,6 +316,10 @@ msgstr "Een stylesheet bovenop Obby, via een gedeelde link en/of je eigen. Rijen
 msgid "About this attribution"
 msgstr "Over deze toeschrijving"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Accent colour"
+msgstr "Accentkleur"
+
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Accept"
 msgstr "Accepteren"
@@ -993,6 +997,10 @@ msgstr "Kleur en opmaak"
 msgid "Colored Nicknames"
 msgstr "Gekleurde bijnamen"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Colours for the whole app. Your custom CSS still applies on top."
+msgstr "Kleuren voor de hele app. Je eigen CSS geldt er nog steeds bovenop."
+
 #: src/components/ui/BotsModal.tsx
 msgid "Commands are loading…"
 msgstr "Opdrachten worden geladen…"
@@ -1164,6 +1172,10 @@ msgstr "Aangemaakt voor (min geleden)"
 #: src/components/ui/AvatarUpload.tsx
 msgid "Current avatar"
 msgstr "Huidige avatar"
+
+#: src/components/ui/settings/AccentColorField.tsx
+msgid "Custom accent colour"
+msgstr "Eigen accentkleur"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Custom chat font name"
@@ -3018,6 +3030,10 @@ msgstr "Uitvoeren"
 msgid "Safe"
 msgstr "Veilig"
 
+#: src/components/ui/settings/ThemeField.tsx
+msgid "Sample message"
+msgstr "Voorbeeldbericht"
+
 #: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/ChannelSettingsModal.tsx
 #: src/components/ui/settings/CustomCssField.tsx
@@ -3415,6 +3431,10 @@ msgstr "Software:"
 msgid "soju bouncer (control)"
 msgstr "soju bouncer (beheer)"
 
+#: src/components/ui/settings/ThemeField.tsx
+msgid "someone"
+msgstr "iemand"
+
 #: src/components/ui/ChannelListModal.tsx
 msgid "Sort by Name"
 msgstr "Sorteren op naam"
@@ -3543,6 +3563,10 @@ msgstr "De gebruiker ontvangt een uitnodiging om deel te nemen aan {channelName}
 #: src/components/message/BotToolsMessagePill.tsx
 msgid "The workflow that produced this message is no longer in state"
 msgstr "De workflow die dit bericht heeft gemaakt, bevindt zich niet meer in de status"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Theme"
+msgstr "Thema"
 
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "This account is connected from {sessionCount} sessions. Per-session details are only disclosed to the account holder or IRC operators."
@@ -3812,6 +3836,10 @@ msgstr "Serverwachtwoord gebruiken"
 msgid "Use Shift+Enter for new lines (Enter sends)"
 msgstr "Gebruik Shift+Enter voor nieuwe regels (Enter verstuurt)"
 
+#: src/components/ui/settings/AccentColorField.tsx
+msgid "Use the theme's accent colour"
+msgstr "Accentkleur van het thema gebruiken"
+
 #: src/components/ui/AddServerModal.tsx
 msgid "Use WebSocket instead of raw TCP"
 msgstr "WebSocket gebruiken in plaats van raw TCP"
@@ -3823,6 +3851,10 @@ msgstr "Gebruik jokertekens: * komt overeen met een reeks, ? met één teken. Vo
 #: src/components/ui/InvitationsPanel.tsx
 msgid "used"
 msgstr "gebruikt"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Used for buttons, selection and your own highlights"
+msgstr "Gebruikt voor knoppen, selectie en je eigen markeringen"
 
 #: src/components/message/JsonLogMessage.tsx
 #: src/components/ui/UserProfileModal.tsx

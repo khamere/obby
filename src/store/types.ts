@@ -39,6 +39,9 @@ export type ChannelOrderMap = Record<string, string[]>;
 export type ClosedPrivateChatsMap = Record<string, Record<string, string>>;
 
 export interface GlobalSettings {
+  // Theme (see lib/theme)
+  theme: string;
+  accentColor: string;
   // Typography (see lib/typography)
   fontFamily: FontPreset;
   fontFamilyCustom: string;
