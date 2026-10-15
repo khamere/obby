@@ -15,7 +15,7 @@ import "./index.css";
 import { applyChatLook } from "./lib/chatLook";
 import { loadCustomCss } from "./lib/customCss";
 import { registerHostedServiceWorker } from "./lib/registerServiceWorker";
-import { applyTheme, resolveTheme } from "./lib/theme";
+import { applyTheme, effectiveAccent, resolveTheme } from "./lib/theme";
 import {
   getThemeLinkState,
   loadThemeLink,
@@ -31,23 +31,43 @@ loadThemeLink();
 
 // Theme colours, fonts, size, spacing and density are CSS variables on
 // <html>, written from the settings here and whenever they change.
-function applyAppearance(settings: GlobalSettings) {
+function applyAppearance(state: {
+  globalSettings: GlobalSettings;
+  serverAccents: Record<string, string>;
+  ui: { selectedServerId: string | null };
+}) {
+  const settings = state.globalSettings;
+  const selected = state.ui.selectedServerId;
   applyTheme(
     resolveTheme(settings, getThemeLinkState().theme),
-    settings.accentColor,
+    effectiveAccent(
+      selected ? state.serverAccents[selected] : undefined,
+      settings.accentColor,
+    ),
   );
   applyTypography(settings);
   applyChatLook(settings);
 }
-applyAppearance(useStore.getState().globalSettings);
-let lastAppearanceSettings = useStore.getState().globalSettings;
+applyAppearance(useStore.getState());
+let lastSettings = useStore.getState().globalSettings;
+let lastAccents = useStore.getState().serverAccents;
+let lastSelected = useStore.getState().ui.selectedServerId;
 useStore.subscribe((state) => {
-  if (state.globalSettings !== lastAppearanceSettings) {
-    lastAppearanceSettings = state.globalSettings;
-    applyAppearance(state.globalSettings);
+  // Re-apply when the settings, a network's accent or the selected network
+  // changes.
+  if (
+    state.globalSettings === lastSettings &&
+    state.serverAccents === lastAccents &&
+    state.ui.selectedServerId === lastSelected
+  ) {
+    return;
   }
+  lastSettings = state.globalSettings;
+  lastAccents = state.serverAccents;
+  lastSelected = state.ui.selectedServerId;
+  applyAppearance(state);
 });
-subscribeThemeLink(() => applyAppearance(useStore.getState().globalSettings));
+subscribeThemeLink(() => applyAppearance(useStore.getState()));
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {

@@ -82,6 +82,19 @@ export function serializeTheme(theme: ThemeDefinition): string {
   return JSON.stringify(theme, null, 2);
 }
 
+/**
+ * The accent to apply: the selected network's own colour if it has one,
+ * else the global accent setting, else "" (the theme's primary).
+ */
+export function effectiveAccent(
+  serverAccent: string | undefined,
+  globalAccent: string,
+): string {
+  if (isHexColor(serverAccent)) return serverAccent;
+  if (isHexColor(globalAccent)) return globalAccent;
+  return "";
+}
+
 /** The theme the settings point at, falling back to the default. */
 export function resolveTheme(
   settings: Pick<ThemeSettings, "theme" | "customTheme">,
