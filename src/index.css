@@ -12,13 +12,60 @@
   max-height: 4.5em; /* Fallback for content that doesn't respect line-clamp (like tables) */
 }
 
+:root {
+  /* Colour tokens (RGB triplets so Tailwind opacity modifiers work).
+     Defaults are the Discord-style palette Obby always had; a theme
+     overrides these on <html>, and custom CSS loaded later can too. */
+  --obby-primary: 88 101 242;
+  --obby-green: 66 143 141;
+  --obby-yellow: 254 231 92;
+  --obby-fuchsia: 235 69 158;
+  --obby-red: 237 66 69;
+  --obby-bg-input: 47 49 54;
+  --obby-bg-base: 54 57 63;
+  --obby-bg-sidebar: 32 34 37;
+  --obby-bg-deep: 24 25 28;
+  --obby-icon: 79 84 92;
+  --obby-bg-member: 47 49 54;
+  --obby-bg-hover: 42 45 51;
+  --obby-fg: 220 221 222;
+  --obby-fg-muted: 163 166 170;
+  --obby-link: 0 175 244;
+  --obby-fg-channel: 142 146 151;
+  --obby-fg-channel-active: 255 255 255;
+  --obby-success: 87 242 135;
+  --obby-success-hover: 76 175 80;
+  --obby-button-secondary: 79 84 92;
+  --obby-reply: 96 165 250;
+
+  /* Typography (lib/typography writes these from the settings) */
+  --obby-font-ui: 'Roboto Mono', monospace;
+  --obby-font-chat: 'Roboto Mono', monospace;
+  --obby-font-size: 14px;
+  --obby-line-height: 1.5;
+}
+
 body {
-  font-family: 'Roboto Mono', monospace;
+  font-family: var(--obby-font-ui);
   width: 100%;
   height: 100%;
   overflow: hidden;
-  font-size: 14px;
-  background-color: #202225;
+  font-size: var(--obby-font-size);
+  background-color: rgb(var(--obby-bg-sidebar));
+}
+
+/* Chat text uses its own font and spacing */
+.obby-message-row {
+  font-family: var(--obby-font-chat);
+  line-height: var(--obby-line-height);
+}
+
+/* Compact density: no avatars, no gap between messages */
+html[data-density="compact"] .obby-message-avatar {
+  display: none;
+}
+html[data-density="compact"] .obby-message-row[data-header="true"] {
+  margin-top: 0.25rem;
 }
 
 /* iOS safe area support for modals */

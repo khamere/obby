@@ -301,6 +301,14 @@ msgid "8 hours"
 msgstr "8 годин"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "A font installed on this device, e.g. JetBrains Mono. Used when Font is set to Custom."
+msgstr "Шрифт, встановлений на цьому пристрої, наприклад JetBrains Mono. Використовується, коли вибрано «Власний»."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "A font installed on this device. Used when Chat font is set to Custom."
+msgstr "Шрифт, встановлений на цьому пристрої. Використовується, коли для чату вибрано «Власний»."
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "A stylesheet applied on top of Obby, from a shared link and/or your own. Sidebar rows carry data-network-host so you can style individual networks. Anything that would load other files is removed."
 msgstr "Таблиця стилів поверх Obby — зі спільного посилання та/або ваша власна. Рядки бічної панелі мають data-network-host, тож можна оформлювати окремі мережі. Усе, що завантажувало б інші файли, видаляється."
 
@@ -641,6 +649,10 @@ msgstr "Заблокувати користувача (за псевдонімо
 msgid "Bans"
 msgstr "Блокування"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Base text size; everything scales with it"
+msgstr "Базовий розмір тексту; все масштабується разом із ним"
+
 #: src/components/layout/ChannelList.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/ui/BotsModal.tsx
@@ -855,6 +867,10 @@ msgstr "Канали"
 msgid "Channels on {networkName}"
 msgstr "Канали на {networkName}"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Chat font"
+msgstr "Шрифт чату"
+
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Choose a predefined flood protection profile. These profiles provide balanced protection settings for different use cases."
 msgstr "Виберіть готовий профіль захисту від флуду. Ці профілі надають збалансовані налаштування захисту для різних випадків використання."
@@ -991,6 +1007,11 @@ msgstr "Коментарі"
 msgid "Comments ({commentCount})"
 msgstr "Коментарі ({commentCount})"
 
+#: src/lib/settings/definitions/allSettings.ts
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Compact"
+msgstr "Компактний"
+
 #: src/components/ui/BotToolsHistoryButton.tsx
 msgid "complete"
 msgstr "завершено"
@@ -1100,6 +1121,14 @@ msgstr "Копіювати посилання"
 msgid "Copy URL"
 msgstr "Копіювати URL"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Cosy"
+msgstr "Затишний"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Cosy shows avatars and spacing between messages; Compact packs them like a classic IRC client"
+msgstr "Затишний показує аватари та відступи між повідомленнями; Компактний ущільнює їх, як класичний IRC-клієнт"
+
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Could not load this link. It must point to the raw .css file."
 msgstr "Не вдалося завантажити це посилання. Воно має вести прямо на файл .css."
@@ -1137,6 +1166,10 @@ msgid "Current avatar"
 msgstr "Поточний аватар"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Custom chat font name"
+msgstr "Назва власного шрифту чату"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Custom CSS"
 msgstr "Власний CSS"
 
@@ -1145,12 +1178,20 @@ msgid "Custom Flood Rules (+f)"
 msgstr "Власні правила флуду (+f)"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Custom font name"
+msgstr "Назва власного шрифту"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Custom Mentions"
 msgstr "Власні згадки"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Custom notification sound file"
 msgstr "Власний файл звуку сповіщення"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Custom…"
+msgstr "Власний…"
 
 #: src/components/ui/UserSettings.tsx
 msgid "Customize your IRC client experience"
@@ -1605,6 +1646,14 @@ msgstr "Профіль флуду (+F)"
 msgid "Flood Protection Settings"
 msgstr "Налаштування захисту від флуду"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Font"
+msgstr "Шрифт"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Font size"
+msgstr "Розмір шрифту"
+
 #. placeholder {0}: filteredMessages.length
 #: src/components/layout/ChannelMessageList.tsx
 msgid "Found {0} messages matching \"{searchQuery}\""
@@ -1782,6 +1831,10 @@ msgstr "Інформація про те, хто викликав цю кома�
 msgid "Insert emoji"
 msgstr "Вставити емодзі"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Inter"
+msgstr "Inter"
+
 #: src/lib/settings/registry.ts
 msgid "Invalid format"
 msgstr "Недійсний формат"
@@ -1851,6 +1904,10 @@ msgstr "IRC сервери:"
 #: src/store/handlers/users.ts
 msgid "is now known as **{newNick}**"
 msgstr "тепер відомий як **{newNick}**"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "JetBrains Mono"
+msgstr "JetBrains Mono"
 
 #: src/components/message/JsonLogMessage.tsx
 #: src/components/ui/QuickActions.tsx
@@ -1963,6 +2020,10 @@ msgstr "Повідомляти інших, коли ви друкуєте"
 #: src/components/ui/BouncerNetworkForm.tsx
 msgid "Libera Chat"
 msgstr "Libera Chat"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Line spacing"
+msgstr "Міжрядковий інтервал"
 
 #: src/components/message/LinkPreview.tsx
 msgid "Link preview"
@@ -2138,6 +2199,10 @@ msgstr "Повідомлення @{0} (Shift+Enter для нового рядк�
 #: src/components/ui/AddPrivateChatModal.tsx
 msgid "Message <0>{0}</0>"
 msgstr "Повідомлення <0>{0}</0>"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Message density"
+msgstr "Щільність повідомлень"
 
 #: src/store/handlers/e2eeOutbound.ts
 msgid "Message not sent: encryption isn't active yet. Wait for the lock to turn green, or end encryption to send unencrypted."
@@ -2440,6 +2505,7 @@ msgid "None"
 msgstr "Немає"
 
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Normal"
 msgstr "Нормальний"
 
@@ -2858,6 +2924,7 @@ msgid "Reject"
 msgstr "Відхилити"
 
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Relaxed"
 msgstr "Розслаблений"
 
@@ -2934,6 +3001,10 @@ msgstr "Переглянути змінений ключ…"
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Review key"
 msgstr "Перевірити ключ"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Roboto Mono (default)"
+msgstr "Roboto Mono (типовий)"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Rules"
@@ -3360,6 +3431,10 @@ msgstr "Програвач SoundCloud"
 msgid "Source"
 msgstr "Джерело"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Space between lines of text"
+msgstr "Відстань між рядками тексту"
+
 #: src/components/ui/AddPrivateChatModal.tsx
 msgid "Start Private Message"
 msgstr "Почати приватне повідомлення"
@@ -3409,6 +3484,18 @@ msgstr "призупинено"
 msgid "System"
 msgstr "Система"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System monospace"
+msgstr "Системний моноширинний"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System sans-serif"
+msgstr "Системний без засічок"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System serif"
+msgstr "Системний із засічками"
+
 #: src/components/ui/BotToolsCard.tsx
 msgid "Text"
 msgstr "Текст"
@@ -3428,6 +3515,14 @@ msgstr "З'єднання з <0>{serverName}</0> має такі проблем�
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "The file host stores it readable, and anyone who obtains the link can open it. Switch to Obby encryption to send files encrypted."
 msgstr "Файловий хост зберігає його у відкритому вигляді, і будь-хто, хто отримає посилання, зможе його відкрити. Перейдіть на шифрування Obby, щоб надсилати файли зашифрованими."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "The font used for messages, if different from the app font"
+msgstr "Шрифт повідомлень, якщо відрізняється від шрифту застосунку"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "The font used for the whole app"
+msgstr "Шрифт для всього застосунку"
 
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The IRC server has reported that its server-to-server links have a low security level. This means that when your messages are relayed between IRC servers in the network, they may not be properly encrypted or the SSL/TLS certificates may not be validated correctly."

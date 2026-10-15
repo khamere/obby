@@ -851,7 +851,8 @@ export const MessageItem = memo((props: MessageItemProps) => {
       data-md-author={copyAuthor}
       data-md-time={copyTime}
       data-md-source={messageContent}
-      className={`px-4 hover:bg-discord-message-hover group relative transition-colors duration-150 ${
+      data-header={showHeader ? "true" : "false"}
+      className={`obby-message-row px-4 hover:bg-discord-message-hover group relative transition-colors duration-150 ${
         showHeader ? "mt-4" : "py-0.5"
       }${isHighlighted ? " bg-primary/10 ring-1 ring-primary/30 rounded" : ""}${
         (mentionsSelf || mentionsSelfInText) && !isUnprotected
