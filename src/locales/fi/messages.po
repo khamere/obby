@@ -316,6 +316,10 @@ msgstr "Obbyn päälle lisättävä tyylitiedosto jaetusta linkistä ja/tai omas
 msgid "About this attribution"
 msgstr "Tietoja tästä lähdemerkinnästä"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Accent colour"
+msgstr "Korostusväri"
+
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Accept"
 msgstr "Hyväksy"
@@ -993,6 +997,10 @@ msgstr "Väri ja muotoilu"
 msgid "Colored Nicknames"
 msgstr "Värilliset nimimerkit"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Colours for the whole app. Your custom CSS still applies on top."
+msgstr "Koko sovelluksen värit. Oma CSS:si pätee edelleen päällimmäisenä."
+
 #: src/components/ui/BotsModal.tsx
 msgid "Commands are loading…"
 msgstr "Komentoja ladataan…"
@@ -1164,6 +1172,10 @@ msgstr "Luotu aiemmin kuin (min sitten)"
 #: src/components/ui/AvatarUpload.tsx
 msgid "Current avatar"
 msgstr "Nykyinen avatar"
+
+#: src/components/ui/settings/AccentColorField.tsx
+msgid "Custom accent colour"
+msgstr "Mukautettu korostusväri"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Custom chat font name"
@@ -3018,6 +3030,10 @@ msgstr "Suorita"
 msgid "Safe"
 msgstr "Turvallinen"
 
+#: src/components/ui/settings/ThemeField.tsx
+msgid "Sample message"
+msgstr "Esimerkkiviesti"
+
 #: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/ChannelSettingsModal.tsx
 #: src/components/ui/settings/CustomCssField.tsx
@@ -3415,6 +3431,10 @@ msgstr "Ohjelmisto:"
 msgid "soju bouncer (control)"
 msgstr "soju bouncer (hallinta)"
 
+#: src/components/ui/settings/ThemeField.tsx
+msgid "someone"
+msgstr "joku"
+
 #: src/components/ui/ChannelListModal.tsx
 msgid "Sort by Name"
 msgstr "Lajittele nimen mukaan"
@@ -3543,6 +3563,10 @@ msgstr "Käyttäjä saa kutsun liittyä kanavalle {channelName}."
 #: src/components/message/BotToolsMessagePill.tsx
 msgid "The workflow that produced this message is no longer in state"
 msgstr "Tämän viestin tuottanut työnkulku ei ole enää tilassa"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Theme"
+msgstr "Teema"
 
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "This account is connected from {sessionCount} sessions. Per-session details are only disclosed to the account holder or IRC operators."
@@ -3812,6 +3836,10 @@ msgstr "Käytä palvelimen salasanaa"
 msgid "Use Shift+Enter for new lines (Enter sends)"
 msgstr "Käytä Shift+Enter uudelle riville (Enter lähettää)"
 
+#: src/components/ui/settings/AccentColorField.tsx
+msgid "Use the theme's accent colour"
+msgstr "Käytä teeman korostusväriä"
+
 #: src/components/ui/AddServerModal.tsx
 msgid "Use WebSocket instead of raw TCP"
 msgstr "Käytä WebSocket-yhteyttä TCP:n sijaan"
@@ -3823,6 +3851,10 @@ msgstr "Käytä jokerimerkkejä: * vastaa mitä tahansa merkkijonoa, ? vastaa yh
 #: src/components/ui/InvitationsPanel.tsx
 msgid "used"
 msgstr "käytetty"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Used for buttons, selection and your own highlights"
+msgstr "Käytetään painikkeissa, valinnassa ja omissa korostuksissasi"
 
 #: src/components/message/JsonLogMessage.tsx
 #: src/components/ui/UserProfileModal.tsx

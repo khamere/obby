@@ -316,6 +316,10 @@ msgstr "共有リンクや自分の CSS を Obby の上に適用するスタイ�
 msgid "About this attribution"
 msgstr "この帰属について"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Accent colour"
+msgstr "アクセントカラー"
+
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Accept"
 msgstr "承認"
@@ -993,6 +997,10 @@ msgstr "カラーと書式設定"
 msgid "Colored Nicknames"
 msgstr "ニックネームの色分け"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Colours for the whole app. Your custom CSS still applies on top."
+msgstr "アプリ全体の配色。カスタム CSS はこの上に適用されます。"
+
 #: src/components/ui/BotsModal.tsx
 msgid "Commands are loading…"
 msgstr "コマンドを読み込み中…"
@@ -1164,6 +1172,10 @@ msgstr "作成日時（以前、分前）"
 #: src/components/ui/AvatarUpload.tsx
 msgid "Current avatar"
 msgstr "現在のアバター"
+
+#: src/components/ui/settings/AccentColorField.tsx
+msgid "Custom accent colour"
+msgstr "カスタムアクセントカラー"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Custom chat font name"
@@ -3018,6 +3030,10 @@ msgstr "実行"
 msgid "Safe"
 msgstr "安全"
 
+#: src/components/ui/settings/ThemeField.tsx
+msgid "Sample message"
+msgstr "サンプルメッセージ"
+
 #: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/ChannelSettingsModal.tsx
 #: src/components/ui/settings/CustomCssField.tsx
@@ -3415,6 +3431,10 @@ msgstr "ソフトウェア："
 msgid "soju bouncer (control)"
 msgstr "soju bouncer（コントロール）"
 
+#: src/components/ui/settings/ThemeField.tsx
+msgid "someone"
+msgstr "だれか"
+
 #: src/components/ui/ChannelListModal.tsx
 msgid "Sort by Name"
 msgstr "名前順で並び替え"
@@ -3543,6 +3563,10 @@ msgstr "ユーザーは {channelName} への参加招待を受け取ります。
 #: src/components/message/BotToolsMessagePill.tsx
 msgid "The workflow that produced this message is no longer in state"
 msgstr "このメッセージを生成したワークフローはもう状態にありません"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Theme"
+msgstr "テーマ"
 
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "This account is connected from {sessionCount} sessions. Per-session details are only disclosed to the account holder or IRC operators."
@@ -3812,6 +3836,10 @@ msgstr "サーバーパスワードを使用する"
 msgid "Use Shift+Enter for new lines (Enter sends)"
 msgstr "Shift+Enterで改行（Enterで送信）"
 
+#: src/components/ui/settings/AccentColorField.tsx
+msgid "Use the theme's accent colour"
+msgstr "テーマのアクセントカラーを使う"
+
 #: src/components/ui/AddServerModal.tsx
 msgid "Use WebSocket instead of raw TCP"
 msgstr "生のTCPの代わりにWebSocketを使用する"
@@ -3823,6 +3851,10 @@ msgstr "ワイルドカードを使用してください：* は任意の文字�
 #: src/components/ui/InvitationsPanel.tsx
 msgid "used"
 msgstr "使用済み"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Used for buttons, selection and your own highlights"
+msgstr "ボタン、選択、自分のハイライトに使用されます"
 
 #: src/components/message/JsonLogMessage.tsx
 #: src/components/ui/UserProfileModal.tsx

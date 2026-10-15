@@ -14,20 +14,26 @@ import "@fontsource/roboto-mono/700-italic.css";
 import "./index.css";
 import { loadCustomCss } from "./lib/customCss";
 import { registerHostedServiceWorker } from "./lib/registerServiceWorker";
+import { applyTheme, getTheme } from "./lib/theme";
 import { applyTypography } from "./lib/typography";
 import useStore from "./store";
+import type { GlobalSettings } from "./store/types";
 
 registerHostedServiceWorker();
 loadCustomCss();
 
-// Fonts, size, spacing and density are CSS variables on <html>, written
-// from the settings here and whenever they change.
-applyTypography(useStore.getState().globalSettings);
-let lastTypographySettings = useStore.getState().globalSettings;
+// Theme colours, fonts, size, spacing and density are CSS variables on
+// <html>, written from the settings here and whenever they change.
+function applyAppearance(settings: GlobalSettings) {
+  applyTheme(getTheme(settings.theme), settings.accentColor);
+  applyTypography(settings);
+}
+applyAppearance(useStore.getState().globalSettings);
+let lastAppearanceSettings = useStore.getState().globalSettings;
 useStore.subscribe((state) => {
-  if (state.globalSettings !== lastTypographySettings) {
-    lastTypographySettings = state.globalSettings;
-    applyTypography(state.globalSettings);
+  if (state.globalSettings !== lastAppearanceSettings) {
+    lastAppearanceSettings = state.globalSettings;
+    applyAppearance(state.globalSettings);
   }
 });
 

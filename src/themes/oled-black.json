@@ -1,0 +1,28 @@
+{
+  "id": "oled-black",
+  "name": "OLED Black",
+  "appearance": "dark",
+  "colors": {
+    "primary": "#5865f2",
+    "green": "#428f8d",
+    "yellow": "#fee75c",
+    "fuchsia": "#eb459e",
+    "red": "#ed4245",
+    "bg-input": "#121212",
+    "bg-base": "#000000",
+    "bg-sidebar": "#000000",
+    "bg-deep": "#000000",
+    "icon": "#4f545c",
+    "bg-member": "#050505",
+    "bg-hover": "#151515",
+    "fg": "#e6e6e6",
+    "fg-muted": "#9a9a9a",
+    "link": "#00aff4",
+    "fg-channel": "#8e9297",
+    "fg-channel-active": "#ffffff",
+    "success": "#57f287",
+    "success-hover": "#4caf50",
+    "button-secondary": "#4f545c",
+    "reply": "#60a5fa"
+  }
+}
