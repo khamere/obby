@@ -316,6 +316,10 @@ msgstr "Styl použitý nad Obby, ze sdíleného odkazu a/nebo váš vlastní. Ř
 msgid "About this attribution"
 msgstr "O tomto přiřazení"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Accent colour"
+msgstr "Zvýrazňující barva"
+
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Accept"
 msgstr "Přijmout"
@@ -993,6 +997,10 @@ msgstr "Barva a formátování"
 msgid "Colored Nicknames"
 msgstr "Barevné přezdívky"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Colours for the whole app. Your custom CSS still applies on top."
+msgstr "Barvy celé aplikace. Vaše vlastní CSS se stále použije navrch."
+
 #: src/components/ui/BotsModal.tsx
 msgid "Commands are loading…"
 msgstr "Příkazy se načítají…"
@@ -1164,6 +1172,10 @@ msgstr "Vytvořeno před (min. zpět)"
 #: src/components/ui/AvatarUpload.tsx
 msgid "Current avatar"
 msgstr "Aktuální avatar"
+
+#: src/components/ui/settings/AccentColorField.tsx
+msgid "Custom accent colour"
+msgstr "Vlastní zvýrazňující barva"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Custom chat font name"
@@ -3018,6 +3030,10 @@ msgstr "Spustit"
 msgid "Safe"
 msgstr "Bezpečné"
 
+#: src/components/ui/settings/ThemeField.tsx
+msgid "Sample message"
+msgstr "Ukázková zpráva"
+
 #: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/ChannelSettingsModal.tsx
 #: src/components/ui/settings/CustomCssField.tsx
@@ -3415,6 +3431,10 @@ msgstr "Software:"
 msgid "soju bouncer (control)"
 msgstr "soju bouncer (řízení)"
 
+#: src/components/ui/settings/ThemeField.tsx
+msgid "someone"
+msgstr "někdo"
+
 #: src/components/ui/ChannelListModal.tsx
 msgid "Sort by Name"
 msgstr "Seřadit podle názvu"
@@ -3543,6 +3563,10 @@ msgstr "Uživatel obdrží pozvánku k připojení do {channelName}."
 #: src/components/message/BotToolsMessagePill.tsx
 msgid "The workflow that produced this message is no longer in state"
 msgstr "Pracovní postup, který vytvořil tuto zprávu, již není ve stavu"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Theme"
+msgstr "Motiv"
 
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "This account is connected from {sessionCount} sessions. Per-session details are only disclosed to the account holder or IRC operators."
@@ -3812,6 +3836,10 @@ msgstr "Použít heslo serveru"
 msgid "Use Shift+Enter for new lines (Enter sends)"
 msgstr "Použijte Shift+Enter pro nový řádek (Enter odešle)"
 
+#: src/components/ui/settings/AccentColorField.tsx
+msgid "Use the theme's accent colour"
+msgstr "Použít zvýrazňující barvu motivu"
+
 #: src/components/ui/AddServerModal.tsx
 msgid "Use WebSocket instead of raw TCP"
 msgstr "Použít WebSocket místo surového TCP"
@@ -3823,6 +3851,10 @@ msgstr "Použijte zástupné znaky: * odpovídá libovolné sekvenci, ? odpovíd
 #: src/components/ui/InvitationsPanel.tsx
 msgid "used"
 msgstr "použito"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Used for buttons, selection and your own highlights"
+msgstr "Používá se pro tlačítka, výběr a vaše zvýraznění"
 
 #: src/components/message/JsonLogMessage.tsx
 #: src/components/ui/UserProfileModal.tsx

@@ -316,6 +316,10 @@ msgstr "O foaie de stil aplicată peste Obby, dintr-un link partajat și/sau a t
 msgid "About this attribution"
 msgstr "Despre această atribuire"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Accent colour"
+msgstr "Culoare de accent"
+
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Accept"
 msgstr "Acceptă"
@@ -993,6 +997,10 @@ msgstr "Culoare și formatare"
 msgid "Colored Nicknames"
 msgstr "Porecle colorate"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Colours for the whole app. Your custom CSS still applies on top."
+msgstr "Culorile întregii aplicații. CSS-ul tău personalizat se aplică în continuare deasupra."
+
 #: src/components/ui/BotsModal.tsx
 msgid "Commands are loading…"
 msgstr "Se încarcă comenzile…"
@@ -1164,6 +1172,10 @@ msgstr "Creat înainte (min în urmă)"
 #: src/components/ui/AvatarUpload.tsx
 msgid "Current avatar"
 msgstr "Avatar curent"
+
+#: src/components/ui/settings/AccentColorField.tsx
+msgid "Custom accent colour"
+msgstr "Culoare de accent personalizată"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Custom chat font name"
@@ -3018,6 +3030,10 @@ msgstr "Execută"
 msgid "Safe"
 msgstr "Sigur"
 
+#: src/components/ui/settings/ThemeField.tsx
+msgid "Sample message"
+msgstr "Mesaj de exemplu"
+
 #: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/ChannelSettingsModal.tsx
 #: src/components/ui/settings/CustomCssField.tsx
@@ -3415,6 +3431,10 @@ msgstr "Software:"
 msgid "soju bouncer (control)"
 msgstr "bouncer soju (control)"
 
+#: src/components/ui/settings/ThemeField.tsx
+msgid "someone"
+msgstr "cineva"
+
 #: src/components/ui/ChannelListModal.tsx
 msgid "Sort by Name"
 msgstr "Sortare după nume"
@@ -3543,6 +3563,10 @@ msgstr "Utilizatorul va primi o invitație să se alăture {channelName}."
 #: src/components/message/BotToolsMessagePill.tsx
 msgid "The workflow that produced this message is no longer in state"
 msgstr "Fluxul de lucru care a produs acest mesaj nu mai este în stare"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Theme"
+msgstr "Temă"
 
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "This account is connected from {sessionCount} sessions. Per-session details are only disclosed to the account holder or IRC operators."
@@ -3812,6 +3836,10 @@ msgstr "Folosește parola serverului"
 msgid "Use Shift+Enter for new lines (Enter sends)"
 msgstr "Shift+Enter pentru rânduri noi (Enter trimite)"
 
+#: src/components/ui/settings/AccentColorField.tsx
+msgid "Use the theme's accent colour"
+msgstr "Folosește culoarea de accent a temei"
+
 #: src/components/ui/AddServerModal.tsx
 msgid "Use WebSocket instead of raw TCP"
 msgstr "Utilizați WebSocket în loc de TCP brut"
@@ -3823,6 +3851,10 @@ msgstr "Wildcard: * se potrivește oricărei secvențe, ? unui singur caracter. 
 #: src/components/ui/InvitationsPanel.tsx
 msgid "used"
 msgstr "utilizat"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Used for buttons, selection and your own highlights"
+msgstr "Folosită pentru butoane, selecție și evidențierile tale"
 
 #: src/components/message/JsonLogMessage.tsx
 #: src/components/ui/UserProfileModal.tsx

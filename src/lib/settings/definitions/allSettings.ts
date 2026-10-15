@@ -1,7 +1,9 @@
 import { msg } from "@lingui/core/macro";
+import { AccentColorField } from "../../../components/ui/settings/AccentColorField";
 import { CustomCssField } from "../../../components/ui/settings/CustomCssField";
 import { CustomMentionsField } from "../../../components/ui/settings/CustomMentionsField";
 import { IgnoreListField } from "../../../components/ui/settings/IgnoreListField";
+import { ThemeField } from "../../../components/ui/settings/ThemeField";
 import { UserFilehostField } from "../../../components/ui/settings/UserFilehostField";
 import { FONT_SIZE_MAX, FONT_SIZE_MIN } from "../../typography";
 import settingsRegistry from "../registry";
@@ -237,6 +239,41 @@ const notificationSettings: SettingDefinition[] = [
  * Preference Settings
  */
 const preferenceSettings: SettingDefinition[] = [
+  {
+    id: "preferences.theme",
+    key: "theme",
+    category: "preferences",
+    subcategory: "Appearance",
+    title: msg`Theme`,
+    description: msg`Colours for the whole app. Your custom CSS still applies on top.`,
+    type: "custom",
+    defaultValue: "obby-dark",
+    customComponent: ThemeField,
+    searchKeywords: [
+      "theme",
+      "colors",
+      "colours",
+      "dark",
+      "appearance",
+      "dracula",
+      "nord",
+      "catppuccin",
+    ],
+    priority: 18,
+  },
+  {
+    id: "preferences.accentColor",
+    key: "accentColor",
+    category: "preferences",
+    subcategory: "Appearance",
+    title: msg`Accent colour`,
+    description: msg`Used for buttons, selection and your own highlights`,
+    type: "custom",
+    defaultValue: "",
+    customComponent: AccentColorField,
+    searchKeywords: ["accent", "color", "colour", "primary", "highlight"],
+    priority: 19,
+  },
   {
     id: "preferences.fontFamily",
     key: "fontFamily",
