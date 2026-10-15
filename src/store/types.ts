@@ -1,4 +1,9 @@
 import type { MediaVisibilityLevel } from "../lib/mediaUtils";
+import type {
+  FontPreset,
+  LineSpacing,
+  MessageDensity,
+} from "../lib/typography";
 
 export type layoutColumn = "serverList" | "chatView" | "memberList";
 export type { MediaVisibilityLevel };
@@ -34,6 +39,14 @@ export type ChannelOrderMap = Record<string, string[]>;
 export type ClosedPrivateChatsMap = Record<string, Record<string, string>>;
 
 export interface GlobalSettings {
+  // Typography (see lib/typography)
+  fontFamily: FontPreset;
+  fontFamilyCustom: string;
+  chatFontFamily: FontPreset;
+  chatFontFamilyCustom: string;
+  fontSize: number;
+  lineSpacing: LineSpacing;
+  messageDensity: MessageDensity;
   enableNotifications: boolean;
   notificationSound: string;
   enableNotificationSounds: boolean;

@@ -301,6 +301,14 @@ msgid "8 hours"
 msgstr "8시간"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "A font installed on this device, e.g. JetBrains Mono. Used when Font is set to Custom."
+msgstr "이 기기에 설치된 글꼴(예: JetBrains Mono). 글꼴이 사용자 지정일 때 사용됩니다."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "A font installed on this device. Used when Chat font is set to Custom."
+msgstr "이 기기에 설치된 글꼴. 채팅 글꼴이 사용자 지정일 때 사용됩니다."
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "A stylesheet applied on top of Obby, from a shared link and/or your own. Sidebar rows carry data-network-host so you can style individual networks. Anything that would load other files is removed."
 msgstr "공유 링크 및/또는 직접 작성한 CSS를 Obby 위에 적용하는 스타일시트입니다. 사이드바 행에 data-network-host가 있어 네트워크별로 스타일을 지정할 수 있습니다. 다른 파일을 불러오는 항목은 모두 제거됩니다."
 
@@ -641,6 +649,10 @@ msgstr "사용자 차단 (닉네임)"
 msgid "Bans"
 msgstr "차단 목록"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Base text size; everything scales with it"
+msgstr "기본 글자 크기. 모든 요소가 이에 맞춰 조절됩니다"
+
 #: src/components/layout/ChannelList.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/ui/BotsModal.tsx
@@ -855,6 +867,10 @@ msgstr "채널"
 msgid "Channels on {networkName}"
 msgstr "{networkName}의 채널"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Chat font"
+msgstr "채팅 글꼴"
+
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Choose a predefined flood protection profile. These profiles provide balanced protection settings for different use cases."
 msgstr "미리 정의된 플러드 방지 프로필을 선택하세요. 각 프로필은 다양한 사용 사례에 맞게 균형 잡힌 보호 설정을 제공합니다."
@@ -991,6 +1007,11 @@ msgstr "댓글"
 msgid "Comments ({commentCount})"
 msgstr "댓글 ({commentCount})"
 
+#: src/lib/settings/definitions/allSettings.ts
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Compact"
+msgstr "조밀하게"
+
 #: src/components/ui/BotToolsHistoryButton.tsx
 msgid "complete"
 msgstr "완료"
@@ -1100,6 +1121,14 @@ msgstr "링크 복사"
 msgid "Copy URL"
 msgstr "URL 복사"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Cosy"
+msgstr "아늑하게"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Cosy shows avatars and spacing between messages; Compact packs them like a classic IRC client"
+msgstr "아늑하게는 아바타와 메시지 간격을 표시하고, 조밀하게는 고전 IRC 클라이언트처럼 빽빽하게 표시합니다"
+
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Could not load this link. It must point to the raw .css file."
 msgstr "이 링크를 불러올 수 없습니다. 원본 .css 파일을 가리켜야 합니다."
@@ -1137,6 +1166,10 @@ msgid "Current avatar"
 msgstr "현재 아바타"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Custom chat font name"
+msgstr "사용자 지정 채팅 글꼴 이름"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Custom CSS"
 msgstr "사용자 CSS"
 
@@ -1145,12 +1178,20 @@ msgid "Custom Flood Rules (+f)"
 msgstr "사용자 정의 플러드 규칙 (+f)"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Custom font name"
+msgstr "사용자 지정 글꼴 이름"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Custom Mentions"
 msgstr "사용자 정의 멘션"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Custom notification sound file"
 msgstr "사용자 정의 알림 소리 파일"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Custom…"
+msgstr "사용자 지정…"
 
 #: src/components/ui/UserSettings.tsx
 msgid "Customize your IRC client experience"
@@ -1605,6 +1646,14 @@ msgstr "플러드 프로필 (+F)"
 msgid "Flood Protection Settings"
 msgstr "플러드 방지 설정"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Font"
+msgstr "글꼴"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Font size"
+msgstr "글꼴 크기"
+
 #. placeholder {0}: filteredMessages.length
 #: src/components/layout/ChannelMessageList.tsx
 msgid "Found {0} messages matching \"{searchQuery}\""
@@ -1782,6 +1831,10 @@ msgstr "이 명령어를 실행한 사람에 관한 정보는 bot이 제공하�
 msgid "Insert emoji"
 msgstr "이모지 삽입"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Inter"
+msgstr "Inter"
+
 #: src/lib/settings/registry.ts
 msgid "Invalid format"
 msgstr "잘못된 형식"
@@ -1851,6 +1904,10 @@ msgstr "IRC 서버:"
 #: src/store/handlers/users.ts
 msgid "is now known as **{newNick}**"
 msgstr "이제 **{newNick}**(으)로 알려져 있습니다"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "JetBrains Mono"
+msgstr "JetBrains Mono"
 
 #: src/components/message/JsonLogMessage.tsx
 #: src/components/ui/QuickActions.tsx
@@ -1963,6 +2020,10 @@ msgstr "입력 중임을 다른 사람에게 알림"
 #: src/components/ui/BouncerNetworkForm.tsx
 msgid "Libera Chat"
 msgstr "Libera Chat"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Line spacing"
+msgstr "줄 간격"
 
 #: src/components/message/LinkPreview.tsx
 msgid "Link preview"
@@ -2138,6 +2199,10 @@ msgstr "@{0}에게 메시지 (Shift+Enter로 줄 바꿈)"
 #: src/components/ui/AddPrivateChatModal.tsx
 msgid "Message <0>{0}</0>"
 msgstr "<0>{0}</0>에게 메시지"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Message density"
+msgstr "메시지 밀도"
 
 #: src/store/handlers/e2eeOutbound.ts
 msgid "Message not sent: encryption isn't active yet. Wait for the lock to turn green, or end encryption to send unencrypted."
@@ -2440,6 +2505,7 @@ msgid "None"
 msgstr "없음"
 
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Normal"
 msgstr "기본"
 
@@ -2858,6 +2924,7 @@ msgid "Reject"
 msgstr "거부"
 
 #: src/components/ui/ChannelSettingsModal.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Relaxed"
 msgstr "완화"
 
@@ -2934,6 +3001,10 @@ msgstr "변경된 키 검토…"
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Review key"
 msgstr "키 확인"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Roboto Mono (default)"
+msgstr "Roboto Mono (기본)"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Rules"
@@ -3360,6 +3431,10 @@ msgstr "SoundCloud 플레이어"
 msgid "Source"
 msgstr "소스"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Space between lines of text"
+msgstr "텍스트 줄 사이의 간격"
+
 #: src/components/ui/AddPrivateChatModal.tsx
 msgid "Start Private Message"
 msgstr "비공개 메시지 시작"
@@ -3409,6 +3484,18 @@ msgstr "정지됨"
 msgid "System"
 msgstr "시스템"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System monospace"
+msgstr "시스템 고정폭"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System sans-serif"
+msgstr "시스템 산세리프"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "System serif"
+msgstr "시스템 세리프"
+
 #: src/components/ui/BotToolsCard.tsx
 msgid "Text"
 msgstr "텍스트"
@@ -3428,6 +3515,14 @@ msgstr "<0>{serverName}</0>에 대한 연결에 다음과 같은 보안 문제�
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "The file host stores it readable, and anyone who obtains the link can open it. Switch to Obby encryption to send files encrypted."
 msgstr "파일 호스트가 읽을 수 있는 상태로 저장하며, 링크를 얻은 사람은 누구나 열 수 있습니다. 파일을 암호화해 보내려면 Obby 암호화로 전환하세요."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "The font used for messages, if different from the app font"
+msgstr "메시지에 사용되는 글꼴(앱 글꼴과 다른 경우)"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "The font used for the whole app"
+msgstr "앱 전체에 사용되는 글꼴"
 
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The IRC server has reported that its server-to-server links have a low security level. This means that when your messages are relayed between IRC servers in the network, they may not be properly encrypted or the SSL/TLS certificates may not be validated correctly."
