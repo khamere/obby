@@ -31,6 +31,12 @@ loadThemeLink();
 
 // Theme colours, fonts, size, spacing and density are CSS variables on
 // <html>, written from the settings here and whenever they change.
+const darkQuery =
+  typeof window !== "undefined" && "matchMedia" in window
+    ? window.matchMedia("(prefers-color-scheme: dark)")
+    : null;
+const prefersDark = () => darkQuery?.matches ?? true;
+
 function applyAppearance(state: {
   globalSettings: GlobalSettings;
   serverAccents: Record<string, string>;
@@ -39,7 +45,7 @@ function applyAppearance(state: {
   const settings = state.globalSettings;
   const selected = state.ui.selectedServerId;
   applyTheme(
-    resolveTheme(settings, getThemeLinkState().theme),
+    resolveTheme(settings, getThemeLinkState().theme, prefersDark()),
     effectiveAccent(
       selected ? state.serverAccents[selected] : undefined,
       settings.accentColor,
@@ -68,6 +74,9 @@ useStore.subscribe((state) => {
   applyAppearance(state);
 });
 subscribeThemeLink(() => applyAppearance(useStore.getState()));
+darkQuery?.addEventListener("change", () =>
+  applyAppearance(useStore.getState()),
+);
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {

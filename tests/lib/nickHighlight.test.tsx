@@ -77,7 +77,7 @@ describe("highlightNicks", () => {
   it("bolds other nicks in their metadata colour", () => {
     const r = html("hi Carol[m]");
     expect(r.html).toContain(
-      '<span class="font-bold text-white" style="color:#ff0000">Carol[m]</span>',
+      '<span class="font-bold text-discord-text-strong" style="color:#ff0000">Carol[m]</span>',
     );
     expect(r.mentionsSelf).toBe(false);
   });
@@ -91,20 +91,26 @@ describe("highlightNicks", () => {
   it("without a self nick, our name is just another member", () => {
     const r = html("hey me", undefined);
     expect(r.html).not.toContain("obby-mention-self");
-    expect(r.html).toContain('<span class="font-bold text-white">me</span>');
+    expect(r.html).toContain(
+      '<span class="font-bold text-discord-text-strong">me</span>',
+    );
     expect(r.mentionsSelf).toBe(false);
   });
 
   it("leaves link text untouched", () => {
     const r = html("see https://example.com/bob for bob", "me");
     expect(r.html).toContain(">https://example.com/bob</a>");
-    expect(r.html).toContain('<span class="font-bold text-white">bob</span>');
+    expect(r.html).toContain(
+      '<span class="font-bold text-discord-text-strong">bob</span>',
+    );
   });
 
   it("keeps mIRC formatting around a highlighted nick", () => {
     const r = html("\x02bold bob\x02");
     expect(r.html).toContain("font-weight:bold");
-    expect(r.html).toContain('<span class="font-bold text-white">bob</span>');
+    expect(r.html).toContain(
+      '<span class="font-bold text-discord-text-strong">bob</span>',
+    );
   });
 
   it("returns text without nicks unchanged", () => {

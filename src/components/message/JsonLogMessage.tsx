@@ -143,7 +143,7 @@ const renderStructuredData = (
       return (
         <div className="flex items-center gap-2">
           <span
-            className="text-gray-500 italic hover:bg-gray-700 px-1 py-0.5 rounded cursor-pointer"
+            className="text-discord-text-faint italic hover:bg-discord-surface-raised px-1 py-0.5 rounded cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
               copyToClipboard("null");
@@ -159,7 +159,7 @@ const renderStructuredData = (
       return (
         <div className="flex items-center gap-2">
           <span
-            className={`hover:bg-gray-700 px-1 py-0.5 rounded cursor-pointer ${value ? "text-green-400" : "text-red-400"}`}
+            className={`hover:bg-discord-surface-raised px-1 py-0.5 rounded cursor-pointer ${value ? "text-green-400" : "text-red-400"}`}
             onClick={(e) => {
               e.stopPropagation();
               copyToClipboard(value.toString());
@@ -175,7 +175,7 @@ const renderStructuredData = (
       return (
         <div className="flex items-center gap-2">
           <span
-            className="text-blue-400 hover:bg-gray-700 px-1 py-0.5 rounded cursor-pointer"
+            className="text-blue-400 hover:bg-discord-surface-raised px-1 py-0.5 rounded cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
               copyToClipboard(value.toString());
@@ -198,7 +198,7 @@ const renderStructuredData = (
       if (value.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)) {
         return (
           <span
-            className="text-cyan-300 hover:bg-gray-700 px-1 py-0.5 rounded cursor-pointer"
+            className="text-cyan-300 hover:bg-discord-surface-raised px-1 py-0.5 rounded cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
               copyToClipboard(value);
@@ -214,7 +214,7 @@ const renderStructuredData = (
         return (
           <div className="flex items-center gap-2">
             <span
-              className="text-yellow-300 hover:bg-gray-700 px-1 py-0.5 rounded cursor-pointer relative"
+              className="text-yellow-300 hover:bg-discord-surface-raised px-1 py-0.5 rounded cursor-pointer relative"
               onClick={(e) => {
                 e.stopPropagation();
                 copyToClipboard(value);
@@ -240,7 +240,7 @@ const renderStructuredData = (
       return (
         <div className="flex items-center gap-2">
           <span
-            className="text-yellow-300 hover:bg-gray-700 px-1 py-0.5 rounded cursor-pointer"
+            className="text-yellow-300 hover:bg-discord-surface-raised px-1 py-0.5 rounded cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
               copyToClipboard(value);
@@ -257,7 +257,7 @@ const renderStructuredData = (
         return (
           <div className="flex items-center gap-2">
             <span
-              className="text-gray-500 hover:bg-gray-700 px-1 py-0.5 rounded cursor-pointer"
+              className="text-discord-text-faint hover:bg-discord-surface-raised px-1 py-0.5 rounded cursor-pointer"
               onClick={(e) => {
                 e.stopPropagation();
                 copyToClipboard("[]");
@@ -271,7 +271,7 @@ const renderStructuredData = (
       }
       return (
         <div
-          className="space-y-1 hover:bg-gray-800 p-2 rounded cursor-pointer"
+          className="space-y-1 hover:bg-discord-surface-sunken p-2 rounded cursor-pointer"
           onClick={() => copyToClipboard(JSON.stringify(value, null, 2))}
           title={t`Click to copy as JSON`}
         >
@@ -282,7 +282,7 @@ const renderStructuredData = (
                   key={`${contextPath.join(".")}.${i}`}
                   className="flex items-start"
                 >
-                  <span className="text-gray-500 mr-2">•</span>
+                  <span className="text-discord-text-faint mr-2">•</span>
                   {renderValue(item, 0, false, [...contextPath, i.toString()])}
                 </div>
               ),
@@ -297,7 +297,7 @@ const renderStructuredData = (
         return (
           <div className="flex items-center gap-2">
             <span
-              className="text-gray-500 hover:bg-gray-700 px-1 py-0.5 rounded cursor-pointer"
+              className="text-discord-text-faint hover:bg-discord-surface-raised px-1 py-0.5 rounded cursor-pointer"
               onClick={(e) => {
                 e.stopPropagation();
                 copyToClipboard("{}");
@@ -311,7 +311,7 @@ const renderStructuredData = (
       }
       return (
         <div
-          className="space-y-1 hover:bg-gray-800 p-2 rounded cursor-pointer"
+          className="space-y-1 hover:bg-discord-surface-sunken p-2 rounded cursor-pointer"
           onClick={() => copyToClipboard(JSON.stringify(value, null, 2))}
           title={t`Click to copy as JSON`}
         >
@@ -332,7 +332,7 @@ const renderStructuredData = (
     }
     return (
       <span
-        className="text-gray-300 hover:bg-gray-700 px-1 py-0.5 rounded cursor-pointer"
+        className="text-discord-text-soft hover:bg-discord-surface-raised px-1 py-0.5 rounded cursor-pointer"
         onClick={(e) => {
           e.stopPropagation();
           copyToClipboard(String(value));
@@ -351,7 +351,7 @@ const renderStructuredData = (
 
   if (filteredEntries.length === 0) {
     return (
-      <span className="text-gray-500 italic">
+      <span className="text-discord-text-faint italic">
         <Trans>No additional data</Trans>
       </span>
     );
@@ -420,9 +420,13 @@ const formatClientObject = (
           <span className="text-cyan-400 font-medium mr-2 text-sm">
             <Trans>Name:</Trans>
           </span>
-          <span className="text-white text-sm">{client.name}</span>
+          <span className="text-discord-text-strong text-sm">
+            {client.name}
+          </span>
           {client.id && (
-            <span className="text-gray-400 ml-2 text-sm">({client.id})</span>
+            <span className="text-discord-text-dim ml-2 text-sm">
+              ({client.id})
+            </span>
           )}
         </div>
 
@@ -431,14 +435,16 @@ const formatClientObject = (
             <span className="text-cyan-400 mr-2 text-sm">
               <Trans>Hostname:</Trans>
             </span>
-            <span className="text-gray-300 text-sm">{client.hostname}</span>
+            <span className="text-discord-text-soft text-sm">
+              {client.hostname}
+            </span>
           </div>
         )}
 
         {client.ip && (
           <div className="flex items-center">
             <span className="text-cyan-400 mr-2 text-sm">IP:</span>
-            <span className="text-gray-300 text-sm">{client.ip}</span>
+            <span className="text-discord-text-soft text-sm">{client.ip}</span>
           </div>
         )}
 
@@ -453,7 +459,7 @@ const formatClientObject = (
                   <span className="text-cyan-400 mr-2 text-sm">
                     <Trans>Username:</Trans>
                   </span>
-                  <span className="text-gray-300 text-sm">
+                  <span className="text-discord-text-soft text-sm">
                     {client.user.username}
                   </span>
                 </div>
@@ -463,7 +469,7 @@ const formatClientObject = (
                   <span className="text-cyan-400 mr-2 text-sm">
                     <Trans>Realname:</Trans>
                   </span>
-                  <span className="text-gray-300 text-sm">
+                  <span className="text-discord-text-soft text-sm">
                     {client.user.realname}
                   </span>
                 </div>
@@ -473,7 +479,7 @@ const formatClientObject = (
                   <span className="text-cyan-400 mr-2 text-sm">
                     <Trans>Account:</Trans>
                   </span>
-                  <span className="text-gray-300 text-sm">
+                  <span className="text-discord-text-soft text-sm">
                     {client.user.account}
                   </span>
                 </div>
@@ -483,7 +489,7 @@ const formatClientObject = (
                   <span className="text-cyan-400 mr-2 text-sm">
                     <Trans>Modes:</Trans>
                   </span>
-                  <span className="text-gray-300 text-sm">
+                  <span className="text-discord-text-soft text-sm">
                     {client.user.modes}
                   </span>
                 </div>
@@ -493,7 +499,7 @@ const formatClientObject = (
                   <span className="text-cyan-400 mr-2 text-sm">
                     <Trans>Away:</Trans>
                   </span>
-                  <span className="text-gray-300 text-sm">
+                  <span className="text-discord-text-soft text-sm">
                     {client.user.away_reason}
                   </span>
                 </div>
@@ -513,7 +519,7 @@ const formatClientObject = (
                   <span className="text-cyan-400 mr-2 text-sm">
                     <Trans>Info:</Trans>
                   </span>
-                  <span className="text-gray-300 text-sm">
+                  <span className="text-discord-text-soft text-sm">
                     {client.server.info}
                   </span>
                 </div>
@@ -523,7 +529,7 @@ const formatClientObject = (
                   <span className="text-cyan-400 mr-2 text-sm">
                     <Trans>Users:</Trans>
                   </span>
-                  <span className="text-gray-300 text-sm">
+                  <span className="text-discord-text-soft text-sm">
                     {client.server.num_users}
                   </span>
                 </div>
@@ -533,7 +539,7 @@ const formatClientObject = (
                   <span className="text-cyan-400 mr-2 text-sm">
                     <Trans>Software:</Trans>
                   </span>
-                  <span className="text-gray-300 text-sm">
+                  <span className="text-discord-text-soft text-sm">
                     {client.server.features.software}
                   </span>
                 </div>
@@ -598,7 +604,9 @@ const formatChannelObject = (
           <span className="text-cyan-400 font-medium mr-2 text-sm">
             <Trans>Name:</Trans>
           </span>
-          <span className="text-white font-medium text-sm">{channel.name}</span>
+          <span className="text-discord-text-strong font-medium text-sm">
+            {channel.name}
+          </span>
         </div>
 
         {channel.num_users && (
@@ -606,7 +614,9 @@ const formatChannelObject = (
             <span className="text-cyan-400 mr-2 text-sm">
               <Trans>Users:</Trans>
             </span>
-            <span className="text-gray-300 text-sm">{channel.num_users}</span>
+            <span className="text-discord-text-soft text-sm">
+              {channel.num_users}
+            </span>
           </div>
         )}
 
@@ -615,7 +625,9 @@ const formatChannelObject = (
             <span className="text-cyan-400 mr-2 text-sm">
               <Trans>Topic:</Trans>
             </span>
-            <span className="text-gray-300 text-sm">"{channel.topic}"</span>
+            <span className="text-discord-text-soft text-sm">
+              "{channel.topic}"
+            </span>
           </div>
         )}
 
@@ -624,7 +636,7 @@ const formatChannelObject = (
             <span className="text-cyan-400 mr-2 text-sm">
               <Trans>Set by:</Trans>
             </span>
-            <span className="text-gray-300 text-sm">
+            <span className="text-discord-text-soft text-sm">
               {channel.topic_set_by}
             </span>
           </div>
@@ -635,7 +647,7 @@ const formatChannelObject = (
             <span className="text-cyan-400 mr-2 text-sm">
               <Trans>Modes:</Trans>
             </span>
-            <span className="text-gray-300 font-mono text-sm">
+            <span className="text-discord-text-soft font-mono text-sm">
               {channel.modes}
             </span>
           </div>
@@ -688,21 +700,21 @@ export const JsonLogMessage: React.FC<JsonLogMessageProps> = ({
       case "info":
         return "text-blue-400";
       case "debug":
-        return "text-gray-400";
+        return "text-discord-text-dim";
       default:
-        return "text-gray-300";
+        return "text-discord-text-soft";
     }
   };
 
   return (
     <div className="px-2 py-1">
       <div
-        className="bg-gray-800 rounded-lg p-2 space-y-2 cursor-pointer"
+        className="bg-discord-surface-sunken rounded-lg p-2 space-y-2 cursor-pointer"
         onClick={() => !isDeepDiveOpen && setIsDeepDiveOpen(true)}
       >
         {/* Compact Header */}
         <div
-          className="flex items-center justify-between pb-1 border-b border-gray-600"
+          className="flex items-center justify-between pb-1 border-b border-discord-surface-hover"
           onClick={(e) => {
             e.stopPropagation();
             setIsDeepDiveOpen(!isDeepDiveOpen);
@@ -711,20 +723,20 @@ export const JsonLogMessage: React.FC<JsonLogMessageProps> = ({
           <div className="flex items-center gap-2">
             {typedJsonData.level && (
               <div
-                className={`px-1.5 py-0.5 rounded text-xs font-medium ${getLevelColor(typedJsonData.level as string)} bg-gray-700`}
+                className={`px-1.5 py-0.5 rounded text-xs font-medium ${getLevelColor(typedJsonData.level as string)} bg-discord-surface-raised`}
               >
                 {(typedJsonData.level as string).toUpperCase()}
               </div>
             )}
             {typedJsonData.subsystem && typedJsonData.event_id && (
-              <span className="font-mono text-xs text-gray-400">
+              <span className="font-mono text-xs text-discord-text-dim">
                 [{typedJsonData.subsystem as string}.
                 {typedJsonData.event_id as string}]
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-3 text-xs text-gray-400">
+          <div className="flex items-center gap-3 text-xs text-discord-text-dim">
             {typedJsonData.timestamp && (
               <span>
                 {new Date(
@@ -745,7 +757,7 @@ export const JsonLogMessage: React.FC<JsonLogMessageProps> = ({
         >
           <div className="flex-1">
             {typedJsonData.msg && (
-              <div className="text-white text-sm">
+              <div className="text-discord-text-strong text-sm">
                 {typedJsonData.msg as string}
               </div>
             )}
@@ -755,15 +767,15 @@ export const JsonLogMessage: React.FC<JsonLogMessageProps> = ({
               e.stopPropagation();
               setIsDeepDiveOpen(!isDeepDiveOpen);
             }}
-            className="ml-4 px-2 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs rounded flex items-center gap-1 flex-shrink-0"
+            className="ml-4 px-2 py-1 bg-discord-surface-raised hover:bg-discord-surface-hover text-discord-text-soft text-xs rounded flex items-center gap-1 flex-shrink-0"
           >
             <span>
               <Trans>Deep dive</Trans>
             </span>
             {isDeepDiveOpen ? (
-              <FaChevronDown className="text-gray-400 text-xs" />
+              <FaChevronDown className="text-discord-text-dim text-xs" />
             ) : (
-              <FaChevronRight className="text-gray-400 text-xs" />
+              <FaChevronRight className="text-discord-text-dim text-xs" />
             )}
           </button>
         </div>
@@ -771,7 +783,7 @@ export const JsonLogMessage: React.FC<JsonLogMessageProps> = ({
         {/* Deep Dive Content */}
         {isDeepDiveOpen && (
           <div
-            className="border border-gray-600 rounded-lg p-3 bg-gray-900"
+            className="border border-discord-surface-hover rounded-lg p-3 bg-gray-900"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-3">

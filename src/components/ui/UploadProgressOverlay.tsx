@@ -59,7 +59,7 @@ export const UploadProgressOverlay: React.FC<Props> = ({ jobs, onCancel }) => {
                   <FaSpinner className="animate-spin text-discord-blue flex-shrink-0" />
                 )}
                 <FaFile className="text-discord-text-muted flex-shrink-0" />
-                <span className="truncate flex-1 text-white text-xs">
+                <span className="truncate flex-1 text-discord-text-strong text-xs">
                   {job.file.name}
                 </span>
                 <span className="text-xs text-discord-text-muted whitespace-nowrap">
@@ -73,7 +73,7 @@ export const UploadProgressOverlay: React.FC<Props> = ({ jobs, onCancel }) => {
                   <button
                     type="button"
                     onClick={() => onCancel(job.id)}
-                    className="text-discord-text-muted hover:text-white text-xs"
+                    className="text-discord-text-muted hover:text-discord-text-strong text-xs"
                     aria-label="Cancel upload"
                   >
                     ✕

@@ -868,7 +868,7 @@ export const UserSettings: React.FC = React.memo(() => {
         </div>
 
         {/* Divider */}
-        <div className="border-t border-white/[0.06]" />
+        <div className="border-t border-discord-text-strong/[0.06]" />
 
         {/* Description — updates as slider moves */}
         <div
@@ -1499,7 +1499,7 @@ export const UserSettings: React.FC = React.memo(() => {
             <button
               type="button"
               onClick={() => setIsEmojiAdminOpen(true)}
-              className="w-full rounded bg-discord-blue px-4 py-2 text-white hover:bg-discord-blue-hover"
+              className="w-full rounded bg-discord-blue px-4 py-2 text-discord-text-strong hover:bg-discord-blue-hover"
             >
               Manage packs
             </button>
@@ -1528,12 +1528,12 @@ export const UserSettings: React.FC = React.memo(() => {
           <>
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-discord-dark-500 flex-shrink-0">
-              <h2 className="text-white text-lg font-semibold">
+              <h2 className="text-discord-text-strong text-lg font-semibold">
                 User Settings
               </h2>
               <button
                 onClick={handleClose}
-                className="p-1 rounded-lg hover:bg-discord-dark-400 text-discord-text-muted hover:text-white"
+                className="p-1 rounded-lg hover:bg-discord-dark-400 text-discord-text-muted hover:text-discord-text-strong"
                 aria-label={t`Close`}
               >
                 <FaTimes />
@@ -1554,7 +1554,7 @@ export const UserSettings: React.FC = React.memo(() => {
                     {category.icon}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-white font-medium">
+                    <div className="text-discord-text-strong font-medium">
                       {category.title}
                     </div>
                     <div className="text-discord-text-muted text-sm truncate">
@@ -1574,18 +1574,18 @@ export const UserSettings: React.FC = React.memo(() => {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setMobileView("categories")}
-                  className="p-1 rounded-lg hover:bg-discord-dark-400 text-discord-text-muted hover:text-white"
+                  className="p-1 rounded-lg hover:bg-discord-dark-400 text-discord-text-muted hover:text-discord-text-strong"
                   aria-label={t`Back`}
                 >
                   <FaChevronLeft />
                 </button>
-                <h2 className="text-white text-lg font-semibold">
+                <h2 className="text-discord-text-strong text-lg font-semibold">
                   {categories.find((c) => c.id === activeCategory)?.title}
                 </h2>
               </div>
               <button
                 onClick={handleClose}
-                className="p-1 rounded-lg hover:bg-discord-dark-400 text-discord-text-muted hover:text-white"
+                className="p-1 rounded-lg hover:bg-discord-dark-400 text-discord-text-muted hover:text-discord-text-strong"
                 aria-label={t`Close`}
               >
                 <FaTimes />
@@ -1612,7 +1612,7 @@ export const UserSettings: React.FC = React.memo(() => {
                           <Trans>Language</Trans>
                         </label>
                         <select
-                          className="bg-discord-dark-400 text-white rounded px-3 py-2 text-sm border border-discord-dark-300 focus:outline-none focus:border-discord-primary"
+                          className="bg-discord-dark-400 text-discord-text-strong rounded px-3 py-2 text-sm border border-discord-dark-300 focus:outline-none focus:border-discord-primary"
                           value={i18n.locale}
                           onChange={(e) => {
                             const next = e.target.value;
@@ -1734,9 +1734,9 @@ export const UserSettings: React.FC = React.memo(() => {
         <div className="bg-discord-dark-300 flex flex-col">
           <div className="p-4 border-b border-discord-dark-500 flex justify-center">
             {isMobile ? (
-              <FaCog className="text-white text-xl" />
+              <FaCog className="text-discord-text-strong text-xl" />
             ) : (
-              <h2 className="text-white text-xl font-bold">
+              <h2 className="text-discord-text-strong text-xl font-bold">
                 <Trans>User Settings</Trans>
               </h2>
             )}
@@ -1769,12 +1769,12 @@ export const UserSettings: React.FC = React.memo(() => {
         {/* Main content */}
         <div className="flex-1 flex flex-col">
           <div className="flex justify-between items-center p-4 border-b border-discord-dark-500">
-            <h3 className="text-white text-lg font-semibold">
+            <h3 className="text-discord-text-strong text-lg font-semibold">
               {categories.find((c) => c.id === activeCategory)?.title}
             </h3>
             <button
               onClick={handleClose}
-              className="text-discord-text-muted hover:text-white"
+              className="text-discord-text-muted hover:text-discord-text-strong"
             >
               <FaTimes />
             </button>
@@ -1811,7 +1811,7 @@ export const UserSettings: React.FC = React.memo(() => {
                         <Trans>Language</Trans>
                       </label>
                       <select
-                        className="bg-discord-dark-400 text-white rounded px-3 py-2 text-sm border border-discord-dark-300 focus:outline-none focus:border-discord-primary"
+                        className="bg-discord-dark-400 text-discord-text-strong rounded px-3 py-2 text-sm border border-discord-dark-300 focus:outline-none focus:border-discord-primary"
                         value={i18n.locale}
                         onChange={(e) => {
                           const next = e.target.value;

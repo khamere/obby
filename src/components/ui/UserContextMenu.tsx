@@ -246,7 +246,7 @@ export const UserContextMenu: React.FC<UserContextMenuProps> = ({
           </div>
           <button
             onClick={handleOpenPM}
-            className="w-full px-3 py-2 text-left text-discord-text-normal hover:bg-discord-dark-200 hover:text-white transition-colors duration-150 flex items-center gap-2"
+            className="w-full px-3 py-2 text-left text-discord-text-normal hover:bg-discord-dark-200 hover:text-discord-text-strong transition-colors duration-150 flex items-center gap-2"
             title={t`Send Message`}
           >
             <svg
@@ -268,7 +268,7 @@ export const UserContextMenu: React.FC<UserContextMenuProps> = ({
           </button>
           <button
             onClick={handleOpenProfile}
-            className="w-full px-3 py-2 text-left text-discord-text-normal hover:bg-discord-dark-200 hover:text-white transition-colors duration-150 flex items-center gap-2"
+            className="w-full px-3 py-2 text-left text-discord-text-normal hover:bg-discord-dark-200 hover:text-discord-text-strong transition-colors duration-150 flex items-center gap-2"
             title={t`View Profile`}
           >
             <svg
@@ -309,7 +309,7 @@ export const UserContextMenu: React.FC<UserContextMenuProps> = ({
                 }
                 setBotCommandsOpen((v) => !v);
               }}
-              className="w-full px-3 py-2 text-left text-discord-text-normal hover:bg-discord-dark-200 hover:text-white transition-colors duration-150 flex items-center gap-2"
+              className="w-full px-3 py-2 text-left text-discord-text-normal hover:bg-discord-dark-200 hover:text-discord-text-strong transition-colors duration-150 flex items-center gap-2"
               aria-haspopup="menu"
               aria-expanded={botCommandsOpen}
             >
@@ -384,7 +384,7 @@ export const UserContextMenu: React.FC<UserContextMenuProps> = ({
             <>
               <button
                 onClick={handleWarnUser}
-                className="w-full px-3 py-2 text-left text-discord-text-normal hover:bg-discord-dark-200 hover:text-white transition-colors duration-150 flex items-center gap-2"
+                className="w-full px-3 py-2 text-left text-discord-text-normal hover:bg-discord-dark-200 hover:text-discord-text-strong transition-colors duration-150 flex items-center gap-2"
               >
                 <svg
                   className="w-4 h-4 flex-shrink-0"
@@ -405,7 +405,7 @@ export const UserContextMenu: React.FC<UserContextMenuProps> = ({
               </button>
               <button
                 onClick={handleKickUser}
-                className="w-full px-3 py-2 text-left text-discord-text-normal hover:bg-discord-dark-200 hover:text-white transition-colors duration-150 flex items-center gap-2"
+                className="w-full px-3 py-2 text-left text-discord-text-normal hover:bg-discord-dark-200 hover:text-discord-text-strong transition-colors duration-150 flex items-center gap-2"
               >
                 <svg
                   className="w-4 h-4 flex-shrink-0"
@@ -427,7 +427,7 @@ export const UserContextMenu: React.FC<UserContextMenuProps> = ({
               <div className="border-t border-discord-dark-500 mt-1 pt-1">
                 <button
                   onClick={() => toggleAccordion("bans")}
-                  className="w-full px-3 py-2 text-left text-discord-text-normal hover:bg-discord-dark-200 hover:text-white transition-colors duration-150 flex items-center gap-2"
+                  className="w-full px-3 py-2 text-left text-discord-text-normal hover:bg-discord-dark-200 hover:text-discord-text-strong transition-colors duration-150 flex items-center gap-2"
                 >
                   <svg
                     className="w-4 h-4 flex-shrink-0"
@@ -463,14 +463,14 @@ export const UserContextMenu: React.FC<UserContextMenuProps> = ({
                   <div className="ml-4 space-y-1 animate-in slide-in-from-top-1 duration-200">
                     <button
                       onClick={handleBanUserByNick}
-                      className="w-full px-3 py-2 text-left text-discord-text-normal hover:bg-discord-dark-200 hover:text-white transition-colors duration-150 text-sm truncate"
+                      className="w-full px-3 py-2 text-left text-discord-text-normal hover:bg-discord-dark-200 hover:text-discord-text-strong transition-colors duration-150 text-sm truncate"
                       title={t`Ban by Nickname`}
                     >
                       <Trans>Ban by Nickname</Trans>
                     </button>
                     <button
                       onClick={handleBanUserByHostmask}
-                      className="w-full px-3 py-2 text-left text-discord-text-normal hover:bg-discord-dark-200 hover:text-white transition-colors duration-150 text-sm truncate"
+                      className="w-full px-3 py-2 text-left text-discord-text-normal hover:bg-discord-dark-200 hover:text-discord-text-strong transition-colors duration-150 text-sm truncate"
                       title={t`Ban by Hostmask`}
                     >
                       <Trans>Ban by Hostmask</Trans>
@@ -511,7 +511,7 @@ export const UserContextMenu: React.FC<UserContextMenuProps> = ({
                   requestBotsModalOpen(serverId, username);
                   onClose();
                 }}
-                className="w-full px-3 py-2 text-left text-xs font-semibold text-discord-text-normal hover:bg-discord-dark-200 hover:text-white transition-colors"
+                className="w-full px-3 py-2 text-left text-xs font-semibold text-discord-text-normal hover:bg-discord-dark-200 hover:text-discord-text-strong transition-colors"
               >
                 <Trans>Show in Bots Menu →</Trans>
               </button>

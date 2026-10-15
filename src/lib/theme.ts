@@ -4,13 +4,16 @@
 // without knowing about themes. Custom CSS loads later and still wins.
 
 import bubblegum from "../themes/bubblegum.json";
+import catppuccinLatte from "../themes/catppuccin-latte.json";
 import catppuccinMocha from "../themes/catppuccin-mocha.json";
 import dracula from "../themes/dracula.json";
 import gruvboxDark from "../themes/gruvbox-dark.json";
 import matrix from "../themes/matrix.json";
 import nord from "../themes/nord.json";
 import obbyDark from "../themes/obby-dark.json";
+import obbyLight from "../themes/obby-light.json";
 import oledBlack from "../themes/oled-black.json";
+import solarizedLight from "../themes/solarized-light.json";
 import tokyoNight from "../themes/tokyo-night.json";
 
 export const THEME_TOKENS = [
@@ -35,9 +38,28 @@ export const THEME_TOKENS = [
   "success-hover",
   "button-secondary",
   "reply",
+  "text-strong",
+  "text-soft",
+  "text-dim",
+  "text-faint",
+  "surface-raised",
+  "surface-hover",
+  "surface-sunken",
 ] as const;
 
 export type ThemeToken = (typeof THEME_TOKENS)[number];
+
+// Tokens added after the first theme files existed; when a theme leaves
+// one out it is derived from an older token so the file still loads.
+export const DERIVED_TOKENS: Partial<Record<ThemeToken, ThemeToken>> = {
+  "text-strong": "fg-channel-active",
+  "text-soft": "fg",
+  "text-dim": "fg-muted",
+  "text-faint": "fg-channel",
+  "surface-raised": "bg-input",
+  "surface-hover": "button-secondary",
+  "surface-sunken": "bg-deep",
+};
 export type ThemeAppearance = "dark" | "light";
 
 export interface ThemeDefinition {
@@ -69,6 +91,9 @@ export const DEFAULT_THEME_SETTINGS: ThemeSettings = {
 
 export const CUSTOM_THEME_ID = "custom";
 export const LINK_THEME_ID = "link";
+// Follows the OS: Obby Dark or Obby Light.
+export const SYSTEM_THEME_ID = "system";
+export const DEFAULT_LIGHT_THEME_ID = "obby-light";
 
 export function parseThemeJson(text: string): ThemeDefinition | null {
   try {
@@ -99,7 +124,11 @@ export function effectiveAccent(
 export function resolveTheme(
   settings: Pick<ThemeSettings, "theme" | "customTheme">,
   linked: ThemeDefinition | null,
+  prefersDark = true,
 ): ThemeDefinition {
+  if (settings.theme === SYSTEM_THEME_ID) {
+    return getTheme(prefersDark ? DEFAULT_THEME_ID : DEFAULT_LIGHT_THEME_ID);
+  }
   if (settings.theme === CUSTOM_THEME_ID) {
     return parseThemeJson(settings.customTheme) ?? getTheme(DEFAULT_THEME_ID);
   }
@@ -119,6 +148,9 @@ export const BUILT_IN_THEMES: ThemeDefinition[] = [
   tokyoNight,
   bubblegum,
   matrix,
+  obbyLight,
+  catppuccinLatte,
+  solarizedLight,
 ].map((t) => validateTheme(t) as ThemeDefinition);
 
 export function isHexColor(value: unknown): value is string {
@@ -170,7 +202,7 @@ export function validateTheme(input: unknown): ThemeDefinition | null {
   const src = o.colors as Record<string, unknown>;
   const colors = {} as Record<ThemeToken, string>;
   for (const token of THEME_TOKENS) {
-    const v = src[token];
+    const v = src[token] ?? src[DERIVED_TOKENS[token] ?? token];
     if (!isHexColor(v)) return null;
     colors[token] = v.toLowerCase();
   }

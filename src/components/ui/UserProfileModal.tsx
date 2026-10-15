@@ -407,7 +407,9 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({
             {botDescription && (
               <div className="mt-3 bg-discord-dark-300 rounded-lg p-3 flex items-center gap-3">
                 <FaRobot className="text-cyan-400 flex-shrink-0" size={16} />
-                <div className="text-white text-sm">{botDescription}</div>
+                <div className="text-discord-text-strong text-sm">
+                  {botDescription}
+                </div>
               </div>
             )}
 
@@ -430,7 +432,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({
                     className="text-emerald-400 flex-shrink-0"
                     size={14}
                   />
-                  <span className="text-white text-sm font-semibold">
+                  <span className="text-discord-text-strong text-sm font-semibold">
                     <Trans>Bot Commands</Trans>
                   </span>
                   <span className="ml-auto text-xs text-discord-text-muted">
@@ -469,7 +471,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-4">
                 <FaInfoCircle className="text-discord-blurple" size={18} />
-                <h3 className="text-lg font-semibold text-white">
+                <h3 className="text-lg font-semibold text-discord-text-strong">
                   <Trans>User Information</Trans>
                 </h3>
               </div>
@@ -492,7 +494,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({
                           <Trans>Host</Trans>
                         </span>
                       </div>
-                      <code className="text-white font-mono text-sm break-all">
+                      <code className="text-discord-text-strong font-mono text-sm break-all">
                         {whoisData.username}@{whoisData.host}
                       </code>
                     </div>
@@ -504,7 +506,9 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       <div className="text-xs font-semibold text-discord-text-muted uppercase tracking-wide mb-2">
                         <Trans>Real Name</Trans>
                       </div>
-                      <div className="text-white">{whoisData.realname}</div>
+                      <div className="text-discord-text-strong">
+                        {whoisData.realname}
+                      </div>
                     </div>
                   )}
 
@@ -517,7 +521,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({
                           <Trans>Authenticated Account</Trans>
                         </span>
                       </div>
-                      <div className="text-white font-medium">
+                      <div className="text-discord-text-strong font-medium">
                         {whoisData.account}
                       </div>
                     </div>
@@ -529,7 +533,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       <div className="text-xs font-semibold text-discord-text-muted uppercase tracking-wide mb-2">
                         <Trans>Status</Trans>
                       </div>
-                      <div className="text-white">{status}</div>
+                      <div className="text-discord-text-strong">{status}</div>
                     </div>
                   )}
 
@@ -538,7 +542,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       <div className="text-xs font-semibold text-discord-text-muted uppercase tracking-wide mb-2">
                         <Trans>Pronouns</Trans>
                       </div>
-                      <div className="text-white">{pronouns}</div>
+                      <div className="text-discord-text-strong">{pronouns}</div>
                     </div>
                   )}
 
@@ -551,7 +555,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({
                           <Trans>Connected To</Trans>
                         </span>
                       </div>
-                      <code className="text-white font-mono text-sm break-all">
+                      <code className="text-discord-text-strong font-mono text-sm break-all">
                         {whoisData.server}
                       </code>
                       {whoisData.serverInfo && (
@@ -571,7 +575,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({
                           <Trans>Idle</Trans>
                         </span>
                       </div>
-                      <div className="text-white font-medium">
+                      <div className="text-discord-text-strong font-medium">
                         {formatIdleTime(whoisData.idle)}
                       </div>
                     </div>
@@ -587,7 +591,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({
                         </span>
                       </div>
                       {user.awayMessage && (
-                        <div className="text-white text-sm">
+                        <div className="text-discord-text-strong text-sm">
                           {user.awayMessage}
                         </div>
                       )}
@@ -621,13 +625,13 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({
                             >
                               {badge && (
                                 <span
-                                  className={`${badge.color} text-white text-xs font-bold px-1.5 py-0.5 rounded`}
+                                  className={`${badge.color} text-discord-text-strong text-xs font-bold px-1.5 py-0.5 rounded`}
                                   title={badge.label}
                                 >
                                   {badge.text}
                                 </span>
                               )}
-                              <span className="text-white text-sm font-mono flex-1 truncate group-hover:text-white">
+                              <span className="text-discord-text-strong text-sm font-mono flex-1 truncate group-hover:text-discord-text-strong">
                                 {channel}
                               </span>
                               {isSecret && (
@@ -654,7 +658,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({
                           <Trans>Secure Connection</Trans>
                         </span>
                       </div>
-                      <div className="text-white text-sm">
+                      <div className="text-discord-text-strong text-sm">
                         {whoisData.secureConnection}
                       </div>
                     </div>
@@ -669,7 +673,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({
                           <Trans>Signed On</Trans>
                         </span>
                       </div>
-                      <div className="text-white font-medium text-sm">
+                      <div className="text-discord-text-strong font-medium text-sm">
                         {formatSignonTime(whoisData.signon)}
                       </div>
                     </div>
@@ -686,7 +690,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({
                           {whoisData.specialMessages.map((msg) => (
                             <div
                               key={msg}
-                              className="text-white text-sm flex items-start gap-2"
+                              className="text-discord-text-strong text-sm flex items-start gap-2"
                             >
                               <span className="text-discord-blurple mt-1">
                                 •
@@ -773,7 +777,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({
               )}
               <button
                 onClick={onBack ?? onClose}
-                className={`px-6 py-2 bg-discord-blurple hover:bg-discord-blurple-hover text-white rounded-lg font-medium transition-all hover:shadow-lg hover:shadow-discord-blurple/20 ${!isOwnProfile ? "ml-auto" : ""}`}
+                className={`px-6 py-2 bg-discord-blurple hover:bg-discord-blurple-hover text-discord-text-strong rounded-lg font-medium transition-all hover:shadow-lg hover:shadow-discord-blurple/20 ${!isOwnProfile ? "ml-auto" : ""}`}
               >
                 {onBack ? <Trans>← Back</Trans> : <Trans>Close</Trans>}
               </button>

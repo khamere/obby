@@ -1134,7 +1134,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
     const headerRow = (
       <div className="flex flex-col min-w-0 flex-1 gap-0.5">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-sm font-medium text-white truncate">
+          <span className="text-sm font-medium text-discord-text-strong truncate">
             {label}
           </span>
           {fallback.vendor && (
@@ -1207,7 +1207,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                   ? "(set, edit to change)"
                   : (placeholder ?? "(not set)")
               }
-              className="flex-1 p-2 bg-discord-dark-400 text-white rounded text-sm"
+              className="flex-1 p-2 bg-discord-dark-400 text-discord-text-strong rounded text-sm"
             />
           </div>
         </div>
@@ -1236,7 +1236,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                       ? t`Add exception mask (e.g., nick!*@*, *!*@host.com)`
                       : t`Add invitation mask (e.g., nick!*@*, *!*@host.com)`
                 }
-                className="flex-1 p-2 bg-discord-dark-300 text-white rounded text-sm"
+                className="flex-1 p-2 bg-discord-dark-300 text-discord-text-strong rounded text-sm"
               />
               <button
                 onClick={() =>
@@ -1280,7 +1280,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                             type="text"
                             value={editValue}
                             onChange={(e) => setEditValue(e.target.value)}
-                            className="w-full p-1 bg-discord-dark-400 text-white rounded text-sm"
+                            className="w-full p-1 bg-discord-dark-400 text-discord-text-strong rounded text-sm"
                             autoFocus
                             onKeyDown={(e) => {
                               if (e.key === "Enter") {
@@ -1292,7 +1292,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                             }}
                           />
                         ) : (
-                          <div className="text-white text-sm break-all">
+                          <div className="text-discord-text-strong text-sm break-all">
                             {mode.mask}
                             <div className="text-discord-text-muted text-xs mt-1">
                               {mode.setter && t`set by ${mode.setter}`}
@@ -1327,7 +1327,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                           <>
                             <button
                               onClick={() => startEditing(mode.mask)}
-                              className="text-discord-text-muted hover:text-white"
+                              className="text-discord-text-muted hover:text-discord-text-strong"
                               title={t`Edit`}
                             >
                               <FaEdit size={14} />
@@ -1368,7 +1368,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
             <div className="flex-1 overflow-y-auto space-y-6">
               {/* Channel Topic */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-white">
+                <label className="text-sm font-medium text-discord-text-strong">
                   <Trans>Channel Topic</Trans>
                 </label>
                 <p className="text-xs text-discord-text-muted mb-2">
@@ -1382,13 +1382,13 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                   value={channelTopic}
                   onChange={(e) => setChannelTopic(e.target.value)}
                   placeholder={t`Welcome to the channel!`}
-                  className="w-full p-2 bg-discord-dark-300 text-white rounded text-sm"
+                  className="w-full p-2 bg-discord-dark-300 text-discord-text-strong rounded text-sm"
                 />
               </div>
 
               {/* Channel Avatar */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-white">
+                <label className="text-sm font-medium text-discord-text-strong">
                   <Trans>Channel Avatar</Trans>
                 </label>
                 <p className="text-xs text-discord-text-muted mb-2">
@@ -1410,7 +1410,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                       value={channelAvatar}
                       onChange={(e) => setChannelAvatar(e.target.value)}
                       placeholder={t`https://example.com/avatar/{size}/channel.jpg`}
-                      className="w-full p-2 bg-discord-dark-300 text-white rounded text-sm"
+                      className="w-full p-2 bg-discord-dark-300 text-discord-text-strong rounded text-sm"
                     />
                     {channelAvatar && isAbsoluteHttpUrl(channelAvatar) && (
                       <div className="mt-2">
@@ -1433,7 +1433,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
 
               {/* Channel Display Name */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-white">
+                <label className="text-sm font-medium text-discord-text-strong">
                   <Trans>Channel Display Name</Trans>
                 </label>
                 <p className="text-xs text-discord-text-muted mb-2">
@@ -1448,13 +1448,13 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                   value={channelDisplayName}
                   onChange={(e) => setChannelDisplayName(e.target.value)}
                   placeholder={t`General Support Channel`}
-                  className="w-full p-2 bg-discord-dark-300 text-white rounded text-sm"
+                  className="w-full p-2 bg-discord-dark-300 text-discord-text-strong rounded text-sm"
                 />
               </div>
 
               {/* draft/custom-emoji: per-channel pack URL */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-white">
+                <label className="text-sm font-medium text-discord-text-strong">
                   Channel Custom Emoji Pack
                 </label>
                 <p className="text-xs text-discord-text-muted mb-2">
@@ -1467,13 +1467,13 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                   value={channelEmojiPack}
                   onChange={(e) => setChannelEmojiPack(e.target.value)}
                   placeholder="https://example.com/emoji/channel/general.json"
-                  className="w-full p-2 bg-discord-dark-300 text-white rounded text-sm"
+                  className="w-full p-2 bg-discord-dark-300 text-discord-text-strong rounded text-sm"
                 />
               </div>
 
               {/* Channel Rename */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-white">
+                <label className="text-sm font-medium text-discord-text-strong">
                   <Trans>Channel Name</Trans>
                 </label>
                 <p className="text-xs text-discord-text-muted mb-2">
@@ -1491,7 +1491,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                   autoCorrect="off"
                   spellCheck={false}
                   placeholder={t`#new-channel-name`}
-                  className="w-full p-2 bg-discord-dark-300 text-white rounded text-sm"
+                  className="w-full p-2 bg-discord-dark-300 text-discord-text-strong rounded text-sm"
                 />
                 <input
                   type="text"
@@ -1502,7 +1502,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                   autoCapitalize="none"
                   spellCheck={false}
                   placeholder={t`Reason (optional)`}
-                  className="w-full p-2 bg-discord-dark-300 text-white rounded text-sm"
+                  className="w-full p-2 bg-discord-dark-300 text-discord-text-strong rounded text-sm"
                 />
               </div>
 
@@ -1521,7 +1521,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
             <div className="flex-1 overflow-y-auto space-y-6">
               {/* Client Limit */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-white">
+                <label className="text-sm font-medium text-discord-text-strong">
                   <Trans>Client Limit (+l)</Trans>
                 </label>
                 <p className="text-xs text-discord-text-muted mb-2">
@@ -1542,14 +1542,14 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                   }
                   placeholder={t`No limit`}
                   min="1"
-                  className="w-full p-2 bg-discord-dark-300 text-white rounded text-sm"
+                  className="w-full p-2 bg-discord-dark-300 text-discord-text-strong rounded text-sm"
                 />
               </div>
 
               {/* Invite-Only */}
               <div className="flex items-center justify-between p-3 bg-discord-dark-300 rounded">
                 <div className="flex-1">
-                  <label className="text-sm font-medium text-white">
+                  <label className="text-sm font-medium text-discord-text-strong">
                     <Trans>Invite-Only (+i)</Trans>
                   </label>
                   <p className="text-xs text-discord-text-muted mt-1">
@@ -1566,7 +1566,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
 
               {/* Channel Key */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-white">
+                <label className="text-sm font-medium text-discord-text-strong">
                   <Trans>Channel Key (+k)</Trans>
                 </label>
                 <p className="text-xs text-discord-text-muted mb-2">
@@ -1580,14 +1580,14 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                   value={channelKey}
                   onChange={(e) => setChannelKey(e.target.value)}
                   placeholder={t`No key`}
-                  className="w-full p-2 bg-discord-dark-300 text-white rounded text-sm"
+                  className="w-full p-2 bg-discord-dark-300 text-discord-text-strong rounded text-sm"
                 />
               </div>
 
               {/* Moderated */}
               <div className="flex items-center justify-between p-3 bg-discord-dark-300 rounded">
                 <div className="flex-1">
-                  <label className="text-sm font-medium text-white">
+                  <label className="text-sm font-medium text-discord-text-strong">
                     <Trans>Moderated (+m)</Trans>
                   </label>
                   <p className="text-xs text-discord-text-muted mt-1">
@@ -1605,7 +1605,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
               {/* Secret */}
               <div className="flex items-center justify-between p-3 bg-discord-dark-300 rounded">
                 <div className="flex-1">
-                  <label className="text-sm font-medium text-white">
+                  <label className="text-sm font-medium text-discord-text-strong">
                     <Trans>Secret (+s)</Trans>
                   </label>
                   <p className="text-xs text-discord-text-muted mt-1">
@@ -1625,7 +1625,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
               {/* Protected Topic */}
               <div className="flex items-center justify-between p-3 bg-discord-dark-300 rounded">
                 <div className="flex-1">
-                  <label className="text-sm font-medium text-white">
+                  <label className="text-sm font-medium text-discord-text-strong">
                     <Trans>Protected Topic (+t)</Trans>
                   </label>
                   <p className="text-xs text-discord-text-muted mt-1">
@@ -1643,7 +1643,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
               {/* No External Messages */}
               <div className="flex items-center justify-between p-3 bg-discord-dark-300 rounded">
                 <div className="flex-1">
-                  <label className="text-sm font-medium text-white">
+                  <label className="text-sm font-medium text-discord-text-strong">
                     <Trans>No External Messages (+n)</Trans>
                   </label>
                   <p className="text-xs text-discord-text-muted mt-1">
@@ -1704,7 +1704,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                 {/* Flood Protection Settings */}
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-white">
+                    <label className="text-sm font-medium text-discord-text-strong">
                       Flood Protection (+f)
                     </label>
                     <p className="text-xs text-discord-text-muted mb-2">
@@ -1721,7 +1721,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                     <select
                       value={floodProfile}
                       onChange={(e) => setFloodProfile(e.target.value)}
-                      className="w-full p-2 bg-discord-dark-300 text-white rounded text-sm"
+                      className="w-full p-2 bg-discord-dark-300 text-discord-text-strong rounded text-sm"
                     >
                       <option value="">
                         <Trans>No flood profile</Trans>
@@ -1755,7 +1755,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                         value={floodParams}
                         onChange={(e) => setFloodParams(e.target.value)}
                         placeholder={t`Default`}
-                        className="flex-1 p-2 bg-discord-dark-300 text-white rounded text-sm"
+                        className="flex-1 p-2 bg-discord-dark-300 text-discord-text-strong rounded text-sm"
                       />
                       <button
                         onClick={() => setIsFloodModalOpen(true)}
@@ -1774,14 +1774,14 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
 
                 {/* Content Filtering */}
                 <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-white">
+                  <h3 className="text-sm font-medium text-discord-text-strong">
                     Content Filtering
                   </h3>
 
                   {/* Block Color Codes */}
                   <div className="flex items-center justify-between p-3 bg-discord-dark-300 rounded">
                     <div className="flex-1">
-                      <label className="text-sm font-medium text-white">
+                      <label className="text-sm font-medium text-discord-text-strong">
                         Block Color Codes (+c)
                       </label>
                       <p className="text-xs text-discord-text-muted mt-1">
@@ -1799,7 +1799,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                   {/* No CTCPs */}
                   <div className="flex items-center justify-between p-3 bg-discord-dark-300 rounded">
                     <div className="flex-1">
-                      <label className="text-sm font-medium text-white">
+                      <label className="text-sm font-medium text-discord-text-strong">
                         No CTCPs (+C)
                       </label>
                       <p className="text-xs text-discord-text-muted mt-1">
@@ -1817,7 +1817,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                   {/* Filter Bad Words */}
                   <div className="flex items-center justify-between p-3 bg-discord-dark-300 rounded">
                     <div className="flex-1">
-                      <label className="text-sm font-medium text-white">
+                      <label className="text-sm font-medium text-discord-text-strong">
                         Filter Bad Words (+G)
                       </label>
                       <p className="text-xs text-discord-text-muted mt-1">
@@ -1835,7 +1835,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                   {/* Strip Color Codes */}
                   <div className="flex items-center justify-between p-3 bg-discord-dark-300 rounded">
                     <div className="flex-1">
-                      <label className="text-sm font-medium text-white">
+                      <label className="text-sm font-medium text-discord-text-strong">
                         Strip Color Codes (+S)
                       </label>
                       <p className="text-xs text-discord-text-muted mt-1">
@@ -1853,14 +1853,14 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
 
                 {/* Channel Behavior */}
                 <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-white">
+                  <h3 className="text-sm font-medium text-discord-text-strong">
                     Channel Behavior
                   </h3>
 
                   {/* Delay Joins */}
                   <div className="flex items-center justify-between p-3 bg-discord-dark-300 rounded">
                     <div className="flex-1">
-                      <label className="text-sm font-medium text-white">
+                      <label className="text-sm font-medium text-discord-text-strong">
                         Delay Joins (+D)
                       </label>
                       <p className="text-xs text-discord-text-muted mt-1">
@@ -1878,7 +1878,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                   {/* No Knocks */}
                   <div className="flex items-center justify-between p-3 bg-discord-dark-300 rounded">
                     <div className="flex-1">
-                      <label className="text-sm font-medium text-white">
+                      <label className="text-sm font-medium text-discord-text-strong">
                         No Knocks (+K)
                       </label>
                       <p className="text-xs text-discord-text-muted mt-1">
@@ -1896,7 +1896,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                   {/* No Nick Changes */}
                   <div className="flex items-center justify-between p-3 bg-discord-dark-300 rounded">
                     <div className="flex-1">
-                      <label className="text-sm font-medium text-white">
+                      <label className="text-sm font-medium text-discord-text-strong">
                         No Nick Changes (+N)
                       </label>
                       <p className="text-xs text-discord-text-muted mt-1">
@@ -1914,7 +1914,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                   {/* No Kicks */}
                   <div className="flex items-center justify-between p-3 bg-discord-dark-300 rounded">
                     <div className="flex-1">
-                      <label className="text-sm font-medium text-white">
+                      <label className="text-sm font-medium text-discord-text-strong">
                         No Kicks (+Q)
                       </label>
                       <p className="text-xs text-discord-text-muted mt-1">
@@ -1932,7 +1932,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                   {/* No Notices */}
                   <div className="flex items-center justify-between p-3 bg-discord-dark-300 rounded">
                     <div className="flex-1">
-                      <label className="text-sm font-medium text-white">
+                      <label className="text-sm font-medium text-discord-text-strong">
                         No Notices (+T)
                       </label>
                       <p className="text-xs text-discord-text-muted mt-1">
@@ -1950,7 +1950,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                   {/* No Invites */}
                   <div className="flex items-center justify-between p-3 bg-discord-dark-300 rounded">
                     <div className="flex-1">
-                      <label className="text-sm font-medium text-white">
+                      <label className="text-sm font-medium text-discord-text-strong">
                         No Invites (+V)
                       </label>
                       <p className="text-xs text-discord-text-muted mt-1">
@@ -1968,14 +1968,14 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
 
                 {/* Access Control */}
                 <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-white">
+                  <h3 className="text-sm font-medium text-discord-text-strong">
                     Access Control
                   </h3>
 
                   {/* Registered Nick Required */}
                   <div className="flex items-center justify-between p-3 bg-discord-dark-300 rounded">
                     <div className="flex-1">
-                      <label className="text-sm font-medium text-white">
+                      <label className="text-sm font-medium text-discord-text-strong">
                         Registered Nick Required (+M)
                       </label>
                       <p className="text-xs text-discord-text-muted mt-1">
@@ -1995,7 +1995,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                   {/* Registered Users Only */}
                   <div className="flex items-center justify-between p-3 bg-discord-dark-300 rounded">
                     <div className="flex-1">
-                      <label className="text-sm font-medium text-white">
+                      <label className="text-sm font-medium text-discord-text-strong">
                         Registered Users Only (+R)
                       </label>
                       <p className="text-xs text-discord-text-muted mt-1">
@@ -2013,7 +2013,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                   {/* IRC Operator Only */}
                   <div className="flex items-center justify-between p-3 bg-discord-dark-300 rounded">
                     <div className="flex-1">
-                      <label className="text-sm font-medium text-white">
+                      <label className="text-sm font-medium text-discord-text-strong">
                         IRC Operator Only (+O)
                       </label>
                       <p className="text-xs text-discord-text-muted mt-1">
@@ -2031,7 +2031,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                   {/* Secure Connection Required */}
                   <div className="flex items-center justify-between p-3 bg-discord-dark-300 rounded">
                     <div className="flex-1">
-                      <label className="text-sm font-medium text-white">
+                      <label className="text-sm font-medium text-discord-text-strong">
                         Secure Connection Required (+z)
                       </label>
                       <p className="text-xs text-discord-text-muted mt-1">
@@ -2051,14 +2051,14 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
 
                 {/* Channel Properties */}
                 <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-white">
+                  <h3 className="text-sm font-medium text-discord-text-strong">
                     Channel Properties
                   </h3>
 
                   {/* Private Channel */}
                   <div className="flex items-center justify-between p-3 bg-discord-dark-300 rounded">
                     <div className="flex-1">
-                      <label className="text-sm font-medium text-white">
+                      <label className="text-sm font-medium text-discord-text-strong">
                         Private Channel (+p)
                       </label>
                       <p className="text-xs text-discord-text-muted mt-1">
@@ -2076,7 +2076,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                   {/* Permanent Channel */}
                   <div className="flex items-center justify-between p-3 bg-discord-dark-300 rounded">
                     <div className="flex-1">
-                      <label className="text-sm font-medium text-white">
+                      <label className="text-sm font-medium text-discord-text-strong">
                         Permanent Channel (+P)
                       </label>
                       <p className="text-xs text-discord-text-muted mt-1">
@@ -2094,7 +2094,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
 
                   {/* Channel History */}
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-white">
+                    <label className="text-sm font-medium text-discord-text-strong">
                       Channel History (+H)
                     </label>
                     <p className="text-xs text-discord-text-muted mb-2">
@@ -2106,13 +2106,13 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                       value={channelHistory}
                       onChange={(e) => setChannelHistory(e.target.value)}
                       placeholder={t`e.g., 100:1440`}
-                      className="w-full p-2 bg-discord-dark-300 text-white rounded text-sm"
+                      className="w-full p-2 bg-discord-dark-300 text-discord-text-strong rounded text-sm"
                     />
                   </div>
 
                   {/* Channel Link */}
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-white">
+                    <label className="text-sm font-medium text-discord-text-strong">
                       Channel Link (+L)
                     </label>
                     <p className="text-xs text-discord-text-muted mb-2">
@@ -2124,7 +2124,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                       value={channelLink}
                       onChange={(e) => setChannelLink(e.target.value)}
                       placeholder={t`#overflow`}
-                      className="w-full p-2 bg-discord-dark-300 text-white rounded text-sm"
+                      className="w-full p-2 bg-discord-dark-300 text-discord-text-strong rounded text-sm"
                     />
                   </div>
                 </div>
@@ -2219,12 +2219,12 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
         {mobileView === "categories" ? (
           <>
             <div className="flex items-center justify-between p-4 border-b border-discord-dark-500 flex-shrink-0">
-              <h2 className="text-white text-lg font-semibold">
+              <h2 className="text-discord-text-strong text-lg font-semibold">
                 Channel Settings
               </h2>
               <button
                 onClick={onClose}
-                className="p-1 rounded-lg hover:bg-discord-dark-400 text-discord-text-muted hover:text-white"
+                className="p-1 rounded-lg hover:bg-discord-dark-400 text-discord-text-muted hover:text-discord-text-strong"
                 aria-label={t`Close`}
               >
                 <FaTimes />
@@ -2244,7 +2244,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
                   >
                     <Icon className="text-discord-text-muted text-lg flex-shrink-0" />
                     <div className="min-w-0 flex-1">
-                      <div className="text-white font-medium">
+                      <div className="text-discord-text-strong font-medium">
                         {category.name}
                       </div>
                       {category.count > 0 && (
@@ -2265,18 +2265,18 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setMobileView("categories")}
-                  className="p-1 rounded-lg hover:bg-discord-dark-400 text-discord-text-muted hover:text-white"
+                  className="p-1 rounded-lg hover:bg-discord-dark-400 text-discord-text-muted hover:text-discord-text-strong"
                   aria-label={t`Back`}
                 >
                   <FaChevronLeft />
                 </button>
-                <h2 className="text-white text-lg font-semibold">
+                <h2 className="text-discord-text-strong text-lg font-semibold">
                   {categories.find((c) => c.id === activeTab)?.name}
                 </h2>
               </div>
               <button
                 onClick={onClose}
-                className="p-1 rounded-lg hover:bg-discord-dark-400 text-discord-text-muted hover:text-white"
+                className="p-1 rounded-lg hover:bg-discord-dark-400 text-discord-text-muted hover:text-discord-text-strong"
                 aria-label={t`Close`}
               >
                 <FaTimes />
@@ -2303,7 +2303,7 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
         {/* Sidebar */}
         <div className="bg-discord-dark-300 flex flex-col">
           <div className="p-4 border-b border-discord-dark-500 flex justify-center">
-            <h2 className="text-white text-lg font-bold">
+            <h2 className="text-discord-text-strong text-lg font-bold">
               <Trans>Channel Settings</Trans>
             </h2>
           </div>
@@ -2340,12 +2340,12 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
         {/* Main content */}
         <div className="flex-1 flex flex-col">
           <div className="flex justify-between items-center p-4 border-b border-discord-dark-500 flex-shrink-0">
-            <h3 className="text-white text-lg font-semibold">
+            <h3 className="text-discord-text-strong text-lg font-semibold">
               {categories.find((c) => c.id === activeTab)?.name}
             </h3>
             <button
               onClick={onClose}
-              className="text-discord-text-muted hover:text-white"
+              className="text-discord-text-muted hover:text-discord-text-strong"
             >
               <FaTimes />
             </button>

@@ -39,7 +39,7 @@ export function EmojiPickerModal({
         <div className="p-2 border-t border-discord-dark-300">
           <button
             onClick={onClose}
-            className="text-sm text-discord-text-muted hover:text-white w-full text-center py-1"
+            className="text-sm text-discord-text-muted hover:text-discord-text-strong w-full text-center py-1"
           >
             Cancel
           </button>

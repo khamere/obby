@@ -88,7 +88,7 @@ const MessageBottomSheet: React.FC<MessageBottomSheetProps> = ({
         {actions.map((action) => (
           <button
             key={action.label}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg active:bg-discord-dark-400 text-left ${action.className || "text-white"}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg active:bg-discord-dark-400 text-left ${action.className || "text-discord-text-strong"}`}
             style={{ minHeight: "48px" }}
             onClick={action.onClick}
           >

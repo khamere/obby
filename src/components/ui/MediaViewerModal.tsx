@@ -213,7 +213,7 @@ const AudioViewerPlayer: React.FC<{ url: string }> = ({ url }) => {
         onClick={togglePlay}
         disabled={hasError}
         aria-label={isLoading ? t`Loading` : isPlaying ? t`Pause` : t`Play`}
-        className="w-16 h-16 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        className="w-16 h-16 rounded-full bg-discord-text-strong/10 hover:bg-discord-text-strong/20 flex items-center justify-center text-discord-text-strong transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
         {isLoading ? (
           <svg
@@ -306,7 +306,7 @@ const PdfModalViewer: React.FC<{ url: string; onRequestOpen: () => void }> = ({
             </p>
             <button
               type="button"
-              className="flex items-center gap-2 px-4 py-2 bg-discord-brand rounded text-white text-sm hover:opacity-90"
+              className="flex items-center gap-2 px-4 py-2 bg-discord-brand rounded text-discord-text-strong text-sm hover:opacity-90"
               onClick={onRequestOpen}
             >
               <FaExternalLinkAlt className="w-3 h-3" />
@@ -362,7 +362,7 @@ const PdfModalViewer: React.FC<{ url: string; onRequestOpen: () => void }> = ({
             type="button"
             disabled={pageNumber <= 1}
             onClick={() => setPageNumber((p) => p - 1)}
-            className="disabled:opacity-30 hover:text-white transition-opacity"
+            className="disabled:opacity-30 hover:text-discord-text-strong transition-opacity"
             aria-label={t`Previous page`}
           >
             <ChevronLeftIcon className="w-4 h-4" />
@@ -374,7 +374,7 @@ const PdfModalViewer: React.FC<{ url: string; onRequestOpen: () => void }> = ({
             type="button"
             disabled={pageNumber >= numPages}
             onClick={() => setPageNumber((p) => p + 1)}
-            className="disabled:opacity-30 hover:text-white transition-opacity"
+            className="disabled:opacity-30 hover:text-discord-text-strong transition-opacity"
             aria-label={t`Next page`}
           >
             <ChevronRightIcon className="w-4 h-4" />
@@ -1324,7 +1324,7 @@ export function MediaViewerModal({
                         onClick={() => changeZoom(zoom - ZOOM_STEP)}
                         disabled={zoom <= ZOOM_MIN}
                         aria-label={t`Zoom out`}
-                        className="p-1.5 rounded-full hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        className="p-1.5 rounded-full hover:bg-discord-text-strong/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                       >
                         <FaMinus className="w-3 h-3" />
                       </button>
@@ -1345,7 +1345,7 @@ export function MediaViewerModal({
                         onClick={() => changeZoom(zoom + ZOOM_STEP)}
                         disabled={zoom >= ZOOM_MAX}
                         aria-label={t`Zoom in`}
-                        className="p-1.5 rounded-full hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        className="p-1.5 rounded-full hover:bg-discord-text-strong/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                       >
                         <FaPlus className="w-3 h-3" />
                       </button>
@@ -1355,7 +1355,7 @@ export function MediaViewerModal({
                         onClick={rotateImage}
                         title="Rotate 90°"
                         aria-label="Rotate 90°"
-                        className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
+                        className="p-1.5 rounded-full hover:bg-discord-text-strong/10 transition-colors"
                       >
                         <FaRedo className="w-3 h-3" />
                       </button>
@@ -1366,7 +1366,7 @@ export function MediaViewerModal({
                     <>
                       {isImageEntry && (
                         <div
-                          className="w-px h-4 bg-white/20 mx-1"
+                          className="w-px h-4 bg-discord-text-strong/20 mx-1"
                           aria-hidden="true"
                         />
                       )}
@@ -1376,7 +1376,7 @@ export function MediaViewerModal({
                         disabled={isDownloading}
                         title={t`Download`}
                         aria-label={t`Download`}
-                        className="p-1.5 rounded-full hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        className="p-1.5 rounded-full hover:bg-discord-text-strong/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                       >
                         {isDownloading ? (
                           <FaSpinner className="w-3.5 h-3.5 animate-spin" />
@@ -1393,7 +1393,7 @@ export function MediaViewerModal({
                       onClick={() => setShowWarning(true)}
                       title={t`Open in browser`}
                       aria-label={t`Open in browser`}
-                      className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
+                      className="p-1.5 rounded-full hover:bg-discord-text-strong/10 transition-colors"
                     >
                       <FaExternalLinkAlt className="w-3.5 h-3.5" />
                     </button>
@@ -1402,7 +1402,7 @@ export function MediaViewerModal({
                   {canShowComments && !currentEntry?.isTopicEntry && (
                     <>
                       <div
-                        className="w-px h-4 bg-white/20 mx-1"
+                        className="w-px h-4 bg-discord-text-strong/20 mx-1"
                         aria-hidden="true"
                       />
                       <button
@@ -1423,10 +1423,10 @@ export function MediaViewerModal({
                         aria-pressed={showComments}
                         className={`relative p-1.5 rounded-full transition-colors ${
                           showComments
-                            ? "bg-white/20 text-white"
+                            ? "bg-discord-text-strong/20 text-discord-text-strong"
                             : commentCount > 0
-                              ? "hover:bg-white/10 text-white"
-                              : "hover:bg-white/10 text-white/70 hover:text-white"
+                              ? "hover:bg-discord-text-strong/10 text-discord-text-strong"
+                              : "hover:bg-discord-text-strong/10 text-discord-text-strong/70 hover:text-discord-text-strong"
                         }`}
                       >
                         <FaComments className="w-4 h-4" />
@@ -1583,8 +1583,8 @@ export function MediaViewerModal({
                       prevValidIndex !== undefined && goTo(prevValidIndex)
                     }
                     disabled={!hasPrev}
-                    className="w-8 h-8 flex items-center justify-center rounded-full text-white/60
-                               hover:text-white hover:bg-white/10 transition-all
+                    className="w-8 h-8 flex items-center justify-center rounded-full text-discord-text-strong/60
+                               hover:text-discord-text-strong hover:bg-discord-text-strong/10 transition-all
                                disabled:opacity-0 disabled:pointer-events-none flex-shrink-0"
                   >
                     <ChevronLeftIcon className="w-5 h-5" />
@@ -1617,7 +1617,7 @@ export function MediaViewerModal({
                           onClick={() => goTo(thumbIndex)}
                           className={`relative rounded-lg overflow-hidden flex-shrink-0 transition-opacity duration-150 ${
                             thumbIndex === currentIndex
-                              ? "w-14 h-14 ring-2 ring-white ring-offset-1 ring-offset-transparent opacity-100"
+                              ? "w-14 h-14 ring-2 ring-discord-text-strong ring-offset-1 ring-offset-transparent opacity-100"
                               : "w-11 h-11 opacity-50 hover:opacity-80"
                           }`}
                         >
@@ -1632,21 +1632,21 @@ export function MediaViewerModal({
                           )}
                           {entry?.type === null && (
                             <div className="w-full h-full flex items-center justify-center bg-discord-dark-600">
-                              <FaMusic className="text-white/60 text-lg" />
+                              <FaMusic className="text-discord-text-strong/60 text-lg" />
                             </div>
                           )}
                           {entry?.type === "video" && (
                             <div className="w-full h-full flex items-center justify-center bg-discord-dark-600">
-                              <FaVideo className="text-white/60 text-lg" />
+                              <FaVideo className="text-discord-text-strong/60 text-lg" />
                             </div>
                           )}
                           {entry?.type === "audio" && (
                             <div className="w-full h-full flex items-center justify-center bg-discord-dark-600">
-                              <FaMusic className="text-white/60 text-lg" />
+                              <FaMusic className="text-discord-text-strong/60 text-lg" />
                             </div>
                           )}
                           {entry?.type === "pdf" && (
-                            <div className="w-full h-full flex items-center justify-center bg-discord-dark-600 text-white/60 text-xs font-bold">
+                            <div className="w-full h-full flex items-center justify-center bg-discord-dark-600 text-discord-text-strong/60 text-xs font-bold">
                               PDF
                             </div>
                           )}
@@ -1666,7 +1666,7 @@ export function MediaViewerModal({
                               }
                               return (
                                 <div className="w-full h-full flex items-center justify-center bg-discord-dark-600">
-                                  <FaVideo className="text-white/60 text-lg" />
+                                  <FaVideo className="text-discord-text-strong/60 text-lg" />
                                 </div>
                               );
                             })()}
@@ -1688,7 +1688,7 @@ export function MediaViewerModal({
                         <Fragment key={entry?.entryKey ?? thumbUrl}>
                           {showSeparator && (
                             <span
-                              className="self-center text-white/30 text-sm flex-shrink-0 select-none mx-0.5"
+                              className="self-center text-discord-text-strong/30 text-sm flex-shrink-0 select-none mx-0.5"
                               aria-hidden="true"
                             >
                               |
@@ -1707,8 +1707,8 @@ export function MediaViewerModal({
                       nextValidIndex !== undefined && goTo(nextValidIndex)
                     }
                     disabled={!hasNext}
-                    className="w-8 h-8 flex items-center justify-center rounded-full text-white/60
-                               hover:text-white hover:bg-white/10 transition-all
+                    className="w-8 h-8 flex items-center justify-center rounded-full text-discord-text-strong/60
+                               hover:text-discord-text-strong hover:bg-discord-text-strong/10 transition-all
                                disabled:opacity-0 disabled:pointer-events-none flex-shrink-0"
                   >
                     <ChevronRightIcon className="w-5 h-5" />

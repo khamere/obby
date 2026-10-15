@@ -37,7 +37,7 @@ export const BouncerNetworkDisconnectConfirmModal: React.FC = () => {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-5 py-4 border-b border-discord-dark-500 flex items-center justify-between">
-          <h2 className="text-white font-bold flex items-center gap-2">
+          <h2 className="text-discord-text-strong font-bold flex items-center gap-2">
             <GiGlassShot className="text-amber-300" />
             <FaPlug className="text-sky-300 text-sm" />
             <Trans>Disconnect network?</Trans>
@@ -45,7 +45,7 @@ export const BouncerNetworkDisconnectConfirmModal: React.FC = () => {
           <button
             type="button"
             onClick={cancel}
-            className="text-discord-text-muted hover:text-white"
+            className="text-discord-text-muted hover:text-discord-text-strong"
             aria-label={t`Close`}
           >
             <FaTimes />

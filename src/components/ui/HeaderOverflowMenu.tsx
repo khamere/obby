@@ -45,7 +45,7 @@ export const HeaderOverflowMenu: React.FC<HeaderOverflowMenuProps> = ({
                 item.onClick();
                 onClose();
               }}
-              className="w-full px-3 py-2 text-left text-discord-text-normal hover:bg-discord-dark-200 hover:text-white transition-colors duration-150 flex items-center gap-2"
+              className="w-full px-3 py-2 text-left text-discord-text-normal hover:bg-discord-dark-200 hover:text-discord-text-strong transition-colors duration-150 flex items-center gap-2"
               title={typeof item.label === "string" ? item.label : undefined}
             >
               <span className="mt-0.5 flex-shrink-0 text-sm">{item.icon}</span>

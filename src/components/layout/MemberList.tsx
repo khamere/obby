@@ -180,7 +180,7 @@ const UserItem: React.FC<{
     >
       {/* Avatar with status indicator */}
       <div className="relative shrink-0">
-        <div className="w-10 h-10 rounded-full bg-discord-dark-400 flex items-center justify-center text-white text-lg font-bold overflow-hidden">
+        <div className="w-10 h-10 rounded-full bg-discord-dark-400 flex items-center justify-center text-discord-text-strong text-lg font-bold overflow-hidden">
           {shouldShowAvatar ? (
             <img
               src={avatarUrl}
@@ -248,7 +248,7 @@ const UserItem: React.FC<{
                 🤖
                 {botInfo && botInfo !== "true" && (
                   <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-10">
-                    <div className="bg-discord-dark-600 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                    <div className="bg-discord-dark-600 text-discord-text-strong text-xs px-2 py-1 rounded whitespace-nowrap">
                       {botInfo}
                     </div>
                   </div>
@@ -632,7 +632,7 @@ export const MemberList: React.FC = () => {
       {isMobileView && (
         <button
           onClick={() => toggleMemberList(false)}
-          className="text-discord-channels-default hover:text-white mb-5"
+          className="text-discord-channels-default hover:text-discord-text-strong mb-5"
         >
           <FaChevronLeft />
         </button>

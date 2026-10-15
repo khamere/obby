@@ -311,11 +311,11 @@ export function MediaCommentsSidebar({
     <div
       ref={sidebarRef}
       data-comments-sidebar=""
-      className="flex flex-col w-full h-full bg-discord-dark-200 border-l border-white/[0.06]"
+      className="flex flex-col w-full h-full bg-discord-dark-200 border-l border-discord-text-strong/[0.06]"
     >
       {/* Header */}
       <div
-        className="flex items-center gap-2 px-3 pb-3 pt-3 border-b border-white/[0.06] flex-shrink-0"
+        className="flex items-center gap-2 px-3 pb-3 pt-3 border-b border-discord-text-strong/[0.06] flex-shrink-0"
         style={
           isMobile
             ? {
@@ -330,7 +330,7 @@ export function MediaCommentsSidebar({
               type="button"
               onClick={onClose}
               aria-label={t`Back to image`}
-              className="p-1.5 rounded-full hover:bg-white/10 text-discord-text-muted hover:text-discord-text-normal transition-colors"
+              className="p-1.5 rounded-full hover:bg-discord-text-strong/10 text-discord-text-muted hover:text-discord-text-normal transition-colors"
             >
               <ArrowLeftIcon className="w-4 h-4" />
             </button>
@@ -351,7 +351,7 @@ export function MediaCommentsSidebar({
               type="button"
               onClick={onCloseAll}
               aria-label={t`Close viewer`}
-              className="p-1.5 rounded-full hover:bg-white/10 text-discord-text-muted hover:text-discord-text-normal transition-colors"
+              className="p-1.5 rounded-full hover:bg-discord-text-strong/10 text-discord-text-muted hover:text-discord-text-normal transition-colors"
             >
               <XMarkIcon className="w-4 h-4" />
             </button>
@@ -375,7 +375,7 @@ export function MediaCommentsSidebar({
               type="button"
               onClick={onClose}
               aria-label={t`Close comments`}
-              className="p-1.5 rounded-full hover:bg-white/10 text-discord-text-muted hover:text-discord-text-normal transition-colors"
+              className="p-1.5 rounded-full hover:bg-discord-text-strong/10 text-discord-text-muted hover:text-discord-text-normal transition-colors"
             >
               <XMarkIcon className="w-4 h-4" />
             </button>
@@ -384,7 +384,7 @@ export function MediaCommentsSidebar({
       </div>
 
       {/* Context strip */}
-      <div className="flex items-start gap-2.5 px-3 py-2.5 bg-discord-dark-100 border-b border-white/[0.06] flex-shrink-0">
+      <div className="flex items-start gap-2.5 px-3 py-2.5 bg-discord-dark-100 border-b border-discord-text-strong/[0.06] flex-shrink-0">
         {(() => {
           const mediaType = detectMediaType(currentImageUrl);
           const embedThumb =

@@ -193,7 +193,7 @@ export const AddServerModal: React.FC = () => {
                   placeholder="irc.example.com"
                   className={`w-full rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-discord-primary ${
                     disableServerConnectionInfo
-                      ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                      ? "bg-discord-surface-raised text-discord-text-dim cursor-not-allowed"
                       : "bg-discord-dark-400 text-discord-text-normal"
                   }`}
                   disabled={disableServerConnectionInfo}
@@ -223,7 +223,7 @@ export const AddServerModal: React.FC = () => {
                     placeholder="443"
                     className={`w-full rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-discord-primary ${
                       disableServerConnectionInfo
-                        ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                        ? "bg-discord-surface-raised text-discord-text-dim cursor-not-allowed"
                         : "bg-discord-dark-400 text-discord-text-normal"
                     }`}
                     disabled={disableServerConnectionInfo || undefined}

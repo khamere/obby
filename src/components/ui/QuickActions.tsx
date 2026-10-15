@@ -662,12 +662,12 @@ const QuickActions: React.FC = () => {
             placeholder={t`Search settings, channels, servers...`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1 bg-transparent text-white placeholder-discord-text-muted outline-none"
+            className="flex-1 bg-transparent text-discord-text-strong placeholder-discord-text-muted outline-none"
             autoFocus
           />
           <button
             onClick={handleClose}
-            className="text-discord-text-muted hover:text-white ml-3"
+            className="text-discord-text-muted hover:text-discord-text-strong ml-3"
           >
             <FaTimes />
           </button>
@@ -773,7 +773,7 @@ const QuickActions: React.FC = () => {
                       <span
                         className={`text-xs px-2 py-1 rounded ml-2 whitespace-nowrap ${
                           index === selectedIndex
-                            ? "bg-white/20"
+                            ? "bg-discord-text-strong/20"
                             : "bg-discord-dark-400"
                         }`}
                       >
@@ -784,7 +784,7 @@ const QuickActions: React.FC = () => {
                       <span
                         className={`text-sm mt-1 ml-8 truncate ${
                           index === selectedIndex
-                            ? "text-white/80"
+                            ? "text-discord-text-strong/80"
                             : "text-discord-text-muted"
                         }`}
                       >

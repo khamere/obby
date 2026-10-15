@@ -138,7 +138,7 @@ export const SlashCommandParamModal: React.FC<Props> = ({
       >
         <div className="flex justify-between items-start mb-3">
           <div className="min-w-0">
-            <h2 className="text-lg font-semibold text-white truncate">
+            <h2 className="text-lg font-semibold text-discord-text-strong truncate">
               /{command.name}
               <span className="text-discord-text-muted ml-1 text-sm">
                 @{botNick}
@@ -153,7 +153,7 @@ export const SlashCommandParamModal: React.FC<Props> = ({
           <button
             type="button"
             onClick={onClose}
-            className="text-discord-text-muted hover:text-white ml-2"
+            className="text-discord-text-muted hover:text-discord-text-strong ml-2"
           >
             ✕
           </button>
@@ -184,7 +184,7 @@ export const SlashCommandParamModal: React.FC<Props> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-3 py-2 rounded bg-discord-dark-400 text-discord-text-normal hover:text-white text-sm"
+            className="px-3 py-2 rounded bg-discord-dark-400 text-discord-text-normal hover:text-discord-text-strong text-sm"
           >
             <Trans>Cancel</Trans>
           </button>
@@ -213,7 +213,7 @@ interface ParamFieldProps {
 }
 
 const BASE_INPUT =
-  "w-full px-3 py-2 rounded bg-discord-dark-400 text-white text-sm placeholder:text-discord-text-muted/60 focus:outline-none focus:ring-1 focus:ring-discord-primary";
+  "w-full px-3 py-2 rounded bg-discord-dark-400 text-discord-text-strong text-sm placeholder:text-discord-text-muted/60 focus:outline-none focus:ring-1 focus:ring-discord-primary";
 
 const ParamField: React.FC<ParamFieldProps> = ({
   option,
@@ -416,7 +416,7 @@ const ParamField: React.FC<ParamFieldProps> = ({
 
   return (
     <div>
-      <label className="text-sm text-white block mb-1">
+      <label className="text-sm text-discord-text-strong block mb-1">
         {option.name}
         {option.required && (
           <span className="text-discord-red ml-1 text-xs">

@@ -30,14 +30,14 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
   const { t } = useLingui();
   return (
     <div
-      className={`message-actions-container flex items-center bg-discord-dark-300 border border-white/10 rounded-lg shadow-xl divide-x divide-white/10 select-none z-10 ${
+      className={`message-actions-container flex items-center bg-discord-dark-300 border border-discord-text-strong/10 rounded-lg shadow-xl divide-x divide-discord-text-strong/10 select-none z-10 ${
         inline ? "flex-shrink-0 self-end" : "absolute -top-4 right-2"
       }`}
     >
       {canOpenMedia && onOpenMedia && (
         <button
           type="button"
-          className="px-2.5 py-1.5 text-discord-text-muted/70 hover:text-discord-text-normal hover:bg-white/10 transition-colors first:rounded-l-lg last:rounded-r-lg"
+          className="px-2.5 py-1.5 text-discord-text-muted/70 hover:text-discord-text-normal hover:bg-discord-text-strong/10 transition-colors first:rounded-l-lg last:rounded-r-lg"
           onClick={onOpenMedia}
           title={t`Open in viewer`}
         >
@@ -57,7 +57,7 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
       {canReply && (
         <button
           type="button"
-          className="px-2.5 py-1.5 text-discord-reply/70 hover:text-discord-reply hover:bg-white/10 transition-colors first:rounded-l-lg last:rounded-r-lg"
+          className="px-2.5 py-1.5 text-discord-reply/70 hover:text-discord-reply hover:bg-discord-text-strong/10 transition-colors first:rounded-l-lg last:rounded-r-lg"
           onClick={onReplyClick}
           title={t`Reply`}
         >
@@ -66,7 +66,7 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
       )}
       <button
         type="button"
-        className="px-2.5 py-1.5 text-discord-text-muted hover:text-discord-text-normal hover:bg-white/10 transition-colors first:rounded-l-lg last:rounded-r-lg"
+        className="px-2.5 py-1.5 text-discord-text-muted hover:text-discord-text-normal hover:bg-discord-text-strong/10 transition-colors first:rounded-l-lg last:rounded-r-lg"
         onClick={(e) => onReactClick(e.currentTarget)}
         title={t`Add reaction`}
       >

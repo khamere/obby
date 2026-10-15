@@ -259,20 +259,20 @@ export const TwoFactorSettingsModal: React.FC<Props> = ({
     <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[100002]">
       <div className="bg-discord-dark-200 rounded-lg w-full max-w-lg p-5 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold text-white">
+          <h2 className="text-lg font-semibold text-discord-text-strong">
             Two-factor authentication
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-discord-text-muted hover:text-white"
+            className="text-discord-text-muted hover:text-discord-text-strong"
           >
             ✕
           </button>
         </div>
 
         <div className="mb-4 p-3 rounded bg-discord-dark-300">
-          <div className="text-sm text-white">
+          <div className="text-sm text-discord-text-strong">
             Status:{" "}
             <span
               className={
@@ -290,7 +290,7 @@ export const TwoFactorSettingsModal: React.FC<Props> = ({
           </div>
         </div>
 
-        <h3 className="text-sm font-semibold text-white mb-2">
+        <h3 className="text-sm font-semibold text-discord-text-strong mb-2">
           Registered credentials
         </h3>
         {credentials.length === 0 ? (
@@ -316,7 +316,9 @@ export const TwoFactorSettingsModal: React.FC<Props> = ({
                 >
                   <div className="flex justify-between items-center">
                     <div className="text-sm">
-                      <div className="text-white font-medium">{c.name}</div>
+                      <div className="text-discord-text-strong font-medium">
+                        {c.name}
+                      </div>
                       <div className="text-xs text-discord-text-muted">
                         {TYPE_LABELS[c.type] ?? c.type}
                         {c.createdAt ? ` · added ${c.createdAt}` : ""}
@@ -326,7 +328,7 @@ export const TwoFactorSettingsModal: React.FC<Props> = ({
                       <button
                         type="button"
                         onClick={() => setRemovingId(c.id)}
-                        className="text-xs text-discord-red hover:text-white"
+                        className="text-xs text-discord-red hover:text-discord-text-strong"
                       >
                         Remove
                       </button>
@@ -345,7 +347,7 @@ export const TwoFactorSettingsModal: React.FC<Props> = ({
                       <button
                         type="button"
                         onClick={() => setRemovingId(null)}
-                        className="px-2 py-1 rounded bg-discord-dark-100 text-white"
+                        className="px-2 py-1 rounded bg-discord-dark-100 text-discord-text-strong"
                       >
                         OK
                       </button>
@@ -353,7 +355,7 @@ export const TwoFactorSettingsModal: React.FC<Props> = ({
                   )}
                   {isPendingRemoval && !isLastWhileEnabled && (
                     <div className="text-xs bg-discord-dark-400 p-2 rounded">
-                      <p className="text-white mb-2">
+                      <p className="text-discord-text-strong mb-2">
                         Remove "{c.name}"? You will no longer be able to use it
                         as a second factor.
                       </p>
@@ -371,7 +373,7 @@ export const TwoFactorSettingsModal: React.FC<Props> = ({
                         <button
                           type="button"
                           onClick={() => setRemovingId(null)}
-                          className="px-2 py-1 rounded bg-discord-dark-100 text-white"
+                          className="px-2 py-1 rounded bg-discord-dark-100 text-discord-text-strong"
                         >
                           Cancel
                         </button>
@@ -388,7 +390,7 @@ export const TwoFactorSettingsModal: React.FC<Props> = ({
           <button
             type="button"
             onClick={onAddTotp}
-            className="px-3 py-2 rounded bg-discord-blue text-white text-sm font-medium hover:bg-discord-blue-hover"
+            className="px-3 py-2 rounded bg-discord-blue text-discord-text-strong text-sm font-medium hover:bg-discord-blue-hover"
           >
             Add authenticator app
           </button>
@@ -396,7 +398,7 @@ export const TwoFactorSettingsModal: React.FC<Props> = ({
             type="button"
             onClick={onAddWebAuthn}
             disabled={!supportsWebAuthn || !isWebAuthnAvailable()}
-            className="px-3 py-2 rounded bg-discord-dark-100 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-2 rounded bg-discord-dark-100 text-discord-text-strong text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             title={
               !supportsWebAuthn
                 ? "Server does not advertise WebAuthn support"
@@ -411,7 +413,7 @@ export const TwoFactorSettingsModal: React.FC<Props> = ({
 
         {oauthProviders.length > 0 && (
           <div className="mb-4 p-3 rounded bg-discord-dark-300 space-y-2">
-            <div className="text-sm text-white font-medium">
+            <div className="text-sm text-discord-text-strong font-medium">
               Link an OAuth identity
             </div>
             <p className="text-xs text-discord-text-muted">
@@ -428,9 +430,9 @@ export const TwoFactorSettingsModal: React.FC<Props> = ({
                   type="button"
                   disabled={busy}
                   onClick={() => onLinkOauth(p, p.providerLabel.toLowerCase())}
-                  className={`w-full px-3 py-2 rounded text-white text-sm font-medium ${
+                  className={`w-full px-3 py-2 rounded text-discord-text-strong text-sm font-medium ${
                     busy
-                      ? "bg-gray-600 cursor-not-allowed"
+                      ? "bg-discord-surface-hover cursor-not-allowed"
                       : "bg-discord-primary hover:bg-opacity-80"
                   }`}
                 >
@@ -451,7 +453,7 @@ export const TwoFactorSettingsModal: React.FC<Props> = ({
             onSubmit={onSubmitTotp}
             className="mb-4 p-3 rounded bg-discord-dark-300"
           >
-            <p className="text-sm text-white mb-2">
+            <p className="text-sm text-discord-text-strong mb-2">
               Scan this QR code with your authenticator app, then confirm with
               the 6-digit code it shows.
             </p>
@@ -466,7 +468,7 @@ export const TwoFactorSettingsModal: React.FC<Props> = ({
                 placeholder="Name (e.g. iPhone)"
                 value={enrollName}
                 onChange={(e) => setEnrollName(e.target.value)}
-                className="w-full px-3 py-2 rounded bg-discord-dark-200 text-white"
+                className="w-full px-3 py-2 rounded bg-discord-dark-200 text-discord-text-strong"
               />
               <input
                 type="text"
@@ -478,7 +480,7 @@ export const TwoFactorSettingsModal: React.FC<Props> = ({
                 onChange={(e) =>
                   setEnrollCode(e.target.value.replace(/\D/g, ""))
                 }
-                className="w-full px-3 py-2 rounded bg-discord-dark-200 text-white tracking-[0.4em] text-center font-mono"
+                className="w-full px-3 py-2 rounded bg-discord-dark-200 text-discord-text-strong tracking-[0.4em] text-center font-mono"
               />
               <button
                 type="submit"
@@ -503,7 +505,7 @@ export const TwoFactorSettingsModal: React.FC<Props> = ({
 
         {status === "enabled" ? (
           <div className="p-3 rounded bg-discord-dark-300">
-            <p className="text-sm text-white mb-2">
+            <p className="text-sm text-discord-text-strong mb-2">
               Disable 2FA. Enter a 6-digit code from any of your registered
               authenticator apps to confirm.
             </p>
@@ -518,7 +520,7 @@ export const TwoFactorSettingsModal: React.FC<Props> = ({
                 onChange={(e) =>
                   setDisableCode(e.target.value.replace(/\D/g, ""))
                 }
-                className="flex-1 px-3 py-2 rounded bg-discord-dark-200 text-white tracking-[0.4em] text-center font-mono"
+                className="flex-1 px-3 py-2 rounded bg-discord-dark-200 text-discord-text-strong tracking-[0.4em] text-center font-mono"
               />
               <button
                 type="button"

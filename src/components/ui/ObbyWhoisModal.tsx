@@ -175,7 +175,7 @@ const Row: React.FC<{
         {label}
       </div>
       <div
-        className={`text-sm text-white break-all ${
+        className={`text-sm text-discord-text-strong break-all ${
           mono ? "font-mono" : ""
         } flex items-start gap-2`}
       >
@@ -184,7 +184,7 @@ const Row: React.FC<{
           <button
             type="button"
             onClick={doCopy}
-            className="flex-shrink-0 text-discord-text-muted hover:text-white p-1 rounded transition-colors"
+            className="flex-shrink-0 text-discord-text-muted hover:text-discord-text-strong p-1 rounded transition-colors"
             title={t`Copy`}
           >
             {copied ? (
@@ -221,7 +221,7 @@ const SessionDetail: React.FC<{
           {hideHeader ? (
             <div />
           ) : (
-            <h4 className="text-white font-semibold text-sm flex items-center gap-2">
+            <h4 className="text-discord-text-strong font-semibold text-sm flex items-center gap-2">
               <Trans>Session {session.ordinal}</Trans>
               {session.total && (
                 <span className="text-discord-text-muted font-normal">
@@ -586,7 +586,7 @@ const ObbyWhoisModal: React.FC<ObbyWhoisModalProps> = ({
             <button
               type="button"
               onClick={onBack}
-              className="absolute top-4 left-4 px-2.5 py-1 text-xs font-semibold rounded bg-discord-dark-100/80 hover:bg-discord-dark-100 text-white flex items-center gap-1 transition-colors z-10"
+              className="absolute top-4 left-4 px-2.5 py-1 text-xs font-semibold rounded bg-discord-dark-100/80 hover:bg-discord-dark-100 text-discord-text-strong flex items-center gap-1 transition-colors z-10"
             >
               <Trans>← Back</Trans>
             </button>
@@ -598,7 +598,7 @@ const ObbyWhoisModal: React.FC<ObbyWhoisModalProps> = ({
             onClick={onClose}
             aria-label={t`Close`}
             title={t`Close`}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-discord-dark-100/80 hover:bg-discord-dark-100 text-white flex items-center justify-center transition-colors z-10"
+            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-discord-dark-100/80 hover:bg-discord-dark-100 text-discord-text-strong flex items-center justify-center transition-colors z-10"
           >
             <FaTimes size={14} />
           </button>
@@ -627,7 +627,7 @@ const ObbyWhoisModal: React.FC<ObbyWhoisModalProps> = ({
                 />
               ) : null}
               <div
-                className="w-full h-full flex items-center justify-center text-2xl font-bold text-white"
+                className="w-full h-full flex items-center justify-center text-2xl font-bold text-discord-text-strong"
                 style={{
                   display: canShowAvatar ? "none" : "flex",
                   background: accent,
@@ -638,7 +638,7 @@ const ObbyWhoisModal: React.FC<ObbyWhoisModalProps> = ({
             </div>
 
             <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2 flex-wrap">
+              <h2 className="text-xl font-bold text-discord-text-strong flex items-center gap-2 flex-wrap">
                 <span style={{ color: accent }}>{displayName}</span>
                 {isVerified && (
                   <FaCheckCircle
@@ -708,7 +708,7 @@ const ObbyWhoisModal: React.FC<ObbyWhoisModalProps> = ({
               </div>
 
               {whoisData?.realname && (
-                <div className="text-sm text-white/80 mt-1.5">
+                <div className="text-sm text-discord-text-strong/80 mt-1.5">
                   {whoisData.realname}
                 </div>
               )}
@@ -724,7 +724,7 @@ const ObbyWhoisModal: React.FC<ObbyWhoisModalProps> = ({
                   <button
                     type="button"
                     onClick={handlePM}
-                    className="px-3 py-1 text-xs font-semibold rounded text-white transition-opacity hover:opacity-90"
+                    className="px-3 py-1 text-xs font-semibold rounded text-discord-text-strong transition-opacity hover:opacity-90"
                     style={{ background: accent }}
                   >
                     <Trans>Message</Trans>
@@ -732,7 +732,7 @@ const ObbyWhoisModal: React.FC<ObbyWhoisModalProps> = ({
                   <button
                     type="button"
                     onClick={handleWhois}
-                    className="px-3 py-1 text-xs font-semibold rounded bg-discord-dark-100 text-white hover:bg-discord-dark-400 transition-colors"
+                    className="px-3 py-1 text-xs font-semibold rounded bg-discord-dark-100 text-discord-text-strong hover:bg-discord-dark-400 transition-colors"
                   >
                     <Trans>Refresh WHOIS</Trans>
                   </button>
@@ -763,7 +763,9 @@ const ObbyWhoisModal: React.FC<ObbyWhoisModalProps> = ({
               {botDescription && (
                 <div className="bg-discord-dark-300 rounded-lg p-3 flex items-center gap-3 text-sm">
                   <FaRobot className="text-cyan-400 flex-shrink-0" size={14} />
-                  <span className="text-white">{botDescription}</span>
+                  <span className="text-discord-text-strong">
+                    {botDescription}
+                  </span>
                 </div>
               )}
               {sanitizedHomepage && (
@@ -805,7 +807,7 @@ const ObbyWhoisModal: React.FC<ObbyWhoisModalProps> = ({
                       >
                         {badge && (
                           <span
-                            className={`${badge.color} text-white text-[10px] font-bold px-1 rounded`}
+                            className={`${badge.color} text-discord-text-strong text-[10px] font-bold px-1 rounded`}
                           >
                             {badge.text}
                           </span>
@@ -814,7 +816,7 @@ const ObbyWhoisModal: React.FC<ObbyWhoisModalProps> = ({
                           size={9}
                           className="text-discord-text-muted"
                         />
-                        <span className="text-white font-mono">
+                        <span className="text-discord-text-strong font-mono">
                           {channel.replace(/^#/, "")}
                         </span>
                         {isSecret && <span title={t`Secret`}>🔒</span>}
@@ -946,7 +948,7 @@ const ObbyWhoisModal: React.FC<ObbyWhoisModalProps> = ({
                                 : { borderBottom: "2px solid transparent" }
                             }
                           >
-                            <div className="text-xs font-semibold text-white flex items-center gap-1.5">
+                            <div className="text-xs font-semibold text-discord-text-strong flex items-center gap-1.5">
                               {flagFromCC(s.countryCode) || "🌐"}
                               <span>
                                 <Trans>Session</Trans> {s.ordinal}
