@@ -1,0 +1,28 @@
+{
+  "id": "matrix",
+  "name": "Matrix",
+  "appearance": "dark",
+  "colors": {
+    "primary": "#00c838",
+    "green": "#00ff41",
+    "yellow": "#b8ff00",
+    "fuchsia": "#46ff8a",
+    "red": "#ff3b3b",
+    "bg-input": "#0a140a",
+    "bg-base": "#000000",
+    "bg-sidebar": "#020502",
+    "bg-deep": "#000000",
+    "icon": "#1f6b1f",
+    "bg-member": "#020502",
+    "bg-hover": "#061006",
+    "fg": "#00ff41",
+    "fg-muted": "#0f9f3a",
+    "link": "#39ff14",
+    "fg-channel": "#0b7a2c",
+    "fg-channel-active": "#7dffa0",
+    "success": "#00ff41",
+    "success-hover": "#00d936",
+    "button-secondary": "#0f3d14",
+    "reply": "#39ff14"
+  }
+}

@@ -1,7 +1,15 @@
 import { useLingui } from "@lingui/react/macro";
 import type React from "react";
 import type { SettingComponentProps } from "../../../lib/settings/types";
-import { BUILT_IN_THEMES, type ThemeDefinition } from "../../../lib/theme";
+import {
+  BUILT_IN_THEMES,
+  CUSTOM_THEME_ID,
+  LINK_THEME_ID,
+  parseThemeJson,
+  type ThemeDefinition,
+} from "../../../lib/theme";
+import { useThemeLinkState } from "../../../lib/themeLink";
+import useStore from "../../../store";
 
 /**
  * Theme preset picker. Each card is a miniature of the app drawn from the
@@ -12,13 +20,26 @@ export const ThemeField: React.FC<SettingComponentProps> = ({
   onChange,
   disabled,
 }) => {
+  const { t } = useLingui();
   const selected = typeof value === "string" ? value : "";
+  const customJson = useStore((s) => s.globalSettings.customTheme);
+  const linked = useThemeLinkState().theme;
+  const custom = parseThemeJson(customJson);
+  const themes: ThemeDefinition[] = [
+    ...BUILT_IN_THEMES,
+    ...(custom
+      ? [{ ...custom, id: CUSTOM_THEME_ID, name: t`Custom: ${custom.name}` }]
+      : []),
+    ...(linked
+      ? [{ ...linked, id: LINK_THEME_ID, name: t`From link: ${linked.name}` }]
+      : []),
+  ];
   return (
     <div
       className="grid gap-3"
       style={{ gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}
     >
-      {BUILT_IN_THEMES.map((theme) => (
+      {themes.map((theme) => (
         <ThemeCard
           key={theme.id}
           theme={theme}

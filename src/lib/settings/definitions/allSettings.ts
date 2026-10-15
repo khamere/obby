@@ -1,9 +1,12 @@
 import { msg } from "@lingui/core/macro";
 import { AccentColorField } from "../../../components/ui/settings/AccentColorField";
+import { ChatBackgroundField } from "../../../components/ui/settings/ChatBackgroundField";
 import { CustomCssField } from "../../../components/ui/settings/CustomCssField";
 import { CustomMentionsField } from "../../../components/ui/settings/CustomMentionsField";
 import { IgnoreListField } from "../../../components/ui/settings/IgnoreListField";
+import { ThemeEditorField } from "../../../components/ui/settings/ThemeEditorField";
 import { ThemeField } from "../../../components/ui/settings/ThemeField";
+import { ThemeLinkField } from "../../../components/ui/settings/ThemeLinkField";
 import { UserFilehostField } from "../../../components/ui/settings/UserFilehostField";
 import { FONT_SIZE_MAX, FONT_SIZE_MIN } from "../../typography";
 import settingsRegistry from "../registry";
@@ -239,6 +242,84 @@ const notificationSettings: SettingDefinition[] = [
  * Preference Settings
  */
 const preferenceSettings: SettingDefinition[] = [
+  {
+    id: "preferences.customTheme",
+    key: "customTheme",
+    category: "preferences",
+    subcategory: "Appearance",
+    title: msg`Your own theme`,
+    description: msg`Edit every colour, or import a theme file. Pick "Custom" in the theme list to use it; export to share it.`,
+    type: "custom",
+    defaultValue: "",
+    customComponent: ThemeEditorField,
+    searchKeywords: ["theme", "editor", "custom", "export", "import", "colors"],
+    priority: 19.2,
+  },
+  {
+    id: "preferences.themeLink",
+    key: "themeLink",
+    category: "preferences",
+    subcategory: "Appearance",
+    title: msg`Theme from a link`,
+    description: msg`A theme .json file by URL, fetched when Obby starts (no cookies or referrer). Pick "From link" in the theme list to use it.`,
+    type: "custom",
+    // Display-only: the link lives in lib/themeLink, not in settings.
+    defaultValue: "",
+    customComponent: ThemeLinkField,
+    searchKeywords: ["theme", "link", "url", "share"],
+    priority: 19.4,
+  },
+  {
+    id: "preferences.nickPalette",
+    key: "nickPalette",
+    category: "preferences",
+    subcategory: "Appearance",
+    title: msg`Nickname colours`,
+    description: msg`The palette used when Colored Nicknames is on`,
+    type: "select",
+    defaultValue: "pastel",
+    options: [
+      { value: "pastel", label: msg`Pastel` },
+      { value: "vivid", label: msg`Vivid` },
+      { value: "mono", label: msg`Monochrome` },
+    ],
+    searchKeywords: ["nick", "nickname", "colors", "palette"],
+    priority: 27,
+  },
+  {
+    id: "preferences.chatBackground",
+    key: "chatBackground",
+    category: "preferences",
+    subcategory: "Appearance",
+    title: msg`Chat background image`,
+    description: msg`Shown behind messages, kept in this browser`,
+    type: "custom",
+    defaultValue: "",
+    customComponent: ChatBackgroundField,
+    searchKeywords: ["background", "wallpaper", "image", "chat"],
+    priority: 28,
+  },
+  {
+    id: "preferences.chatBackgroundOpacity",
+    key: "chatBackgroundOpacity",
+    category: "preferences",
+    subcategory: "Appearance",
+    title: msg`Background opacity`,
+    type: "range",
+    defaultValue: 30,
+    min: 0,
+    max: 100,
+    step: 5,
+    unit: "%",
+    dependencies: [
+      {
+        settingId: "preferences.chatBackground",
+        condition: (v) => typeof v === "string" && v.length > 0,
+      },
+    ],
+    searchKeywords: ["background", "opacity", "transparency"],
+    priority: 29,
+  },
   {
     id: "preferences.theme",
     key: "theme",

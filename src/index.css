@@ -43,6 +43,64 @@
   --obby-font-chat: 'Roboto Mono', monospace;
   --obby-font-size: 14px;
   --obby-line-height: 1.5;
+
+  /* Chat look (lib/chatLook) */
+  --obby-chat-bg: none;
+  --obby-chat-bg-opacity: 0.3;
+}
+
+/* Background image behind the messages (data URI only, see lib/chatLook) */
+.obby-chat-area {
+  position: relative;
+}
+.obby-chat-area::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--obby-chat-bg) center / cover no-repeat;
+  opacity: var(--obby-chat-bg-opacity);
+  pointer-events: none;
+}
+.obby-chat-area > * {
+  position: relative;
+}
+
+/* Nick colour palettes (lib/chatLook picks one with data-nick-palette) */
+html[data-nick-palette="vivid"] {
+  --obby-nick-0: #ff6b6b;
+  --obby-nick-1: #ff9f43;
+  --obby-nick-2: #feca57;
+  --obby-nick-3: #c8e63c;
+  --obby-nick-4: #7bed9f;
+  --obby-nick-5: #2ed573;
+  --obby-nick-6: #1dd1a1;
+  --obby-nick-7: #48dbfb;
+  --obby-nick-8: #54a0ff;
+  --obby-nick-9: #5f7cff;
+  --obby-nick-10: #7d5fff;
+  --obby-nick-11: #a55eea;
+  --obby-nick-12: #d980fa;
+  --obby-nick-13: #ff6bd6;
+  --obby-nick-14: #ff7eb3;
+  --obby-nick-15: #ff8c69;
+}
+html[data-nick-palette="mono"] {
+  --obby-nick-0: #ffffff;
+  --obby-nick-1: #f0f0f0;
+  --obby-nick-2: #e4e4e4;
+  --obby-nick-3: #d8d8d8;
+  --obby-nick-4: #cccccc;
+  --obby-nick-5: #c0c0c0;
+  --obby-nick-6: #b4b4b4;
+  --obby-nick-7: #a8a8a8;
+  --obby-nick-8: #fafafa;
+  --obby-nick-9: #eaeaea;
+  --obby-nick-10: #dedede;
+  --obby-nick-11: #d2d2d2;
+  --obby-nick-12: #c6c6c6;
+  --obby-nick-13: #bababa;
+  --obby-nick-14: #aeaeae;
+  --obby-nick-15: #a2a2a2;
 }
 
 body {

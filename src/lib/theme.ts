@@ -3,9 +3,11 @@
 // <html>; Tailwind's discord.* colours read them, so every component follows
 // without knowing about themes. Custom CSS loads later and still wins.
 
+import bubblegum from "../themes/bubblegum.json";
 import catppuccinMocha from "../themes/catppuccin-mocha.json";
 import dracula from "../themes/dracula.json";
 import gruvboxDark from "../themes/gruvbox-dark.json";
+import matrix from "../themes/matrix.json";
 import nord from "../themes/nord.json";
 import obbyDark from "../themes/obby-dark.json";
 import oledBlack from "../themes/oled-black.json";
@@ -51,14 +53,48 @@ const ID = /^[a-z0-9][a-z0-9-]{0,39}$/;
 export const DEFAULT_THEME_ID = "obby-dark";
 
 export interface ThemeSettings {
+  // A preset id, "custom" (the edited theme in customTheme) or "link"
+  // (the theme loaded from the shared link, see lib/themeLink).
   theme: string;
   accentColor: string;
+  // JSON of a ThemeDefinition, or "" when the user has not made one.
+  customTheme: string;
 }
 
 export const DEFAULT_THEME_SETTINGS: ThemeSettings = {
   theme: DEFAULT_THEME_ID,
   accentColor: "",
+  customTheme: "",
 };
+
+export const CUSTOM_THEME_ID = "custom";
+export const LINK_THEME_ID = "link";
+
+export function parseThemeJson(text: string): ThemeDefinition | null {
+  try {
+    return validateTheme(JSON.parse(text));
+  } catch {
+    return null;
+  }
+}
+
+export function serializeTheme(theme: ThemeDefinition): string {
+  return JSON.stringify(theme, null, 2);
+}
+
+/** The theme the settings point at, falling back to the default. */
+export function resolveTheme(
+  settings: Pick<ThemeSettings, "theme" | "customTheme">,
+  linked: ThemeDefinition | null,
+): ThemeDefinition {
+  if (settings.theme === CUSTOM_THEME_ID) {
+    return parseThemeJson(settings.customTheme) ?? getTheme(DEFAULT_THEME_ID);
+  }
+  if (settings.theme === LINK_THEME_ID) {
+    return linked ?? getTheme(DEFAULT_THEME_ID);
+  }
+  return getTheme(settings.theme);
+}
 
 export const BUILT_IN_THEMES: ThemeDefinition[] = [
   obbyDark,
@@ -68,6 +104,8 @@ export const BUILT_IN_THEMES: ThemeDefinition[] = [
   nord,
   gruvboxDark,
   tokyoNight,
+  bubblegum,
+  matrix,
 ].map((t) => validateTheme(t) as ThemeDefinition);
 
 export function isHexColor(value: unknown): value is string {
@@ -164,6 +202,6 @@ export function applyTheme(
   root.style.setProperty("--obby-primary", hexToTriplet(accent));
   root.style.setProperty("--primary", hexToHsl(accent));
   root.style.setProperty("--ring", hexToHsl(accent));
-  root.setAttribute("data-theme", theme.id);
+  root.setAttribute("data-obby-theme", theme.id);
   root.setAttribute("data-appearance", theme.appearance);
 }
