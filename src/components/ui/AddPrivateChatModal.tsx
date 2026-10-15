@@ -83,7 +83,7 @@ export const AddPrivateChatModal: React.FC<AddPrivateChatModalProps> = ({
             placeholder={t`Search users...`}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-discord-dark-400 border border-discord-dark-500 rounded px-10 py-2 text-white placeholder-discord-channels-default focus:outline-none focus:border-discord-primary"
+            className="w-full bg-discord-dark-400 border border-discord-dark-500 rounded px-10 py-2 text-discord-text-strong placeholder-discord-channels-default focus:outline-none focus:border-discord-primary"
             autoFocus
           />
         </div>
@@ -105,7 +105,7 @@ export const AddPrivateChatModal: React.FC<AddPrivateChatModalProps> = ({
                 ) && (
                   <button
                     onClick={() => handleUserSelect(searchTerm.trim())}
-                    className="w-full flex items-center gap-3 p-2 rounded hover:bg-discord-dark-400 text-left text-white border border-discord-dark-500 mb-2"
+                    className="w-full flex items-center gap-3 p-2 rounded hover:bg-discord-dark-400 text-left text-discord-text-strong border border-discord-dark-500 mb-2"
                   >
                     <FaUser className="text-discord-channels-default" />
                     <span>
@@ -124,7 +124,7 @@ export const AddPrivateChatModal: React.FC<AddPrivateChatModalProps> = ({
                 <button
                   key={user.id}
                   onClick={() => handleUserSelect(user.username)}
-                  className="w-full flex items-center gap-3 p-2 rounded hover:bg-discord-dark-400 text-left text-white"
+                  className="w-full flex items-center gap-3 p-2 rounded hover:bg-discord-dark-400 text-left text-discord-text-strong"
                 >
                   <FaUser className="text-discord-channels-default" />
                   <span>{user.username}</span>

@@ -103,8 +103,8 @@ export const MessageReply: React.FC<MessageReplyProps> = ({
       className={`flex min-w-0 w-full overflow-hidden transition-colors
         ${
           onClose
-            ? "bg-discord-dark-100 rounded-t-lg border-b border-white/[0.06]"
-            : "bg-black/[0.22] mb-2 rounded-md border border-white/[0.04]"
+            ? "bg-discord-dark-100 rounded-t-lg border-b border-discord-text-strong/[0.06]"
+            : "bg-black/[0.22] mb-2 rounded-md border border-discord-text-strong/[0.04]"
         }
         ${isClickable ? "cursor-pointer hover:bg-black/[0.32]" : ""}`}
       onClick={isClickable ? onReplyClick : undefined}
@@ -153,7 +153,7 @@ export const MessageReply: React.FC<MessageReplyProps> = ({
       {onClose && (
         <button
           type="button"
-          className="flex-shrink-0 self-center p-3 mr-1 rounded-lg hover:bg-white/10 text-discord-text-muted hover:text-discord-text-normal transition-colors"
+          className="flex-shrink-0 self-center p-3 mr-1 rounded-lg hover:bg-discord-text-strong/10 text-discord-text-muted hover:text-discord-text-normal transition-colors"
           onMouseDown={(e) => e.preventDefault()}
           onClick={(e) => {
             e.stopPropagation();

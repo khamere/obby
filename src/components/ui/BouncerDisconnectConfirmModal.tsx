@@ -35,7 +35,7 @@ export const BouncerDisconnectConfirmModal: React.FC = () => {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-5 py-4 border-b border-discord-dark-500 flex items-center justify-between">
-          <h2 className="text-white font-bold flex items-center gap-2">
+          <h2 className="text-discord-text-strong font-bold flex items-center gap-2">
             <GiGlassShot className="text-amber-300" />
             <FaCrown className="text-yellow-400 text-sm" />
             <Trans>Disconnect from soju bouncer?</Trans>
@@ -43,7 +43,7 @@ export const BouncerDisconnectConfirmModal: React.FC = () => {
           <button
             type="button"
             onClick={cancelDeleteServer}
-            className="text-discord-text-muted hover:text-white"
+            className="text-discord-text-muted hover:text-discord-text-strong"
             aria-label={t`Close`}
           >
             <FaTimes />
@@ -107,7 +107,7 @@ const NetworkCard: React.FC<{ server: Server }> = ({ server }) => {
   return (
     <div className="flex items-center gap-3 px-3 py-2 rounded bg-discord-dark-300 border border-discord-dark-500">
       <div className="w-8 h-8 rounded-md bg-discord-dark-400 flex items-center justify-center relative">
-        <span className="text-white text-sm font-semibold">
+        <span className="text-discord-text-strong text-sm font-semibold">
           {label.charAt(0).toUpperCase()}
         </span>
         <div className="absolute -top-1 -right-1 flex items-center gap-0.5 bg-discord-dark-300 border border-discord-dark-500 rounded-full px-1 py-0.5">
@@ -116,7 +116,9 @@ const NetworkCard: React.FC<{ server: Server }> = ({ server }) => {
         </div>
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-sm text-white font-medium truncate">{label}</div>
+        <div className="text-sm text-discord-text-strong font-medium truncate">
+          {label}
+        </div>
         {server.host && (
           <div className="text-xs text-discord-text-muted truncate">
             {server.host}

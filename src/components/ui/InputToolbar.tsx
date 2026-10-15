@@ -58,7 +58,7 @@ export function InputToolbar({
       </button>
       {showSendButton && (
         <button
-          className={`mx-1.5 w-9 h-9 rounded-full text-white flex items-center justify-center flex-shrink-0
+          className={`mx-1.5 w-9 h-9 rounded-full text-discord-text-strong flex items-center justify-center flex-shrink-0
             transition-[transform,opacity,box-shadow] duration-200 ease-out active:scale-90 ${
               hasText
                 ? "bg-discord-primary shadow-lg shadow-discord-primary/40 scale-100 opacity-100"

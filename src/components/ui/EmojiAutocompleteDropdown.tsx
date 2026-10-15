@@ -146,8 +146,8 @@ export const EmojiAutocompleteDropdown: React.FC<
             data-emoji-index={index}
             className={`px-3 py-2 cursor-pointer flex items-center gap-2 transition-colors duration-150 ${
               index === selectedIndex
-                ? "bg-discord-text-link text-white"
-                : "text-discord-text-normal hover:bg-discord-dark-200 hover:text-white"
+                ? "bg-discord-text-link text-discord-text-strong"
+                : "text-discord-text-normal hover:bg-discord-dark-200 hover:text-discord-text-strong"
             }`}
             onClick={() => onSelect(emojiItem.emoji)}
             onMouseEnter={() => setSelectedIndex(index)}

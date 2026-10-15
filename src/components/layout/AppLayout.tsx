@@ -378,7 +378,7 @@ export const AppLayout: React.FC = () => {
   return (
     <div
       className={`flex h-full overflow-hidden bg-discord-dark-300 keyboard-aware-layout ${
-        isDarkMode ? "text-white" : "text-gray-900"
+        isDarkMode ? "text-discord-text-strong" : "text-gray-900"
       }`}
       style={{
         paddingTop: "var(--safe-area-inset-top)",

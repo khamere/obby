@@ -90,7 +90,7 @@ export const TopicModal: React.FC<TopicModalProps> = ({
           <TextArea
             value={editedTopic}
             onChange={(e) => setEditedTopic(e.target.value)}
-            className="w-full p-3 rounded min-h-[120px] resize-y text-sm leading-relaxed focus:outline-none transition-colors bg-discord-dark-400 text-white focus:ring-1 focus:ring-discord-primary"
+            className="w-full p-3 rounded min-h-[120px] resize-y text-sm leading-relaxed focus:outline-none transition-colors bg-discord-dark-400 text-discord-text-strong focus:ring-1 focus:ring-discord-primary"
             placeholder={canEdit ? t`Set a topic…` : t`No topic set`}
             autoFocus
           />

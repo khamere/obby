@@ -212,13 +212,13 @@ export const EmojiPackAdminModal: React.FC<Props> = ({ serverId, onClose }) => {
     <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
       <div className="bg-discord-dark-200 rounded-lg w-full max-w-2xl p-5 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold text-white">
+          <h2 className="text-lg font-semibold text-discord-text-strong">
             Custom emoji packs
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-discord-text-muted hover:text-white"
+            className="text-discord-text-muted hover:text-discord-text-strong"
             aria-label="Close"
           >
             <FaTimes />
@@ -236,7 +236,7 @@ export const EmojiPackAdminModal: React.FC<Props> = ({ serverId, onClose }) => {
           <button
             type="button"
             onClick={() => setShowCreate(!showCreate)}
-            className="px-3 py-1 rounded bg-discord-blue text-white text-sm font-medium"
+            className="px-3 py-1 rounded bg-discord-blue text-discord-text-strong text-sm font-medium"
           >
             {showCreate ? "Cancel" : "New pack"}
           </button>
@@ -252,21 +252,21 @@ export const EmojiPackAdminModal: React.FC<Props> = ({ serverId, onClose }) => {
               value={newPackId}
               onChange={(e) => setNewPackId(e.target.value)}
               placeholder="pack_id (e.g. team-mascots)"
-              className="w-full px-3 py-2 rounded bg-discord-dark-400 text-white text-sm"
+              className="w-full px-3 py-2 rounded bg-discord-dark-400 text-discord-text-strong text-sm"
             />
             <input
               type="text"
               value={newPackName}
               onChange={(e) => setNewPackName(e.target.value)}
               placeholder="Display name"
-              className="w-full px-3 py-2 rounded bg-discord-dark-400 text-white text-sm"
+              className="w-full px-3 py-2 rounded bg-discord-dark-400 text-discord-text-strong text-sm"
             />
             <input
               type="text"
               value={newPackDesc}
               onChange={(e) => setNewPackDesc(e.target.value)}
               placeholder="Description (optional)"
-              className="w-full px-3 py-2 rounded bg-discord-dark-400 text-white text-sm"
+              className="w-full px-3 py-2 rounded bg-discord-dark-400 text-discord-text-strong text-sm"
             />
             <div className="flex gap-2">
               <select
@@ -274,7 +274,7 @@ export const EmojiPackAdminModal: React.FC<Props> = ({ serverId, onClose }) => {
                 onChange={(e) =>
                   setNewPackScope(e.target.value as "server" | "channel")
                 }
-                className="flex-1 px-3 py-2 rounded bg-discord-dark-400 text-white text-sm"
+                className="flex-1 px-3 py-2 rounded bg-discord-dark-400 text-discord-text-strong text-sm"
               >
                 <option value="server">Server-wide</option>
                 <option value="channel">Channel-scoped</option>
@@ -285,7 +285,7 @@ export const EmojiPackAdminModal: React.FC<Props> = ({ serverId, onClose }) => {
                   value={newPackChannel}
                   onChange={(e) => setNewPackChannel(e.target.value)}
                   placeholder="#channel"
-                  className="flex-1 px-3 py-2 rounded bg-discord-dark-400 text-white text-sm"
+                  className="flex-1 px-3 py-2 rounded bg-discord-dark-400 text-discord-text-strong text-sm"
                 />
               )}
             </div>
@@ -322,7 +322,9 @@ export const EmojiPackAdminModal: React.FC<Props> = ({ serverId, onClose }) => {
                     onClick={() => togglePack(pack)}
                     className="text-left flex-1"
                   >
-                    <div className="text-white font-medium">{pack.name}</div>
+                    <div className="text-discord-text-strong font-medium">
+                      {pack.name}
+                    </div>
                     <div className="text-xs text-discord-text-muted">
                       {pack.pack_id} · {pack.scope}
                       {pack.scope === "channel" && pack.channel_name
@@ -344,7 +346,7 @@ export const EmojiPackAdminModal: React.FC<Props> = ({ serverId, onClose }) => {
                           addingTo === pack.pack_id ? null : pack.pack_id,
                         )
                       }
-                      className="text-xs px-2 py-1 rounded bg-discord-dark-100 text-white"
+                      className="text-xs px-2 py-1 rounded bg-discord-dark-100 text-discord-text-strong"
                     >
                       Add emoji
                     </button>
@@ -368,21 +370,21 @@ export const EmojiPackAdminModal: React.FC<Props> = ({ serverId, onClose }) => {
                       value={newShortcode}
                       onChange={(e) => setNewShortcode(e.target.value)}
                       placeholder="shortcode (e.g. partyparrot)"
-                      className="w-full px-2 py-1 rounded bg-discord-dark-300 text-white text-sm"
+                      className="w-full px-2 py-1 rounded bg-discord-dark-300 text-discord-text-strong text-sm"
                     />
                     <input
                       type="url"
                       value={newUrl}
                       onChange={(e) => setNewUrl(e.target.value)}
                       placeholder="https://example.com/parrot.gif"
-                      className="w-full px-2 py-1 rounded bg-discord-dark-300 text-white text-sm"
+                      className="w-full px-2 py-1 rounded bg-discord-dark-300 text-discord-text-strong text-sm"
                     />
                     <input
                       type="text"
                       value={newAlt}
                       onChange={(e) => setNewAlt(e.target.value)}
                       placeholder="Alt text (optional)"
-                      className="w-full px-2 py-1 rounded bg-discord-dark-300 text-white text-sm"
+                      className="w-full px-2 py-1 rounded bg-discord-dark-300 text-discord-text-strong text-sm"
                     />
                     <button
                       type="submit"
@@ -406,7 +408,7 @@ export const EmojiPackAdminModal: React.FC<Props> = ({ serverId, onClose }) => {
                           className="w-6 h-6 object-contain flex-shrink-0"
                           loading="lazy"
                         />
-                        <span className="text-xs text-white truncate flex-1">
+                        <span className="text-xs text-discord-text-strong truncate flex-1">
                           :{entry.shortcode}:
                         </span>
                         <button
@@ -414,7 +416,7 @@ export const EmojiPackAdminModal: React.FC<Props> = ({ serverId, onClose }) => {
                           onClick={() =>
                             removeEmoji(pack.pack_id, entry.shortcode)
                           }
-                          className="text-xs text-discord-red hover:text-white"
+                          className="text-xs text-discord-red hover:text-discord-text-strong"
                           title="Remove"
                         >
                           ✕

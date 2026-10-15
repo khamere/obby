@@ -168,7 +168,7 @@ export const BotToolsHistoryButton: React.FC<BotToolsHistoryButtonProps> = ({
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline gap-1.5">
-                      <span className="text-sm font-semibold text-white truncate">
+                      <span className="text-sm font-semibold text-discord-text-strong truncate">
                         {nick}
                       </span>
                       <span className="text-[10px] text-discord-text-muted shrink-0">

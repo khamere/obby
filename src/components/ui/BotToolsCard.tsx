@@ -214,7 +214,7 @@ const Step: React.FC<{
           {headerKind}
         </span>
         {step.label && (
-          <span className="text-sm font-medium text-white truncate">
+          <span className="text-sm font-medium text-discord-text-strong truncate">
             {step.label}
           </span>
         )}
@@ -258,7 +258,9 @@ const ToolPairStep: React.FC<{
         <span className="text-[11px] uppercase tracking-wide text-discord-text-muted">
           <Trans>Tool</Trans>
         </span>
-        <span className="text-sm font-medium text-white truncate">{tool}</span>
+        <span className="text-sm font-medium text-discord-text-strong truncate">
+          {tool}
+        </span>
         {label && (
           <span className="text-xs text-discord-text-muted truncate">
             {label}
@@ -506,7 +508,7 @@ export const BotToolsCard: React.FC<BotToolsCardProps> = ({ workflow }) => {
           {workflowHeaderIcon(displayState)}
         </span>
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-semibold text-white truncate flex items-center gap-1.5">
+          <div className="text-sm font-semibold text-discord-text-strong truncate flex items-center gap-1.5">
             <FaProjectDiagram className="text-[10px] text-discord-text-muted shrink-0" />
             {workflow.senderNick}
           </div>
@@ -540,7 +542,7 @@ export const BotToolsCard: React.FC<BotToolsCardProps> = ({ workflow }) => {
             e.stopPropagation();
             dismiss(workflow.serverId, workflow.id);
           }}
-          className="text-discord-text-muted hover:text-white p-1 rounded"
+          className="text-discord-text-muted hover:text-discord-text-strong p-1 rounded"
           aria-label={t`Close`}
           title={t`Close`}
         >
@@ -666,7 +668,7 @@ export const BotToolsCard: React.FC<BotToolsCardProps> = ({ workflow }) => {
               scrollToMessageId(finalMessageInternalId);
           }}
           disabled={!finalMessageInternalId}
-          className="w-full px-3 py-1.5 border-t border-discord-dark-400 text-left text-[11px] text-discord-text-muted hover:text-white hover:bg-discord-dark-400/60 flex items-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full px-3 py-1.5 border-t border-discord-dark-400 text-left text-[11px] text-discord-text-muted hover:text-discord-text-strong hover:bg-discord-dark-400/60 flex items-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           title={
             finalMessageInternalId
               ? t`Scroll chat to this response`

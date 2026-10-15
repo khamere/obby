@@ -326,13 +326,13 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         {(isNarrowView || !isChanListVisible) && (
           <button
             onClick={onToggleChanList}
-            className="p-2 md:p-0 text-discord-channels-default hover:text-white flex-shrink-0"
+            className="p-2 md:p-0 text-discord-channels-default hover:text-discord-text-strong flex-shrink-0"
             aria-label={t`Expand channel list`}
           >
             {isNarrowView ? <FaChevronLeft /> : <FaChevronRight />}
           </button>
         )}
-        <h2 className="ml-4 font-bold text-white">{title}</h2>
+        <h2 className="ml-4 font-bold text-discord-text-strong">{title}</h2>
       </div>
     );
   }
@@ -422,10 +422,10 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 onSearchQueryChange("");
               }
             }}
-            className="flex-1 bg-discord-dark-400 text-white text-sm rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-discord-text-link min-w-0"
+            className="flex-1 bg-discord-dark-400 text-discord-text-strong text-sm rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-discord-text-link min-w-0"
           />
           <button
-            className="p-2 text-discord-text-muted hover:text-white flex-shrink-0"
+            className="p-2 text-discord-text-muted hover:text-discord-text-strong flex-shrink-0"
             onClick={() => {
               if (searchQuery) {
                 onSearchQueryChange("");
@@ -452,7 +452,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           {(isNarrowView || !isChanListVisible) && (
             <button
               onClick={onToggleChanList}
-              className="p-2 md:p-0 text-discord-channels-default hover:text-white flex-shrink-0"
+              className="p-2 md:p-0 text-discord-channels-default hover:text-discord-text-strong flex-shrink-0"
               aria-label={t`Expand channel list`}
             >
               {isNarrowView ? <FaChevronLeft /> : <FaChevronRight />}
@@ -529,7 +529,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           {/* Center: Title and Topic stacked */}
           <div className="flex flex-col justify-center min-w-0 flex-1">
             {/* Title */}
-            <h2 className="font-bold text-white truncate">
+            <h2 className="font-bold text-discord-text-strong truncate">
               {getChannelDisplayName(
                 selectedChannel.name,
                 selectedChannel.metadata,
@@ -544,7 +544,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                     setTopicModalRequest(selectedServerId, selectedChannel.id);
                   }
                 }}
-                className="text-discord-text-muted text-xs hover:text-white truncate text-left"
+                className="text-discord-text-muted text-xs hover:text-discord-text-strong truncate text-left"
                 title={selectedChannel.topic}
               >
                 {selectedChannel.topic}
@@ -607,7 +607,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                       ? mobileViewActiveColumn === "memberList"
                       : isMemberListVisible
                   ) ? (
-                    <UsersIcon className="w-4 h-4 text-white" />
+                    <UsersIcon className="w-4 h-4 text-discord-text-strong" />
                   ) : (
                     <UsersIcon className="w-4 h-4 text-gray" />
                   )}
@@ -725,7 +725,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             {(isNarrowView || !isChanListVisible) && (
               <button
                 onClick={onToggleChanList}
-                className="p-2 md:p-0 text-discord-channels-default hover:text-white mr-4 flex-shrink-0"
+                className="p-2 md:p-0 text-discord-channels-default hover:text-discord-text-strong mr-4 flex-shrink-0"
                 aria-label={t`Expand channel list`}
               >
                 {isNarrowView ? <FaChevronLeft /> : <FaChevronRight />}
@@ -762,7 +762,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                     ? selectedPrivateChat.isAway
                       ? "bg-yellow-500"
                       : "bg-green-500"
-                    : "bg-gray-500"
+                    : "bg-discord-text-faint"
                 }`}
                 title={
                   selectedPrivateChat.isOnline
@@ -774,7 +774,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               />
             </div>
             <div className="flex flex-col">
-              <h2 className="font-bold text-white">
+              <h2 className="font-bold text-discord-text-strong">
                 {(() => {
                   const userMetadata = getUserMetadata(
                     selectedPrivateChat.username,
@@ -855,7 +855,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             )}
             {selectedServerId && (
               <button
-                className="ml-2 text-discord-text-muted hover:text-white"
+                className="ml-2 text-discord-text-muted hover:text-discord-text-strong"
                 onClick={() => {
                   if (selectedServerId && selectedPrivateChat) {
                     setProfileViewRequest(
@@ -975,14 +975,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             {(isNarrowView || !isChanListVisible) && (
               <button
                 onClick={onToggleChanList}
-                className="p-2 md:p-0 text-discord-channels-default hover:text-white mr-4 flex-shrink-0"
+                className="p-2 md:p-0 text-discord-channels-default hover:text-discord-text-strong mr-4 flex-shrink-0"
                 aria-label={t`Expand channel list`}
               >
                 {isNarrowView ? <FaChevronLeft /> : <FaChevronRight />}
               </button>
             )}
             <FaList className="text-discord-text-muted mr-2" />
-            <h2 className="font-bold text-white mr-4">
+            <h2 className="font-bold text-discord-text-strong mr-4">
               <Trans>Server Notices</Trans>
             </h2>
           </div>

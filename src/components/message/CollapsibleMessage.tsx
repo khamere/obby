@@ -189,7 +189,9 @@ export const CollapsibleMessage = forwardRef<
       </div>
       {needsCollapsing && (
         <>
-          {!isExpanded && <div className="border-b border-white/30" />}
+          {!isExpanded && (
+            <div className="border-b border-discord-text-strong/30" />
+          )}
           <div className="flex justify-start mt-0.5 ml-3">
             <button
               onClick={toggleExpanded}

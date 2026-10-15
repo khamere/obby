@@ -479,7 +479,7 @@ export const ChannelList: React.FC<{
       {/* Server header */}
       <div className="px-4 h-12 shadow-md flex items-center justify-between border-b border-discord-dark-400">
         <div className="flex flex-col min-w-0 flex-1">
-          <h1 className="font-bold text-white truncate">
+          <h1 className="font-bold text-discord-text-strong truncate">
             {selectedServer?.networkName || selectedServer?.name || "Home"}
           </h1>
           {(upstreamSubtitle ||
@@ -512,7 +512,7 @@ export const ChannelList: React.FC<{
         </div>
         <button
           onClick={handleCollapseClick}
-          className="text-discord-channels-default hover:text-white"
+          className="text-discord-channels-default hover:text-discord-text-strong"
         >
           <FaChevronLeft />
         </button>
@@ -528,7 +528,7 @@ export const ChannelList: React.FC<{
             <div
               className={`
                 px-2 py-1 mb-1 rounded flex items-center gap-2 cursor-pointer
-                ${selectedChannelId === null ? "bg-discord-dark-400 text-white" : hoverSubtle}
+                ${selectedChannelId === null ? "bg-discord-dark-400 text-discord-text-strong" : hoverSubtle}
               `}
               onClick={() => selectChannel(null, { navigate: true })}
             >
@@ -831,7 +831,7 @@ export const ChannelList: React.FC<{
                           <div className="flex items-center gap-2">
                             {/* Loading/Unread/Mention indicators */}
                             {channel.isLoadingHistory ? (
-                              <FaSpinner className="w-3 h-3 text-gray-400 animate-spin" />
+                              <FaSpinner className="w-3 h-3 text-discord-text-dim animate-spin" />
                             ) : (
                               selectedChannelId !== channel.id &&
                               (channel.isMentioned &&
@@ -847,7 +847,7 @@ export const ChannelList: React.FC<{
                             {selectedChannelId === channel.id && (
                               <button
                                 title={t`Leave channel`}
-                                className={`text-discord-red hover:text-white ${
+                                className={`text-discord-red hover:text-discord-text-strong ${
                                   isNarrowView
                                     ? "block" // Always visible on mobile
                                     : "hidden group-hover:block" // Show on hover on desktop
@@ -1000,7 +1000,7 @@ export const ChannelList: React.FC<{
                             {selectedChannelId === channel.id && (
                               <button
                                 title="Leave channel"
-                                className={`text-discord-red hover:text-white ${
+                                className={`text-discord-red hover:text-discord-text-strong ${
                                   isNarrowView
                                     ? "block"
                                     : "hidden group-hover:block"
@@ -1256,7 +1256,7 @@ export const ChannelList: React.FC<{
                                   ? privateChat.isAway
                                     ? "bg-yellow-500"
                                     : "bg-green-500"
-                                  : "bg-gray-500"
+                                  : "bg-discord-text-faint"
                               }`}
                               title={
                                 privateChat.isOnline
@@ -1474,7 +1474,7 @@ export const ChannelList: React.FC<{
                               </button>
                               {!privateChat.isPinned && (
                                 <button
-                                  className={`text-discord-red hover:text-white ${
+                                  className={`text-discord-red hover:text-discord-text-strong ${
                                     isNarrowView
                                       ? "block" // Always visible on mobile
                                       : "hidden group-hover:block" // Show on hover on desktop
@@ -1636,7 +1636,7 @@ export const ChannelList: React.FC<{
                             {selectedChannelId === channel.id && (
                               <button
                                 title="Leave channel"
-                                className={`text-discord-red hover:text-white ${
+                                className={`text-discord-red hover:text-discord-text-strong ${
                                   isNarrowView
                                     ? "block"
                                     : "hidden group-hover:block"
@@ -1675,7 +1675,7 @@ export const ChannelList: React.FC<{
                   className={`
                     px-2 py-1 mb-1 rounded-md flex items-center cursor-pointer
                     transition-all duration-200 ease-in-out
-                    ${selectedChannelId === "server-notices" ? "bg-discord-dark-400 text-white" : hoverSubtle}
+                    ${selectedChannelId === "server-notices" ? "bg-discord-dark-400 text-discord-text-strong" : hoverSubtle}
                   `}
                   onClick={() =>
                     selectChannel("server-notices", { navigate: true })
@@ -1727,7 +1727,7 @@ export const ChannelList: React.FC<{
                       }}
                     />
                   ) : (
-                    <span className="text-white">
+                    <span className="text-discord-text-strong">
                       {currentUser?.username?.charAt(0)?.toUpperCase()}
                     </span>
                   );
@@ -1760,7 +1760,7 @@ export const ChannelList: React.FC<{
           </div>
           <div className="ml-auto flex gap-2 text-discord-dark-500 flex-shrink-0">
             <button
-              className="hover:text-white"
+              className="hover:text-discord-text-strong"
               data-testid="user-settings-button"
               onClick={() => toggleSettingsModal(true)}
             >

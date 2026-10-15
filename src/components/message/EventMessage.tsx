@@ -131,7 +131,7 @@ export const EventMessage: React.FC<EventMessageProps> = ({
 
       {/* Tooltip for future collapsing functionality */}
       {showTooltip && (
-        <div className="absolute bottom-full left-12 mb-1 px-2 py-1 bg-discord-dark-100 text-white text-xs rounded shadow-lg z-10 whitespace-nowrap">
+        <div className="absolute bottom-full left-12 mb-1 px-2 py-1 bg-discord-dark-100 text-discord-text-strong text-xs rounded shadow-lg z-10 whitespace-nowrap">
           {message.type === "join" && <Trans>Joined the channel</Trans>}
           {message.type === "part" && <Trans>Left the channel</Trans>}
           {message.type === "quit" && <Trans>Quit the server</Trans>}

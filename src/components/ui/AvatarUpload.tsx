@@ -199,7 +199,7 @@ const AvatarUpload: React.FC<AvatarUploadProps> = ({
           <button
             type="button"
             onClick={clearAvatar}
-            className="flex items-center gap-2 px-3 py-2 bg-discord-dark-300 hover:bg-discord-dark-200 text-white rounded"
+            className="flex items-center gap-2 px-3 py-2 bg-discord-dark-300 hover:bg-discord-dark-200 text-discord-text-strong rounded"
           >
             <FaTimes />
             {t`Clear`}

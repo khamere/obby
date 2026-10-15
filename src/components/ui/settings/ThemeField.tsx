@@ -4,8 +4,11 @@ import type { SettingComponentProps } from "../../../lib/settings/types";
 import {
   BUILT_IN_THEMES,
   CUSTOM_THEME_ID,
+  DEFAULT_LIGHT_THEME_ID,
+  getTheme,
   LINK_THEME_ID,
   parseThemeJson,
+  SYSTEM_THEME_ID,
   type ThemeDefinition,
 } from "../../../lib/theme";
 import { useThemeLinkState } from "../../../lib/themeLink";
@@ -26,6 +29,11 @@ export const ThemeField: React.FC<SettingComponentProps> = ({
   const linked = useThemeLinkState().theme;
   const custom = parseThemeJson(customJson);
   const themes: ThemeDefinition[] = [
+    {
+      ...getTheme(DEFAULT_LIGHT_THEME_ID),
+      id: SYSTEM_THEME_ID,
+      name: t`Follow system (dark / light)`,
+    },
     ...BUILT_IN_THEMES,
     ...(custom
       ? [{ ...custom, id: CUSTOM_THEME_ID, name: t`Custom: ${custom.name}` }]

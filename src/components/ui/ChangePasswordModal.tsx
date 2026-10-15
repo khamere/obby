@@ -70,11 +70,13 @@ export const ChangePasswordModal: React.FC<Props> = ({ serverId, onClose }) => {
     <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
       <div className="bg-discord-dark-200 rounded-lg w-full max-w-md p-5">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold text-white">Change password</h2>
+          <h2 className="text-lg font-semibold text-discord-text-strong">
+            Change password
+          </h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-discord-text-muted hover:text-white"
+            className="text-discord-text-muted hover:text-discord-text-strong"
           >
             ✕
           </button>
@@ -92,7 +94,7 @@ export const ChangePasswordModal: React.FC<Props> = ({ serverId, onClose }) => {
               value={newPass}
               onChange={(e) => setNewPass(e.target.value)}
               placeholder="New password"
-              className="w-full px-3 py-2 rounded bg-discord-dark-400 text-white"
+              className="w-full px-3 py-2 rounded bg-discord-dark-400 text-discord-text-strong"
               autoFocus
             />
             <input
@@ -100,7 +102,7 @@ export const ChangePasswordModal: React.FC<Props> = ({ serverId, onClose }) => {
               value={confirmPass}
               onChange={(e) => setConfirmPass(e.target.value)}
               placeholder="Confirm new password"
-              className="w-full px-3 py-2 rounded bg-discord-dark-400 text-white"
+              className="w-full px-3 py-2 rounded bg-discord-dark-400 text-discord-text-strong"
             />
             <button
               type="submit"
@@ -112,11 +114,11 @@ export const ChangePasswordModal: React.FC<Props> = ({ serverId, onClose }) => {
           </form>
         ) : (
           <div className="space-y-3">
-            <p className="text-sm text-white">{info}</p>
+            <p className="text-sm text-discord-text-strong">{info}</p>
             <button
               type="button"
               onClick={onClose}
-              className="w-full px-3 py-2 rounded bg-discord-blue text-white text-sm font-medium"
+              className="w-full px-3 py-2 rounded bg-discord-blue text-discord-text-strong text-sm font-medium"
             >
               Done
             </button>

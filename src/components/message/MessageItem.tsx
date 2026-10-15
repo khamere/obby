@@ -896,7 +896,7 @@ export const MessageItem = memo((props: MessageItemProps) => {
         />
 
         <div
-          className={`flex-1 min-w-0 relative ${isCurrentUser ? "text-white" : "text-discord-text-normal"}`}
+          className={`flex-1 min-w-0 relative ${isCurrentUser ? "text-discord-text-strong" : "text-discord-text-normal"}`}
         >
           {showHeader && (
             <MessageHeader

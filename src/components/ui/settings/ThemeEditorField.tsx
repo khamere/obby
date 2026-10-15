@@ -55,6 +55,13 @@ export const ThemeEditorField: React.FC<SettingComponentProps> = ({
     "success-hover": t`Success hover`,
     "button-secondary": t`Secondary buttons`,
     reply: t`Reply accent`,
+    "text-strong": t`Strong text`,
+    "text-soft": t`Soft text`,
+    "text-dim": t`Dim text`,
+    "text-faint": t`Faint text`,
+    "surface-raised": t`Raised surface`,
+    "surface-hover": t`Raised surface hover`,
+    "surface-sunken": t`Sunken surface`,
   };
 
   const startFromCurrent = () => {

@@ -490,7 +490,7 @@ export const ChannelMessageList = forwardRef<
                       }
                     }}
                     disabled={isFetchingMore || isLoadingHistory}
-                    className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full text-discord-text-muted hover:text-discord-text-normal bg-discord-dark-400 hover:bg-discord-dark-300 border border-white/5 transition-all"
+                    className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full text-discord-text-muted hover:text-discord-text-normal bg-discord-dark-400 hover:bg-discord-dark-300 border border-discord-text-strong/5 transition-all"
                   >
                     {isFetchingMore ? (
                       <LoadingSpinner
