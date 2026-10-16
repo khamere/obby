@@ -2726,10 +2726,6 @@ msgstr "Připojovat se pouze k serverům, které si vyberete"
 msgid "Only operators can change the channel topic"
 msgstr "Téma kanálu mohou měnit pouze operátoři"
 
-#: src/components/ui/AddServerModal.tsx
-msgid "Only secure websockets are supported"
-msgstr "Jsou podporovány pouze zabezpečené websocket připojení"
-
 #: src/components/ui/ChannelSettingsModal.tsx
 msgid "Only users with voice or higher can speak"
 msgstr "Mluvit mohou pouze uživatelé s hlasem nebo vyšší hodností"
@@ -4062,6 +4058,7 @@ msgstr "Použijte Shift+Enter pro nový řádek (Enter odešle)"
 msgid "Use the theme's accent colour"
 msgstr "Použít zvýrazňující barvu motivu"
 
+#: src/components/ui/AddServerModal.tsx
 #: src/components/ui/AddServerModal.tsx
 msgid "Use WebSocket instead of raw TCP"
 msgstr "Použít WebSocket místo surového TCP"

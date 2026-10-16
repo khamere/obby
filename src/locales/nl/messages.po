@@ -2726,10 +2726,6 @@ msgstr "Alleen verbinden met servers die jij kiest"
 msgid "Only operators can change the channel topic"
 msgstr "Alleen operators kunnen het kanaalonderwerp wijzigen"
 
-#: src/components/ui/AddServerModal.tsx
-msgid "Only secure websockets are supported"
-msgstr "Alleen beveiligde WebSockets worden ondersteund"
-
 #: src/components/ui/ChannelSettingsModal.tsx
 msgid "Only users with voice or higher can speak"
 msgstr "Alleen gebruikers met voice of hoger kunnen spreken"
@@ -4062,6 +4058,7 @@ msgstr "Gebruik Shift+Enter voor nieuwe regels (Enter verstuurt)"
 msgid "Use the theme's accent colour"
 msgstr "Accentkleur van het thema gebruiken"
 
+#: src/components/ui/AddServerModal.tsx
 #: src/components/ui/AddServerModal.tsx
 msgid "Use WebSocket instead of raw TCP"
 msgstr "WebSocket gebruiken in plaats van raw TCP"

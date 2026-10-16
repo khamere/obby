@@ -12,6 +12,26 @@ export interface ParsedIrcUrl {
   password?: string;
 }
 
+export function buildTauriConnectionUrl(
+  host: string,
+  port: number,
+  useWebSocket: boolean,
+): string {
+  const parsed = new URL(host.includes("://") ? host : `wss://${host}`);
+  const path =
+    parsed.pathname === "/"
+      ? parsed.search
+      : `${parsed.pathname}${parsed.search}`;
+  const isWebSocket = useWebSocket || /^wss?:\/\//i.test(host);
+  const protocol = isWebSocket
+    ? parsed.protocol === "ws:"
+      ? "ws"
+      : "wss"
+    : "ircs";
+
+  return `${protocol}://${parsed.hostname}:${port}${isWebSocket ? path : ""}`;
+}
+
 /**
  * Parses an IRC URL and extracts connection details
  *

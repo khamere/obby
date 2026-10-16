@@ -2726,10 +2726,6 @@ msgstr "직접 선택한 서버에만 연결합니다"
 msgid "Only operators can change the channel topic"
 msgstr "운영자만 채널 주제를 변경할 수 있음"
 
-#: src/components/ui/AddServerModal.tsx
-msgid "Only secure websockets are supported"
-msgstr "보안 웹소켓만 지원됩니다"
-
 #: src/components/ui/ChannelSettingsModal.tsx
 msgid "Only users with voice or higher can speak"
 msgstr "Voice 이상의 권한을 가진 사용자만 발언 가능"
@@ -4062,6 +4058,7 @@ msgstr "줄 바꿈은 Shift+Enter (Enter로 전송)"
 msgid "Use the theme's accent colour"
 msgstr "테마의 강조 색상 사용"
 
+#: src/components/ui/AddServerModal.tsx
 #: src/components/ui/AddServerModal.tsx
 msgid "Use WebSocket instead of raw TCP"
 msgstr "원시 TCP 대신 WebSocket 사용"

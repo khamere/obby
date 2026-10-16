@@ -2,6 +2,7 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { FaQuestionCircle } from "react-icons/fa";
+import { buildTauriConnectionUrl } from "../../lib/ircUrlParser";
 import BaseModal from "../../lib/modal/BaseModal";
 import { Button, ModalBody, ModalFooter } from "../../lib/modal/components";
 import { getBuiltinOAuthConfig } from "../../lib/oauth";
@@ -41,7 +42,8 @@ export const AddServerModal: React.FC = () => {
   const [showAccount, setShowAccount] = useState(false);
   const [registerAccount, setRegisterAccount] = useState(false);
   const [useWebSocket, setUseWebSocket] = useState(
-    prefillServerDetails?.useWebSocket ?? false,
+    prefillServerDetails?.useWebSocket ||
+      /^wss?:\/\//i.test(prefillServerDetails?.host || ""),
   );
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
@@ -66,7 +68,10 @@ export const AddServerModal: React.FC = () => {
       prefillServerDetails?.nickname ||
         `user${Math.floor(Math.random() * 1000)}`,
     );
-    setUseWebSocket(prefillServerDetails?.useWebSocket || false);
+    setUseWebSocket(
+      prefillServerDetails?.useWebSocket ||
+        /^wss?:\/\//i.test(prefillServerDetails?.host || ""),
+    );
   }, [prefillServerDetails]);
 
   useEffect(() => {
@@ -74,14 +79,19 @@ export const AddServerModal: React.FC = () => {
 
     const currentPort = serverPort;
     const ircPorts = ["6667", "6697"];
-    const wssPorts = ["443"];
+    const wsScheme = serverHost.toLowerCase().startsWith("ws://");
+    const webSocketPort = wsScheme ? "80" : "443";
 
     if (useWebSocket && ircPorts.includes(currentPort)) {
+      setServerPort(webSocketPort);
+    } else if (useWebSocket && wsScheme && currentPort === "443") {
+      setServerPort("80");
+    } else if (useWebSocket && !wsScheme && currentPort === "80") {
       setServerPort("443");
-    } else if (!useWebSocket && wssPorts.includes(currentPort)) {
+    } else if (!useWebSocket && ["80", "443"].includes(currentPort)) {
       setServerPort("6697");
     }
-  }, [useWebSocket, serverPort]);
+  }, [useWebSocket, serverHost, serverPort]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,14 +124,7 @@ export const AddServerModal: React.FC = () => {
       let finalHost = serverHost;
       if (isTauri()) {
         const port = Number.parseInt(serverPort, 10);
-        // Strip scheme AND any embedded :port / path so we don't end up
-        // appending port twice (e.g. ircs://host:6697:6697).
-        const cleanHost = serverHost
-          .replace(/^(https?|wss?|ircs?|irc):\/\//, "")
-          .replace(/[:/].*$/, "");
-        finalHost = useWebSocket
-          ? `wss://${cleanHost}:${port}`
-          : `ircs://${cleanHost}:${port}`;
+        finalHost = buildTauriConnectionUrl(serverHost, port, useWebSocket);
       }
 
       await connect(
@@ -189,7 +192,13 @@ export const AddServerModal: React.FC = () => {
                       ? new URL(serverHost).hostname
                       : serverHost || ""
                   }
-                  onChange={(e) => setServerHost(e.target.value)}
+                  onChange={(e) => {
+                    const host = e.target.value;
+                    setServerHost(host);
+                    if (/^wss?:\/\//i.test(host)) {
+                      setUseWebSocket(true);
+                    }
+                  }}
                   placeholder="irc.example.com"
                   className={`w-full rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-discord-primary ${
                     disableServerConnectionInfo
@@ -212,7 +221,7 @@ export const AddServerModal: React.FC = () => {
                   <label className="block text-discord-text-muted text-sm font-medium mb-1">
                     <Trans>Port</Trans>{" "}
                     <FaQuestionCircle
-                      title={t`Only secure websockets are supported`}
+                      title={t`Use WebSocket instead of raw TCP`}
                       className="inline-block text-discord-text-muted cursor-help text-xs ml-1"
                     />
                   </label>

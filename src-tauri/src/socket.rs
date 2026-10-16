@@ -1,3 +1,4 @@
+use futures_util::{Sink, SinkExt, Stream, StreamExt};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -7,6 +8,9 @@ use tokio::net::TcpStream;
 use tokio::sync::{mpsc, oneshot, Mutex};
 use tokio::task;
 use tokio::time::{timeout, Duration};
+use tokio_tungstenite::tungstenite::Message;
+#[cfg(target_os = "android")]
+use tokio_tungstenite::{connect_async_tls_with_config, Connector};
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(15);
 const TLS_HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(15);
@@ -23,8 +27,58 @@ use rustls::pki_types::ServerName;
 use std::sync::Arc as StdArc;
 #[cfg(target_os = "android")]
 use tokio_rustls::TlsConnector;
+
 #[cfg(target_os = "android")]
-use webpki_roots;
+#[derive(Debug)]
+struct AllowAnyServerCertificate;
+
+#[cfg(target_os = "android")]
+impl rustls::client::danger::ServerCertVerifier for AllowAnyServerCertificate {
+    fn verify_server_cert(
+        &self,
+        _end_entity: &rustls::pki_types::CertificateDer<'_>,
+        _intermediates: &[rustls::pki_types::CertificateDer<'_>],
+        _server_name: &ServerName<'_>,
+        _ocsp_response: &[u8],
+        _now: rustls::pki_types::UnixTime,
+    ) -> Result<rustls::client::danger::ServerCertVerified, rustls::Error> {
+        Ok(rustls::client::danger::ServerCertVerified::assertion())
+    }
+
+    fn verify_tls12_signature(
+        &self,
+        message: &[u8],
+        cert: &rustls::pki_types::CertificateDer<'_>,
+        dss: &rustls::DigitallySignedStruct,
+    ) -> Result<rustls::client::danger::HandshakeSignatureValid, rustls::Error> {
+        rustls::crypto::verify_tls12_signature(
+            message,
+            cert,
+            dss,
+            &rustls::crypto::ring::default_provider().signature_verification_algorithms,
+        )
+    }
+
+    fn verify_tls13_signature(
+        &self,
+        message: &[u8],
+        cert: &rustls::pki_types::CertificateDer<'_>,
+        dss: &rustls::DigitallySignedStruct,
+    ) -> Result<rustls::client::danger::HandshakeSignatureValid, rustls::Error> {
+        rustls::crypto::verify_tls13_signature(
+            message,
+            cert,
+            dss,
+            &rustls::crypto::ring::default_provider().signature_verification_algorithms,
+        )
+    }
+
+    fn supported_verify_schemes(&self) -> Vec<rustls::SignatureScheme> {
+        rustls::crypto::ring::default_provider()
+            .signature_verification_algorithms
+            .supported_schemes()
+    }
+}
 
 /// Connection handle for managing write operations and shutdown
 #[derive(Debug)]
@@ -187,6 +241,172 @@ async fn write_task<W>(
     }
 }
 
+async fn websocket_read_task<R>(
+    client_id: String,
+    mut reader: R,
+    app_handle: tauri::AppHandle,
+    state: Arc<Mutex<HashMap<String, ConnectionHandle>>>,
+) where
+    R: Stream<Item = Result<Message, tokio_tungstenite::tungstenite::Error>> + Unpin,
+{
+    let mut error = None;
+
+    while let Some(message) = reader.next().await {
+        match message {
+            Ok(Message::Text(text)) => {
+                let _ = app_handle.emit(
+                    "tcp-message",
+                    ReceivedPayload {
+                        id: client_id.clone(),
+                        event: MessageEvent {
+                            message: Some(MessageData {
+                                data: text.as_bytes().to_vec(),
+                            }),
+                            error: None,
+                            connected: None,
+                        },
+                    },
+                );
+            }
+            Ok(Message::Binary(data)) => {
+                let _ = app_handle.emit(
+                    "tcp-message",
+                    ReceivedPayload {
+                        id: client_id.clone(),
+                        event: MessageEvent {
+                            message: Some(MessageData {
+                                data: data.to_vec(),
+                            }),
+                            error: None,
+                            connected: None,
+                        },
+                    },
+                );
+            }
+            Ok(Message::Close(_)) => break,
+            Ok(Message::Ping(_) | Message::Pong(_) | Message::Frame(_)) => {}
+            Err(e) => {
+                error = Some(format!("WebSocket read error: {}", e));
+                break;
+            }
+        }
+    }
+
+    let _ = app_handle.emit(
+        "tcp-message",
+        ReceivedPayload {
+            id: client_id.clone(),
+            event: MessageEvent {
+                message: None,
+                error,
+                connected: Some(false),
+            },
+        },
+    );
+    state.lock().await.remove(&client_id);
+}
+
+async fn websocket_write_task<W>(
+    mut writer: W,
+    mut write_rx: mpsc::Receiver<String>,
+    mut shutdown_rx: oneshot::Receiver<()>,
+) where
+    W: Sink<Message, Error = tokio_tungstenite::tungstenite::Error> + Unpin,
+{
+    loop {
+        tokio::select! {
+            Some(data) = write_rx.recv() => {
+                let data_with_crlf = if data.ends_with("\r\n") {
+                    data
+                } else {
+                    format!("{}\r\n", data)
+                };
+
+                if let Err(e) = writer.send(Message::Text(data_with_crlf.into())).await {
+                    eprintln!("WebSocket write error: {}", e);
+                    break;
+                }
+            }
+            _ = &mut shutdown_rx => {
+                let _ = writer.send(Message::Close(None)).await;
+                break;
+            }
+        }
+    }
+}
+
+async fn connect_websocket(
+    client_id: String,
+    address: String,
+    state: Arc<Mutex<HashMap<String, ConnectionHandle>>>,
+    app_handle: tauri::AppHandle,
+) -> Result<(), String> {
+    #[cfg(target_os = "android")]
+    let connection = {
+        let config = rustls::ClientConfig::builder()
+            .dangerous()
+            .with_custom_certificate_verifier(Arc::new(AllowAnyServerCertificate))
+            .with_no_client_auth();
+
+        connect_async_tls_with_config(
+            address.as_str(),
+            None,
+            false,
+            Some(Connector::Rustls(Arc::new(config))),
+        )
+    };
+
+    #[cfg(not(target_os = "android"))]
+    let connection = tokio_tungstenite::connect_async(address.as_str());
+
+    let (stream, _) = timeout(CONNECT_TIMEOUT, connection)
+        .await
+        .map_err(|_| {
+            format!(
+                "WebSocket connection timed out after {}s ({})",
+                CONNECT_TIMEOUT.as_secs(),
+                address
+            )
+        })?
+        .map_err(|e| format!("WebSocket connection failed: {}", e))?;
+
+    let (writer, reader) = stream.split();
+    let (write_tx, write_rx) = mpsc::channel::<String>(100);
+    let (shutdown_tx, shutdown_rx) = oneshot::channel();
+
+    state.lock().await.insert(
+        client_id.clone(),
+        ConnectionHandle {
+            write_tx,
+            shutdown_tx: Some(shutdown_tx),
+        },
+    );
+
+    let _ = app_handle.emit(
+        "tcp-message",
+        ReceivedPayload {
+            id: client_id.clone(),
+            event: MessageEvent {
+                message: None,
+                error: None,
+                connected: Some(true),
+            },
+        },
+    );
+
+    let client_id_read = client_id.clone();
+    let app_handle_read = app_handle.clone();
+    let state_read = state.clone();
+    task::spawn(async move {
+        websocket_read_task(client_id_read, reader, app_handle_read, state_read).await;
+    });
+    task::spawn(async move {
+        websocket_write_task(writer, write_rx, shutdown_rx).await;
+    });
+
+    Ok(())
+}
+
 /// Connect to IRC server with real TCP/TLS implementation
 #[tauri::command]
 pub async fn connect(
@@ -195,6 +415,10 @@ pub async fn connect(
     state: State<'_, SocketState>,
     app_handle: tauri::AppHandle,
 ) -> Result<(), String> {
+    if address.starts_with("ws://") || address.starts_with("wss://") {
+        return connect_websocket(client_id, address, state.0.clone(), app_handle).await;
+    }
+
     // Parse the address to determine protocol and extract host:port
     let (use_tls, host, port) = parse_address(&address)?;
 

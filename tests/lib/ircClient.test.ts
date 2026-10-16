@@ -297,6 +297,26 @@ describe("IRCClient", () => {
       expect(mockSocket.sentMessages).toContain("CAP LS 302");
     });
 
+    test("preserves ws URLs instead of upgrading them to wss", async () => {
+      const mockSocket = new MockWebSocket(
+        "ws://irc.example.com:80/socket?token=abc",
+      );
+      MockWebSocketSpy.mockImplementation(returnsSocket(mockSocket));
+
+      const connectionPromise = client.connect(
+        "Test Server",
+        "ws://irc.example.com:80/socket?token=abc",
+        80,
+        "testuser",
+      );
+      mockSocket.simulateOpen();
+
+      await connectionPromise;
+      expect(MockWebSocketSpy).toHaveBeenCalledWith(
+        "ws://irc.example.com:80/socket?token=abc",
+      );
+    });
+
     test.skip("should handle connection errors", async () => {
       vi.useFakeTimers();
 
