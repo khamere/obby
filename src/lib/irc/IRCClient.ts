@@ -806,7 +806,7 @@ export class IRCClient implements IRCClientContext {
 
     // Create a new connection promise and store it
     const connectionPromise = new Promise<Server>((resolve, reject) => {
-      let protocol: "wss" | "ircs" | "irc" = "wss";
+      let protocol: "ws" | "wss" | "ircs" | "irc" = "wss";
       let actualHost = host;
       let actualPort = port;
       let actualPath = "";
@@ -818,31 +818,24 @@ export class IRCClient implements IRCClientContext {
         protocol = parsed.scheme;
         actualHost = parsed.host;
         actualPort = parsed.port;
-      } else if (host.startsWith("wss://")) {
-        // Use URL constructor to preserve path/query (e.g. wss://host/websocket?token=...)
+      } else if (host.startsWith("wss://") || host.startsWith("ws://")) {
+        // Preserve the selected WebSocket security scheme, path, and query.
         try {
           const parsed = new URL(host);
+          protocol = parsed.protocol === "ws:" ? "ws" : "wss";
           actualHost = parsed.hostname;
           actualPort = parsed.port ? Number.parseInt(parsed.port, 10) : port;
           actualPath =
             parsed.pathname !== "/"
               ? parsed.pathname + parsed.search
               : parsed.search;
-        } catch {
-          // malformed URL — leave actualHost/Port from the default
-        }
-      } else if (host.startsWith("ws://")) {
-        // Upgrade legacy ws:// to wss:// — unencrypted WebSockets are no longer supported
-        try {
-          const parsed = new URL(host);
-          actualHost = parsed.hostname;
-          actualPort = parsed.port ? Number.parseInt(parsed.port, 10) : port;
-          actualPath =
-            parsed.pathname !== "/"
-              ? parsed.pathname + parsed.search
-              : parsed.search;
-        } catch {
-          // malformed URL — leave actualHost/Port from the default
+        } catch (error) {
+          reject(
+            new Error(
+              `Invalid WebSocket URL: ${error instanceof Error ? error.message : String(error)}`,
+            ),
+          );
+          return;
         }
       }
 

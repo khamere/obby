@@ -2726,10 +2726,6 @@ msgstr "僅連線至您選擇的伺服器"
 msgid "Only operators can change the channel topic"
 msgstr "只有管理員可以更改頻道主題"
 
-#: src/components/ui/AddServerModal.tsx
-msgid "Only secure websockets are supported"
-msgstr "仅支持安全的 WebSocket 连接"
-
 #: src/components/ui/ChannelSettingsModal.tsx
 msgid "Only users with voice or higher can speak"
 msgstr "只有獲得發言權或更高權限的使用者才能發言"
@@ -4062,6 +4058,7 @@ msgstr "Shift+Enter 換行（Enter 傳送）"
 msgid "Use the theme's accent colour"
 msgstr "使用主題的強調色"
 
+#: src/components/ui/AddServerModal.tsx
 #: src/components/ui/AddServerModal.tsx
 msgid "Use WebSocket instead of raw TCP"
 msgstr "使用 WebSocket 而非原始 TCP"

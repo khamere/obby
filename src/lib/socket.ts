@@ -2,6 +2,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { isTauriAndroid } from "./platformUtils";
 
 export interface ISocket {
   onopen: (() => void) | null;
@@ -162,7 +163,16 @@ export class WebSocketWrapper implements ISocket {
 }
 
 export function createSocket(url: string): ISocket {
+  if (url.startsWith("ws://")) {
+    if (isTauriAndroid()) {
+      return new TCPSocket(url);
+    }
+    return new WebSocketWrapper(url);
+  }
   if (url.startsWith("wss://")) {
+    if (isTauriAndroid()) {
+      return new TCPSocket(url);
+    }
     return new WebSocketWrapper(url);
   }
   if (url.startsWith("irc://") || url.startsWith("ircs://")) {

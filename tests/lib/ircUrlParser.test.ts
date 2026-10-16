@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildTauriConnectionUrl,
   constructIrcUrl,
   isValidIrcUrl,
   normalizeChannelName,
@@ -8,6 +9,52 @@ import {
 } from "../../src/lib/ircUrlParser";
 
 describe("ircUrlParser", () => {
+  describe("buildTauriConnectionUrl", () => {
+    it("preserves the WebSocket path and query string", () => {
+      expect(
+        buildTauriConnectionUrl(
+          "wss://irc.world/socket-vpn?token=abc",
+          443,
+          true,
+        ),
+      ).toBe("wss://irc.world:443/socket-vpn?token=abc");
+    });
+
+    it("preserves an explicitly requested plaintext WebSocket scheme", () => {
+      expect(
+        buildTauriConnectionUrl(
+          "ws://irc.world/socket-vpn?token=abc",
+          80,
+          true,
+        ),
+      ).toBe("ws://irc.world:80/socket-vpn?token=abc");
+    });
+
+    it("uses WebSocket mode when a ws URL is entered explicitly", () => {
+      expect(buildTauriConnectionUrl("ws://irc.world/socket", 80, false)).toBe(
+        "ws://irc.world:80/socket",
+      );
+    });
+
+    it("preserves a path when the host is entered without a scheme", () => {
+      expect(buildTauriConnectionUrl("irc.world/socket-vpn", 443, true)).toBe(
+        "wss://irc.world:443/socket-vpn",
+      );
+    });
+
+    it("uses the selected port instead of an embedded port", () => {
+      expect(
+        buildTauriConnectionUrl("wss://irc.world:8443/socket-vpn", 443, true),
+      ).toBe("wss://irc.world:443/socket-vpn");
+    });
+
+    it("keeps raw TLS IRC connections on the host and selected port", () => {
+      expect(
+        buildTauriConnectionUrl("ircs://irc.example.com:6697", 6697, false),
+      ).toBe("ircs://irc.example.com:6697");
+    });
+  });
+
   describe("parseIrcUrl", () => {
     it("should parse basic IRC URL with default port", () => {
       const result = parseIrcUrl("irc://irc.libera.chat/");
