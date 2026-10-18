@@ -1,6 +1,11 @@
 import type { StoreApi } from "zustand";
 import ircClient from "../../lib/ircClient";
-import { clearWebPushRetry, syncServerWebPush } from "../../lib/notifications";
+import {
+  clearWebPushRetry,
+  collectAllSelfNicks,
+  syncServerWebPush,
+  syncTauriNotificationSettings,
+} from "../../lib/notifications";
 import type { PrivateChat } from "../../types";
 import {
   generateDeterministicId,
@@ -130,6 +135,13 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
       return;
     }
     readyProcessedServers.add(serverId);
+
+    const readyState = store.getState();
+    syncTauriNotificationSettings(
+      readyState.globalSettings.enableNotifications,
+      readyState.globalSettings.customMentions,
+      collectAllSelfNicks(readyState),
+    );
 
     // Restore metadata for this server (inlined from restoreServerMetadata)
     const savedMetadata = storage.metadata.load();

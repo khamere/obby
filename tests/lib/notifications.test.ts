@@ -26,12 +26,18 @@ vi.mock("../../src/lib/platformUtils", () => ({
 }));
 
 import {
+  checkForMention,
+  isRelayedSelfMessage,
+  isSelfNick,
+  normalizeNick,
   requestNotificationPermission,
   showMentionNotification,
   syncServerWebPush,
   syncTauriAppFocus,
   syncTauriNotificationSettings,
 } from "../../src/lib/notifications";
+import type { GlobalSettings } from "../../src/store";
+import type { User } from "../../src/types";
 
 describe("notifications", () => {
   beforeEach(() => {
@@ -51,10 +57,11 @@ describe("notifications", () => {
       focused: false,
     });
 
-    syncTauriNotificationSettings(true, ["obby", "pingword"]);
+    syncTauriNotificationSettings(true, ["obby", "pingword"], ["myuser"]);
     expect(mockInvoke).toHaveBeenCalledWith("sync_notification_settings", {
       enabled: true,
       customMentions: ["obby", "pingword"],
+      ownNicks: ["myuser"],
     });
   });
 
@@ -155,5 +162,107 @@ describe("notifications", () => {
       "srv-soju",
       "WEBPUSH UNREGISTER https://push.example.org/sub/123",
     );
+  });
+
+  describe("isSelfNick", () => {
+    it("recognizes exact and case-insensitive nickname matches", () => {
+      expect(isSelfNick("mrkmrtns", "mrkmrtns")).toBe(true);
+      expect(isSelfNick("MrkMrtns", "mrkmrtns")).toBe(true);
+      expect(isSelfNick("mrkmrtns", "MRKMRTNS")).toBe(true);
+    });
+
+    it("recognizes alternate nicks with trailing underscores", () => {
+      expect(isSelfNick("mrkmrtns_", "mrkmrtns")).toBe(true);
+      expect(isSelfNick("mrkmrtns__", "mrkmrtns")).toBe(true);
+      expect(isSelfNick("mrkmrtns", "mrkmrtns_")).toBe(true);
+    });
+
+    it("recognizes bouncer multiplexed /network and @host nicks", () => {
+      expect(isSelfNick("mrkmrtns", "mrkmrtns/libera")).toBe(true);
+      expect(isSelfNick("mrkmrtns/libera", "mrkmrtns")).toBe(true);
+      expect(isSelfNick("mrkmrtns/libera", undefined, ["mrkmrtns"])).toBe(true);
+      expect(isSelfNick("mrkmrtns@bouncer", "mrkmrtns")).toBe(true);
+    });
+
+    it("recognizes nicks with square brackets, angle brackets, and prefixes", () => {
+      expect(isSelfNick("[mrkmrtns]", "mrkmrtns")).toBe(true);
+      expect(isSelfNick("mrkmrtns", "[mrkmrtns]")).toBe(true);
+      expect(isSelfNick("<mrkmrtns>", "mrkmrtns")).toBe(true);
+      expect(isSelfNick("(mrkmrtns)", "mrkmrtns")).toBe(true);
+      expect(isSelfNick("~mrkmrtns", "mrkmrtns")).toBe(true);
+      expect(isSelfNick("mrkmrtns[m]", "mrkmrtns")).toBe(true);
+      expect(isSelfNick("mrkmrtns|away", "mrkmrtns")).toBe(true);
+    });
+
+    it("matches candidates from allOwnNicks list", () => {
+      expect(isSelfNick("alice", "bob", ["charlie", "alice"])).toBe(true);
+      expect(isSelfNick("alice_", "bob", ["alice"])).toBe(true);
+      expect(isSelfNick("[alice]", "bob", ["alice"])).toBe(true);
+    });
+
+    it("returns false for different users", () => {
+      expect(isSelfNick("bob", "mrkmrtns", ["mrkmrtns"])).toBe(false);
+      expect(isSelfNick("mrkmrtns_imposter", "mrkmrtns", ["mrkmrtns"])).toBe(
+        false,
+      );
+      expect(isSelfNick("", "mrkmrtns")).toBe(false);
+    });
+  });
+
+  describe("normalizeNick", () => {
+    it("strips brackets, prefixes, network multiplexers, and trailing underscores", () => {
+      expect(normalizeNick("[mrkmrtns]")).toBe("mrkmrtns");
+      expect(normalizeNick("<mrkmrtns>")).toBe("mrkmrtns");
+      expect(normalizeNick("~mrkmrtns")).toBe("mrkmrtns");
+      expect(normalizeNick("mrkmrtns[m]")).toBe("mrkmrtns");
+      expect(normalizeNick("mrkmrtns|web")).toBe("mrkmrtns");
+      expect(normalizeNick("mrkmrtns_")).toBe("mrkmrtns");
+      expect(normalizeNick("mrkmrtns/libera")).toBe("mrkmrtns");
+    });
+  });
+
+  describe("isRelayedSelfMessage", () => {
+    const user = { username: "mrkmrtns" } as unknown as User;
+
+    it("identifies bridge-relayed messages where the author is the user", () => {
+      expect(isRelayedSelfMessage("[mrkmrtns] You will!", user)).toBe(true);
+      expect(isRelayedSelfMessage("<mrkmrtns> You will!", user)).toBe(true);
+      expect(isRelayedSelfMessage("(mrkmrtns) You will!", user)).toBe(true);
+      expect(isRelayedSelfMessage("[mrkmrtns (Discord)] You will!", user)).toBe(
+        true,
+      );
+      expect(isRelayedSelfMessage("[mrkmrtns/matrix] You will!", user)).toBe(
+        true,
+      );
+    });
+
+    it("returns false for messages from other users or plain text", () => {
+      expect(isRelayedSelfMessage("[alice] You will!", user)).toBe(false);
+      expect(isRelayedSelfMessage("You will!", user)).toBe(false);
+      expect(isRelayedSelfMessage("mrkmrtns: You will!", user)).toBe(false);
+    });
+  });
+
+  describe("checkForMention with relayed messages", () => {
+    const user = { username: "mrkmrtns" } as unknown as User;
+    const settings = { customMentions: [] } as unknown as GlobalSettings;
+
+    it("suppresses mention notifications for relayed self-messages", () => {
+      expect(checkForMention("[mrkmrtns] You will!", user, settings)).toBe(
+        false,
+      );
+      expect(checkForMention("<mrkmrtns> You will!", user, settings)).toBe(
+        false,
+      );
+    });
+
+    it("still detects real incoming mentions from other users", () => {
+      expect(checkForMention("hey mrkmrtns, You will!", user, settings)).toBe(
+        true,
+      );
+      expect(
+        checkForMention("[alice] mrkmrtns: You will!", user, settings),
+      ).toBe(true);
+    });
   });
 });

@@ -9,6 +9,7 @@ import ircClient from "../lib/ircClient";
 import { makeLabel } from "../lib/labeledResponse";
 import type { MediaType } from "../lib/mediaUtils";
 import {
+  collectAllSelfNicks,
   requestNotificationPermission,
   syncAllServersWebPush,
   syncTauriNotificationSettings,
@@ -4190,6 +4191,7 @@ const useStore = create<AppState>((set, get) => ({
       syncTauriNotificationSettings(
         newGlobalSettings.enableNotifications,
         newGlobalSettings.customMentions,
+        collectAllSelfNicks(state),
       );
       if (
         "enableNotifications" in settings &&

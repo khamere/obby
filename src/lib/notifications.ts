@@ -5,7 +5,9 @@ import {
   sendNotification as tauriSendNotification,
 } from "@tauri-apps/plugin-notification";
 import type { GlobalSettings } from "../store";
+import { servers as storageServers } from "../store/localStorage";
 import type { User } from "../types";
+import ircClient from "./ircClient";
 import { containsWholeWord } from "./nickHighlight";
 import { isTauri } from "./platformUtils";
 
@@ -149,16 +151,179 @@ export const syncTauriAppFocus = (focused: boolean): void => {
 };
 
 /**
+ * Normalizes IRC nickname by stripping network suffix (/network, @host),
+ * status prefixes (~), delimiters ([], <>, (), {}, |, `), inline suffixes,
+ * and trailing underscores.
+ */
+export const normalizeNick = (nick: string): string => {
+  if (!nick) return "";
+  let s = nick.trim().replace(/^:+/, "");
+  s = s.split("/")[0].split("@")[0].trim();
+  s = s.replace(/^~+/, "");
+  s = s.replace(/^[[\]<>(){}|`]+|[[\]<>(){}|`]+$/g, "");
+  const bracketIdx = s.indexOf("[");
+  if (bracketIdx > 0) {
+    s = s.substring(0, bracketIdx);
+  }
+  const pipeIdx = s.indexOf("|");
+  if (pipeIdx > 0) {
+    s = s.substring(0, pipeIdx);
+  }
+  s = s.replace(/^[[\]<>(){}|`]+|[[\]<>(){}|`]+$/g, "");
+  return s.replace(/_+$/, "").toLowerCase();
+};
+
+/**
+ * Collect all known nicknames and accounts belonging to the current user
+ * across saved configurations and active IRC client connections.
+ */
+export const collectAllSelfNicks = (state?: {
+  servers?: Array<{ id: string }>;
+}): string[] => {
+  const nicks = new Set<string>();
+
+  const addCandidate = (val?: string | null) => {
+    if (!val) return;
+    const trimmed = val.trim();
+    if (!trimmed || trimmed === "*") return;
+    nicks.add(trimmed);
+    const norm = normalizeNick(trimmed);
+    if (norm) nicks.add(norm);
+  };
+
+  try {
+    const saved = storageServers.load();
+    for (const s of saved) {
+      addCandidate(s.nickname);
+      addCandidate(s.saslAccountName);
+    }
+  } catch {
+    // Ignore storage errors in test or restricted environments
+  }
+
+  try {
+    const activeServers = state?.servers ?? ircClient.getServers();
+    for (const s of activeServers) {
+      const u = ircClient.getCurrentUser(s.id);
+      addCandidate(u?.username);
+      addCandidate(u?.account);
+    }
+  } catch {
+    // Ignore ircClient errors
+  }
+
+  return Array.from(nicks);
+};
+
+/**
+ * Check if a sender nickname represents ourselves (including across devices/bouncers).
+ */
+export const isSelfNick = (
+  sender: string,
+  currentUsername?: string,
+  allOwnNicks?: string[],
+): boolean => {
+  if (!sender) return false;
+
+  const senderClean = sender.trim().toLowerCase();
+  const senderNorm = normalizeNick(sender);
+  if (!senderNorm) return false;
+
+  const checkMatch = (candidate?: string): boolean => {
+    if (!candidate) return false;
+    const candClean = candidate.trim().toLowerCase();
+    if (candClean === senderClean) return true;
+    const candNorm = normalizeNick(candidate);
+    return (
+      candNorm.length > 0 &&
+      (candNorm === senderClean ||
+        candNorm === senderNorm ||
+        candClean === senderNorm)
+    );
+  };
+
+  if (checkMatch(currentUsername)) {
+    return true;
+  }
+
+  const candidateList = allOwnNicks ?? collectAllSelfNicks();
+  for (const own of candidateList) {
+    if (checkMatch(own)) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+/**
+ * Detect messages relayed from bridges where the user was the author,
+ * e.g. "[mrkmrtns] message", "<mrkmrtns> message", or "(mrkmrtns) message".
+ */
+export const isRelayedSelfMessage = (
+  body: string,
+  currentUser?: User | null,
+  allOwnNicks?: string[],
+): boolean => {
+  if (!body) return false;
+  const trimmed = body.trimStart();
+  let author: string | null = null;
+  let restAfter = "";
+  if (trimmed.startsWith("[")) {
+    const closeIdx = trimmed.indexOf("]");
+    if (closeIdx > 1) {
+      author = trimmed.slice(1, closeIdx);
+      restAfter = trimmed.slice(closeIdx + 1);
+    }
+  } else if (trimmed.startsWith("<")) {
+    const closeIdx = trimmed.indexOf(">");
+    if (closeIdx > 1) {
+      author = trimmed.slice(1, closeIdx);
+      restAfter = trimmed.slice(closeIdx + 1);
+    }
+  } else if (trimmed.startsWith("(")) {
+    const closeIdx = trimmed.indexOf(")");
+    if (closeIdx > 1) {
+      author = trimmed.slice(1, closeIdx);
+      restAfter = trimmed.slice(closeIdx + 1);
+    }
+  }
+
+  if (restAfter.trim().length === 0) {
+    return false;
+  }
+
+  if (author) {
+    const authorClean = author.trim();
+    if (authorClean) {
+      if (isSelfNick(authorClean, currentUser?.username, allOwnNicks)) {
+        return true;
+      }
+      const firstWord = authorClean.split(/\s+/)[0];
+      if (
+        firstWord &&
+        isSelfNick(firstWord, currentUser?.username, allOwnNicks)
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
+/**
  * Sync notification preferences to the Tauri Rust socket backend.
  */
 export const syncTauriNotificationSettings = (
   enabled: boolean,
   customMentions: string[],
+  ownNicks?: string[],
 ): void => {
   if (!isTauri()) return;
   invoke("sync_notification_settings", {
     enabled,
     customMentions,
+    ownNicks: ownNicks ?? collectAllSelfNicks(),
   }).catch(() => {
     // Ignore in environments where the command isn't registered
   });
@@ -340,13 +505,17 @@ function getCandidateSelfMentions(currentUser: User): string[] {
   const candidates = new Set<string>();
   if (currentUser.username) {
     candidates.add(currentUser.username);
-    const baseNick = currentUser.username.replace(/_+$/, "");
-    if (baseNick) {
-      candidates.add(baseNick);
+    const norm = normalizeNick(currentUser.username);
+    if (norm) {
+      candidates.add(norm);
     }
   }
   if (currentUser.account && currentUser.account !== "*") {
     candidates.add(currentUser.account);
+    const norm = normalizeNick(currentUser.account);
+    if (norm) {
+      candidates.add(norm);
+    }
   }
   return Array.from(candidates);
 }
@@ -360,6 +529,9 @@ export const checkForMention = (
   globalSettings: GlobalSettings,
 ): boolean => {
   if (!currentUser) return false;
+  if (isRelayedSelfMessage(messageContent, currentUser)) {
+    return false;
+  }
 
   const selfCandidates = getCandidateSelfMentions(currentUser);
   return (
@@ -383,6 +555,9 @@ export const extractMentions = (
   const mentions: string[] = [];
 
   if (!currentUser) return mentions;
+  if (isRelayedSelfMessage(messageContent, currentUser)) {
+    return mentions;
+  }
 
   for (const candidate of getCandidateSelfMentions(currentUser)) {
     if (

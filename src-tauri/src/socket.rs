@@ -17,8 +17,31 @@ static APP_IN_BACKGROUND: AtomicBool = AtomicBool::new(false);
 static NOTIFICATIONS_ENABLED: AtomicBool = AtomicBool::new(true);
 static NEXT_NOTIFICATION_ID: AtomicI32 = AtomicI32::new(2000);
 static CUSTOM_MENTIONS: OnceLock<StdMutex<Vec<String>>> = OnceLock::new();
+static OWN_NICKS: OnceLock<StdMutex<Vec<String>>> = OnceLock::new();
 static ACTIVE_HISTORY_BATCHES: OnceLock<StdMutex<std::collections::HashSet<String>>> =
     OnceLock::new();
+
+fn normalize_nick(nick: &str) -> &str {
+    let mut s = nick.trim().trim_start_matches(':');
+    s = s.split('/').next().unwrap_or(s);
+    s = s.split('@').next().unwrap_or(s);
+    s = s.trim_start_matches('~');
+    s = s.trim_matches(&['[', ']', '<', '>', '(', ')', '{', '}', '|', '`'][..]);
+
+    if let Some((base, _)) = s.split_once('[') {
+        if !base.is_empty() {
+            s = base;
+        }
+    }
+    if let Some((base, _)) = s.split_once('|') {
+        if !base.is_empty() {
+            s = base;
+        }
+    }
+
+    s = s.trim_matches(&['[', ']', '<', '>', '(', ')', '{', '}', '|', '`'][..]);
+    s.trim_end_matches('_')
+}
 
 #[derive(Debug, Default, Clone)]
 struct ConnectionNicks {
@@ -35,9 +58,9 @@ impl ConnectionNicks {
         if !self.aliases.iter().any(|a| a.eq_ignore_ascii_case(trimmed)) {
             self.aliases.push(trimmed.to_string());
         }
-        let base = trimmed.trim_end_matches('_');
-        if !base.is_empty() && !self.aliases.iter().any(|a| a.eq_ignore_ascii_case(base)) {
-            self.aliases.push(base.to_string());
+        let norm = normalize_nick(trimmed);
+        if !norm.is_empty() && !self.aliases.iter().any(|a| a.eq_ignore_ascii_case(norm)) {
+            self.aliases.push(norm.to_string());
         }
     }
 
@@ -62,6 +85,10 @@ fn custom_mentions_store() -> &'static StdMutex<Vec<String>> {
 
 fn history_batches_store() -> &'static StdMutex<std::collections::HashSet<String>> {
     ACTIVE_HISTORY_BATCHES.get_or_init(|| StdMutex::new(std::collections::HashSet::new()))
+}
+
+fn own_nicks_store() -> &'static StdMutex<Vec<String>> {
+    OWN_NICKS.get_or_init(|| StdMutex::new(Vec::new()))
 }
 
 fn update_app_background_state(in_background: bool) {
@@ -371,6 +398,90 @@ fn contains_whole_word_ci(haystack: &str, needle: &str) -> bool {
     false
 }
 
+fn is_self_sender(sender_nick: &str, sender_user: &str, nicks: &ConnectionNicks) -> bool {
+    let check_candidate = |candidate: &str| -> bool {
+        let cand_clean = candidate.trim();
+        if cand_clean.is_empty() || cand_clean == "*" {
+            return false;
+        }
+        let cand_norm = normalize_nick(cand_clean);
+
+        let matches_val = |val: &str| -> bool {
+            let val_clean = val.trim();
+            if val_clean.is_empty() {
+                return false;
+            }
+            if val_clean.eq_ignore_ascii_case(cand_clean) {
+                return true;
+            }
+            let val_norm = normalize_nick(val_clean);
+            !val_norm.is_empty()
+                && (val_norm.eq_ignore_ascii_case(cand_clean)
+                    || val_norm.eq_ignore_ascii_case(cand_norm)
+                    || val_clean.eq_ignore_ascii_case(cand_norm))
+        };
+
+        matches_val(sender_nick) || (!sender_user.is_empty() && matches_val(sender_user))
+    };
+
+    if check_candidate(&nicks.current) {
+        return true;
+    }
+    if nicks.aliases.iter().any(|a| check_candidate(a)) {
+        return true;
+    }
+    if let Ok(guard) = own_nicks_store().lock() {
+        if guard.iter().any(|n| check_candidate(n)) {
+            return true;
+        }
+    }
+    false
+}
+
+fn is_relayed_self_message(body: &str, nicks: &ConnectionNicks) -> bool {
+    let trimmed = body.trim_start();
+    let (author_token, rest_after) = if let Some(rest) = trimmed.strip_prefix('[') {
+        if let Some((author, after)) = rest.split_once(']') {
+            (Some(author), after)
+        } else {
+            (None, "")
+        }
+    } else if let Some(rest) = trimmed.strip_prefix('<') {
+        if let Some((author, after)) = rest.split_once('>') {
+            (Some(author), after)
+        } else {
+            (None, "")
+        }
+    } else if let Some(rest) = trimmed.strip_prefix('(') {
+        if let Some((author, after)) = rest.split_once(')') {
+            (Some(author), after)
+        } else {
+            (None, "")
+        }
+    } else {
+        (None, "")
+    };
+
+    if rest_after.trim().is_empty() {
+        return false;
+    }
+
+    if let Some(author) = author_token {
+        let author_clean = author.trim();
+        if !author_clean.is_empty() {
+            if is_self_sender(author_clean, "", nicks) {
+                return true;
+            }
+            if let Some(first_word) = author_clean.split_whitespace().next() {
+                if !first_word.is_empty() && is_self_sender(first_word, "", nicks) {
+                    return true;
+                }
+            }
+        }
+    }
+    false
+}
+
 fn inspect_incoming_irc_line(
     raw_line: &str,
     write_tx: &mpsc::Sender<String>,
@@ -403,10 +514,17 @@ fn inspect_incoming_irc_line(
     }
 
     let mut sender_nick = "";
+    let mut sender_user = "";
     if let Some(after_colon) = rest.strip_prefix(':') {
         if let Some((source_part, remaining)) = after_colon.split_once(' ') {
             rest = remaining.trim_start();
-            sender_nick = source_part.split('!').next().unwrap_or("");
+            let (nick, rest_source) = source_part.split_once('!').unwrap_or((source_part, ""));
+            sender_nick = nick;
+            sender_user = rest_source
+                .split('@')
+                .next()
+                .unwrap_or("")
+                .trim_start_matches('~');
         } else {
             return;
         }
@@ -459,6 +577,60 @@ fn inspect_incoming_irc_line(
         if !target_nick.is_empty() && target_nick != "*" {
             if let Ok(mut n) = nick_lock.lock() {
                 n.set_current(target_nick);
+            }
+        }
+        if command == "001" {
+            if let Some((_, user_host)) = params_str.split_once('!') {
+                if let Some((user, _)) = user_host.split_once('@') {
+                    let clean_user = user.trim_start_matches('~');
+                    if !clean_user.is_empty() {
+                        if let Ok(mut n) = nick_lock.lock() {
+                            n.add_alias(clean_user);
+                        }
+                    }
+                }
+            }
+        }
+        if command == "900" {
+            let mut parts = params_str.split_whitespace();
+            let _ = parts.next(); // nick
+            if let Some(mask) = parts.next() {
+                if let Some((_, rest_mask)) = mask.split_once('!') {
+                    let ident = rest_mask
+                        .split('@')
+                        .next()
+                        .unwrap_or("")
+                        .trim_start_matches('~');
+                    if !ident.is_empty() {
+                        if let Ok(mut n) = nick_lock.lock() {
+                            n.add_alias(ident);
+                        }
+                    }
+                }
+            }
+            if let Some(account) = parts.next() {
+                let clean_account = account.trim();
+                if !clean_account.is_empty() && clean_account != "*" {
+                    if let Ok(mut n) = nick_lock.lock() {
+                        n.add_alias(clean_account);
+                    }
+                }
+            }
+        }
+        return;
+    }
+
+    if command.eq_ignore_ascii_case("ACCOUNT") {
+        let account = params_str.trim().trim_start_matches(':');
+        if !account.is_empty() && account != "*" {
+            let nicks = match nick_lock.lock() {
+                Ok(n) => n.clone(),
+                Err(_) => ConnectionNicks::default(),
+            };
+            if is_self_sender(sender_nick, sender_user, &nicks) {
+                if let Ok(mut n) = nick_lock.lock() {
+                    n.add_alias(account);
+                }
             }
         }
         return;
@@ -515,7 +687,7 @@ fn inspect_incoming_irc_line(
         Ok(n) => n.clone(),
         Err(_) => ConnectionNicks::default(),
     };
-    if !nicks.current.is_empty() && sender_nick.eq_ignore_ascii_case(&nicks.current) {
+    if is_self_sender(sender_nick, sender_user, &nicks) {
         return;
     }
 
@@ -544,6 +716,10 @@ fn inspect_incoming_irc_line(
         return;
     }
 
+    if is_relayed_self_message(&clean_body, &nicks) {
+        return;
+    }
+
     let is_channel = target.starts_with('#')
         || target.starts_with('&')
         || target.starts_with('^')
@@ -558,6 +734,13 @@ fn inspect_incoming_irc_line(
                 .aliases
                 .iter()
                 .any(|alias| !alias.is_empty() && contains_whole_word_ci(&clean_body, alias));
+        if !mentioned {
+            if let Ok(guard) = own_nicks_store().lock() {
+                mentioned = guard
+                    .iter()
+                    .any(|m| !m.is_empty() && contains_whole_word_ci(&clean_body, m));
+            }
+        }
         if !mentioned {
             if let Ok(custom) = custom_mentions_store().lock() {
                 mentioned = custom
@@ -1187,6 +1370,11 @@ pub async fn send(
                             n.add_alias(candidate);
                         }
                     }
+                    if let Ok(mut guard) = own_nicks_store().lock() {
+                        if !guard.iter().any(|n| n.eq_ignore_ascii_case(candidate)) {
+                            guard.push(candidate.to_string());
+                        }
+                    }
                 }
             } else if trimmed.len() > 5 && trimmed[..5].eq_ignore_ascii_case("USER ") {
                 let user_part = trimmed[5..].split_whitespace().next().unwrap_or("");
@@ -1194,6 +1382,11 @@ pub async fn send(
                     if !base_user.is_empty() {
                         if let Ok(mut n) = nick_lock.lock() {
                             n.add_alias(base_user);
+                        }
+                        if let Ok(mut guard) = own_nicks_store().lock() {
+                            if !guard.iter().any(|n| n.eq_ignore_ascii_case(base_user)) {
+                                guard.push(base_user.to_string());
+                            }
                         }
                     }
                 }
@@ -1218,10 +1411,19 @@ pub fn set_app_focused(focused: bool) {
 }
 
 #[tauri::command]
-pub fn sync_notification_settings(enabled: bool, custom_mentions: Vec<String>) {
+pub fn sync_notification_settings(
+    enabled: bool,
+    custom_mentions: Vec<String>,
+    own_nicks: Option<Vec<String>>,
+) {
     NOTIFICATIONS_ENABLED.store(enabled, Ordering::Relaxed);
     if let Ok(mut guard) = custom_mentions_store().lock() {
         *guard = custom_mentions;
+    }
+    if let Some(nicks) = own_nicks {
+        if let Ok(mut guard) = own_nicks_store().lock() {
+            *guard = nicks;
+        }
     }
 }
 
@@ -1304,4 +1506,64 @@ pub unsafe extern "system" fn JNI_OnLoad(
         let _ = ANDROID_JVM.set(vm_obj);
     }
     jni::sys::JNI_VERSION_1_6
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_normalize_nick() {
+        assert_eq!(normalize_nick("[mrkmrtns]"), "mrkmrtns");
+        assert_eq!(normalize_nick("<mrkmrtns>"), "mrkmrtns");
+        assert_eq!(normalize_nick("~mrkmrtns"), "mrkmrtns");
+        assert_eq!(normalize_nick("mrkmrtns[m]"), "mrkmrtns");
+        assert_eq!(normalize_nick("mrkmrtns|web"), "mrkmrtns");
+        assert_eq!(normalize_nick("mrkmrtns_"), "mrkmrtns");
+        assert_eq!(normalize_nick("mrkmrtns/libera"), "mrkmrtns");
+        assert_eq!(normalize_nick("mrkmrtns@bouncer"), "mrkmrtns");
+    }
+
+    #[test]
+    fn test_is_self_sender() {
+        let mut nicks = ConnectionNicks::default();
+        nicks.set_current("mrkmrtns");
+
+        // Exact & normalized nick matches
+        assert!(is_self_sender("mrkmrtns", "", &nicks));
+        assert!(is_self_sender("[mrkmrtns]", "", &nicks));
+        assert!(is_self_sender("mrkmrtns[m]", "", &nicks));
+        assert!(is_self_sender("mrkmrtns_", "", &nicks));
+        assert!(is_self_sender("~mrkmrtns", "", &nicks));
+
+        // Matching on sender_user (ident)
+        assert!(is_self_sender("somebot", "mrkmrtns", &nicks));
+        assert!(is_self_sender("somebot", "~mrkmrtns", &nicks));
+
+        // Non-matching
+        assert!(!is_self_sender("alice", "alice", &nicks));
+        assert!(!is_self_sender("mrkmrtns_imposter", "other", &nicks));
+    }
+
+    #[test]
+    fn test_is_relayed_self_message() {
+        let mut nicks = ConnectionNicks::default();
+        nicks.set_current("mrkmrtns");
+
+        assert!(is_relayed_self_message("[mrkmrtns] You will!", &nicks));
+        assert!(is_relayed_self_message("<mrkmrtns> You will!", &nicks));
+        assert!(is_relayed_self_message("(mrkmrtns) You will!", &nicks));
+        assert!(is_relayed_self_message(
+            "[mrkmrtns (Discord)] You will!",
+            &nicks
+        ));
+        assert!(is_relayed_self_message(
+            "[mrkmrtns/matrix] You will!",
+            &nicks
+        ));
+
+        assert!(!is_relayed_self_message("[alice] You will!", &nicks));
+        assert!(!is_relayed_self_message("You will!", &nicks));
+        assert!(!is_relayed_self_message("mrkmrtns: You will!", &nicks));
+    }
 }

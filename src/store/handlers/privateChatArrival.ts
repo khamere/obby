@@ -12,7 +12,7 @@ import {
   playNotificationSound,
   shouldPlayNotificationSound,
 } from "../../lib/notificationSounds";
-import { showMentionNotification } from "../../lib/notifications";
+import { isSelfNick, showMentionNotification } from "../../lib/notifications";
 import { isTauriMobile } from "../../lib/platformUtils";
 import { addTitleAlert } from "../../lib/titleAlert";
 import type { Message } from "../../types";
@@ -33,6 +33,12 @@ export function notePrivateMessageArrived(
   arrival: PrivateMessageArrival,
 ): void {
   const { serverId, privateChatId, sender, body, isHistorical } = arrival;
+
+  const currentUser = ircClient.getCurrentUser(serverId);
+  if (isSelfNick(sender, currentUser?.username)) {
+    return;
+  }
+
   const silenced = isSilenced(serverId, privateChatId, true);
 
   if (!isHistorical) {
