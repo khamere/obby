@@ -231,6 +231,10 @@ msgstr "{safeName} a fost modificat pe server, așa că nu se mai decriptează."
 msgid "{seconds} seconds"
 msgstr "{seconds} secunde"
 
+#: src/lib/titleAlert.ts
+msgid "{sender} messaged you"
+msgstr "{sender} ți-a scris"
+
 #: src/store/handlers/e2ee.ts
 msgid "{sender} restarted encryption, so this conversation is being set up again."
 msgstr "{sender} a repornit criptarea, așa că această conversație se configurează din nou."
@@ -2667,6 +2671,7 @@ msgid "Notification Sound"
 msgstr "Sunet de notificare"
 
 #: src/components/ui/UserSettings.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Notifications"
 msgstr "Notificări"
 
@@ -3896,6 +3901,7 @@ msgid "Toggle Member List"
 msgstr "Comută lista de membri"
 
 #: src/components/ui/QuickActions/uiActionConfig.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Toggle Notifications"
 msgstr "Comută notificările"
 

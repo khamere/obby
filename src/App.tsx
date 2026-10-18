@@ -1,8 +1,4 @@
 import { onOpenUrl } from "@tauri-apps/plugin-deep-link";
-import {
-  isPermissionGranted,
-  requestPermission,
-} from "@tauri-apps/plugin-notification";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { Route, Routes } from "react-router-dom";
@@ -27,20 +23,14 @@ import { useConnectionResilience } from "./hooks/useConnectionResilience";
 import { useKeyboardResize } from "./hooks/useKeyboardResize";
 import ircClient from "./lib/ircClient";
 import { parseIrcUrl } from "./lib/ircUrlParser";
-import { isTauri } from "./lib/platformUtils";
+import {
+  requestNotificationPermission,
+  syncTauriAppFocus,
+  syncTauriNotificationSettings,
+} from "./lib/notifications";
+import { isTauri, isTauriAndroid } from "./lib/platformUtils";
 import useStore, { loadSavedServers } from "./store";
 import type { ConnectionDetails } from "./store/types";
-
-const askPermissions = async () => {
-  // Do you have permission to send a notification?
-  let permissionGranted = await isPermissionGranted();
-
-  // If not we need to request it
-  if (!permissionGranted) {
-    const permission = await requestPermission();
-    permissionGranted = permission === "granted";
-  }
-};
 
 /* Channel auto-join from URL query string.
  *
@@ -151,6 +141,7 @@ const App: React.FC = () => {
     isConnecting,
     servers,
     hasConnectedToSavedServers,
+    globalSettings,
   } = useStore();
 
   // Local state for User Profile modal
@@ -221,11 +212,20 @@ const App: React.FC = () => {
   useConnectionResilience();
   useChannelTabSwitching();
 
-  // askPermissions();
   const hasInitialized = useRef(false);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: globalSettings is read once on initial mount
   useEffect(() => {
     if (hasInitialized.current) return;
     hasInitialized.current = true;
+    if (globalSettings) {
+      syncTauriNotificationSettings(
+        globalSettings.enableNotifications,
+        globalSettings.customMentions,
+      );
+      if (globalSettings.enableNotifications) {
+        void requestNotificationPermission();
+      }
+    }
     initializeEnvSettings(toggleAddServerModal, joinChannel);
     connectToSavedServers();
 
@@ -361,20 +361,30 @@ const App: React.FC = () => {
 
   // Suppress :hover popups on blur; reclaim focus from iframes immediately.
   useEffect(() => {
+    // Android WebView fires blur/focus when the soft keyboard closes; only visibility is reliable there.
+    const focusDrivesBackground = !isTauriAndroid();
     const onBlur = () => {
       document.documentElement.classList.add("window-blurred");
+      if (focusDrivesBackground) syncTauriAppFocus(false);
       // Cross-origin iframes swallow all keystrokes — blur immediately so the parent document regains them.
       if (document.activeElement?.tagName === "IFRAME") {
         (document.activeElement as HTMLElement).blur();
       }
     };
-    const onFocus = () =>
+    const onFocus = () => {
       document.documentElement.classList.remove("window-blurred");
+      if (focusDrivesBackground) syncTauriAppFocus(!document.hidden);
+    };
+    const onVisibilityChange = () => {
+      syncTauriAppFocus(!document.hidden);
+    };
     window.addEventListener("blur", onBlur);
     window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibilityChange);
     return () => {
       window.removeEventListener("blur", onBlur);
       window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, []);
 

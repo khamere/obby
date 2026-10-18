@@ -13,6 +13,8 @@ import {
   shouldPlayNotificationSound,
 } from "../../lib/notificationSounds";
 import { showMentionNotification } from "../../lib/notifications";
+import { isTauriMobile } from "../../lib/platformUtils";
+import { addTitleAlert } from "../../lib/titleAlert";
 import type { Message } from "../../types";
 import { getCurrentSelection } from "../helpers";
 import type { AppState } from "../index";
@@ -74,26 +76,33 @@ export function notePrivateMessageArrived(
   const current = store.getState();
   const isActiveChat =
     getCurrentSelection(current).selectedPrivateChatId === privateChatId;
+  const isWindowUnfocused =
+    typeof document !== "undefined" &&
+    (document.hidden || !document.hasFocus());
   if (
-    isActiveChat ||
+    (isActiveChat && !isWindowUnfocused && !isTauriMobile()) ||
     isHistorical ||
     silenced ||
     !current.globalSettings.enableNotifications
   )
     return;
+  addTitleAlert(serverId, privateChatId, sender);
   showMentionNotification(
     serverId,
     `DM from ${sender}`,
     sender,
     body,
-    (id, msg) => {
-      store.getState().addGlobalNotification({
-        type: "note",
-        command: "PRIVMSG",
-        code: "DM",
-        message: msg,
-        serverId: id,
-      });
-    },
+    !isActiveChat
+      ? (id, msg) => {
+          store.getState().addGlobalNotification({
+            type: "note",
+            command: "PRIVMSG",
+            code: "DM",
+            message: msg,
+            serverId: id,
+          });
+        }
+      : undefined,
+    arrival.message.msgid,
   );
 }

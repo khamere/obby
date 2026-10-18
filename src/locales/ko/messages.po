@@ -231,6 +231,10 @@ msgstr "{safeName} 파일이 서버에서 변경되어 더 이상 복호화되�
 msgid "{seconds} seconds"
 msgstr "{seconds}초"
 
+#: src/lib/titleAlert.ts
+msgid "{sender} messaged you"
+msgstr "{sender}님의 메시지"
+
 #: src/store/handlers/e2ee.ts
 msgid "{sender} restarted encryption, so this conversation is being set up again."
 msgstr "{sender}님이 암호화를 다시 시작해서 이 대화를 다시 설정하는 중입니다."
@@ -2667,6 +2671,7 @@ msgid "Notification Sound"
 msgstr "알림 소리"
 
 #: src/components/ui/UserSettings.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Notifications"
 msgstr "알림"
 
@@ -3896,6 +3901,7 @@ msgid "Toggle Member List"
 msgstr "멤버 목록 전환"
 
 #: src/components/ui/QuickActions/uiActionConfig.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Toggle Notifications"
 msgstr "알림 전환"
 

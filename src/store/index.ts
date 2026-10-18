@@ -8,6 +8,11 @@ import { e2eeSessionKey } from "../lib/e2ee/session";
 import ircClient from "../lib/ircClient";
 import { makeLabel } from "../lib/labeledResponse";
 import type { MediaType } from "../lib/mediaUtils";
+import {
+  requestNotificationPermission,
+  syncAllServersWebPush,
+  syncTauriNotificationSettings,
+} from "../lib/notifications";
 import { DEFAULT_THEME_SETTINGS } from "../lib/theme";
 import { DEFAULT_TYPOGRAPHY } from "../lib/typography";
 import {
@@ -1346,7 +1351,7 @@ const useStore = create<AppState>((set, get) => ({
       .map((s) => [s.id, s.accentColor as string]),
   ),
   globalSettings: {
-    enableNotifications: false,
+    enableNotifications: true,
     notificationSound: "/sounds/notif1.mp3",
     enableNotificationSounds: true,
     notificationVolume: 0.4, // 40% volume by default
@@ -4182,6 +4187,21 @@ const useStore = create<AppState>((set, get) => ({
         ...settings,
       };
       saveGlobalSettingsToLocalStorage(newGlobalSettings);
+      syncTauriNotificationSettings(
+        newGlobalSettings.enableNotifications,
+        newGlobalSettings.customMentions,
+      );
+      if (
+        "enableNotifications" in settings &&
+        settings.enableNotifications !== undefined
+      ) {
+        if (settings.enableNotifications) {
+          void requestNotificationPermission();
+        }
+        syncAllServersWebPush(settings.enableNotifications, (serverId, line) =>
+          ircClient.sendRaw(serverId, line),
+        );
+      }
       return {
         globalSettings: newGlobalSettings,
       };

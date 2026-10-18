@@ -231,6 +231,10 @@ msgstr "{safeName} został zmieniony na serwerze, więc nie da się go już odsz
 msgid "{seconds} seconds"
 msgstr "{seconds} sekund"
 
+#: src/lib/titleAlert.ts
+msgid "{sender} messaged you"
+msgstr "{sender} napisał(a) do Ciebie"
+
 #: src/store/handlers/e2ee.ts
 msgid "{sender} restarted encryption, so this conversation is being set up again."
 msgstr "{sender} ponownie uruchomił szyfrowanie, więc ta rozmowa jest konfigurowana od nowa."
@@ -2667,6 +2671,7 @@ msgid "Notification Sound"
 msgstr "Dźwięk powiadomienia"
 
 #: src/components/ui/UserSettings.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Notifications"
 msgstr "Powiadomienia"
 
@@ -3896,6 +3901,7 @@ msgid "Toggle Member List"
 msgstr "Przełącz listę członków"
 
 #: src/components/ui/QuickActions/uiActionConfig.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Toggle Notifications"
 msgstr "Przełącz powiadomienia"
 

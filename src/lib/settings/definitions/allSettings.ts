@@ -181,6 +181,18 @@ const profileSettings: SettingDefinition[] = [
  */
 const notificationSettings: SettingDefinition[] = [
   {
+    id: "notifications.enable",
+    key: "enableNotifications",
+    category: "notifications",
+    subcategory: "Mentions",
+    title: msg`Notifications`,
+    description: msg`Toggle Notifications`,
+    type: "toggle",
+    defaultValue: true,
+    searchKeywords: ["push", "notification", "alert", "desktop", "mobile"],
+    priority: 0,
+  },
+  {
     id: "notifications.enableSounds",
     key: "enableNotificationSounds",
     category: "notifications",

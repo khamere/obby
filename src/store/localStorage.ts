@@ -90,6 +90,12 @@ export const settings = {
         delete raw.showExternalContent;
       }
 
+      // Migrate legacy enableNotifications: false (from when no UI toggle existed)
+      if (localStorage.getItem("obby.notificationsDefaultV1") !== "1") {
+        raw.enableNotifications = true;
+        localStorage.setItem("obby.notificationsDefaultV1", "1");
+      }
+
       return raw as Partial<GlobalSettings>;
     } catch {
       return {};

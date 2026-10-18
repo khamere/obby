@@ -231,6 +231,10 @@ msgstr "{safeName} ändrades på servern och går inte längre att dekryptera."
 msgid "{seconds} seconds"
 msgstr "{seconds} sekunder"
 
+#: src/lib/titleAlert.ts
+msgid "{sender} messaged you"
+msgstr "{sender} skrev till dig"
+
 #: src/store/handlers/e2ee.ts
 msgid "{sender} restarted encryption, so this conversation is being set up again."
 msgstr "{sender} startade om krypteringen, så den här konversationen sätts upp igen."
@@ -2667,6 +2671,7 @@ msgid "Notification Sound"
 msgstr "Aviseringsljud"
 
 #: src/components/ui/UserSettings.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Notifications"
 msgstr "Aviseringar"
 
@@ -3896,6 +3901,7 @@ msgid "Toggle Member List"
 msgstr "Växla medlemslista"
 
 #: src/components/ui/QuickActions/uiActionConfig.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Toggle Notifications"
 msgstr "Växla aviseringar"
 

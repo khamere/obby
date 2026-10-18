@@ -1,5 +1,6 @@
 import type { StoreApi } from "zustand";
 import ircClient from "../../lib/ircClient";
+import { clearWebPushRetry, syncServerWebPush } from "../../lib/notifications";
 import type { PrivateChat } from "../../types";
 import {
   generateDeterministicId,
@@ -43,6 +44,15 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
   });
 
   ircClient.on("ISUPPORT", ({ serverId, key, value }) => {
+    if (key === "VAPID" && value) {
+      void syncServerWebPush(
+        serverId,
+        value,
+        store.getState().globalSettings.enableNotifications,
+        (srvId, line) => ircClient.sendRaw(srvId, line),
+      );
+      return;
+    }
     if (key !== "NETWORK" || !value) return;
     store.setState((state) => ({
       servers: state.servers.map((s) =>
@@ -55,6 +65,7 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
     // Allow the ready handler to re-run metadata restoration after reconnect
     if (connectionState === "disconnected") {
       readyProcessedServers.delete(serverId);
+      clearWebPushRetry(serverId);
       // e2ee ratchet keys live only in memory and can't survive a dropped
       // connection, so tear the sessions down rather than keep showing a lock
       // that no longer protects anything. Encryption resumes after reconnecting,

@@ -1,7 +1,8 @@
 use futures_util::{Sink, SinkExt, Stream, StreamExt};
 use serde::Serialize;
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
+use std::sync::{Arc, Mutex as StdMutex, OnceLock};
 use tauri::{Emitter, State};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
@@ -11,6 +12,183 @@ use tokio::time::{timeout, Duration};
 use tokio_tungstenite::tungstenite::Message;
 #[cfg(target_os = "android")]
 use tokio_tungstenite::{connect_async_tls_with_config, Connector};
+
+static APP_IN_BACKGROUND: AtomicBool = AtomicBool::new(false);
+static NOTIFICATIONS_ENABLED: AtomicBool = AtomicBool::new(true);
+static NEXT_NOTIFICATION_ID: AtomicI32 = AtomicI32::new(2000);
+static CUSTOM_MENTIONS: OnceLock<StdMutex<Vec<String>>> = OnceLock::new();
+static ACTIVE_HISTORY_BATCHES: OnceLock<StdMutex<std::collections::HashSet<String>>> =
+    OnceLock::new();
+
+#[derive(Debug, Default, Clone)]
+struct ConnectionNicks {
+    current: String,
+    aliases: Vec<String>,
+}
+
+impl ConnectionNicks {
+    fn add_alias(&mut self, candidate: &str) {
+        let trimmed = candidate.trim();
+        if trimmed.is_empty() || trimmed == "*" {
+            return;
+        }
+        if !self.aliases.iter().any(|a| a.eq_ignore_ascii_case(trimmed)) {
+            self.aliases.push(trimmed.to_string());
+        }
+        let base = trimmed.trim_end_matches('_');
+        if !base.is_empty() && !self.aliases.iter().any(|a| a.eq_ignore_ascii_case(base)) {
+            self.aliases.push(base.to_string());
+        }
+    }
+
+    fn set_current(&mut self, nick: &str) {
+        let trimmed = nick.trim();
+        if trimmed.is_empty() || trimmed == "*" {
+            return;
+        }
+        self.current = trimmed.to_string();
+        self.add_alias(trimmed);
+    }
+}
+
+#[cfg(target_os = "android")]
+static ANDROID_JVM: OnceLock<jni::JavaVM> = OnceLock::new();
+#[cfg(target_os = "android")]
+static ANDROID_ACTIVITY: OnceLock<StdMutex<Option<jni::objects::GlobalRef>>> = OnceLock::new();
+
+fn custom_mentions_store() -> &'static StdMutex<Vec<String>> {
+    CUSTOM_MENTIONS.get_or_init(|| StdMutex::new(Vec::new()))
+}
+
+fn history_batches_store() -> &'static StdMutex<std::collections::HashSet<String>> {
+    ACTIVE_HISTORY_BATCHES.get_or_init(|| StdMutex::new(std::collections::HashSet::new()))
+}
+
+fn update_app_background_state(in_background: bool) {
+    let was = APP_IN_BACKGROUND.swap(in_background, Ordering::Relaxed);
+    if was != in_background {
+        log::info!("[Obby] app in background: {}", in_background);
+    }
+}
+
+#[cfg(target_os = "android")]
+fn android_activity_store() -> &'static StdMutex<Option<jni::objects::GlobalRef>> {
+    ANDROID_ACTIVITY.get_or_init(|| StdMutex::new(None))
+}
+
+#[cfg(target_os = "android")]
+static MAIN_ACTIVITY_CLASS: OnceLock<jni::objects::GlobalRef> = OnceLock::new();
+
+#[cfg(target_os = "android")]
+pub fn get_android_vm() -> Option<&'static jni::JavaVM> {
+    ANDROID_JVM.get()
+}
+
+#[cfg(target_os = "android")]
+pub fn get_android_activity() -> Option<jni::objects::GlobalRef> {
+    android_activity_store().lock().ok().and_then(|g| g.clone())
+}
+
+#[cfg(target_os = "android")]
+fn show_android_notification(id: i32, title: &str, body: &str) -> bool {
+    let Some(vm) = ANDROID_JVM.get() else {
+        log::warn!("[Obby] show_android_notification: ANDROID_JVM is not initialized");
+        return false;
+    };
+    let Ok(mut env) = vm.attach_current_thread() else {
+        log::warn!("[Obby] show_android_notification: failed to attach thread to JVM");
+        return false;
+    };
+
+    let (Ok(j_title), Ok(j_body)) = (env.new_string(title), env.new_string(body)) else {
+        let _ = env.exception_clear();
+        return false;
+    };
+
+    // Try via cached MAIN_ACTIVITY_CLASS first
+    if let Some(class_ref) = MAIN_ACTIVITY_CLASS.get() {
+        let class: &jni::objects::JClass = class_ref.as_obj().into();
+        let res = env.call_static_method(
+            class,
+            "showIrcNotification",
+            "(ILjava/lang/String;Ljava/lang/String;)V",
+            &[
+                jni::objects::JValue::Int(id),
+                jni::objects::JValue::Object(&j_title),
+                jni::objects::JValue::Object(&j_body),
+            ],
+        );
+        if res.is_ok() {
+            log::info!("[Obby] showIrcNotification succeeded via MAIN_ACTIVITY_CLASS");
+            return true;
+        }
+        log::warn!(
+            "[Obby] showIrcNotification via MAIN_ACTIVITY_CLASS failed: {:?}",
+            res
+        );
+        let _ = env.exception_clear();
+    }
+
+    // Fallback: try via cached activity instance's class
+    if let Some(activity_ref) = get_android_activity() {
+        if let Ok(class) = env.get_object_class(activity_ref.as_obj()) {
+            let res = env.call_static_method(
+                &class,
+                "showIrcNotification",
+                "(ILjava/lang/String;Ljava/lang/String;)V",
+                &[
+                    jni::objects::JValue::Int(id),
+                    jni::objects::JValue::Object(&j_title),
+                    jni::objects::JValue::Object(&j_body),
+                ],
+            );
+            if res.is_ok() {
+                log::info!("[Obby] showIrcNotification succeeded via activity_ref class");
+                return true;
+            }
+            log::warn!(
+                "[Obby] showIrcNotification via activity_ref class failed: {:?}",
+                res
+            );
+            let _ = env.exception_clear();
+        }
+    }
+
+    log::warn!("[Obby] show_android_notification failed all attempts");
+    false
+}
+
+pub fn dispatch_native_notification(app_handle: &tauri::AppHandle, title: String, body: String) {
+    let id = NEXT_NOTIFICATION_ID.fetch_add(1, Ordering::Relaxed);
+    log::info!("[Obby] dispatching notification id={}", id);
+    let app = app_handle.clone();
+    task::spawn_blocking(move || {
+        let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            #[cfg(target_os = "android")]
+            if show_android_notification(id, &title, &body) {
+                return;
+            }
+            use tauri_plugin_notification::NotificationExt;
+            if let Err(e) = app
+                .notification()
+                .builder()
+                .id(id)
+                .title(title)
+                .body(body)
+                .auto_cancel()
+                .show()
+            {
+                log::warn!("[Obby] notification plugin fallback failed: {}", e);
+            }
+        }));
+        if let Err(panic_err) = res {
+            log::error!(
+                "[Obby] dispatch_native_notification panicked: {:?}",
+                panic_err
+            );
+        }
+    });
+}
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(15);
 const TLS_HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(15);
@@ -85,6 +263,7 @@ impl rustls::client::danger::ServerCertVerifier for AllowAnyServerCertificate {
 pub struct ConnectionHandle {
     write_tx: mpsc::Sender<String>,
     shutdown_tx: Option<oneshot::Sender<()>>,
+    nick: Arc<StdMutex<ConnectionNicks>>,
 }
 
 /// Socket state to manage multiple connections
@@ -109,12 +288,309 @@ struct MessageData {
     data: Vec<u8>,
 }
 
+fn strip_irc_formatting(input: &str) -> String {
+    let mut out = String::with_capacity(input.len());
+    let bytes = input.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        match bytes[i] {
+            0x02 | 0x0F | 0x16 | 0x1D | 0x1E | 0x1F => {
+                i += 1;
+            }
+            0x03 => {
+                i += 1;
+                for _ in 0..2 {
+                    if i < bytes.len() && bytes[i].is_ascii_digit() {
+                        i += 1;
+                    }
+                }
+                if i < bytes.len() && bytes[i] == b',' {
+                    i += 1;
+                    for _ in 0..2 {
+                        if i < bytes.len() && bytes[i].is_ascii_digit() {
+                            i += 1;
+                        }
+                    }
+                }
+            }
+            0x04 => {
+                i += 1;
+                for _ in 0..6 {
+                    if i < bytes.len() && bytes[i].is_ascii_hexdigit() {
+                        i += 1;
+                    }
+                }
+                if i < bytes.len() && bytes[i] == b',' {
+                    i += 1;
+                    for _ in 0..6 {
+                        if i < bytes.len() && bytes[i].is_ascii_hexdigit() {
+                            i += 1;
+                        }
+                    }
+                }
+            }
+            _ => {
+                if let Some(ch) = input[i..].chars().next() {
+                    out.push(ch);
+                    i += ch.len_utf8();
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+    out
+}
+
+fn is_word_boundary_char(c: char) -> bool {
+    !c.is_alphanumeric() && c != '_' && c != '-'
+}
+
+fn contains_whole_word_ci(haystack: &str, needle: &str) -> bool {
+    if needle.is_empty() {
+        return false;
+    }
+    let h_lower = haystack.to_lowercase();
+    let n_lower = needle.to_lowercase();
+    for (idx, _) in h_lower.match_indices(&n_lower) {
+        let before_ok = h_lower[..idx]
+            .chars()
+            .next_back()
+            .map(is_word_boundary_char)
+            .unwrap_or(true);
+        let after_idx = idx + n_lower.len();
+        let after_ok = h_lower[after_idx..]
+            .chars()
+            .next()
+            .map(is_word_boundary_char)
+            .unwrap_or(true);
+        if before_ok && after_ok {
+            return true;
+        }
+    }
+    false
+}
+
+fn inspect_incoming_irc_line(
+    raw_line: &str,
+    write_tx: &mpsc::Sender<String>,
+    nick_lock: &Arc<StdMutex<ConnectionNicks>>,
+    app_handle: &tauri::AppHandle,
+) {
+    let line = raw_line.trim_end_matches(&['\r', '\n'][..]);
+    if line.is_empty() {
+        return;
+    }
+
+    let mut rest = line;
+    let mut batch_id: Option<&str> = None;
+
+    if let Some(after_at) = rest.strip_prefix('@') {
+        if let Some((tags_part, remaining)) = after_at.split_once(' ') {
+            rest = remaining.trim_start();
+            for tag in tags_part.split(';') {
+                if let Some((key, val)) = tag.split_once('=') {
+                    if key == "batch" && !val.is_empty() {
+                        batch_id = Some(val);
+                    }
+                } else if tag == "batch" {
+                    batch_id = Some("");
+                }
+            }
+        } else {
+            return;
+        }
+    }
+
+    let mut sender_nick = "";
+    if let Some(after_colon) = rest.strip_prefix(':') {
+        if let Some((source_part, remaining)) = after_colon.split_once(' ') {
+            rest = remaining.trim_start();
+            sender_nick = source_part.split('!').next().unwrap_or("");
+        } else {
+            return;
+        }
+    }
+
+    let (command, params_str) = match rest.split_once(' ') {
+        Some((cmd, params)) => (cmd, params.trim_start()),
+        None => (rest, ""),
+    };
+
+    if command.eq_ignore_ascii_case("PING") {
+        // When backgrounded on Android, WebView JS may be paused by the OS;
+        // replying PONG directly in Rust keeps the bouncer/server socket alive.
+        if APP_IN_BACKGROUND.load(Ordering::Relaxed) {
+            let pong = if params_str.is_empty() {
+                "PONG\r\n".to_string()
+            } else {
+                format!("PONG {}\r\n", params_str)
+            };
+            let _ = write_tx.try_send(pong);
+        }
+        return;
+    }
+
+    if command.eq_ignore_ascii_case("BATCH") {
+        let mut parts = params_str.split_whitespace();
+        if let Some(ref_token) = parts.next() {
+            if let Some(id) = ref_token.strip_prefix('+') {
+                let batch_type = parts.next().unwrap_or("");
+                if batch_type.eq_ignore_ascii_case("chathistory")
+                    || batch_type.eq_ignore_ascii_case("znc.in/playback")
+                    || batch_type.eq_ignore_ascii_case("soju.im/bouncer-networks")
+                {
+                    if let Ok(mut set) = history_batches_store().lock() {
+                        set.insert(id.to_string());
+                    }
+                }
+            } else if let Some(id) = ref_token.strip_prefix('-') {
+                if let Ok(mut set) = history_batches_store().lock() {
+                    set.remove(id);
+                }
+            }
+        }
+        return;
+    }
+
+    // Every standard 3-digit IRC numeric reply has the client's current nick as its first parameter.
+    if command.len() == 3 && command.bytes().all(|b| b.is_ascii_digit()) {
+        let target_nick = params_str.split_whitespace().next().unwrap_or("");
+        if !target_nick.is_empty() && target_nick != "*" {
+            if let Ok(mut n) = nick_lock.lock() {
+                n.set_current(target_nick);
+            }
+        }
+        return;
+    }
+
+    if command.eq_ignore_ascii_case("NICK") {
+        let new_nick = params_str.trim().trim_start_matches(':');
+        if !new_nick.is_empty() && !sender_nick.is_empty() {
+            if let Ok(mut n) = nick_lock.lock() {
+                if n.current.is_empty()
+                    || sender_nick.eq_ignore_ascii_case(&n.current)
+                    || n.aliases
+                        .iter()
+                        .any(|a| a.eq_ignore_ascii_case(sender_nick))
+                {
+                    n.set_current(new_nick);
+                }
+            }
+        }
+        return;
+    }
+
+    let is_privmsg_or_notice =
+        command.eq_ignore_ascii_case("PRIVMSG") || command.eq_ignore_ascii_case("NOTICE");
+    if !is_privmsg_or_notice {
+        return;
+    }
+
+    if let Some(b_id) = batch_id {
+        let is_history = b_id.is_empty()
+            || history_batches_store()
+                .lock()
+                .map(|set| set.contains(b_id))
+                .unwrap_or(false);
+        if is_history {
+            return;
+        }
+    }
+
+    if !APP_IN_BACKGROUND.load(Ordering::Relaxed) || !NOTIFICATIONS_ENABLED.load(Ordering::Relaxed)
+    {
+        return;
+    }
+
+    if sender_nick.is_empty()
+        || sender_nick.eq_ignore_ascii_case("HistServ")
+        || sender_nick.contains('.')
+        || sender_nick.starts_with('*')
+    {
+        return;
+    }
+
+    let nicks = match nick_lock.lock() {
+        Ok(n) => n.clone(),
+        Err(_) => ConnectionNicks::default(),
+    };
+    if !nicks.current.is_empty() && sender_nick.eq_ignore_ascii_case(&nicks.current) {
+        return;
+    }
+
+    let (raw_target, after_target) = match params_str.split_once(' ') {
+        Some((t, rest_msg)) => (t, rest_msg.trim_start()),
+        None => return,
+    };
+    let target = raw_target.trim_start_matches(&['@', '+', '%', '~'][..]);
+    if target.is_empty() || target == "*" {
+        return;
+    }
+    let raw_body = after_target.strip_prefix(':').unwrap_or(after_target);
+
+    let formatted_body = if let Some(ctcp) = raw_body.strip_prefix('\x01') {
+        if let Some(action) = ctcp.strip_prefix("ACTION ") {
+            format!("* {} {}", sender_nick, action.trim_end_matches('\x01'))
+        } else {
+            return;
+        }
+    } else {
+        raw_body.to_string()
+    };
+
+    let clean_body = strip_irc_formatting(&formatted_body);
+    if clean_body.trim().is_empty() {
+        return;
+    }
+
+    let is_channel = target.starts_with('#')
+        || target.starts_with('&')
+        || target.starts_with('^')
+        || target.starts_with('$');
+
+    let notification_title = if !is_channel {
+        Some(format!("DM from {}", sender_nick))
+    } else {
+        let mut mentioned = (!nicks.current.is_empty()
+            && contains_whole_word_ci(&clean_body, &nicks.current))
+            || nicks
+                .aliases
+                .iter()
+                .any(|alias| !alias.is_empty() && contains_whole_word_ci(&clean_body, alias));
+        if !mentioned {
+            if let Ok(custom) = custom_mentions_store().lock() {
+                mentioned = custom
+                    .iter()
+                    .any(|m| !m.is_empty() && contains_whole_word_ci(&clean_body, m));
+            }
+        }
+        if mentioned {
+            Some(format!("{} mentioned you in {}", sender_nick, target))
+        } else {
+            None
+        }
+    };
+
+    if let Some(title) = notification_title {
+        let body = if clean_body.chars().count() > 140 {
+            let truncated: String = clean_body.chars().take(140).collect();
+            format!("{}...", truncated)
+        } else {
+            clean_body
+        };
+        dispatch_native_notification(app_handle, title, body);
+    }
+}
+
 /// Read task for handling incoming data from the socket
 async fn read_task<R>(
     client_id: String,
     mut reader: R,
     app_handle: tauri::AppHandle,
     state: Arc<Mutex<HashMap<String, ConnectionHandle>>>,
+    write_tx: mpsc::Sender<String>,
+    nick_lock: Arc<StdMutex<ConnectionNicks>>,
 ) where
     R: AsyncReadExt + Unpin,
 {
@@ -166,6 +642,10 @@ async fn read_task<R>(
                 while let Some(pos) = line_buffer.windows(2).position(|w| w == b"\r\n") {
                     let line_data = line_buffer[..pos + 2].to_vec();
                     line_buffer.drain(..pos + 2);
+
+                    if let Ok(line_str) = std::str::from_utf8(&line_data) {
+                        inspect_incoming_irc_line(line_str, &write_tx, &nick_lock, &app_handle);
+                    }
 
                     let _ = app_handle.emit(
                         "tcp-message",
@@ -246,6 +726,8 @@ async fn websocket_read_task<R>(
     mut reader: R,
     app_handle: tauri::AppHandle,
     state: Arc<Mutex<HashMap<String, ConnectionHandle>>>,
+    write_tx: mpsc::Sender<String>,
+    nick_lock: Arc<StdMutex<ConnectionNicks>>,
 ) where
     R: Stream<Item = Result<Message, tokio_tungstenite::tungstenite::Error>> + Unpin,
 {
@@ -254,6 +736,9 @@ async fn websocket_read_task<R>(
     while let Some(message) = reader.next().await {
         match message {
             Ok(Message::Text(text)) => {
+                for line in text.lines() {
+                    inspect_incoming_irc_line(line, &write_tx, &nick_lock, &app_handle);
+                }
                 let _ = app_handle.emit(
                     "tcp-message",
                     ReceivedPayload {
@@ -269,6 +754,11 @@ async fn websocket_read_task<R>(
                 );
             }
             Ok(Message::Binary(data)) => {
+                if let Ok(text) = std::str::from_utf8(&data) {
+                    for line in text.lines() {
+                        inspect_incoming_irc_line(line, &write_tx, &nick_lock, &app_handle);
+                    }
+                }
                 let _ = app_handle.emit(
                     "tcp-message",
                     ReceivedPayload {
@@ -373,12 +863,16 @@ async fn connect_websocket(
     let (writer, reader) = stream.split();
     let (write_tx, write_rx) = mpsc::channel::<String>(100);
     let (shutdown_tx, shutdown_rx) = oneshot::channel();
+    let nick_lock = Arc::new(StdMutex::new(ConnectionNicks::default()));
+    let write_tx_read = write_tx.clone();
+    let nick_lock_read = nick_lock.clone();
 
     state.lock().await.insert(
         client_id.clone(),
         ConnectionHandle {
             write_tx,
             shutdown_tx: Some(shutdown_tx),
+            nick: nick_lock,
         },
     );
 
@@ -398,7 +892,15 @@ async fn connect_websocket(
     let app_handle_read = app_handle.clone();
     let state_read = state.clone();
     task::spawn(async move {
-        websocket_read_task(client_id_read, reader, app_handle_read, state_read).await;
+        websocket_read_task(
+            client_id_read,
+            reader,
+            app_handle_read,
+            state_read,
+            write_tx_read,
+            nick_lock_read,
+        )
+        .await;
     });
     task::spawn(async move {
         websocket_write_task(writer, write_rx, shutdown_rx).await;
@@ -442,6 +944,9 @@ pub async fn connect(
     // Create channels for write operations
     let (write_tx, write_rx) = mpsc::channel::<String>(100);
     let (shutdown_tx, shutdown_rx) = oneshot::channel();
+    let nick_lock = Arc::new(StdMutex::new(ConnectionNicks::default()));
+    let write_tx_read = write_tx.clone();
+    let nick_lock_read = nick_lock.clone();
 
     // Handle TLS if needed
     if use_tls {
@@ -473,7 +978,15 @@ pub async fn connect(
             let app_handle_read = app_handle.clone();
             let state_clone = state.0.clone();
             task::spawn(async move {
-                read_task(client_id_read, reader, app_handle_read, state_clone).await;
+                read_task(
+                    client_id_read,
+                    reader,
+                    app_handle_read,
+                    state_clone,
+                    write_tx_read,
+                    nick_lock_read,
+                )
+                .await;
             });
 
             // Spawn write task
@@ -520,7 +1033,15 @@ pub async fn connect(
             let app_handle_read = app_handle.clone();
             let state_clone = state.0.clone();
             task::spawn(async move {
-                read_task(client_id_read, reader, app_handle_read, state_clone).await;
+                read_task(
+                    client_id_read,
+                    reader,
+                    app_handle_read,
+                    state_clone,
+                    write_tx_read,
+                    nick_lock_read,
+                )
+                .await;
             });
 
             // Spawn write task
@@ -537,7 +1058,15 @@ pub async fn connect(
         let app_handle_read = app_handle.clone();
         let state_clone = state.0.clone();
         task::spawn(async move {
-            read_task(client_id_read, reader, app_handle_read, state_clone).await;
+            read_task(
+                client_id_read,
+                reader,
+                app_handle_read,
+                state_clone,
+                write_tx_read,
+                nick_lock_read,
+            )
+            .await;
         });
 
         // Spawn write task
@@ -553,6 +1082,7 @@ pub async fn connect(
         ConnectionHandle {
             write_tx,
             shutdown_tx: Some(shutdown_tx),
+            nick: nick_lock,
         },
     );
 
@@ -635,13 +1165,41 @@ pub async fn send(
     data: String,
     state: State<'_, SocketState>,
 ) -> Result<(), String> {
-    // Extract write_tx without holding the mutex across .await
-    let write_tx = {
+    // Extract write_tx and nick_lock without holding the mutex across .await
+    let (write_tx, nick_lock) = {
         let connections = state.0.lock().await;
-        connections
-            .get(&client_id)
-            .map(|handle| handle.write_tx.clone())
+        match connections.get(&client_id) {
+            Some(handle) => (Some(handle.write_tx.clone()), Some(handle.nick.clone())),
+            None => (None, None),
+        }
     };
+
+    if let Some(nick_lock) = nick_lock {
+        for line in data.lines() {
+            let trimmed = line.trim();
+            if trimmed.len() > 5 && trimmed[..5].eq_ignore_ascii_case("NICK ") {
+                let candidate = trimmed[5..].trim().trim_start_matches(':');
+                if !candidate.is_empty() {
+                    if let Ok(mut n) = nick_lock.lock() {
+                        if n.current.is_empty() {
+                            n.set_current(candidate);
+                        } else {
+                            n.add_alias(candidate);
+                        }
+                    }
+                }
+            } else if trimmed.len() > 5 && trimmed[..5].eq_ignore_ascii_case("USER ") {
+                let user_part = trimmed[5..].split_whitespace().next().unwrap_or("");
+                if let Some(base_user) = user_part.split('/').next() {
+                    if !base_user.is_empty() {
+                        if let Ok(mut n) = nick_lock.lock() {
+                            n.add_alias(base_user);
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     if let Some(write_tx) = write_tx {
         write_tx
@@ -652,4 +1210,98 @@ pub async fn send(
     } else {
         Err(format!("No connection found for client_id: {}", client_id))
     }
+}
+
+#[tauri::command]
+pub fn set_app_focused(focused: bool) {
+    update_app_background_state(!focused);
+}
+
+#[tauri::command]
+pub fn sync_notification_settings(enabled: bool, custom_mentions: Vec<String>) {
+    NOTIFICATIONS_ENABLED.store(enabled, Ordering::Relaxed);
+    if let Ok(mut guard) = custom_mentions_store().lock() {
+        *guard = custom_mentions;
+    }
+}
+
+#[tauri::command]
+pub fn send_native_notification(title: String, body: String, app_handle: tauri::AppHandle) {
+    dispatch_native_notification(&app_handle, title, body);
+}
+
+#[cfg(target_os = "android")]
+fn init_android_internal(
+    env: jni::JNIEnv,
+    _class: jni::objects::JClass,
+    activity: jni::objects::JObject,
+) {
+    if let Ok(vm) = env.get_java_vm() {
+        let _ = ANDROID_JVM.set(vm);
+        log::info!("[Obby] ANDROID_JVM initialized via nativeInitAndroid");
+    }
+    if let Ok(act_class) = env.get_object_class(&activity) {
+        if let Ok(class_ref) = env.new_global_ref(act_class) {
+            let _ = MAIN_ACTIVITY_CLASS.set(class_ref);
+            log::info!("[Obby] MAIN_ACTIVITY_CLASS cached successfully");
+        }
+    }
+    if let Ok(global_ref) = env.new_global_ref(activity) {
+        if let Ok(mut guard) = android_activity_store().lock() {
+            *guard = Some(global_ref);
+            log::info!("[Obby] MainActivity global ref stored");
+        }
+    }
+}
+
+#[cfg(target_os = "android")]
+#[no_mangle]
+pub extern "system" fn Java_com_obsidianirc_dev_MainActivity_nativeInitAndroid(
+    env: jni::JNIEnv,
+    class: jni::objects::JClass,
+    activity: jni::objects::JObject,
+) {
+    init_android_internal(env, class, activity);
+}
+
+#[cfg(target_os = "android")]
+#[no_mangle]
+pub extern "system" fn Java_com_obsidianirc_dev_MainActivity_00024Companion_nativeInitAndroid(
+    env: jni::JNIEnv,
+    class: jni::objects::JClass,
+    activity: jni::objects::JObject,
+) {
+    init_android_internal(env, class, activity);
+}
+
+#[cfg(target_os = "android")]
+#[no_mangle]
+pub extern "system" fn Java_com_obsidianirc_dev_MainActivity_nativeSetAppFocused(
+    _env: jni::JNIEnv,
+    _class: jni::objects::JClass,
+    focused: jni::sys::jboolean,
+) {
+    update_app_background_state(focused == 0);
+}
+
+#[cfg(target_os = "android")]
+#[no_mangle]
+pub extern "system" fn Java_com_obsidianirc_dev_MainActivity_00024Companion_nativeSetAppFocused(
+    _env: jni::JNIEnv,
+    _class: jni::objects::JClass,
+    focused: jni::sys::jboolean,
+) {
+    update_app_background_state(focused == 0);
+}
+
+#[cfg(target_os = "android")]
+#[no_mangle]
+pub unsafe extern "system" fn JNI_OnLoad(
+    vm: *mut jni::sys::JavaVM,
+    _reserved: *mut std::ffi::c_void,
+) -> jni::sys::jint {
+    if let Ok(vm_obj) = jni::JavaVM::from_raw(vm) {
+        let _ = ANDROID_JVM.set(vm_obj);
+    }
+    jni::sys::JNI_VERSION_1_6
 }

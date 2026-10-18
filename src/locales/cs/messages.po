@@ -231,6 +231,10 @@ msgstr "{safeName} byl na serveru změněn, takže už ho nelze dešifrovat."
 msgid "{seconds} seconds"
 msgstr "{seconds} sekund"
 
+#: src/lib/titleAlert.ts
+msgid "{sender} messaged you"
+msgstr "{sender} vám napsal(a)"
+
 #: src/store/handlers/e2ee.ts
 msgid "{sender} restarted encryption, so this conversation is being set up again."
 msgstr "{sender} restartoval šifrování, takže se tato konverzace nastavuje znovu."
@@ -2667,6 +2671,7 @@ msgid "Notification Sound"
 msgstr "Zvuk oznámení"
 
 #: src/components/ui/UserSettings.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Notifications"
 msgstr "Oznámení"
 
@@ -3896,6 +3901,7 @@ msgid "Toggle Member List"
 msgstr "Přepnout seznam členů"
 
 #: src/components/ui/QuickActions/uiActionConfig.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Toggle Notifications"
 msgstr "Přepnout oznámení"
 
