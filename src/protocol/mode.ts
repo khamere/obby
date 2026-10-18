@@ -8,26 +8,38 @@ export function registerModeHandler(
   ircClient: IRCClient,
   useStore: typeof AppState,
 ) {
-  ircClient.on("MODE", ({ serverId, sender, target, modestring, modeargs }) => {
-    const state = useStore.getState();
-    const server = state.servers.find((s: Server) => s.id === serverId);
-    if (!server) return;
+  ircClient.on(
+    "MODE",
+    ({ serverId, sender, target, modestring, modeargs, mtags }) => {
+      const state = useStore.getState();
+      const server = state.servers.find((s: Server) => s.id === serverId);
+      if (!server) return;
 
-    if (isChannelTarget(target)) {
-      handleChannelMode(
-        serverId,
-        server,
-        target,
-        sender,
-        modestring,
-        modeargs,
-        useStore,
-      );
-    } else {
-      // User mode - for now, just log
-      console.log(`User mode change: ${target} ${modestring}`, modeargs);
-    }
-  });
+      if (isChannelTarget(target)) {
+        // A MODE replayed from chathistory (draft/event-playback) describes the
+        // past: show it at its own time, but don't apply it to the live channel.
+        const batch = mtags?.batch
+          ? state.activeBatches[serverId]?.[mtags.batch]
+          : undefined;
+        const historic = batch?.type === "chathistory";
+        const timestamp = mtags?.time ? new Date(mtags.time) : new Date();
+        handleChannelMode(
+          serverId,
+          server,
+          target,
+          sender,
+          modestring,
+          modeargs,
+          timestamp,
+          historic,
+          useStore,
+        );
+      } else {
+        // User mode - for now, just log
+        console.log(`User mode change: ${target} ${modestring}`, modeargs);
+      }
+    },
+  );
 }
 
 function handleChannelMode(
@@ -37,6 +49,8 @@ function handleChannelMode(
   sender: string,
   modestring: string,
   modeargs: string[],
+  timestamp: Date,
+  historic: boolean,
   useStore: typeof AppState,
 ) {
   const channel = server.channels.find((c: Channel) => c.name === channelName);
@@ -45,17 +59,19 @@ function handleChannelMode(
   // Parse the modestring and apply mode changes
   const changes = parseModestring(modestring, modeargs, server.chanmodes);
 
-  // Apply the mode changes to users
-  applyModeChanges(serverId, channel, changes, useStore);
+  if (!historic) {
+    // Apply the mode changes to users
+    applyModeChanges(serverId, channel, changes, useStore);
 
-  // Apply ban/exception/invite list changes
-  applyListModeChanges(serverId, channel, sender, changes, useStore);
+    // Apply ban/exception/invite list changes
+    applyListModeChanges(serverId, channel, sender, changes, useStore);
 
-  // Update channel modes
-  updateChannelModes(serverId, channel, changes, useStore);
+    // Update channel modes
+    updateChannelModes(serverId, channel, changes, useStore);
+  }
 
   // Send notification message
-  sendModeNotification(serverId, channel, sender, changes, useStore);
+  sendModeNotification(serverId, channel, sender, changes, timestamp, useStore);
 }
 
 interface ModeChange {
@@ -488,6 +504,7 @@ function sendModeNotification(
   channel: Channel,
   sender: string,
   changes: ModeChange[],
+  timestamp: Date,
   useStore: typeof AppState,
 ) {
   // Group changes by action and reconstruct compact mode strings
@@ -514,11 +531,14 @@ function sendModeNotification(
     modeParts.push(modeString + (args.length > 0 ? ` ${args.join(" ")}` : ""));
   });
 
+  const modeText = modeParts.join(" ");
   const message: Message = {
-    id: `mode-${Date.now()}-${Math.random()}`,
+    // Deterministic, so the same change replayed by chathistory on a
+    // reconnect is dropped by addMessage instead of shown again.
+    id: `mode-${channel.id}-${timestamp.getTime()}-${sender}-${modeText}`,
     type: "mode",
     content: t`sets mode: ${modeParts.join(" ")}`,
-    timestamp: new Date(),
+    timestamp,
     userId: sender,
     channelId: channel.id,
     serverId,
