@@ -54,35 +54,105 @@ describe("avatar persistence across refresh and reconnect", () => {
     } as unknown as AppState);
   });
 
-  it("restores own avatar on connect and publishes METADATA * SET", () => {
-    const avatarUrl = "https://cdn.example.com/my-pic.png";
-    // Simulate own avatar stored in localStorage from a previous session
-    storage.ownMetadata.saveKey("srv-1", "me", "avatar", avatarUrl, "public");
+  it("restores own avatar on connect and publishes METADATA * SET if server has none", async () => {
+    vi.useFakeTimers();
+    try {
+      const avatarUrl = "https://cdn.example.com/my-pic.png";
+      // Simulate own avatar stored in localStorage from a previous session
+      storage.ownMetadata.saveKey("srv-1", "me", "avatar", avatarUrl, "public");
 
-    vi.spyOn(ircClient, "getNick").mockReturnValue("Me");
-    vi.spyOn(ircClient, "getCurrentUser").mockReturnValue({
-      id: "me",
-      username: "Me",
-      isOnline: true,
-    } as User);
-    const metadataSetSpy = vi.spyOn(useStore.getState(), "metadataSet");
+      vi.spyOn(ircClient, "getNick").mockReturnValue("Me");
+      vi.spyOn(ircClient, "getCurrentUser").mockReturnValue({
+        id: "me",
+        username: "Me",
+        isOnline: true,
+      } as User);
+      const metadataSetSpy = vi.spyOn(useStore.getState(), "metadataSet");
 
-    // Trigger ready event (simulates 001 welcome on page reload)
-    ircClient.triggerEvent("ready", {
-      serverId: "srv-1",
-      serverName: "TestServer",
-      nickname: "Me",
-    });
+      // Trigger ready event (simulates 001 welcome on page reload)
+      ircClient.triggerEvent("ready", {
+        serverId: "srv-1",
+        serverName: "TestServer",
+        nickname: "Me",
+      });
 
-    const state = useStore.getState();
-    expect(state.currentUser?.metadata?.avatar?.value).toBe(avatarUrl);
-    expect(metadataSetSpy).toHaveBeenCalledWith(
-      "srv-1",
-      "*",
-      "avatar",
-      avatarUrl,
-      "public",
-    );
+      const state = useStore.getState();
+      expect(state.currentUser?.metadata?.avatar?.value).toBe(avatarUrl);
+
+      // Advance timers so fetchAndMergeOwnMetadata completes
+      await vi.advanceTimersByTimeAsync(1100);
+
+      expect(metadataSetSpy).toHaveBeenCalledWith(
+        "srv-1",
+        "*",
+        "avatar",
+        avatarUrl,
+        "public",
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("adopts server avatar and does not overwrite with stale local avatar if server has one", async () => {
+    vi.useFakeTimers();
+    try {
+      const oldAvatarUrl = "https://cdn.example.com/old-pic.png";
+      const newServerAvatarUrl =
+        "https://cdn.example.com/new-pic-from-mobile.png";
+      storage.ownMetadata.saveKey(
+        "srv-1",
+        "me",
+        "avatar",
+        oldAvatarUrl,
+        "public",
+      );
+
+      vi.spyOn(ircClient, "getNick").mockReturnValue("Me");
+      vi.spyOn(ircClient, "getCurrentUser").mockReturnValue({
+        id: "me",
+        username: "Me",
+        isOnline: true,
+      } as User);
+      const metadataSetSpy = vi.spyOn(useStore.getState(), "metadataSet");
+
+      ircClient.triggerEvent("ready", {
+        serverId: "srv-1",
+        serverName: "TestServer",
+        nickname: "Me",
+      });
+
+      // Simulate server responding with the newer avatar from another device
+      ircClient.triggerEvent("METADATA_KEYVALUE", {
+        serverId: "srv-1",
+        target: "*",
+        key: "avatar",
+        visibility: "public",
+        value: newServerAvatarUrl,
+      });
+      ircClient.triggerEvent("METADATA_END", {
+        serverId: "srv-1",
+        target: "*",
+      });
+
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Current user should adopt the server's newer avatar
+      expect(useStore.getState().currentUser?.metadata?.avatar?.value).toBe(
+        newServerAvatarUrl,
+      );
+
+      // Stale local avatar should NOT have been pushed to the server
+      expect(metadataSetSpy).not.toHaveBeenCalledWith(
+        "srv-1",
+        "*",
+        "avatar",
+        oldAvatarUrl,
+        expect.anything(),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("preserves avatar when WHO reply batches arrive after reconnect", () => {

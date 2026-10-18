@@ -19,7 +19,9 @@ export function registerMetadataHandlers(store: StoreApi<AppState>): void {
           // Update metadata for users in channels
           const updatedChannels = server.channels.map((channel) => {
             const updatedUsers = channel.users.map((user) => {
-              if (user.username === resolvedTarget) {
+              if (
+                user.username.toLowerCase() === resolvedTarget.toLowerCase()
+              ) {
                 const metadata = { ...(user.metadata || {}) };
                 if (value) {
                   metadata[key] = { value, visibility };
@@ -258,7 +260,9 @@ export function registerMetadataHandlers(store: StoreApi<AppState>): void {
             // Update metadata for users in channels
             const updatedChannels = server.channels.map((channel) => {
               const updatedUsers = channel.users.map((user) => {
-                if (user.username === resolvedTarget) {
+                if (
+                  user.username.toLowerCase() === resolvedTarget.toLowerCase()
+                ) {
                   const existingValue = user.metadata?.[key]?.value;
                   const existingVisibility = user.metadata?.[key]?.visibility;
 
@@ -342,7 +346,7 @@ export function registerMetadataHandlers(store: StoreApi<AppState>): void {
 
         // Update current user metadata
         let updatedCurrentUser = state.currentUser;
-        if (state.currentUser?.username === resolvedTarget) {
+        if (isSelf && state.currentUser) {
           const existingValue = state.currentUser.metadata?.[key]?.value;
           const existingVisibility =
             state.currentUser.metadata?.[key]?.visibility;
@@ -633,6 +637,16 @@ export function registerMetadataHandlers(store: StoreApi<AppState>): void {
   ircClient.on(
     "METADATA_FAIL",
     ({ serverId, subcommand, code, target, key, retryAfter, description }) => {
+      // Record keys the server explicitly rejects as unsupported
+      if (code === "KEY_INVALID" && key) {
+        let set = unsupportedMetadataKeys.get(serverId);
+        if (!set) {
+          set = new Set();
+          unsupportedMetadataKeys.set(serverId, set);
+        }
+        set.add(key);
+      }
+
       // Remove failed channel target from fetch queue
       if (target && isChannelTarget(target)) {
         store.setState((state) => {
@@ -663,4 +677,10 @@ export function registerMetadataHandlers(store: StoreApi<AppState>): void {
       );
     },
   );
+}
+
+export const unsupportedMetadataKeys = new Map<string, Set<string>>();
+
+export function isMetadataKeySupported(serverId: string, key: string): boolean {
+  return !unsupportedMetadataKeys.get(serverId)?.has(key);
 }
