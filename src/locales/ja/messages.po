@@ -491,6 +491,10 @@ msgstr "複数行のテキスト入力を許可する"
 msgid "Already in {0}"
 msgstr "すでに {0} にいます"
 
+#: src/components/ui/MuteModal.tsx
+msgid "Also mute mentions"
+msgstr "メンションもミュートする"
+
 #: src/components/ui/UserSettings.tsx
 msgid "Also shows previews from YouTube, Vimeo, SoundCloud, and similar known services."
 msgstr "YouTube、Vimeo、SoundCloudなどの既知のサービスのプレビューも表示します。"
@@ -2611,6 +2615,10 @@ msgstr "サーバーが見つかりません。"
 #: src/components/ui/MuteModal.tsx
 msgid "No sound, notification or red dot for messages from this person."
 msgstr "この人からのメッセージで音・通知・赤い点を出しません。"
+
+#: src/components/ui/MuteModal.tsx
+msgid "No sound, notification or red dot from this channel, even when someone mentions you."
+msgstr "このチャンネルでは音・通知・赤い点を出しません（メンションされた場合も含む）。"
 
 #: src/components/ui/MuteModal.tsx
 msgid "No sound, notification or red dot from this channel, except when someone mentions you."

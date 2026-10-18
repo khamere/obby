@@ -491,6 +491,10 @@ msgstr "Meerdere tekstregels invoeren toestaan"
 msgid "Already in {0}"
 msgstr "Al in {0}"
 
+#: src/components/ui/MuteModal.tsx
+msgid "Also mute mentions"
+msgstr "Ook vermeldingen dempen"
+
 #: src/components/ui/UserSettings.tsx
 msgid "Also shows previews from YouTube, Vimeo, SoundCloud, and similar known services."
 msgstr "Toont ook voorbeeldweergaven van YouTube, Vimeo, SoundCloud en vergelijkbare bekende diensten."
@@ -2611,6 +2615,10 @@ msgstr "Geen servers gevonden."
 #: src/components/ui/MuteModal.tsx
 msgid "No sound, notification or red dot for messages from this person."
 msgstr "Geen geluid, melding of rode stip voor berichten van deze persoon."
+
+#: src/components/ui/MuteModal.tsx
+msgid "No sound, notification or red dot from this channel, even when someone mentions you."
+msgstr "Geen geluid, melding of rode stip uit dit kanaal, ook niet als iemand je noemt."
 
 #: src/components/ui/MuteModal.tsx
 msgid "No sound, notification or red dot from this channel, except when someone mentions you."
