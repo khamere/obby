@@ -29,9 +29,12 @@ import { settingsRegistry } from "../../lib/settings";
 import type { SettingValue } from "../../lib/settings/types";
 import useStore, {
   type GlobalSettings,
+  loadSavedMetadata,
   loadSavedServers,
   serverSupportsMetadata,
 } from "../../store";
+import { resolveUserMetadata } from "../../store/helpers";
+import * as storage from "../../store/localStorage";
 import AvatarUpload from "./AvatarUpload";
 import EmojiPackAdminModal from "./EmojiPackAdminModal";
 import InvitationsPanel from "./InvitationsPanel";
@@ -147,11 +150,29 @@ export const UserSettings: React.FC = React.memo(() => {
 
     for (const channel of currentServer.channels) {
       const userWithMetadata = channel.users.find(
-        (u) => u.username === ircCurrentUser.username,
+        (u) =>
+          u.username.toLowerCase() === ircCurrentUser.username.toLowerCase(),
       );
-      if (userWithMetadata) {
+      if (
+        userWithMetadata?.metadata &&
+        Object.keys(userWithMetadata.metadata).length > 0
+      ) {
         return userWithMetadata;
       }
+    }
+
+    const savedMeta = loadSavedMetadata();
+    const serverMeta = savedMeta[currentServer.id];
+    const resolved = resolveUserMetadata(
+      ircCurrentUser.username,
+      serverMeta,
+      currentServer.channels,
+    );
+    if (Object.keys(resolved).length > 0) {
+      return {
+        ...ircCurrentUser,
+        metadata: resolved,
+      };
     }
 
     return ircCurrentUser;
@@ -701,6 +722,12 @@ export const UserSettings: React.FC = React.memo(() => {
           sendRaw(
             currentServer.id,
             value ? `METADATA * SET ${key} :${value}` : `METADATA * SET ${key}`,
+          );
+          storage.ownMetadata.saveKey(
+            currentServer.id,
+            currentUser?.username || "",
+            key,
+            value || undefined,
           );
         }
       }

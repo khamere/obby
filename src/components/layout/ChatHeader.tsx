@@ -33,6 +33,7 @@ import { chatMute, isServerMuted, useMutes } from "../../lib/mutes";
 import { isTauriMobile } from "../../lib/platformUtils";
 import { serverDisplayName } from "../../lib/serverDisplayName";
 import useStore, { loadSavedMetadata } from "../../store";
+import { resolveUserMetadata } from "../../store/helpers";
 import type { Channel, PrivateChat, User } from "../../types";
 import { BotToolsHistoryButton } from "../ui/BotToolsHistoryButton";
 import E2EELockControl from "../ui/E2EELockControl";
@@ -144,58 +145,30 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   const privateChatUserMetadata = useMemo(() => {
     if (!selectedPrivateChat || !selectedServerId) return null;
 
-    // First check localStorage for saved metadata
     const savedMetadata = loadSavedMetadata();
     const serverMetadata = savedMetadata[selectedServerId];
-    if (serverMetadata?.[selectedPrivateChat.username]) {
-      return serverMetadata[selectedPrivateChat.username];
-    }
-
-    // If not in localStorage, check if user is in any shared channels
     const server = servers.find((s) => s.id === selectedServerId);
-    if (!server) return null;
-
-    // Search through all channels for this user
-    for (const channel of server.channels) {
-      const user = channel.users.find(
-        (u) =>
-          u.username.toLowerCase() ===
-          selectedPrivateChat.username.toLowerCase(),
-      );
-      if (user?.metadata && Object.keys(user.metadata).length > 0) {
-        return user.metadata;
-      }
-    }
-
-    return null;
+    const metadata = resolveUserMetadata(
+      selectedPrivateChat.username,
+      serverMetadata,
+      server?.channels || [],
+    );
+    return Object.keys(metadata).length > 0 ? metadata : null;
   }, [selectedPrivateChat, selectedServerId, servers]);
 
   // Helper function to get user metadata
   const getUserMetadata = (username: string) => {
     if (!selectedServerId) return null;
 
-    // First check localStorage for saved metadata
     const savedMetadata = loadSavedMetadata();
     const serverMetadata = savedMetadata[selectedServerId];
-    if (serverMetadata?.[username]) {
-      return serverMetadata[username];
-    }
-
-    // If not in localStorage, check if user is in any shared channels
     const server = servers.find((s) => s.id === selectedServerId);
-    if (!server) return null;
-
-    // Search through all channels for this user
-    for (const channel of server.channels) {
-      const user = channel.users.find(
-        (u) => u.username.toLowerCase() === username.toLowerCase(),
-      );
-      if (user?.metadata && Object.keys(user.metadata).length > 0) {
-        return user.metadata;
-      }
-    }
-
-    return null;
+    const metadata = resolveUserMetadata(
+      username,
+      serverMetadata,
+      server?.channels || [],
+    );
+    return Object.keys(metadata).length > 0 ? metadata : null;
   };
 
   // Helper function to get full user object from shared channels

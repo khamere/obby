@@ -11,8 +11,10 @@
 // flushes anyway so very slow servers don't appear stalled.
 
 import type { StoreApi } from "zustand";
-import type { User } from "../types";
+import type { Channel, User } from "../types";
+import { resolveUserMetadata } from "./helpers";
 import type { AppState } from "./index";
+import * as storage from "./localStorage";
 
 // 60 ms: long enough for a single WHO burst to coalesce on common
 // networks, short enough that the perceived "loading" is brief.
@@ -60,6 +62,9 @@ function applyBucket(store: StoreApi<AppState>, bucket: ChannelBucket): void {
   buckets.delete(key(bucket.serverId, bucket.channel));
   if (bucket.byNick.size === 0) return;
 
+  const savedMetadata = storage.metadata.load();
+  const serverMetadata = savedMetadata[bucket.serverId];
+
   store.setState((state) => {
     const updatedServers = state.servers.map((s) => {
       if (s.id !== bucket.serverId) return s;
@@ -74,10 +79,19 @@ function applyBucket(store: StoreApi<AppState>, bucket: ChannelBucket): void {
           if (existing) {
             usersByNick.set(
               entry.nick.toLowerCase(),
-              mergeUser(existing, entry),
+              mergeUser(
+                existing,
+                entry,
+                serverMetadata,
+                s.channels,
+                bucket.channel,
+              ),
             );
           } else {
-            usersByNick.set(entry.nick.toLowerCase(), entryToUser(entry));
+            usersByNick.set(
+              entry.nick.toLowerCase(),
+              entryToUser(entry, serverMetadata, s.channels, bucket.channel),
+            );
           }
         }
         return { ...ch, users: Array.from(usersByNick.values()) };
@@ -111,7 +125,19 @@ function applyBucket(store: StoreApi<AppState>, bucket: ChannelBucket): void {
   });
 }
 
-function mergeUser(prev: User, entry: BufferedWhoEntry): User {
+function mergeUser(
+  prev: User,
+  entry: BufferedWhoEntry,
+  serverMetadata?: Record<string, NonNullable<User["metadata"]>>,
+  channels: Channel[] = [],
+  channelName?: string,
+): User {
+  const resolved = resolveUserMetadata(
+    entry.nick,
+    serverMetadata,
+    channels,
+    channelName,
+  );
   return {
     ...prev,
     username: entry.nick, // server-authoritative casing
@@ -123,10 +149,19 @@ function mergeUser(prev: User, entry: BufferedWhoEntry): User {
     isBot: entry.isBot ?? prev.isBot,
     isIrcOp: entry.isIrcOp ?? prev.isIrcOp,
     status: entry.status ?? prev.status,
+    metadata: {
+      ...resolved,
+      ...(prev.metadata || {}),
+    },
   };
 }
 
-function entryToUser(entry: BufferedWhoEntry): User {
+function entryToUser(
+  entry: BufferedWhoEntry,
+  serverMetadata?: Record<string, NonNullable<User["metadata"]>>,
+  channels: Channel[] = [],
+  channelName?: string,
+): User {
   return {
     id: entry.nick,
     username: entry.nick,
@@ -139,7 +174,12 @@ function entryToUser(entry: BufferedWhoEntry): User {
     isIrcOp: !!entry.isIrcOp,
     status: entry.status,
     account: entry.account ?? undefined,
-    metadata: {},
+    metadata: resolveUserMetadata(
+      entry.nick,
+      serverMetadata,
+      channels,
+      channelName,
+    ),
   };
 }
 

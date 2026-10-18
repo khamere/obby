@@ -11,6 +11,7 @@ import type {
 const KEYS = {
   SERVERS: "savedServers",
   METADATA: "serverMetadata",
+  OWN_METADATA: "ownUserMetadata",
   SETTINGS: "globalSettings",
   CHANNEL_ORDER: "channelOrder",
   PINNED_PMS: "pinnedPrivateChats",
@@ -19,6 +20,83 @@ const KEYS = {
   MIGRATION_VERSION: "migrationVersion",
   BOUNCER_GROUP_ACCENTS: "bouncerGroupAccents",
 } as const;
+
+export const ownMetadata = {
+  load: (): SavedMetadata => {
+    try {
+      return JSON.parse(localStorage.getItem(KEYS.OWN_METADATA) || "{}");
+    } catch {
+      return {};
+    }
+  },
+  save: (data: SavedMetadata) => {
+    try {
+      localStorage.setItem(KEYS.OWN_METADATA, JSON.stringify(data));
+    } catch {
+      // storage full or disabled
+    }
+  },
+  saveKey: (
+    serverId: string,
+    nick: string,
+    key: string,
+    value: string | undefined,
+    visibility?: string,
+  ) => {
+    try {
+      const data = ownMetadata.load();
+      if (!data[serverId]) data[serverId] = {};
+      const targetNick = nick || "*";
+      const existingNick =
+        Object.keys(data[serverId]).find(
+          (k) => k.toLowerCase() === targetNick.toLowerCase(),
+        ) || targetNick;
+      if (!data[serverId][existingNick]) data[serverId][existingNick] = {};
+      if (value !== undefined && value !== "") {
+        data[serverId][existingNick][key] = {
+          value,
+          visibility: visibility || "",
+        };
+      } else {
+        delete data[serverId][existingNick][key];
+      }
+      ownMetadata.save(data);
+
+      // Keep in-memory cache in sync
+      if (!metadataCache[serverId]) metadataCache[serverId] = {};
+      if (!metadataCache[serverId][existingNick]) {
+        metadataCache[serverId][existingNick] = {};
+      }
+      if (value !== undefined && value !== "") {
+        metadataCache[serverId][existingNick][key] = {
+          value,
+          visibility: visibility || "",
+        };
+      } else {
+        delete metadataCache[serverId][existingNick][key];
+      }
+    } catch {
+      // storage error
+    }
+  },
+  getForServer: (
+    serverId: string,
+    nick?: string,
+  ): Record<string, { value: string; visibility?: string }> => {
+    const data = ownMetadata.load();
+    const serverData = data[serverId];
+    if (!serverData) return {};
+    if (nick) {
+      const match = Object.keys(serverData).find(
+        (k) => k.toLowerCase() === nick.toLowerCase(),
+      );
+      if (match && serverData[match]) return serverData[match];
+    }
+    const entries = Object.values(serverData);
+    if (entries.length > 0) return entries[0];
+    return {};
+  },
+};
 
 export const bouncerGroupAccents = {
   load: (): Record<string, string> => {
@@ -46,21 +124,16 @@ export const servers = {
   },
 };
 
-// In-memory metadata cache. We intentionally do NOT persist user/channel
-// metadata across page reloads: with random-uuid nicks (cat-bot tests)
-// or rapidly-rotating display-names, stale entries pollute resolveUser-
-// Metadata and the metadataList skip-if-cached check, making the
-// nicklist look blank even after a fresh GET would have populated it.
-// Memory-only is fine because (a) we lazy-GET on visibility anyway, and
-// (b) localStorage churn from constant metadata writes wasn't paying
-// for itself. Wipe any pre-existing key so old persisted data doesn't
-// hang around in localStorage forever.
+// In-memory metadata cache for channel members. We intentionally do NOT persist
+// other users' metadata across page reloads (avoiding stale entries / churn).
+// But we DO initialize with own user metadata so the user's own avatar and profile
+// survive page reload.
 try {
   localStorage.removeItem(KEYS.METADATA);
 } catch {
   // private-window or storage-disabled -- not fatal
 }
-let metadataCache: SavedMetadata = {};
+let metadataCache: SavedMetadata = ownMetadata.load();
 export const metadata = {
   load: (): SavedMetadata => metadataCache,
   save: (data: SavedMetadata) => {

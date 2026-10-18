@@ -35,6 +35,7 @@ import {
 import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
 import { isTauriDesktop, isTauriMobile } from "../../lib/platformUtils";
 import useStore, { loadSavedMetadata } from "../../store";
+import { resolveUserMetadata } from "../../store/helpers";
 import type { PrivateChat, User } from "../../types";
 import TouchableContextMenu from "../mobile/TouchableContextMenu";
 import AddPrivateChatModal from "../ui/AddPrivateChatModal";
@@ -247,27 +248,14 @@ export const ChannelList: React.FC<{
   const getUserMetadata = (username: string) => {
     if (!selectedServerId) return null;
 
-    // First check localStorage for saved metadata
     const savedMetadata = loadSavedMetadata();
     const serverMetadata = savedMetadata[selectedServerId];
-    if (serverMetadata?.[username]) {
-      return serverMetadata[username];
-    }
-
-    // If not in localStorage, check if user is in any shared channels
-    if (!selectedServer) return null;
-
-    // Search through all channels for this user
-    for (const channel of selectedServer.channels) {
-      const user = channel.users.find(
-        (u) => u.username.toLowerCase() === username.toLowerCase(),
-      );
-      if (user?.metadata && Object.keys(user.metadata).length > 0) {
-        return user.metadata;
-      }
-    }
-
-    return null;
+    const metadata = resolveUserMetadata(
+      username,
+      serverMetadata,
+      selectedServer?.channels || [],
+    );
+    return Object.keys(metadata).length > 0 ? metadata : null;
   };
 
   // Helper function to get full user object from shared channels

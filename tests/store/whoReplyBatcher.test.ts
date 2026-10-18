@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { StoreApi } from "zustand";
+import * as storage from "../../src/store/localStorage";
 import {
   _peekWhoReplyBatcher,
   _resetWhoReplyBatcher,
@@ -171,5 +172,32 @@ describe("whoReplyBatcher", () => {
     const snap = store.snapshot();
     expect(snap.servers[0].channels[0].users[0].username).toBe("alice");
     expect(snap.servers[0].channels[1].users[0].username).toBe("bob");
+  });
+
+  test("populates user metadata from storage when creating users via WHO", () => {
+    const store = makeMockStore();
+    storage.metadata.save({
+      s1: {
+        charlie: {
+          avatar: {
+            value: "https://example.com/charlie.png",
+            visibility: "public",
+          },
+        },
+      },
+    });
+
+    bufferWhoReply(store, "s1", "#room", {
+      nick: "Charlie",
+      host: "c.example",
+      realname: "Charlie Brown",
+    });
+    vi.advanceTimersByTime(70);
+
+    const user = store.snapshot().servers[0].channels[0].users[0];
+    expect(user.username).toBe("Charlie");
+    expect(
+      (user.metadata?.avatar as { value?: string } | undefined)?.value,
+    ).toBe("https://example.com/charlie.png");
   });
 });

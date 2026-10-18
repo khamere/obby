@@ -85,48 +85,45 @@ export function registerMetadataHandlers(store: StoreApi<AppState>): void {
       // Update current user metadata if the target matches any connected user
       let updatedCurrentUser = state.currentUser;
       const currentUserForServer = ircClient.getCurrentUser(serverId);
+      const ourNick =
+        ircClient.getNick(serverId) ||
+        currentUserForServer?.username ||
+        state.currentUser?.username ||
+        "";
+      const isSelf =
+        target === "*" ||
+        (ourNick !== "" &&
+          resolvedTarget.toLowerCase() === ourNick.toLowerCase());
 
-      // Check if this metadata is for the current user on this server
-      if (
-        currentUserForServer &&
-        currentUserForServer.username === resolvedTarget
-      ) {
-        // If this is the first time setting current user or it's for the selected server, update global state
-        if (!updatedCurrentUser || state.ui.selectedServerId === serverId) {
-          const metadata = { ...(currentUserForServer.metadata || {}) };
-          if (value) {
-            metadata[key] = { value, visibility };
-          } else {
-            delete metadata[key];
-          }
-          // Preserve existing isIrcOp and modes when updating currentUser
-          updatedCurrentUser = {
-            ...currentUserForServer,
-            metadata,
-            isIrcOp: state.currentUser?.isIrcOp,
-            modes: state.currentUser?.modes,
-          };
+      if (isSelf) {
+        const baseUser = (state.ui.selectedServerId === serverId
+          ? currentUserForServer || updatedCurrentUser
+          : updatedCurrentUser || currentUserForServer) || {
+          id: resolvedTarget,
+          username: resolvedTarget,
+          isOnline: true,
+        };
+        const metadata = { ...(baseUser.metadata || {}) };
+        if (value) {
+          metadata[key] = { value, visibility };
+        } else {
+          delete metadata[key];
         }
-        // If there's already a current user but it's for a different server,
-        // still update if this is the selected server or if there's no current user
-        else if (
-          state.currentUser &&
-          state.currentUser.username === resolvedTarget
-        ) {
-          const metadata = { ...(state.currentUser.metadata || {}) };
-          if (value) {
-            metadata[key] = { value, visibility };
-          } else {
-            delete metadata[key];
-          }
-          // Preserve existing isIrcOp and modes when updating currentUser
-          updatedCurrentUser = {
-            ...state.currentUser,
-            metadata,
-            isIrcOp: state.currentUser.isIrcOp,
-            modes: state.currentUser.modes,
-          };
-        }
+        updatedCurrentUser = {
+          ...baseUser,
+          metadata,
+          isIrcOp: state.currentUser?.isIrcOp ?? baseUser.isIrcOp,
+          modes: state.currentUser?.modes ?? baseUser.modes,
+        };
+
+        // Persist own metadata across page reloads
+        storage.ownMetadata.saveKey(
+          serverId,
+          resolvedTarget,
+          key,
+          value || undefined,
+          visibility,
+        );
       }
 
       // Save metadata to localStorage
@@ -219,6 +216,19 @@ export function registerMetadataHandlers(store: StoreApi<AppState>): void {
           target === "*" ||
           (ourNick !== "" &&
             resolvedTarget.toLowerCase() === ourNick.toLowerCase());
+
+        // If this is our own metadata, persist it across page reloads
+        if (isSelf) {
+          if (value !== null && value !== undefined && value !== "") {
+            storage.ownMetadata.saveKey(
+              serverId,
+              resolvedTarget,
+              key,
+              value,
+              visibility,
+            );
+          }
+        }
 
         // If we're fetching our own metadata, update saved values
         if (isFetchingOwn && isSelf) {
