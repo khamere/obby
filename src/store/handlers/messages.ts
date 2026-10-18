@@ -16,6 +16,7 @@ import {
 import {
   checkForMention,
   extractMentions,
+  isSelfNick,
   showMentionNotification,
 } from "../../lib/notifications";
 import { isTauriMobile } from "../../lib/platformUtils";
@@ -141,9 +142,10 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
         const currentState = store.getState();
         const currentServerUser = ircClient.getCurrentUser(response.serverId);
         // Don't trigger mentions for our own messages
-        const isOwnMessage =
-          response.sender.toLowerCase() ===
-          currentServerUser?.username?.toLowerCase();
+        const isOwnMessage = isSelfNick(
+          response.sender,
+          currentServerUser?.username,
+        );
         // Lazy-fetch the sender's metadata the first time they speak in
         // this session. metadataList() is idempotent + cached so the
         // cost is one METADATA LIST per unique speaker.
@@ -232,11 +234,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           }
         }
 
-        if (
-          response.sender.toLowerCase() !==
-            currentServerUser?.username?.toLowerCase() &&
-          !isHistoricalMessage
-        ) {
+        if (!isOwnMessage && !isHistoricalMessage) {
           // A mention still notifies in a muted channel, not in a muted server.
           const notifyMention =
             hasMention && !isSilenced(server.id, channel.id, true);
@@ -479,9 +477,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
         const multilineCurrentUser = ircClient.getCurrentUser(
           response.serverId,
         );
-        const isOwnMessage =
-          sender.toLowerCase() ===
-          multilineCurrentUser?.username?.toLowerCase();
+        const isOwnMessage = isSelfNick(sender, multilineCurrentUser?.username);
         const isReplyToMe =
           !isOwnMessage &&
           !!replyMessage &&
@@ -660,12 +656,21 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
       } else if (!channelName) {
         const currentUser = ircClient.getCurrentUser(response.serverId);
 
-        if (currentUser?.username.toLowerCase() === sender.toLowerCase()) {
+        if (isSelfNick(sender, currentUser?.username)) {
           // Own message echo — store under DM keyed by `target`, same as USERMSG echo handler.
           if (!target) return;
-          const privateChat = server.privateChats?.find(
+          let privateChat = server.privateChats?.find(
             (pc) => pc.username.toLowerCase() === target.toLowerCase(),
           );
+          if (!privateChat) {
+            store.getState().openPrivateChat(server.id, target);
+            privateChat = store
+              .getState()
+              .servers.find((s) => s.id === server.id)
+              ?.privateChats?.find(
+                (pc) => pc.username.toLowerCase() === target.toLowerCase(),
+              );
+          }
           if (privateChat) {
             // labeled-response: confirm the pending placeholder when
             // a matching label tag is on the BATCH-wrapped echo.
@@ -860,10 +865,9 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
       // Lazy-fetch sender metadata on first PM, same as CHANMSG path.
       // Skip server pseudo-sources (those have a "." in the source) and
       // our own echoes.
-      const ourNick = ircClient
-        .getCurrentUser(response.serverId)
-        ?.username?.toLowerCase();
-      if (sender && !sender.includes(".") && sender.toLowerCase() !== ourNick) {
+      const ourNick = ircClient.getCurrentUser(response.serverId)?.username;
+      const isSelf = isSelfNick(sender, ourNick);
+      if (sender && !sender.includes(".") && !isSelf) {
         store.getState().metadataList(response.serverId, sender);
       }
 
@@ -872,7 +876,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
       // are swallowed without driving a live session — replayed ciphertext can't
       // decrypt and a replayed handshake would spawn a spurious session. Obby
       // passes the msgid so the decrypted row keeps the real IRC message identity.
-      const isSelfEcho = sender.toLowerCase() === ourNick;
+      const isSelfEcho = isSelf;
       // A labelled echo of our own send arrives inside a batch too, and it is
       // the live confirmation of a row that already exists, not history.
       const isReplay =
@@ -990,8 +994,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           );
 
           const currentUser = ircClient.getCurrentUser(response.serverId);
-          const isOwnWhisper =
-            currentUser?.username?.toLowerCase() === sender.toLowerCase();
+          const isOwnWhisper = isSelfNick(sender, currentUser?.username);
           const mentions = !isOwnWhisper
             ? extractMentions(message, currentUser, globalSettingsForUsermsg)
             : [];
@@ -1080,7 +1083,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
     }
 
     const currentUser = ircClient.getCurrentUser(response.serverId);
-    if (currentUser?.username === sender) {
+    if (isSelfNick(sender, currentUser?.username)) {
       // Own message echo — store under the DM keyed by `target`, not `sender`.
       if (server && target) {
         const privateChat = server.privateChats?.find(
@@ -1588,7 +1591,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
 
     // Don't create private chats with ourselves
     const currentUser = ircClient.getCurrentUser(response.serverId);
-    if (currentUser?.username === response.sender) {
+    if (isSelfNick(response.sender, currentUser?.username)) {
       return;
     }
 
@@ -1694,7 +1697,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
     // Check if the sender is not the current user for this specific server
     // we don't care about showing our own typing status
     const currentUser = ircClient.getCurrentUser(response.serverId);
-    if (sender !== currentUser?.username && mtags && mtags["+typing"]) {
+    if (
+      !isSelfNick(sender, currentUser?.username) &&
+      mtags &&
+      mtags["+typing"]
+    ) {
       const isActive = mtags["+typing"] === "active";
       const server = store
         .getState()
@@ -1874,7 +1881,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
         response.serverId,
       );
       if (
-        sender === currentUserForReaction?.username &&
+        isSelfNick(sender, currentUserForReaction?.username) &&
         existingReactionIndex !== -1
       ) {
         return;

@@ -26,12 +26,18 @@ vi.mock("../../src/lib/platformUtils", () => ({
 }));
 
 import {
+  checkForMention,
+  isRelayedSelfMessage,
+  isSelfNick,
+  normalizeNick,
   requestNotificationPermission,
   showMentionNotification,
   syncServerWebPush,
   syncTauriAppFocus,
   syncTauriNotificationSettings,
 } from "../../src/lib/notifications";
+import type { GlobalSettings } from "../../src/store";
+import type { User } from "../../src/types";
 
 describe("notifications", () => {
   beforeEach(() => {
@@ -51,10 +57,11 @@ describe("notifications", () => {
       focused: false,
     });
 
-    syncTauriNotificationSettings(true, ["obby", "pingword"]);
+    syncTauriNotificationSettings(true, ["obby", "pingword"], ["myuser"]);
     expect(mockInvoke).toHaveBeenCalledWith("sync_notification_settings", {
       enabled: true,
       customMentions: ["obby", "pingword"],
+      ownNicks: ["myuser"],
     });
   });
 
@@ -155,5 +162,107 @@ describe("notifications", () => {
       "srv-soju",
       "WEBPUSH UNREGISTER https://push.example.org/sub/123",
     );
+  });
+
+  describe("isSelfNick", () => {
+    it("recognizes exact and case-insensitive nickname matches", () => {
+      expect(isSelfNick("kestrel", "kestrel")).toBe(true);
+      expect(isSelfNick("KeStrel", "kestrel")).toBe(true);
+      expect(isSelfNick("kestrel", "KESTREL")).toBe(true);
+    });
+
+    it("recognizes alternate nicks with trailing underscores", () => {
+      expect(isSelfNick("kestrel_", "kestrel")).toBe(true);
+      expect(isSelfNick("kestrel__", "kestrel")).toBe(true);
+      expect(isSelfNick("kestrel", "kestrel_")).toBe(true);
+    });
+
+    it("recognizes bouncer multiplexed /network and @host nicks", () => {
+      expect(isSelfNick("kestrel", "kestrel/libera")).toBe(true);
+      expect(isSelfNick("kestrel/libera", "kestrel")).toBe(true);
+      expect(isSelfNick("kestrel/libera", undefined, ["kestrel"])).toBe(true);
+      expect(isSelfNick("kestrel@bouncer", "kestrel")).toBe(true);
+    });
+
+    it("recognizes nicks with square brackets, angle brackets, and prefixes", () => {
+      expect(isSelfNick("[kestrel]", "kestrel")).toBe(true);
+      expect(isSelfNick("kestrel", "[kestrel]")).toBe(true);
+      expect(isSelfNick("<kestrel>", "kestrel")).toBe(true);
+      expect(isSelfNick("(kestrel)", "kestrel")).toBe(true);
+      expect(isSelfNick("~kestrel", "kestrel")).toBe(true);
+      expect(isSelfNick("kestrel[m]", "kestrel")).toBe(true);
+      expect(isSelfNick("kestrel|away", "kestrel")).toBe(true);
+    });
+
+    it("matches candidates from allOwnNicks list", () => {
+      expect(isSelfNick("alice", "bob", ["charlie", "alice"])).toBe(true);
+      expect(isSelfNick("alice_", "bob", ["alice"])).toBe(true);
+      expect(isSelfNick("[alice]", "bob", ["alice"])).toBe(true);
+    });
+
+    it("returns false for different users", () => {
+      expect(isSelfNick("bob", "kestrel", ["kestrel"])).toBe(false);
+      expect(isSelfNick("kestrel_imposter", "kestrel", ["kestrel"])).toBe(
+        false,
+      );
+      expect(isSelfNick("", "kestrel")).toBe(false);
+    });
+  });
+
+  describe("normalizeNick", () => {
+    it("strips brackets, prefixes, network multiplexers, and trailing underscores", () => {
+      expect(normalizeNick("[kestrel]")).toBe("kestrel");
+      expect(normalizeNick("<kestrel>")).toBe("kestrel");
+      expect(normalizeNick("~kestrel")).toBe("kestrel");
+      expect(normalizeNick("kestrel[m]")).toBe("kestrel");
+      expect(normalizeNick("kestrel|web")).toBe("kestrel");
+      expect(normalizeNick("kestrel_")).toBe("kestrel");
+      expect(normalizeNick("kestrel/libera")).toBe("kestrel");
+    });
+  });
+
+  describe("isRelayedSelfMessage", () => {
+    const user = { username: "kestrel" } as unknown as User;
+
+    it("identifies bridge-relayed messages where the author is the user", () => {
+      expect(isRelayedSelfMessage("[kestrel] You will!", user)).toBe(true);
+      expect(isRelayedSelfMessage("<kestrel> You will!", user)).toBe(true);
+      expect(isRelayedSelfMessage("(kestrel) You will!", user)).toBe(true);
+      expect(isRelayedSelfMessage("[kestrel (Discord)] You will!", user)).toBe(
+        true,
+      );
+      expect(isRelayedSelfMessage("[kestrel/matrix] You will!", user)).toBe(
+        true,
+      );
+    });
+
+    it("returns false for messages from other users or plain text", () => {
+      expect(isRelayedSelfMessage("[alice] You will!", user)).toBe(false);
+      expect(isRelayedSelfMessage("You will!", user)).toBe(false);
+      expect(isRelayedSelfMessage("kestrel: You will!", user)).toBe(false);
+    });
+  });
+
+  describe("checkForMention with relayed messages", () => {
+    const user = { username: "kestrel" } as unknown as User;
+    const settings = { customMentions: [] } as unknown as GlobalSettings;
+
+    it("suppresses mention notifications for relayed self-messages", () => {
+      expect(checkForMention("[kestrel] You will!", user, settings)).toBe(
+        false,
+      );
+      expect(checkForMention("<kestrel> You will!", user, settings)).toBe(
+        false,
+      );
+    });
+
+    it("still detects real incoming mentions from other users", () => {
+      expect(checkForMention("hey kestrel, You will!", user, settings)).toBe(
+        true,
+      );
+      expect(
+        checkForMention("[alice] kestrel: You will!", user, settings),
+      ).toBe(true);
+    });
   });
 });

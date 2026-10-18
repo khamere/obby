@@ -4,7 +4,9 @@ import type { StoreApi } from "zustand";
 import ircClient from "../../lib/ircClient";
 import {
   clearWebPushRetry,
+  collectAllSelfNicks,
   retryWebPushRegistrationOnFailure,
+  syncTauriNotificationSettings,
 } from "../../lib/notifications";
 import type { Message, User } from "../../types";
 import {
@@ -349,6 +351,17 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
     });
 
     const state = store.getState();
+    const serverCurrentUser = ircClient.getCurrentUser(serverId);
+    const isOurNick =
+      serverCurrentUser?.username === oldNick ||
+      serverCurrentUser?.username === newNick;
+    if (isOurNick) {
+      syncTauriNotificationSettings(
+        state.globalSettings.enableNotifications,
+        state.globalSettings.customMentions,
+        collectAllSelfNicks(state),
+      );
+    }
     const server = state.servers.find((s) => s.id === serverId);
     if (
       server &&
