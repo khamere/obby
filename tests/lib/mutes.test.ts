@@ -6,6 +6,7 @@ import {
   muteChat,
   muteServer,
   resetMutesForTests,
+  setChatMuteMentions,
   unmuteChat,
   unmuteServer,
 } from "../../src/lib/mutes";
@@ -40,6 +41,19 @@ describe("mutes", () => {
     expect(isSilenced("s1", "chan", false)).toBe(true);
     expect(isSilenced("s1", "chan", true)).toBe(false);
     expect(isSilenced("s1", "other", false)).toBe(false);
+  });
+
+  it("a channel mute made with mentions silences mentions too", () => {
+    muteChat("s1", "chan", "channel", null, true);
+    expect(isSilenced("s1", "chan", true)).toBe(true);
+    expect(isSilenced("s1", "chan", false)).toBe(true);
+    setChatMuteMentions("s1", "chan", false);
+    expect(isSilenced("s1", "chan", true)).toBe(false);
+    setChatMuteMentions("s1", "chan", true);
+    expect(chatMute("s1", "chan")?.mentions).toBe(true);
+    // only an active mute can be changed
+    setChatMuteMentions("s1", "other", true);
+    expect(chatMute("s1", "other")).toBeUndefined();
   });
 
   it("a muted DM is fully silent", () => {

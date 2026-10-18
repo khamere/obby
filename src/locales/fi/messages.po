@@ -495,6 +495,10 @@ msgstr "Salli monirivisyöttö"
 msgid "Already in {0}"
 msgstr "Jo kanavalla {0}"
 
+#: src/components/ui/MuteModal.tsx
+msgid "Also mute mentions"
+msgstr "Mykistä myös maininnat"
+
 #: src/components/ui/UserSettings.tsx
 msgid "Also shows previews from YouTube, Vimeo, SoundCloud, and similar known services."
 msgstr "Näyttää myös esikatselut YouTubesta, Vimeosta, SoundCloudista ja vastaavista tunnetuista palveluista."
@@ -2615,6 +2619,10 @@ msgstr "Palvelimia ei löydetty."
 #: src/components/ui/MuteModal.tsx
 msgid "No sound, notification or red dot for messages from this person."
 msgstr "Ei ääntä, ilmoitusta eikä punaista pistettä tämän henkilön viesteistä."
+
+#: src/components/ui/MuteModal.tsx
+msgid "No sound, notification or red dot from this channel, even when someone mentions you."
+msgstr "Ei ääntä, ilmoitusta eikä punaista pistettä tältä kanavalta, ei edes silloin kun joku mainitsee sinut."
 
 #: src/components/ui/MuteModal.tsx
 msgid "No sound, notification or red dot from this channel, except when someone mentions you."
