@@ -436,16 +436,7 @@ const ObbyWhoisModal: React.FC<ObbyWhoisModalProps> = ({
     }
     if (metadataRequestedForRef.current !== targetKey) {
       metadataRequestedForRef.current = targetKey;
-      useStore
-        .getState()
-        .metadataGet(serverId, username, [
-          "avatar",
-          "display-name",
-          "bot",
-          "homepage",
-          "status",
-          "color",
-        ]);
+      ircClient.metadataList(serverId, username);
     }
   }, [isOpen, serverId, username]);
 

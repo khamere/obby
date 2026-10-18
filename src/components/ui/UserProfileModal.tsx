@@ -159,18 +159,8 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({
     if (metadataRequestedRef.current !== username) {
       metadataRequestedRef.current = username;
       setIsLoadingMetadata(true);
-      // Metadata GET for avatar, display-name, bot, homepage, status, and color
-      useStore
-        .getState()
-        .metadataGet(serverId, username, [
-          "avatar",
-          "display-name",
-          "bot",
-          "homepage",
-          "status",
-          "color",
-          "pronouns",
-        ]);
+      // Request user metadata via LIST to avoid requesting invalid keys
+      ircClient.metadataList(serverId, username);
       setTimeout(() => setIsLoadingMetadata(false), 2000);
     }
   }, [isOpen, serverId, username]);

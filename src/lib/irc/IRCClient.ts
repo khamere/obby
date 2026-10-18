@@ -120,6 +120,7 @@ export interface EventMap {
   METADATA_UNSUBOK: BaseIRCEvent & { keys: string[] };
   METADATA_SUBS: BaseIRCEvent & { keys: string[] };
   METADATA_SYNCLATER: BaseIRCEvent & { target: string; retryAfter?: number };
+  METADATA_END: BaseIRCEvent & { target: string };
   // soju.im/bouncer-networks
   BOUNCER_NETWORK: BaseIRCEvent & {
     netid: string;
@@ -156,11 +157,12 @@ export interface EventMap {
     messageIds: string[]; // All message IDs that make up this multiline message
   };
   METADATA_FAIL: BaseIRCEvent & {
-    subcommand: string;
+    subcommand?: string;
     code: string;
     target?: string;
     key?: string;
     retryAfter?: number;
+    description?: string;
   };
   LIST_CHANNEL: {
     serverId: string;

@@ -55,6 +55,7 @@ import {
 } from "./messages";
 import {
   handleMetadata,
+  handleMetadataEnd,
   handleMetadataFail,
   handleMetadataKeyNotSet,
   handleMetadataKeyValue,
@@ -298,6 +299,8 @@ export const IRC_DISPATCH: Record<string, HandlerFn> = {
     handleMetadataWhoisKeyValue(ctx, serverId, source, parv, mtags),
   "761": (ctx, serverId, source, parv, mtags) =>
     handleMetadataKeyValue(ctx, serverId, source, parv, mtags),
+  "762": (ctx, serverId, source, parv, mtags) =>
+    handleMetadataEnd(ctx, serverId, source, parv, mtags),
   "766": (ctx, serverId, source, parv, mtags) =>
     handleMetadataKeyNotSet(ctx, serverId, source, parv, mtags),
   "770": (ctx, serverId, source, parv, mtags) =>
@@ -318,7 +321,7 @@ export const IRC_DISPATCH: Record<string, HandlerFn> = {
   // command token rather than letting handleFail swallow them.
   FAIL: (ctx, serverId, source, parv, mtags, trailing) => {
     if (parv[0] === "METADATA")
-      return handleMetadataFail(ctx, serverId, source, parv, mtags);
+      return handleMetadataFail(ctx, serverId, source, parv, mtags, trailing);
     if (parv[0] === "BOUNCER")
       return handleBouncerFail(ctx, serverId, source, parv);
     return handleFail(ctx, serverId, source, parv, mtags, trailing);
