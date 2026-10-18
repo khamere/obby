@@ -1,15 +1,25 @@
 /**
  * Hook for managing message history navigation with arrow keys
+ *
+ * ArrowUp on an empty input recalls what the user previously sent, newest
+ * first; ArrowDown walks back towards the draft that was in the box.
+ *
+ * Two sources feed the list:
+ *  - everything sent from this input during the session (`recordSent`),
+ *    including slash commands and messages the server never echoed, kept
+ *    per conversation;
+ *  - the user's own messages already in the conversation (e.g. loaded from
+ *    chathistory after a reload), appended behind the sent entries.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { stripIrcFormatting } from "../lib/messageFormatter";
 import type { Message } from "../types";
 
 interface UseMessageHistoryOptions {
   messages: Message[];
   currentUsername: string | null;
-  selectedChannelId: string | null;
-  selectedPrivateChatId: string | null;
+  /** Identifies the conversation; history is kept separately per key. */
+  historyKey: string;
 }
 
 interface UseMessageHistoryReturn {
@@ -19,8 +29,13 @@ interface UseMessageHistoryReturn {
   navigateDown: () => string | null;
   resetHistory: () => void;
   exitHistory: () => void;
-  userMessageHistory: Message[];
+  /** Remember a line the user sent, so ArrowUp can bring it back. */
+  recordSent: (text: string) => void;
+  /** Recallable entries, newest first. */
+  userMessageHistory: string[];
 }
+
+const MAX_SENT_PER_CONVERSATION = 100;
 
 /**
  * Manages message history navigation for arrow key recall
@@ -28,25 +43,52 @@ interface UseMessageHistoryReturn {
 export function useMessageHistory({
   messages,
   currentUsername,
-  selectedChannelId,
-  selectedPrivateChatId,
+  historyKey,
 }: UseMessageHistoryOptions): UseMessageHistoryReturn {
   const [messageHistoryIndex, setMessageHistoryIndex] = useState(-1);
   const [draftText, setDraftText] = useState("");
+  // Sent lines per conversation, newest first. A ref plus a version counter
+  // keeps keystroke-time sends from re-rendering anything but the memo below.
+  const sentRef = useRef<Map<string, string[]>>(new Map());
+  const [sentVersion, setSentVersion] = useState(0);
 
-  // Memoize user's message history (filtered and reversed)
+  const recordSent = useCallback(
+    (text: string) => {
+      const line = text.trim();
+      if (line === "" || !historyKey) return;
+      const list = sentRef.current.get(historyKey) ?? [];
+      if (list[0] === line) return; // consecutive duplicate
+      const next = [line, ...list].slice(0, MAX_SENT_PER_CONVERSATION);
+      sentRef.current.set(historyKey, next);
+      setSentVersion((v) => v + 1);
+    },
+    [historyKey],
+  );
+
+  // Sent entries first, then own channel messages not already covered.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: sentVersion invalidates the ref-backed sent list
   const userMessageHistory = useMemo(() => {
-    if (!currentUsername) return [];
-    return messages
-      .filter((msg) => msg.type === "message" && msg.userId === currentUsername)
-      .reverse(); // Most recent first
-  }, [messages, currentUsername]);
+    const sent = historyKey ? (sentRef.current.get(historyKey) ?? []) : [];
+    if (!currentUsername) return sent;
+    const seen = new Set(sent);
+    const fromMessages: string[] = [];
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i];
+      if (msg.type !== "message" || msg.userId !== currentUsername) continue;
+      const line = stripIrcFormatting(msg.content).trim();
+      if (line === "" || seen.has(line)) continue;
+      seen.add(line);
+      fromMessages.push(line);
+    }
+    return sent.concat(fromMessages);
+  }, [messages, currentUsername, historyKey, sentVersion]);
 
-  // Reset history when channel/chat changes
+  // Leave history mode when the conversation changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: historyKey is the trigger, not a value the effect reads
   useEffect(() => {
     setMessageHistoryIndex(-1);
     setDraftText("");
-  }, []);
+  }, [historyKey]);
 
   /**
    * Navigate to previous (older) message
@@ -67,7 +109,7 @@ export function useMessageHistory({
 
     if (newIndex >= 0 && newIndex < userMessageHistory.length) {
       setMessageHistoryIndex(newIndex);
-      return stripIrcFormatting(userMessageHistory[newIndex].content);
+      return userMessageHistory[newIndex];
     }
 
     return null;
@@ -91,7 +133,7 @@ export function useMessageHistory({
 
     // Navigate to next message
     setMessageHistoryIndex(newIndex);
-    return stripIrcFormatting(userMessageHistory[newIndex].content);
+    return userMessageHistory[newIndex];
   };
 
   /**
@@ -119,6 +161,7 @@ export function useMessageHistory({
     navigateDown,
     resetHistory,
     exitHistory,
+    recordSent,
     userMessageHistory,
   };
 }
