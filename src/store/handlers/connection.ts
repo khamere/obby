@@ -16,6 +16,7 @@ import {
 } from "../helpers";
 import type { AppState } from "../index";
 import * as storage from "../localStorage";
+import { isMetadataKeySupported } from "./metadata";
 
 // Track which servers have had their ready handler run to prevent duplicate processing
 export const readyProcessedServers = new Set<string>();
@@ -235,38 +236,41 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
     // we'd be paying the firehose cost twice (once for SUB push, once
     // for our own GETs). Live updates after the initial GET are not
     // visible to us, but display-name / avatar don't change often and
-    // the profile modal re-GETs anyway.
     if (serverSupportsMetadata(store.getState(), serverId)) {
-      const pushOwnMetadata = () => {
-        const savedMeta = storage.metadata.load();
-        const serverMeta = savedMeta[serverId];
+      const pushLocalMetadataIfMissingOnServer = (serverKeys: Set<string>) => {
         const ourNick =
           ircClient.getNick(serverId) || store.getState().currentUser?.username;
+        const ownMeta = storage.ownMetadata.getForServer(serverId, ourNick);
+        const savedMeta = storage.metadata.load();
+        const serverMeta = savedMeta[serverId];
+        let ourMetadata: Record<
+          string,
+          { value?: string; visibility?: string }
+        > = { ...ownMeta };
         if (serverMeta && ourNick) {
           const matchKey = Object.keys(serverMeta).find(
             (k) => k.toLowerCase() === ourNick.toLowerCase(),
           );
-          const ourMetadata = matchKey ? serverMeta[matchKey] : undefined;
-          if (ourMetadata) {
-            Object.entries(ourMetadata).forEach(
-              ([key, { value, visibility }]) => {
-                if (value !== undefined) {
-                  store
-                    .getState()
-                    .metadataSet(serverId, "*", key, value, visibility);
-                }
-              },
-            );
+          if (matchKey && serverMeta[matchKey]) {
+            ourMetadata = { ...ourMetadata, ...serverMeta[matchKey] };
           }
         }
+        Object.entries(ourMetadata).forEach(([key, { value, visibility }]) => {
+          if (
+            value !== undefined &&
+            !serverKeys.has(key) &&
+            isMetadataKeySupported(serverId, key)
+          ) {
+            store.getState().metadataSet(serverId, "*", key, value, visibility);
+          }
+        });
       };
 
-      // Push cached own metadata immediately so upstream/bouncer knows our avatar right away
-      pushOwnMetadata();
-
-      // Also query server for upstream changes and push again if needed
-      fetchAndMergeOwnMetadata(store, serverId).then(() => {
-        pushOwnMetadata();
+      // Query server for upstream changes first. If the server already has keys
+      // (e.g. set from mobile APK or another device), we adopt the server's values
+      // without pushing stale local cache over them.
+      fetchAndMergeOwnMetadata(store, serverId).then((serverKeys) => {
+        pushLocalMetadataIfMissingOnServer(serverKeys);
       });
     }
 
@@ -714,13 +718,15 @@ function isChannelTarget(target: string): boolean {
 async function fetchAndMergeOwnMetadata(
   store: StoreApi<AppState>,
   serverId: string,
-): Promise<void> {
+): Promise<Set<string>> {
   return new Promise((resolve) => {
     const nickname = ircClient.getNick(serverId);
     if (!nickname) {
-      resolve();
+      resolve(new Set());
       return;
     }
+
+    const serverReceivedKeys = new Set<string>();
 
     // Mark as fetching
     store.setState((state) => ({
@@ -730,19 +736,80 @@ async function fetchAndMergeOwnMetadata(
       },
     }));
 
-    // Request our metadata from the server using LIST so only set keys are returned
-    ircClient.metadataList(serverId, "*");
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    // Wait a bit for responses to come in, then resolve
-    // The METADATA_KEYVALUE handler will update saved values
-    setTimeout(() => {
+    const cleanup = () => {
+      ircClient.deleteHook("METADATA_KEYVALUE", onKeyValue);
+      ircClient.deleteHook("METADATA_END", onEnd);
+      ircClient.deleteHook("METADATA_FAIL", onFail);
       store.setState((state) => ({
         metadataFetchInProgress: {
           ...state.metadataFetchInProgress,
           [serverId]: false,
         },
       }));
-      resolve();
+    };
+
+    const finish = () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      cleanup();
+      resolve(serverReceivedKeys);
+    };
+
+    const ourNick = nickname.toLowerCase();
+    const isTargetSelf = (t?: string) =>
+      !t || t === "*" || t.toLowerCase() === ourNick;
+
+    const onKeyValue = (data: {
+      serverId: string;
+      target: string;
+      key: string;
+      value: string;
+    }) => {
+      if (data.serverId === serverId && isTargetSelf(data.target)) {
+        if (
+          data.value !== null &&
+          data.value !== undefined &&
+          data.value !== ""
+        ) {
+          serverReceivedKeys.add(data.key);
+        }
+      }
+    };
+
+    const onEnd = (data: { serverId: string; target: string }) => {
+      if (data.serverId === serverId && isTargetSelf(data.target)) {
+        finish();
+      }
+    };
+
+    const onFail = (data: {
+      serverId: string;
+      target?: string;
+      code?: string;
+    }) => {
+      if (
+        data.serverId === serverId &&
+        isTargetSelf(data.target) &&
+        data.code !== "KEY_INVALID"
+      ) {
+        finish();
+      }
+    };
+
+    ircClient.on("METADATA_KEYVALUE", onKeyValue);
+    ircClient.on("METADATA_END", onEnd);
+    ircClient.on("METADATA_FAIL", onFail);
+
+    // Request our metadata from the server using LIST so only supported and set keys are returned
+    ircClient.metadataList(serverId, "*");
+
+    // Fallback timeout in case the server does not send METADATA_END
+    timeoutId = setTimeout(() => {
+      finish();
     }, 1000);
   });
 }

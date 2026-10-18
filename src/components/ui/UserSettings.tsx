@@ -142,11 +142,28 @@ export const UserSettings: React.FC = React.memo(() => {
   const savedServers = loadSavedServers();
   const serverConfig = savedServers.find((s) => s.id === ui.selectedServerId);
 
+  const storeCurrentUser = useStore((s) => s.currentUser);
+  const metadataChangeCounter = useStore((s) => s.metadataChangeCounter);
+
   const currentUser = useMemo(() => {
     if (!currentServer) return null;
 
     const ircCurrentUser = ircClient.getCurrentUser(currentServer.id);
     if (!ircCurrentUser) return null;
+
+    let baseMetadata: Record<
+      string,
+      { value: string | undefined; visibility: string }
+    > = {};
+
+    if (
+      storeCurrentUser &&
+      storeCurrentUser.username.toLowerCase() ===
+        ircCurrentUser.username.toLowerCase() &&
+      storeCurrentUser.metadata
+    ) {
+      baseMetadata = { ...storeCurrentUser.metadata };
+    }
 
     for (const channel of currentServer.channels) {
       const userWithMetadata = channel.users.find(
@@ -157,7 +174,8 @@ export const UserSettings: React.FC = React.memo(() => {
         userWithMetadata?.metadata &&
         Object.keys(userWithMetadata.metadata).length > 0
       ) {
-        return userWithMetadata;
+        baseMetadata = { ...userWithMetadata.metadata, ...baseMetadata };
+        break;
       }
     }
 
@@ -168,15 +186,17 @@ export const UserSettings: React.FC = React.memo(() => {
       serverMeta,
       currentServer.channels,
     );
-    if (Object.keys(resolved).length > 0) {
+    baseMetadata = { ...resolved, ...baseMetadata };
+
+    if (Object.keys(baseMetadata).length > 0) {
       return {
         ...ircCurrentUser,
-        metadata: resolved,
+        metadata: baseMetadata,
       };
     }
 
     return ircCurrentUser;
-  }, [currentServer]);
+  }, [currentServer, storeCurrentUser]);
 
   const supportsMetadata = useMemo(
     () => (currentServer ? serverSupportsMetadata(currentServer.id) : false),
@@ -476,6 +496,103 @@ export const UserSettings: React.FC = React.memo(() => {
     supportsMetadata,
     globalSettings,
     serverConfig,
+  ]);
+
+  // If the settings modal is open and metadata arrives afterwards, update unedited fields
+  useEffect(() => {
+    if (
+      !ui.isSettingsModalOpen ||
+      !initializedRef.current ||
+      !supportsMetadata
+    ) {
+      return;
+    }
+
+    const meta = currentUser?.metadata;
+    if (!meta) return;
+
+    const remoteAvatar =
+      typeof meta.avatar === "object"
+        ? meta.avatar.value || ""
+        : meta.avatar || "";
+    const remoteDisplayName =
+      typeof meta["display-name"] === "object"
+        ? meta["display-name"].value || ""
+        : meta["display-name"] || "";
+    const remoteHomepage =
+      typeof meta.homepage === "object"
+        ? meta.homepage.value || ""
+        : meta.homepage || "";
+    const remoteStatus =
+      typeof meta.status === "object"
+        ? meta.status.value || ""
+        : meta.status || "";
+    const remoteColor =
+      typeof meta.color === "object"
+        ? meta.color.value || ""
+        : meta.color || "";
+    const remoteBot =
+      typeof meta.bot === "object" ? meta.bot.value || "" : meta.bot || "";
+    const remotePronouns =
+      typeof meta.pronouns === "object"
+        ? meta.pronouns.value || ""
+        : meta.pronouns || "";
+
+    setOriginalValues((prev) => {
+      if (!prev) return prev;
+      let updated = prev;
+
+      if (avatar === (prev.avatar as string) && remoteAvatar !== prev.avatar) {
+        setAvatar(remoteAvatar);
+        updated = { ...updated, avatar: remoteAvatar };
+      }
+      if (
+        displayName === (prev.displayName as string) &&
+        remoteDisplayName !== prev.displayName
+      ) {
+        setDisplayName(remoteDisplayName);
+        updated = { ...updated, displayName: remoteDisplayName };
+      }
+      if (
+        homepage === (prev.homepage as string) &&
+        remoteHomepage !== prev.homepage
+      ) {
+        setHomepage(remoteHomepage);
+        updated = { ...updated, homepage: remoteHomepage };
+      }
+      if (status === (prev.status as string) && remoteStatus !== prev.status) {
+        setStatus(remoteStatus);
+        updated = { ...updated, status: remoteStatus };
+      }
+      if (color === (prev.color as string) && remoteColor !== prev.color) {
+        setColor(remoteColor);
+        updated = { ...updated, color: remoteColor };
+      }
+      if (bot === (prev.bot as string) && remoteBot !== prev.bot) {
+        setBot(remoteBot);
+        updated = { ...updated, bot: remoteBot };
+      }
+      if (
+        pronouns === (prev.pronouns as string) &&
+        remotePronouns !== prev.pronouns
+      ) {
+        setPronouns(remotePronouns);
+        updated = { ...updated, pronouns: remotePronouns };
+      }
+
+      return updated;
+    });
+  }, [
+    ui.isSettingsModalOpen,
+    currentUser?.metadata,
+    supportsMetadata,
+    avatar,
+    displayName,
+    homepage,
+    status,
+    color,
+    bot,
+    pronouns,
   ]);
 
   // Track if there are unsaved changes
