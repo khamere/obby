@@ -2139,12 +2139,9 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
                   // Send WHO request now that CHATHISTORY is done
                   ircClient.sendRaw(serverId, `WHO ${channelName} %cuhnfaro`);
 
-                  // Request channel metadata if server supports it
+                  // Request channel metadata via LIST if server supports it
                   if (serverSupportsMetadata(state, serverId)) {
-                    ircClient.metadataGet(serverId, channelName, [
-                      "avatar",
-                      "display-name",
-                    ]);
+                    ircClient.metadataList(serverId, channelName);
                   }
 
                   // Clear the flag

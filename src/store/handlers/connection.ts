@@ -701,19 +701,8 @@ async function fetchAndMergeOwnMetadata(
       },
     }));
 
-    // Request all metadata for ourselves (target "*" means us)
-    const defaultKeys = [
-      "url",
-      "website",
-      "status",
-      "location",
-      "avatar",
-      "color",
-      "display-name",
-    ];
-
-    // Get our metadata from the server
-    ircClient.metadataGet(serverId, "*", defaultKeys);
+    // Request our metadata from the server using LIST so only set keys are returned
+    ircClient.metadataList(serverId, "*");
 
     // Wait a bit for responses to come in, then resolve
     // The METADATA_KEYVALUE handler will update saved values

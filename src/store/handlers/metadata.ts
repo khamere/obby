@@ -213,8 +213,15 @@ export function registerMetadataHandlers(store: StoreApi<AppState>): void {
               target
             : target.split("!")[0]; // Extract nickname from mask
 
+        const ourNick =
+          ircClient.getNick(serverId) || state.currentUser?.username || "";
+        const isSelf =
+          target === "*" ||
+          (ourNick !== "" &&
+            resolvedTarget.toLowerCase() === ourNick.toLowerCase());
+
         // If we're fetching our own metadata, update saved values
-        if (isFetchingOwn && target === "*") {
+        if (isFetchingOwn && isSelf) {
           const savedMetadata = storage.metadata.load();
           if (!savedMetadata[serverId]) {
             savedMetadata[serverId] = {};
@@ -259,7 +266,7 @@ export function registerMetadataHandlers(store: StoreApi<AppState>): void {
                   } else {
                     // Deleting key
                     if (
-                      (!isFetchingOwn || target !== "*") &&
+                      (!isFetchingOwn || !isSelf) &&
                       existingValue !== undefined
                     ) {
                       hasChanges = true;
@@ -338,10 +345,7 @@ export function registerMetadataHandlers(store: StoreApi<AppState>): void {
               updatedCurrentUser = { ...state.currentUser, metadata };
             }
           } else {
-            if (
-              (!isFetchingOwn || target !== "*") &&
-              existingValue !== undefined
-            ) {
+            if ((!isFetchingOwn || !isSelf) && existingValue !== undefined) {
               hasChanges = true;
               const metadata = { ...(state.currentUser.metadata || {}) };
               delete metadata[key];
@@ -352,7 +356,7 @@ export function registerMetadataHandlers(store: StoreApi<AppState>): void {
 
         // Save valid metadata for any user, not just channel members.
         // Also marks hasChanges so metadataChangeCounter increments for DM re-renders.
-        if (!isFetchingOwn || target !== "*") {
+        if (!isFetchingOwn || !isSelf) {
           const savedMetadata = storage.metadata.load();
           if (value !== null && value !== undefined && value !== "") {
             if (!savedMetadata[serverId]) {
@@ -581,16 +585,72 @@ export function registerMetadataHandlers(store: StoreApi<AppState>): void {
     }));
   });
 
+  ircClient.on("METADATA_END", ({ serverId, target }) => {
+    if (!target) return;
+    store.setState((state) => {
+      if (isChannelTarget(target)) {
+        const cache = state.channelMetadataCache[serverId] || {};
+        const channelCache = cache[target] || { fetchedAt: Date.now() };
+        channelCache.fetchedAt = Date.now();
+
+        const queue = state.channelMetadataFetchQueue[serverId];
+        let newQueue = queue;
+        if (queue?.has(target)) {
+          newQueue = new Set(queue);
+          newQueue.delete(target);
+        }
+
+        return {
+          channelMetadataCache: {
+            ...state.channelMetadataCache,
+            [serverId]: {
+              ...cache,
+              [target]: channelCache,
+            },
+          },
+          ...(newQueue !== queue && {
+            channelMetadataFetchQueue: {
+              ...state.channelMetadataFetchQueue,
+              [serverId]: newQueue,
+            },
+          }),
+        };
+      }
+      return {};
+    });
+  });
+
   ircClient.on(
     "METADATA_FAIL",
-    ({ serverId, subcommand, code, target, key, retryAfter }) => {
-      // Handle metadata failures
-      console.error(`Metadata ${subcommand} failed: ${code}`, {
-        target,
-        key,
-        retryAfter,
-      });
-      // Could show user notifications here
+    ({ serverId, subcommand, code, target, key, retryAfter, description }) => {
+      // Remove failed channel target from fetch queue
+      if (target && isChannelTarget(target)) {
+        store.setState((state) => {
+          const queue = state.channelMetadataFetchQueue[serverId];
+          if (!queue?.has(target)) return {};
+          const newQueue = new Set(queue);
+          newQueue.delete(target);
+          return {
+            channelMetadataFetchQueue: {
+              ...state.channelMetadataFetchQueue,
+              [serverId]: newQueue,
+            },
+          };
+        });
+      }
+
+      console.debug(
+        `[metadata] FAIL ${code}${key ? ` for key '${key}'` : ""}${target ? ` on '${target}'` : ""}`,
+        {
+          serverId,
+          subcommand,
+          code,
+          target,
+          key,
+          retryAfter,
+          description,
+        },
+      );
     },
   );
 }

@@ -348,52 +348,6 @@ function restoreServerMetadata(serverId: string) {
   });
 }
 
-// Fetch our own metadata from the server and update saved values
-async function fetchAndMergeOwnMetadata(serverId: string): Promise<void> {
-  return new Promise((resolve) => {
-    const nickname = ircClient.getNick(serverId);
-    if (!nickname) {
-      resolve();
-      return;
-    }
-
-    // Mark as fetching
-    useStore.setState((state) => ({
-      metadataFetchInProgress: {
-        ...state.metadataFetchInProgress,
-        [serverId]: true,
-      },
-    }));
-
-    // Request all metadata for ourselves (target "*" means us)
-    const defaultKeys = [
-      "url",
-      "website",
-      "status",
-      "location",
-      "avatar",
-      "color",
-      "display-name",
-      "pronouns",
-    ];
-
-    // Get our metadata from the server
-    ircClient.metadataGet(serverId, "*", defaultKeys);
-
-    // Wait a bit for responses to come in, then resolve
-    // The METADATA_KEYVALUE handler will update saved values
-    setTimeout(() => {
-      useStore.setState((state) => ({
-        metadataFetchInProgress: {
-          ...state.metadataFetchInProgress,
-          [serverId]: false,
-        },
-      }));
-      resolve();
-    }, 1000);
-  });
-}
-
 // Fetch channel metadata for the channel list modal
 // Uses caching to avoid refetching and rate limiting
 function fetchChannelMetadata(serverId: string, channelNames: string[]) {
@@ -446,11 +400,9 @@ function fetchChannelMetadata(serverId: string, channelNames: string[]) {
     },
   }));
 
-  // Fetch metadata for each channel
-  // Note: We request metadata even if we're not in the channel
-  // This may not work on all servers - depends on server permissions
+  // Fetch metadata for each channel via LIST to avoid requesting invalid keys
   channelsToFetch.forEach((channelName) => {
-    ircClient.metadataGet(serverId, channelName, ["avatar", "display-name"]);
+    ircClient.metadataList(serverId, channelName);
   });
 }
 

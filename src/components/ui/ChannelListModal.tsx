@@ -150,10 +150,7 @@ const ChannelListModal: React.FC = () => {
       }));
 
       channelsToFetch.forEach((channelName) => {
-        ircClient.metadataGet(selectedServerId, channelName, [
-          "avatar",
-          "display-name",
-        ]);
+        ircClient.metadataList(selectedServerId, channelName);
       });
     },
     [selectedServerId, metadataCache],
