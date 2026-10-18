@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { settings } from "../../src/store/localStorage";
+import { metadata, ownMetadata, settings } from "../../src/store/localStorage";
 
 describe("settings.load migration", () => {
   beforeEach(() => {
@@ -76,5 +76,74 @@ describe("settings.load migration", () => {
     vi.mocked(window.localStorage.getItem).mockReturnValue("not-json");
     const result = settings.load();
     expect(result).toEqual({});
+  });
+});
+
+describe("ownMetadata", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  test("loads empty object when nothing stored", () => {
+    vi.mocked(window.localStorage.getItem).mockReturnValue(null);
+    expect(ownMetadata.load()).toEqual({});
+  });
+
+  test("saveKey persists metadata and synchronizes in-memory cache", () => {
+    const store: Record<string, string> = {};
+    vi.mocked(window.localStorage.getItem).mockImplementation(
+      (k) => store[k] ?? null,
+    );
+    vi.mocked(window.localStorage.setItem).mockImplementation((k, v) => {
+      store[k] = v;
+    });
+
+    ownMetadata.saveKey(
+      "srv-1",
+      "alice",
+      "avatar",
+      "https://example.com/avatar.png",
+      "public",
+    );
+
+    expect(window.localStorage.setItem).toHaveBeenCalledWith(
+      "ownUserMetadata",
+      expect.stringContaining("https://example.com/avatar.png"),
+    );
+
+    const loaded = ownMetadata.getForServer("srv-1", "Alice");
+    expect(loaded.avatar).toEqual({
+      value: "https://example.com/avatar.png",
+      visibility: "public",
+    });
+
+    // In-memory cache is also synced
+    const memCache = metadata.load();
+    expect(memCache["srv-1"]?.alice?.avatar).toEqual({
+      value: "https://example.com/avatar.png",
+      visibility: "public",
+    });
+  });
+
+  test("saveKey deletes key when value is undefined or empty", () => {
+    const store: Record<string, string> = {};
+    vi.mocked(window.localStorage.getItem).mockImplementation(
+      (k) => store[k] ?? null,
+    );
+    vi.mocked(window.localStorage.setItem).mockImplementation((k, v) => {
+      store[k] = v;
+    });
+
+    ownMetadata.saveKey(
+      "srv-1",
+      "bob",
+      "avatar",
+      "https://example.com/b.png",
+      "public",
+    );
+    expect(ownMetadata.getForServer("srv-1", "bob").avatar).toBeDefined();
+
+    ownMetadata.saveKey("srv-1", "bob", "avatar", undefined);
+    expect(ownMetadata.getForServer("srv-1", "bob").avatar).toBeUndefined();
   });
 });

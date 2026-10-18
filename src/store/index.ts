@@ -51,7 +51,7 @@ import {
   trustOtrChangedKey,
 } from "./handlers/otr";
 import * as tictactoeActions from "./handlers/tictactoeActions";
-import { MAX_MESSAGES_PER_CHANNEL } from "./helpers";
+import { MAX_MESSAGES_PER_CHANNEL, resolveUserMetadata } from "./helpers";
 import * as storage from "./localStorage";
 import { enqueueMetadataList } from "./metadataLazyQueue";
 import { runPendingMigrations } from "./migrations";
@@ -299,8 +299,13 @@ function restoreServerMetadata(serverId: string) {
         // Restore user metadata in channels
         const updatedChannels = server.channels.map((channel) => {
           const updatedUsers = channel.users.map((user) => {
-            const userMetadata = serverMetadata[user.username];
-            if (userMetadata) {
+            const userMetadata = resolveUserMetadata(
+              user.username,
+              serverMetadata,
+              server.channels,
+              channel.name,
+            );
+            if (Object.keys(userMetadata).length > 0) {
               return {
                 ...user,
                 metadata: { ...user.metadata, ...userMetadata },
@@ -334,14 +339,21 @@ function restoreServerMetadata(serverId: string) {
 
     // Restore current user metadata
     let updatedCurrentUser = state.currentUser;
-    if (state.currentUser && serverMetadata[state.currentUser.username]) {
-      updatedCurrentUser = {
-        ...state.currentUser,
-        metadata: {
-          ...state.currentUser.metadata,
-          ...serverMetadata[state.currentUser.username],
-        },
-      };
+    if (state.currentUser) {
+      const ownMeta = resolveUserMetadata(
+        state.currentUser.username,
+        serverMetadata,
+        [],
+      );
+      if (Object.keys(ownMeta).length > 0) {
+        updatedCurrentUser = {
+          ...state.currentUser,
+          metadata: {
+            ...state.currentUser.metadata,
+            ...ownMeta,
+          },
+        };
+      }
     }
 
     return { servers: updatedServers, currentUser: updatedCurrentUser };
@@ -4322,6 +4334,19 @@ const useStore = create<AppState>((set, get) => ({
   metadataSet: (serverId, target, key, value, visibility) => {
     if (serverSupportsMetadata(serverId)) {
       ircClient.metadataSet(serverId, target, key, value, visibility);
+    }
+    const ourNick = ircClient.getNick(serverId) || get().currentUser?.username;
+    if (
+      target === "*" ||
+      (ourNick && target.toLowerCase() === ourNick.toLowerCase())
+    ) {
+      storage.ownMetadata.saveKey(
+        serverId,
+        ourNick || target,
+        key,
+        value,
+        visibility,
+      );
     }
   },
 

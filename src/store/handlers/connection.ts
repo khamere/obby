@@ -10,6 +10,7 @@ import type { PrivateChat } from "../../types";
 import {
   generateDeterministicId,
   getServerSelection,
+  resolveUserMetadata,
   serverSupportsMetadata,
   setServerSelection,
 } from "../helpers";
@@ -159,8 +160,13 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
             // Restore user metadata in channels
             const updatedChannels = server.channels.map((channel) => {
               const updatedUsers = channel.users.map((user) => {
-                const userMetadata = serverMetadata[user.username];
-                if (userMetadata) {
+                const userMetadata = resolveUserMetadata(
+                  user.username,
+                  serverMetadata,
+                  server.channels,
+                  channel.name,
+                );
+                if (Object.keys(userMetadata).length > 0) {
                   return {
                     ...user,
                     metadata: { ...user.metadata, ...userMetadata },
@@ -194,14 +200,21 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
 
         // Restore current user metadata
         let updatedCurrentUser = state.currentUser;
-        if (state.currentUser && serverMetadata[state.currentUser.username]) {
-          updatedCurrentUser = {
-            ...state.currentUser,
-            metadata: {
-              ...state.currentUser.metadata,
-              ...serverMetadata[state.currentUser.username],
-            },
-          };
+        if (state.currentUser) {
+          const ownMetadata = resolveUserMetadata(
+            state.currentUser.username,
+            serverMetadata,
+            [],
+          );
+          if (Object.keys(ownMetadata).length > 0) {
+            updatedCurrentUser = {
+              ...state.currentUser,
+              metadata: {
+                ...state.currentUser.metadata,
+                ...ownMetadata,
+              },
+            };
+          }
         }
 
         return { servers: updatedServers, currentUser: updatedCurrentUser };
@@ -224,12 +237,16 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
     // visible to us, but display-name / avatar don't change often and
     // the profile modal re-GETs anyway.
     if (serverSupportsMetadata(store.getState(), serverId)) {
-      fetchAndMergeOwnMetadata(store, serverId).then(() => {
-        const savedMetadataAfterMerge = storage.metadata.load();
-        const serverMetadataAfterMerge = savedMetadataAfterMerge[serverId];
-        const ourNick = ircClient.getNick(serverId);
-        if (serverMetadataAfterMerge && ourNick) {
-          const ourMetadata = serverMetadataAfterMerge[ourNick];
+      const pushOwnMetadata = () => {
+        const savedMeta = storage.metadata.load();
+        const serverMeta = savedMeta[serverId];
+        const ourNick =
+          ircClient.getNick(serverId) || store.getState().currentUser?.username;
+        if (serverMeta && ourNick) {
+          const matchKey = Object.keys(serverMeta).find(
+            (k) => k.toLowerCase() === ourNick.toLowerCase(),
+          );
+          const ourMetadata = matchKey ? serverMeta[matchKey] : undefined;
           if (ourMetadata) {
             Object.entries(ourMetadata).forEach(
               ([key, { value, visibility }]) => {
@@ -242,6 +259,14 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
             );
           }
         }
+      };
+
+      // Push cached own metadata immediately so upstream/bouncer knows our avatar right away
+      pushOwnMetadata();
+
+      // Also query server for upstream changes and push again if needed
+      fetchAndMergeOwnMetadata(store, serverId).then(() => {
+        pushOwnMetadata();
       });
     }
 
@@ -260,7 +285,11 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
         // Get saved metadata for this user on this server
         const savedMeta = storage.metadata.load();
         const serverMeta = savedMeta[serverId];
-        const userMetadata = serverMeta?.[ircCurrentUser.username] || {};
+        const userMetadata = resolveUserMetadata(
+          ircCurrentUser.username,
+          serverMeta,
+          [],
+        );
 
         // Create current user with IRC data and any saved metadata
         updatedCurrentUser = {

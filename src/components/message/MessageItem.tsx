@@ -36,6 +36,7 @@ import {
   highlightNicks,
 } from "../../lib/nickHighlight";
 import useStore, { loadSavedMetadata } from "../../store";
+import { resolveUserMetadata } from "../../store/helpers";
 import type { MessageType, PrivateChat, User } from "../../types";
 import MessageBottomSheet from "../mobile/MessageBottomSheet";
 import HoverTooltip from "../ui/HoverTooltip";
@@ -101,29 +102,16 @@ const NO_USERS: User[] = [];
 
 // Helper function to get user metadata
 const getUserMetadata = (username: string, serverId: string) => {
-  // First check localStorage for saved metadata
   const savedMetadata = loadSavedMetadata();
   const serverMetadata = savedMetadata[serverId];
-  if (serverMetadata?.[username]) {
-    return serverMetadata[username];
-  }
-
-  // If not in localStorage, check if user is in any shared channels
   const state = useStore.getState();
   const server = state.servers.find((s) => s.id === serverId);
-  if (!server) return null;
-
-  // Search through all channels for this user
-  for (const channel of server.channels) {
-    const user = channel.users.find(
-      (u) => u.username.toLowerCase() === username.toLowerCase(),
-    );
-    if (user?.metadata && Object.keys(user.metadata).length > 0) {
-      return user.metadata;
-    }
-  }
-
-  return null;
+  const metadata = resolveUserMetadata(
+    username,
+    serverMetadata,
+    server?.channels || [],
+  );
+  return Object.keys(metadata).length > 0 ? metadata : null;
 };
 
 // Helper function to get full user object from shared channels
@@ -250,7 +238,7 @@ export const MessageItem = memo((props: MessageItemProps) => {
             }
           }
           const privateChat = server?.privateChats?.find(
-            (pc) => pc.username === message.userId,
+            (pc) => pc.username.toLowerCase() === message.userId.toLowerCase(),
           );
           if (privateChat) {
             return `pm-${privateChat.id}`;
@@ -261,7 +249,8 @@ export const MessageItem = memo((props: MessageItemProps) => {
         const server = state.servers.find((s) => s.id === serverId);
         const channel = server?.channels.find((c) => c.id === channelId);
         const user = channel?.users.find(
-          (user) => user.username === message.userId,
+          (user) =>
+            user.username.toLowerCase() === message.userId.toLowerCase(),
         );
         return user ? `channel-${user.id}` : "none";
       },
@@ -312,31 +301,72 @@ export const MessageItem = memo((props: MessageItemProps) => {
     return getUserMetadata(pmUsername, serverId);
   }, [metadataChangeCounter, userKey, rawMessageUser, serverId]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: metadataChangeCounter is intentional reactive trigger
   const messageUser: User | undefined = useMemo(() => {
-    if (!rawMessageUser) return undefined;
-
     // For PM users, rawMessageUser is the privateChat object
     // We need to construct a proper User object
     if (userKey.startsWith("pm-")) {
-      const privateChat = rawMessageUser as PrivateChat;
+      const privateChat = rawMessageUser as PrivateChat | undefined;
+      const username = privateChat?.username || message.userId;
       const user: User = {
-        id: privateChat.id,
-        username: privateChat.username,
+        id: privateChat?.id || username,
+        username,
         realname: "",
         account: "",
-        isOnline: privateChat.isOnline ?? true,
-        isAway: privateChat.isAway ?? false,
+        isOnline: privateChat?.isOnline ?? true,
+        isAway: privateChat?.isAway ?? false,
         status: "",
         isBot: false,
         isIrcOp: false,
-        metadata: pmUserMetadata || {},
+        metadata:
+          pmUserMetadata ||
+          (serverId ? getUserMetadata(username, serverId) : null) ||
+          {},
       };
       return user;
     }
 
+    if (!rawMessageUser) {
+      const fallbackMeta = serverId
+        ? getUserMetadata(message.userId, serverId)
+        : null;
+      return {
+        id: message.userId,
+        username: message.userId,
+        realname: "",
+        account: "",
+        isOnline: false,
+        isAway: false,
+        status: "",
+        isBot: false,
+        isIrcOp: false,
+        metadata: fallbackMeta || {},
+      };
+    }
+
     // For channel users, rawMessageUser is already a proper User object
-    return rawMessageUser as User;
-  }, [rawMessageUser, pmUserMetadata, userKey]);
+    const channelUser = rawMessageUser as User;
+    if (!channelUser.metadata?.avatar?.value && serverId) {
+      const cached = getUserMetadata(channelUser.username, serverId);
+      if (cached && Object.keys(cached).length > 0) {
+        return {
+          ...channelUser,
+          metadata: {
+            ...cached,
+            ...channelUser.metadata,
+          },
+        };
+      }
+    }
+    return channelUser;
+  }, [
+    rawMessageUser,
+    pmUserMetadata,
+    userKey,
+    serverId,
+    message.userId,
+    metadataChangeCounter,
+  ]);
 
   const avatarUrl = messageUser?.metadata?.avatar?.value;
   const displayName = messageUser?.metadata?.["display-name"]?.value;
