@@ -3,7 +3,10 @@ use tokio::sync::Mutex;
 
 mod socket;
 
-use socket::{connect, disconnect, listen, send, SocketState};
+use socket::{
+    connect, disconnect, listen, send, send_native_notification, set_app_focused,
+    sync_notification_settings, SocketState,
+};
 
 #[tauri::command]
 async fn download_image(app: tauri::AppHandle, url: String) -> Result<String, String> {
@@ -105,22 +108,16 @@ async fn download_image_impl(app: tauri::AppHandle, url: String) -> Result<Strin
 
 #[cfg(target_os = "android")]
 fn write_bytes_to_content_uri(bytes: &[u8], uri_str: &str) -> Result<(), String> {
-    use jni::{
-        objects::{JObject, JValue},
-        JavaVM,
-    };
+    use jni::objects::JValue;
 
-    let ctx = ndk_context::android_context();
-    // SAFETY: pointers come from the Android runtime and are valid for the app lifetime.
-    let vm = unsafe { JavaVM::from_raw(ctx.vm().cast()) }.map_err(|e| e.to_string())?;
-    // attach_current_thread is idempotent: if the thread is already attached it just
-    // returns the existing env and the guard won't detach on drop.
+    let vm = socket::get_android_vm().ok_or_else(|| "No Android JavaVM available".to_string())?;
     let mut env = vm.attach_current_thread().map_err(|e| e.to_string())?;
-    let activity = unsafe { JObject::from_raw(ctx.context().cast()) };
+    let activity = socket::get_android_activity()
+        .ok_or_else(|| "No Android activity instance available".to_string())?;
 
     let resolver = env
         .call_method(
-            &activity,
+            activity.as_obj(),
             "getContentResolver",
             "()Landroid/content/ContentResolver;",
             &[],
@@ -231,6 +228,18 @@ pub fn run() {
                         .level(log::LevelFilter::Info)
                         .build(),
                 )?;
+            } else if cfg!(target_os = "android") {
+                // Release stderr is discarded on Android; Stdout maps to logcat there.
+                app.handle().plugin(
+                    tauri_plugin_log::Builder::default()
+                        .clear_targets()
+                        .target(tauri_plugin_log::Target::new(
+                            tauri_plugin_log::TargetKind::Stdout,
+                        ))
+                        .level(log::LevelFilter::Warn)
+                        .level_for("app_lib", log::LevelFilter::Info)
+                        .build(),
+                )?;
             }
             // Register deep links at runtime for Linux and Windows (debug)
             // This enables AppImage support and development testing
@@ -248,6 +257,9 @@ pub fn run() {
             disconnect,
             listen,
             send,
+            set_app_focused,
+            sync_notification_settings,
+            send_native_notification,
             download_image
         ])
         .run(tauri::generate_context!())

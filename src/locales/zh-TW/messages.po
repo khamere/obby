@@ -231,6 +231,10 @@ msgstr "{safeName} 在伺服器上被更動過，已無法解密。"
 msgid "{seconds} seconds"
 msgstr "{seconds} 秒"
 
+#: src/lib/titleAlert.ts
+msgid "{sender} messaged you"
+msgstr "{sender} 傳送了訊息給你"
+
 #: src/store/handlers/e2ee.ts
 msgid "{sender} restarted encryption, so this conversation is being set up again."
 msgstr "{sender} 重新啟動了加密，因此正在重新建立這個對話。"
@@ -2667,6 +2671,7 @@ msgid "Notification Sound"
 msgstr "通知聲音"
 
 #: src/components/ui/UserSettings.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Notifications"
 msgstr "通知"
 
@@ -3896,6 +3901,7 @@ msgid "Toggle Member List"
 msgstr "切换成员列表"
 
 #: src/components/ui/QuickActions/uiActionConfig.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Toggle Notifications"
 msgstr "切换通知"
 

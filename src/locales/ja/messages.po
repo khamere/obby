@@ -231,6 +231,10 @@ msgstr "{safeName} はサーバー上で変更されたため、復号できま�
 msgid "{seconds} seconds"
 msgstr "{seconds} 秒"
 
+#: src/lib/titleAlert.ts
+msgid "{sender} messaged you"
+msgstr "{sender} からメッセージ"
+
 #: src/store/handlers/e2ee.ts
 msgid "{sender} restarted encryption, so this conversation is being set up again."
 msgstr "{sender} が暗号化を再開したため、この会話を設定し直しています。"
@@ -2667,6 +2671,7 @@ msgid "Notification Sound"
 msgstr "通知音"
 
 #: src/components/ui/UserSettings.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Notifications"
 msgstr "通知"
 
@@ -3896,6 +3901,7 @@ msgid "Toggle Member List"
 msgstr "メンバーリストを切り替え"
 
 #: src/components/ui/QuickActions/uiActionConfig.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Toggle Notifications"
 msgstr "通知を切り替え"
 

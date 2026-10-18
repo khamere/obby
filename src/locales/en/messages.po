@@ -230,6 +230,10 @@ msgstr "{safeName} was changed on the server, so it no longer decrypts."
 msgid "{seconds} seconds"
 msgstr "{seconds} seconds"
 
+#: src/lib/titleAlert.ts
+msgid "{sender} messaged you"
+msgstr "{sender} messaged you"
+
 #: src/store/handlers/e2ee.ts
 msgid "{sender} restarted encryption, so this conversation is being set up again."
 msgstr "{sender} restarted encryption, so this conversation is being set up again."
@@ -2666,6 +2670,7 @@ msgid "Notification Sound"
 msgstr "Notification Sound"
 
 #: src/components/ui/UserSettings.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Notifications"
 msgstr "Notifications"
 
@@ -3895,6 +3900,7 @@ msgid "Toggle Member List"
 msgstr "Toggle Member List"
 
 #: src/components/ui/QuickActions/uiActionConfig.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Toggle Notifications"
 msgstr "Toggle Notifications"
 

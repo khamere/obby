@@ -231,6 +231,10 @@ msgstr "{safeName} is op de server gewijzigd en kan niet meer worden ontsleuteld
 msgid "{seconds} seconds"
 msgstr "{seconds} seconden"
 
+#: src/lib/titleAlert.ts
+msgid "{sender} messaged you"
+msgstr "{sender} heeft je een bericht gestuurd"
+
 #: src/store/handlers/e2ee.ts
 msgid "{sender} restarted encryption, so this conversation is being set up again."
 msgstr "{sender} heeft de versleuteling opnieuw gestart, dus dit gesprek wordt opnieuw ingesteld."
@@ -2667,6 +2671,7 @@ msgid "Notification Sound"
 msgstr "Meldingsgeluid"
 
 #: src/components/ui/UserSettings.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Notifications"
 msgstr "Meldingen"
 
@@ -3896,6 +3901,7 @@ msgid "Toggle Member List"
 msgstr "Ledenlijst aan/uit"
 
 #: src/components/ui/QuickActions/uiActionConfig.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Toggle Notifications"
 msgstr "Meldingen aan/uit"
 

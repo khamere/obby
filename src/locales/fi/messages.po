@@ -231,6 +231,10 @@ msgstr "{safeName} muuttui palvelimella, joten sen salausta ei voi enää purkaa
 msgid "{seconds} seconds"
 msgstr "{seconds} sekuntia"
 
+#: src/lib/titleAlert.ts
+msgid "{sender} messaged you"
+msgstr "{sender} lähetti sinulle viestin"
+
 #: src/store/handlers/e2ee.ts
 msgid "{sender} restarted encryption, so this conversation is being set up again."
 msgstr "{sender} käynnisti salauksen uudelleen, joten tätä keskustelua määritetään taas."
@@ -2667,6 +2671,7 @@ msgid "Notification Sound"
 msgstr "Ilmoitusääni"
 
 #: src/components/ui/UserSettings.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Notifications"
 msgstr "Ilmoitukset"
 
@@ -3896,6 +3901,7 @@ msgid "Toggle Member List"
 msgstr "Näytä/piilota jäsenlista"
 
 #: src/components/ui/QuickActions/uiActionConfig.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Toggle Notifications"
 msgstr "Näytä/piilota ilmoitukset"
 

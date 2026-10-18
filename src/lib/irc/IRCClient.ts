@@ -752,6 +752,8 @@ export class IRCClient implements IRCClientContext {
     // polling LISTNETWORKS.
     "soju.im/bouncer-networks",
     "soju.im/bouncer-networks-notify",
+    "soju.im/webpush",
+    "draft/webpush",
     // Vendor: opt in to obby.world/whois batch-wrapped WHOIS replies
     // (parent obby.world/whois batch + nested obby.world/whois-session
     // sub-batches). Without this cap a server implementing the spec

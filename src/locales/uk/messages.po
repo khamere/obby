@@ -231,6 +231,10 @@ msgstr "{safeName} було змінено на сервері, тому він 
 msgid "{seconds} seconds"
 msgstr "{seconds} секунд"
 
+#: src/lib/titleAlert.ts
+msgid "{sender} messaged you"
+msgstr "{sender} написав(ла) вам"
+
 #: src/store/handlers/e2ee.ts
 msgid "{sender} restarted encryption, so this conversation is being set up again."
 msgstr "{sender} перезапустив шифрування, тому цю розмову налаштовують заново."
@@ -2667,6 +2671,7 @@ msgid "Notification Sound"
 msgstr "Звук сповіщення"
 
 #: src/components/ui/UserSettings.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Notifications"
 msgstr "Сповіщення"
 
@@ -3896,6 +3901,7 @@ msgid "Toggle Member List"
 msgstr "Перемкнути список учасників"
 
 #: src/components/ui/QuickActions/uiActionConfig.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Toggle Notifications"
 msgstr "Перемкнути сповіщення"
 

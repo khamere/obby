@@ -15,7 +15,8 @@ export function handleNick(
     newNick = newNick.substring(1);
   }
 
-  if (oldNick === ctx.nicks.get(serverId)) {
+  const trackedNick = ctx.nicks.get(serverId);
+  if (trackedNick && oldNick.toLowerCase() === trackedNick.toLowerCase()) {
     ctx.nicks.set(serverId, newNick);
     const currentUser = ctx.currentUsers.get(serverId);
     if (currentUser) {
@@ -80,7 +81,8 @@ export function handleChghost(
   const newUser = parv[0];
   const newHost = parv[1];
   // Track our own ident/host — works with chghost alone, and is guaranteed with draft/whoami
-  if (username === ctx.nicks.get(serverId)) {
+  const trackedNick = ctx.nicks.get(serverId);
+  if (trackedNick && username.toLowerCase() === trackedNick.toLowerCase()) {
     ctx.myIdents.set(serverId, newUser);
     ctx.myHosts.set(serverId, newHost);
   }

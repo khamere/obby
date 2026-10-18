@@ -7,6 +7,11 @@
   ],
   "platforms": ["iOS", "android"],
   "permissions": [
+    "core:default",
+    "notification:default",
+    "opener:default",
+    "os:default",
+    "deep-link:default",
     "haptics:allow-impact-feedback",
     "haptics:allow-notification-feedback",
     "haptics:allow-selection-feedback",

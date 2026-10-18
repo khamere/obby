@@ -18,6 +18,8 @@ import {
   extractMentions,
   showMentionNotification,
 } from "../../lib/notifications";
+import { isTauriMobile } from "../../lib/platformUtils";
+import { addTitleAlert } from "../../lib/titleAlert";
 import type { Channel, Message, PrivateChat, User } from "../../types";
 import {
   generateDeterministicId,
@@ -231,55 +233,65 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
         }
 
         if (
-          !isActiveChannel &&
-          response.sender !== currentServerUser?.username &&
+          response.sender.toLowerCase() !==
+            currentServerUser?.username?.toLowerCase() &&
           !isHistoricalMessage
         ) {
           // A mention still notifies in a muted channel, not in a muted server.
           const notifyMention =
             hasMention && !isSilenced(server.id, channel.id, true);
-          store.setState((state) => {
-            const updatedServers = state.servers.map((s) => {
-              if (s.id === server.id) {
-                const updatedChannels = s.channels.map((ch) => {
-                  if (ch.id === channel.id) {
-                    return {
-                      ...ch,
-                      unreadCount: ch.unreadCount + 1,
-                      mentionCount:
-                        (ch.mentionCount ?? 0) + (notifyMention ? 1 : 0),
-                      isMentioned: notifyMention || ch.isMentioned,
-                    };
-                  }
-                  return ch;
-                });
-                return { ...s, channels: updatedChannels };
-              }
-              return s;
+          if (!isActiveChannel) {
+            store.setState((state) => {
+              const updatedServers = state.servers.map((s) => {
+                if (s.id === server.id) {
+                  const updatedChannels = s.channels.map((ch) => {
+                    if (ch.id === channel.id) {
+                      return {
+                        ...ch,
+                        unreadCount: ch.unreadCount + 1,
+                        mentionCount:
+                          (ch.mentionCount ?? 0) + (notifyMention ? 1 : 0),
+                        isMentioned: notifyMention || ch.isMentioned,
+                      };
+                    }
+                    return ch;
+                  });
+                  return { ...s, channels: updatedChannels };
+                }
+                return s;
+              });
+              return { servers: updatedServers };
             });
-            return { servers: updatedServers };
-          });
+          }
 
-          // Show browser notification for mentions
+          const isWindowUnfocused =
+            typeof document !== "undefined" &&
+            (document.hidden || !document.hasFocus());
+          // Show notification for mentions when in another channel, when window is unfocused, or on mobile
           if (
             notifyMention &&
-            currentState.globalSettings.enableNotifications
+            currentState.globalSettings.enableNotifications &&
+            (!isActiveChannel || isWindowUnfocused || isTauriMobile())
           ) {
+            addTitleAlert(server.id, channel.id, response.sender);
             showMentionNotification(
               server.id,
               channelName,
               response.sender,
               message,
-              (serverId, msg) => {
-                // Fallback: Add a NOTE standard reply notification
-                store.getState().addGlobalNotification({
-                  type: "note",
-                  command: "MENTION",
-                  code: "HIGHLIGHT",
-                  message: msg,
-                  serverId,
-                });
-              },
+              !isActiveChannel
+                ? (serverId, msg) => {
+                    // Fallback: Add a NOTE standard reply notification
+                    store.getState().addGlobalNotification({
+                      type: "note",
+                      command: "MENTION",
+                      code: "HIGHLIGHT",
+                      message: msg,
+                      serverId,
+                    });
+                  }
+                : undefined,
+              mtags?.msgid,
             );
           }
         }
@@ -555,57 +567,67 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
 
         store.getState().addMessage(newMessage);
 
-        // Don't count unread/mentions for historical messages (batch tag indicates chathistory playback)
-        const isHistoricalMessage = mtags?.batch !== undefined;
+        // Don't count unread/mentions for historical messages
+        const isHistoricalMessage = Boolean(historyBatch);
         const isActiveChannel =
           getCurrentSelection(multilineCurrentState).selectedChannelId ===
             channel.id &&
           multilineCurrentState.ui.selectedServerId === server.id;
 
-        if (!isActiveChannel && !isOwnMessage && !isHistoricalMessage) {
+        if (!isOwnMessage && !isHistoricalMessage) {
           // A mention still notifies in a muted channel, not in a muted server.
           const notifyMention =
             hasMention && !isSilenced(server.id, channel.id, true);
-          store.setState((state) => {
-            const updatedServers = state.servers.map((s) => {
-              if (s.id === server.id) {
-                const updatedChannels = s.channels.map((ch) => {
-                  if (ch.id === channel.id) {
-                    return {
-                      ...ch,
-                      unreadCount: ch.unreadCount + 1,
-                      mentionCount:
-                        (ch.mentionCount ?? 0) + (notifyMention ? 1 : 0),
-                      isMentioned: notifyMention || ch.isMentioned,
-                    };
-                  }
-                  return ch;
-                });
-                return { ...s, channels: updatedChannels };
-              }
-              return s;
+          if (!isActiveChannel) {
+            store.setState((state) => {
+              const updatedServers = state.servers.map((s) => {
+                if (s.id === server.id) {
+                  const updatedChannels = s.channels.map((ch) => {
+                    if (ch.id === channel.id) {
+                      return {
+                        ...ch,
+                        unreadCount: ch.unreadCount + 1,
+                        mentionCount:
+                          (ch.mentionCount ?? 0) + (notifyMention ? 1 : 0),
+                        isMentioned: notifyMention || ch.isMentioned,
+                      };
+                    }
+                    return ch;
+                  });
+                  return { ...s, channels: updatedChannels };
+                }
+                return s;
+              });
+              return { servers: updatedServers };
             });
-            return { servers: updatedServers };
-          });
+          }
 
+          const isWindowUnfocused =
+            typeof document !== "undefined" &&
+            (document.hidden || !document.hasFocus());
           if (
             notifyMention &&
-            multilineCurrentState.globalSettings.enableNotifications
+            multilineCurrentState.globalSettings.enableNotifications &&
+            (!isActiveChannel || isWindowUnfocused || isTauriMobile())
           ) {
+            addTitleAlert(server.id, channel.id, sender);
             showMentionNotification(
               server.id,
               channelName ?? "",
               sender,
               message,
-              (serverId, msg) => {
-                store.getState().addGlobalNotification({
-                  type: "note",
-                  command: "MENTION",
-                  code: "HIGHLIGHT",
-                  message: msg,
-                  serverId,
-                });
-              },
+              !isActiveChannel
+                ? (serverId, msg) => {
+                    store.getState().addGlobalNotification({
+                      type: "note",
+                      command: "MENTION",
+                      code: "HIGHLIGHT",
+                      message: msg,
+                      serverId,
+                    });
+                  }
+                : undefined,
+              mtags?.msgid,
             );
           }
         }
@@ -794,21 +816,18 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
 
         store.getState().addMessage(newMessage);
 
-        const isHistoricalMessage = mtags?.batch !== undefined;
+        const isHistoricalMessage = Boolean(historyBatch);
         if (!isHistoricalMessage) {
           markPrivateChatPeerOnline(store, server.id, sender);
-          const state = store.getState();
-          const serverCurrentUser = ircClient.getCurrentUser(response.serverId);
-          if (
-            shouldPlayNotificationSound(
-              newMessage,
-              serverCurrentUser,
-              state.globalSettings,
-            )
-          ) {
-            playNotificationSound(state.globalSettings);
-          }
         }
+        notePrivateMessageArrived(store, {
+          serverId: response.serverId,
+          privateChatId: privateChat.id,
+          sender,
+          message: newMessage,
+          body: message,
+          isHistorical: isHistoricalMessage,
+        });
       }
     }
   });
@@ -970,6 +989,13 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
             store.getState().messages[channelKey] || [],
           );
 
+          const currentUser = ircClient.getCurrentUser(response.serverId);
+          const isOwnWhisper =
+            currentUser?.username?.toLowerCase() === sender.toLowerCase();
+          const mentions = !isOwnWhisper
+            ? extractMentions(message, currentUser, globalSettingsForUsermsg)
+            : [];
+
           const newMessage = {
             id: uuidv4(),
             msgid: mtags?.msgid,
@@ -981,7 +1007,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
             type: "message" as const,
             reactions: [],
             replyMessage: replyMessage,
-            mentioned: [],
+            mentioned: mentions,
             tags: mtags, // This includes the draft/channel-context tag
             whisperTarget: target, // Store the recipient for display
           };
@@ -998,19 +1024,49 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
 
           store.getState().addMessage(newMessage);
 
-          // Play notification sound if appropriate (only if it's not from ourselves and not historical)
-          const currentUser = ircClient.getCurrentUser(response.serverId);
+          // Play notification sound and notify if appropriate (only if it's not from ourselves and not historical)
           const isHistoricalMessage = mtags?.batch !== undefined;
 
-          if (currentUser?.username !== sender && !isHistoricalMessage) {
+          if (!isOwnWhisper && !isHistoricalMessage) {
             const state = store.getState();
-            const serverCurrentUser = ircClient.getCurrentUser(
-              response.serverId,
-            );
+            const isActiveChannel =
+              getCurrentSelection(state).selectedChannelId === channel.id &&
+              state.ui.selectedServerId === server.id;
+            const isWindowUnfocused =
+              typeof document !== "undefined" &&
+              (document.hidden || !document.hasFocus());
+            const silenced = isSilenced(server.id, channel.id, true);
+
+            if (
+              !silenced &&
+              state.globalSettings.enableNotifications &&
+              (!isActiveChannel || isWindowUnfocused || isTauriMobile())
+            ) {
+              addTitleAlert(server.id, channel.id, sender);
+              showMentionNotification(
+                server.id,
+                channel.name,
+                sender,
+                message,
+                !isActiveChannel
+                  ? (sId, msg) => {
+                      store.getState().addGlobalNotification({
+                        type: "note",
+                        command: "MENTION",
+                        code: "HIGHLIGHT",
+                        message: msg,
+                        serverId: sId,
+                      });
+                    }
+                  : undefined,
+                mtags?.msgid,
+              );
+            }
+
             if (
               shouldPlayNotificationSound(
                 newMessage,
-                serverCurrentUser,
+                currentUser,
                 state.globalSettings,
               )
             ) {
@@ -1575,52 +1631,13 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
 
       store.getState().addMessage(newMessage);
 
-      // Update private chat's last activity and unread count
-      const isHistoricalMessage = mtags?.batch !== undefined;
-
-      // Play notification sound if appropriate (but not for historical messages)
-      if (!isHistoricalMessage) {
-        const state = store.getState();
-        const serverCurrentUser = ircClient.getCurrentUser(response.serverId);
-        if (
-          shouldPlayNotificationSound(
-            newMessage,
-            serverCurrentUser,
-            state.globalSettings,
-          )
-        ) {
-          playNotificationSound(state.globalSettings);
-        }
-      }
-
-      store.setState((state) => {
-        const updatedServers = state.servers.map((s) => {
-          if (s.id === response.serverId) {
-            const updatedPrivateChats =
-              s.privateChats?.map((pc) => {
-                if (pc.id === privateChat.id) {
-                  const isActive =
-                    getCurrentSelection(state).selectedPrivateChatId === pc.id;
-                  const reset = isActive || isHistoricalMessage;
-                  return {
-                    ...pc,
-                    lastActivity: new Date(),
-                    unreadCount: reset ? 0 : pc.unreadCount + 1,
-                    mentionCount: reset ? 0 : (pc.mentionCount ?? 0) + 1,
-                    // All PMs are considered mentions (except historical
-                    // ones and muted DMs/servers).
-                    isMentioned:
-                      !isHistoricalMessage &&
-                      !isSilenced(response.serverId, privateChat.id, true),
-                  };
-                }
-                return pc;
-              }) || [];
-            return { ...s, privateChats: updatedPrivateChats };
-          }
-          return s;
-        });
-        return { servers: updatedServers };
+      notePrivateMessageArrived(store, {
+        serverId: response.serverId,
+        privateChatId: privateChat.id,
+        sender: response.sender,
+        message: newMessage,
+        body: message,
+        isHistorical: mtags?.batch !== undefined,
       });
     }
   });

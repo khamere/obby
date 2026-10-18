@@ -1,11 +1,11 @@
-// Register the hosted-PWA service worker. Only the single-tenant hosted
-// build (VITE_HIDE_SERVER_LIST=true) ships a manifest + SW; the multi-
-// network build is a generic IRC client and doesn't claim a PWA identity.
-//
+import { isTauri } from "./platformUtils";
+
+// Register the service worker on web builds so PWA caching, mobile browser
+// notifications, and soju.im/webpush background notifications work.
 // Registration is deferred to the "load" event so the SW download doesn't
 // race the initial bundle parse.
 export function registerHostedServiceWorker(): void {
-  if (!__HIDE_SERVER_LIST__) return;
+  if (isTauri()) return;
   if (typeof window === "undefined") return;
   if (!("serviceWorker" in navigator)) return;
 

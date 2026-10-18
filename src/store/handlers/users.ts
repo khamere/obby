@@ -2,6 +2,10 @@ import { t } from "@lingui/core/macro";
 import { v4 as uuidv4 } from "uuid";
 import type { StoreApi } from "zustand";
 import ircClient from "../../lib/ircClient";
+import {
+  clearWebPushRetry,
+  retryWebPushRegistrationOnFailure,
+} from "../../lib/notifications";
 import type { Message, User } from "../../types";
 import {
   generateDeterministicId,
@@ -896,6 +900,13 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
   });
 
   ircClient.on("FAIL", ({ serverId, command, code, target, message }) => {
+    if (command === "WEBPUSH") {
+      void retryWebPushRegistrationOnFailure(serverId, (sid, line) => {
+        ircClient.sendRaw(sid, line);
+      });
+      return;
+    }
+
     const state = store.getState();
     state.addGlobalNotification({
       type: "fail",
@@ -921,6 +932,8 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
   ircClient.on(
     "WARN",
     ({ serverId, command, code, target, context, message }) => {
+      if (command === "WEBPUSH") return;
+
       const state = store.getState();
       const server = state.servers.find((s) => s.id === serverId);
       if (!server) return;
@@ -963,6 +976,11 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
   ircClient.on(
     "NOTE",
     ({ serverId, command, code, target, context, message }) => {
+      if (command === "WEBPUSH") {
+        clearWebPushRetry(serverId);
+        return;
+      }
+
       const state = store.getState();
       const server = state.servers.find((s) => s.id === serverId);
       if (!server) return;
