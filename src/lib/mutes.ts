@@ -3,8 +3,8 @@ import { useSyncExternalStore } from "react";
 // Muting, kept in this browser. A muted server is silent: no sound, no
 // desktop notification and no red dot from anything in it. A muted chat is
 // silent too, except that a message mentioning us in a muted *channel* still
-// notifies (a muted DM never does). Mutes either last until a given time or
-// until the user unmutes.
+// notifies unless the mute was made with `mentions` (a muted DM never does).
+// Mutes either last until a given time or until the user unmutes.
 
 export type ChatKind = "channel" | "dm";
 
@@ -15,6 +15,8 @@ interface MuteEntry {
 
 interface ChatMuteEntry extends MuteEntry {
   kind: ChatKind;
+  // channel only: true also silences messages that mention us
+  mentions?: boolean;
 }
 
 interface MuteState {
@@ -85,11 +87,32 @@ export function muteChat(
   chatId: string,
   kind: ChatKind,
   until: number | null,
+  mentions = false,
 ): void {
   load();
   save({
     ...state,
-    chats: { ...state.chats, [chatKey(serverId, chatId)]: { until, kind } },
+    chats: {
+      ...state.chats,
+      [chatKey(serverId, chatId)]: { until, kind, mentions },
+    },
+  });
+}
+
+/** Change whether an active channel mute also silences mentions. */
+export function setChatMuteMentions(
+  serverId: string,
+  chatId: string,
+  mentions: boolean,
+): void {
+  const entry = chatMute(serverId, chatId);
+  if (!entry) return;
+  save({
+    ...state,
+    chats: {
+      ...state.chats,
+      [chatKey(serverId, chatId)]: { ...entry, mentions },
+    },
   });
 }
 
@@ -138,7 +161,7 @@ export function isSilenced(
   if (!chatId) return false;
   const mute = chatMute(serverId, chatId, now);
   if (!mute) return false;
-  return mute.kind === "dm" || !mentionsMe;
+  return mute.kind === "dm" || !mentionsMe || !!mute.mentions;
 }
 
 function subscribe(listener: () => void): () => void {

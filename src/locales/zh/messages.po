@@ -491,6 +491,10 @@ msgstr "允许输入多行文本"
 msgid "Already in {0}"
 msgstr "已在 {0}"
 
+#: src/components/ui/MuteModal.tsx
+msgid "Also mute mentions"
+msgstr "同时静音提及"
+
 #: src/components/ui/UserSettings.tsx
 msgid "Also shows previews from YouTube, Vimeo, SoundCloud, and similar known services."
 msgstr "同时显示来自 YouTube、Vimeo、SoundCloud 及类似知名服务的预览。"
@@ -2611,6 +2615,10 @@ msgstr "未找到服务器。"
 #: src/components/ui/MuteModal.tsx
 msgid "No sound, notification or red dot for messages from this person."
 msgstr "此人的消息不再发出声音、通知或显示红点。"
+
+#: src/components/ui/MuteModal.tsx
+msgid "No sound, notification or red dot from this channel, even when someone mentions you."
+msgstr "此频道不再发出声音、通知或显示红点，即使有人提及你。"
 
 #: src/components/ui/MuteModal.tsx
 msgid "No sound, notification or red dot from this channel, except when someone mentions you."
