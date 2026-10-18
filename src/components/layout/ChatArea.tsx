@@ -890,8 +890,7 @@ export const ChatArea: React.FC<{
   const messageHistory = useMessageHistory({
     messages: channelMessages,
     currentUsername: currentUser?.username || null,
-    selectedChannelId,
-    selectedPrivateChatId,
+    historyKey: channelKey,
   });
 
   // Save outgoing channel's draft on cleanup; messageText read through ref so the
@@ -996,6 +995,8 @@ export const ChatArea: React.FC<{
     // doesn't lose what they typed when nothing was actually sent.
     if (sendMessage(messageTextRef.current) === "withheld") return;
 
+    // Remember the line (commands included) so ArrowUp can bring it back.
+    messageHistory.recordSent(messageTextRef.current);
     applyText("");
     setAutocompleteInputText("");
     draftMap.current.delete(channelKey);
