@@ -495,6 +495,10 @@ msgstr "Permitir inserção de múltiplas linhas de texto"
 msgid "Already in {0}"
 msgstr "Já em {0}"
 
+#: src/components/ui/MuteModal.tsx
+msgid "Also mute mentions"
+msgstr "Silenciar também as menções"
+
 #: src/components/ui/UserSettings.tsx
 msgid "Also shows previews from YouTube, Vimeo, SoundCloud, and similar known services."
 msgstr "Também exibe visualizações do YouTube, Vimeo, SoundCloud e serviços conhecidos similares."
@@ -2615,6 +2619,10 @@ msgstr "Nenhum servidor encontrado."
 #: src/components/ui/MuteModal.tsx
 msgid "No sound, notification or red dot for messages from this person."
 msgstr "Sem som, notificação nem ponto vermelho para mensagens desta pessoa."
+
+#: src/components/ui/MuteModal.tsx
+msgid "No sound, notification or red dot from this channel, even when someone mentions you."
+msgstr "Sem som, notificação nem ponto vermelho deste canal, mesmo quando alguém o menciona."
 
 #: src/components/ui/MuteModal.tsx
 msgid "No sound, notification or red dot from this channel, except when someone mentions you."

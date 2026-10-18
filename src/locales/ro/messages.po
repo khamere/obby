@@ -495,6 +495,10 @@ msgstr "Permite introducerea mai multor rânduri de text"
 msgid "Already in {0}"
 msgstr "Deja în {0}"
 
+#: src/components/ui/MuteModal.tsx
+msgid "Also mute mentions"
+msgstr "Dezactivează și mențiunile"
+
 #: src/components/ui/UserSettings.tsx
 msgid "Also shows previews from YouTube, Vimeo, SoundCloud, and similar known services."
 msgstr "Afișează și previzualizări de pe YouTube, Vimeo, SoundCloud și servicii similare cunoscute."
@@ -2615,6 +2619,10 @@ msgstr "Niciun server găsit."
 #: src/components/ui/MuteModal.tsx
 msgid "No sound, notification or red dot for messages from this person."
 msgstr "Fără sunet, notificare sau punct roșu pentru mesajele acestei persoane."
+
+#: src/components/ui/MuteModal.tsx
+msgid "No sound, notification or red dot from this channel, even when someone mentions you."
+msgstr "Fără sunet, notificare sau punct roșu din acest canal, chiar și atunci când te menționează cineva."
 
 #: src/components/ui/MuteModal.tsx
 msgid "No sound, notification or red dot from this channel, except when someone mentions you."
