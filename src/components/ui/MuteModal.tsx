@@ -1,5 +1,6 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type React from "react";
+import { useState } from "react";
 import BaseModal from "../../lib/modal/BaseModal";
 import { ModalBody } from "../../lib/modal/components";
 import {
@@ -8,6 +9,7 @@ import {
   muteChat,
   muteServer,
   serverMute,
+  setChatMuteMentions,
   unmuteChat,
   unmuteServer,
   useMutes,
@@ -31,12 +33,14 @@ function MuteSection({
   until,
   onMute,
   onUnmute,
+  extra,
 }: {
   title: React.ReactNode;
   hint: React.ReactNode;
   until: number | null | undefined; // undefined = not muted
   onMute: (until: number | null) => void;
   onUnmute: () => void;
+  extra?: React.ReactNode; // shown under the buttons, muted or not
 }) {
   const { t } = useLingui();
   const options: { label: string; until: () => number | null }[] = [
@@ -91,6 +95,7 @@ function MuteSection({
           ))}
         </div>
       )}
+      {extra}
     </section>
   );
 }
@@ -109,6 +114,14 @@ export const MuteModal: React.FC<MuteModalProps> = ({
   useMutes(); // re-render when mutes change
   const server = serverMute(serverId);
   const chatEntry = chat ? chatMute(serverId, chat.id) : undefined;
+  // For a channel: whether the (next) mute also silences mentions. While a
+  // mute is active the stored flag wins, so the box always shows the truth.
+  const [muteMentionsDraft, setMuteMentionsDraft] = useState(false);
+  const muteMentions = chatEntry ? !!chatEntry.mentions : muteMentionsDraft;
+  const onMuteMentionsChange = (checked: boolean) => {
+    setMuteMentionsDraft(checked);
+    if (chat && chatEntry) setChatMuteMentions(serverId, chat.id, checked);
+  };
 
   return (
     <BaseModal
@@ -128,6 +141,11 @@ export const MuteModal: React.FC<MuteModalProps> = ({
                     No sound, notification or red dot for messages from this
                     person.
                   </Trans>
+                ) : muteMentions ? (
+                  <Trans>
+                    No sound, notification or red dot from this channel, even
+                    when someone mentions you.
+                  </Trans>
                 ) : (
                   <Trans>
                     No sound, notification or red dot from this channel, except
@@ -136,8 +154,29 @@ export const MuteModal: React.FC<MuteModalProps> = ({
                 )
               }
               until={chatEntry ? chatEntry.until : undefined}
-              onMute={(until) => muteChat(serverId, chat.id, chat.kind, until)}
+              onMute={(until) =>
+                muteChat(
+                  serverId,
+                  chat.id,
+                  chat.kind,
+                  until,
+                  chat.kind === "channel" && muteMentions,
+                )
+              }
               onUnmute={() => unmuteChat(serverId, chat.id)}
+              extra={
+                chat.kind === "channel" ? (
+                  <label className="flex cursor-pointer items-center gap-2 text-sm text-discord-text-normal">
+                    <input
+                      type="checkbox"
+                      checked={muteMentions}
+                      onChange={(e) => onMuteMentionsChange(e.target.checked)}
+                      className="h-4 w-4 accent-discord-primary"
+                    />
+                    <Trans>Also mute mentions</Trans>
+                  </label>
+                ) : undefined
+              }
             />
           )}
           <MuteSection
