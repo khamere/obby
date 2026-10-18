@@ -75,6 +75,101 @@ describe("MODE Protocol Handler", () => {
   });
 
   describe("MODE event handling", () => {
+    const serverWithUser = (): Server => ({
+      id: "test-server",
+      name: "Test Server",
+      host: "irc.example.com",
+      port: 6667,
+      channels: [
+        {
+          id: "test-channel",
+          name: "#testchannel",
+          topic: "",
+          isPrivate: false,
+          serverId: "test-server",
+          unreadCount: 0,
+          isMentioned: false,
+          messages: [],
+          users: [
+            { id: "user1", username: "user1", status: "", isOnline: true },
+          ],
+        },
+      ],
+      privateChats: [],
+      isConnected: true,
+      users: [],
+      prefix: "(ov)@+",
+    });
+
+    test("uses the server time tag for the mode line", () => {
+      registerModeHandler(mockIRCClient as unknown as IRCClient, useStore);
+      const modeHandler = mockIRCClient.on.mock.calls.find(
+        (call) => call[0] === "MODE",
+      )?.[1];
+      useStore.setState({ servers: [serverWithUser()] });
+
+      modeHandler({
+        serverId: "test-server",
+        sender: "irc.example.com",
+        target: "#testchannel",
+        modestring: "+o",
+        modeargs: ["user1"],
+        mtags: { time: "2026-10-18T03:51:00.000Z" },
+      });
+
+      const msgs = useStore.getState().messages["test-server-test-channel"];
+      expect(msgs).toHaveLength(1);
+      expect(new Date(msgs[0].timestamp).toISOString()).toBe(
+        "2026-10-18T03:51:00.000Z",
+      );
+      expect(msgs[0].content).toBe("sets mode: +o user1");
+      // live change: applied to the channel
+      expect(useStore.getState().servers[0].channels[0].users[0].status).toBe(
+        "@",
+      );
+    });
+
+    test("a chathistory replay is shown at its own time, once, without touching live modes", () => {
+      registerModeHandler(mockIRCClient as unknown as IRCClient, useStore);
+      const modeHandler = mockIRCClient.on.mock.calls.find(
+        (call) => call[0] === "MODE",
+      )?.[1];
+      useStore.setState({
+        servers: [serverWithUser()],
+        activeBatches: {
+          "test-server": {
+            hist1: {
+              type: "chathistory",
+              parameters: ["#testchannel"],
+              events: [],
+              startTime: new Date(),
+            },
+          },
+        },
+      });
+
+      const replay = {
+        serverId: "test-server",
+        sender: "irc.example.com",
+        target: "#testchannel",
+        modestring: "+o",
+        modeargs: ["user1"],
+        mtags: { batch: "hist1", time: "2026-10-18T03:51:00.000Z" },
+      };
+      modeHandler(replay);
+      modeHandler(replay); // replayed again on a reconnect
+
+      const msgs = useStore.getState().messages["test-server-test-channel"];
+      expect(msgs).toHaveLength(1);
+      expect(new Date(msgs[0].timestamp).toISOString()).toBe(
+        "2026-10-18T03:51:00.000Z",
+      );
+      // historic: the user's current status is left alone
+      expect(useStore.getState().servers[0].channels[0].users[0].status).toBe(
+        "",
+      );
+    });
+
     test("should handle channel mode changes with op", () => {
       registerModeHandler(mockIRCClient as unknown as IRCClient, useStore);
 
