@@ -491,6 +491,10 @@ msgstr "Tillåt att skriva flera rader text"
 msgid "Already in {0}"
 msgstr "Redan i {0}"
 
+#: src/components/ui/MuteModal.tsx
+msgid "Also mute mentions"
+msgstr "Tysta även omnämnanden"
+
 #: src/components/ui/UserSettings.tsx
 msgid "Also shows previews from YouTube, Vimeo, SoundCloud, and similar known services."
 msgstr "Visar också förhandsvisningar från YouTube, Vimeo, SoundCloud och liknande kända tjänster."
@@ -2611,6 +2615,10 @@ msgstr "Inga servrar hittades."
 #: src/components/ui/MuteModal.tsx
 msgid "No sound, notification or red dot for messages from this person."
 msgstr "Inget ljud, ingen avisering och ingen röd prick för meddelanden från den här personen."
+
+#: src/components/ui/MuteModal.tsx
+msgid "No sound, notification or red dot from this channel, even when someone mentions you."
+msgstr "Inget ljud, ingen avisering och ingen röd prick från den här kanalen, inte ens när någon nämner dig."
 
 #: src/components/ui/MuteModal.tsx
 msgid "No sound, notification or red dot from this channel, except when someone mentions you."
