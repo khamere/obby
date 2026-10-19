@@ -8,6 +8,7 @@ import ircClient from "../../lib/ircClient";
 import { getChannelAvatarUrl, serverFilehosts } from "../../lib/ircUtils";
 import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
 import { BaseModal } from "../../lib/modal/BaseModal";
+import { renderTopic } from "../../lib/topicRender";
 import useStore from "../../store";
 import { TextInput } from "./TextInput";
 
@@ -57,6 +58,7 @@ const ChannelListModal: React.FC = () => {
   const mediaSettings = mediaLevelToSettings(
     useStore((state) => state.globalSettings.mediaVisibilityLevel),
   );
+  const formatTopics = useStore((state) => state.globalSettings.formatTopics);
   const elist = (selectedServer?.elist || "").toUpperCase();
   const rawChannels = selectedServerId
     ? channelList[selectedServerId] || []
@@ -613,7 +615,13 @@ const ChannelListModal: React.FC = () => {
                         </span>
                       </div>
                       <p className="text-discord-text-dim text-sm break-words mt-0.5">
-                        {channel.topic || t`No topic`}
+                        {channel.topic
+                          ? renderTopic(
+                              channel.topic,
+                              `${channel.channel}-topic-`,
+                              { format: formatTopics, linkify: false },
+                            )
+                          : t`No topic`}
                       </p>
                     </div>
                   </div>

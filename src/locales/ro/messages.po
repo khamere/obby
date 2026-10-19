@@ -1747,6 +1747,10 @@ msgstr "Font"
 msgid "Font size"
 msgstr "Dimensiunea fontului"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Format Channel Topics"
+msgstr "Formatează subiectele canalelor"
+
 #. placeholder {0}: filteredMessages.length
 #: src/components/layout/ChannelMessageList.tsx
 msgid "Found {0} messages matching \"{searchQuery}\""
@@ -3519,6 +3523,10 @@ msgstr "ea/ei"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show All Events"
 msgstr "Afișați toate evenimentele"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Show colours and formatting in channel topics. When off, topics are shown as plain text"
+msgstr "Afișează culorile și formatarea în subiectele canalelor. Când este dezactivat, subiectele sunt afișate ca text simplu"
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Show comments"

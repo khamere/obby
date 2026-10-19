@@ -776,7 +776,14 @@ export function processMarkdownInText(
   return mircToHtml(text, keyPrefix);
 }
 
-export function mircToHtml(text: string, keyPrefix = ""): React.ReactNode {
+export function mircToHtml(
+  text: string,
+  keyPrefix = "",
+  options: { linkify?: boolean } = {},
+): React.ReactNode {
+  // linkify=false keeps formatting but emits no anchors, for places that
+  // sit outside EnhancedLinkWrapper (link clicks would bypass the warning).
+  const { linkify = true } = options;
   const state = {
     bold: false,
     underline: false,
@@ -901,6 +908,10 @@ export function mircToHtml(text: string, keyPrefix = ""): React.ReactNode {
         {currentText}
       </span>,
     );
+  }
+
+  if (!linkify) {
+    return <>{result}</>;
   }
 
   // Process URLs in the result

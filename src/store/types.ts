@@ -78,6 +78,7 @@ export interface GlobalSettings {
   mediaVisibilityLevel: MediaVisibilityLevel;
   enableMarkdownRendering: boolean;
   coloredNicknames: boolean;
+  formatTopics: boolean;
   awayMessage: string;
   quitMessage: string;
 }

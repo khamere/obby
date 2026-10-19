@@ -34,6 +34,7 @@ import {
 } from "../../lib/ircUtils";
 import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
 import { isTauriDesktop, isTauriMobile } from "../../lib/platformUtils";
+import { renderTopic } from "../../lib/topicRender";
 import useStore, { loadSavedMetadata } from "../../store";
 import { resolveUserMetadata } from "../../store/helpers";
 import type { PrivateChat, User } from "../../types";
@@ -78,6 +79,7 @@ export const ChannelList: React.FC<{
   const mediaSettings = mediaLevelToSettings(
     useStore((state) => state.globalSettings.mediaVisibilityLevel),
   );
+  const formatTopics = useStore((state) => state.globalSettings.formatTopics);
 
   // useShallow: selector returns a merged object literal on every call; shallow comparison
   // prevents the useSyncExternalStore "getSnapshot should be cached" infinite-loop.
@@ -785,7 +787,14 @@ export const ChannelList: React.FC<{
                                           •
                                         </span>
                                         <span className="text-discord-text-muted truncate">
-                                          {topic}
+                                          {renderTopic(
+                                            topic,
+                                            `${channel.id}-topic-`,
+                                            {
+                                              format: formatTopics,
+                                              linkify: false,
+                                            },
+                                          )}
                                         </span>
                                       </>
                                     );
@@ -806,7 +815,14 @@ export const ChannelList: React.FC<{
                                   if (topic) {
                                     return (
                                       <span className="text-discord-text-muted truncate">
-                                        {topic}
+                                        {renderTopic(
+                                          topic,
+                                          `${channel.id}-topic-`,
+                                          {
+                                            format: formatTopics,
+                                            linkify: false,
+                                          },
+                                        )}
                                       </span>
                                     );
                                   }

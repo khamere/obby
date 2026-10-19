@@ -1746,6 +1746,10 @@ msgstr "Font"
 msgid "Font size"
 msgstr "Font size"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Format Channel Topics"
+msgstr "Format Channel Topics"
+
 #. placeholder {0}: filteredMessages.length
 #: src/components/layout/ChannelMessageList.tsx
 msgid "Found {0} messages matching \"{searchQuery}\""
@@ -3518,6 +3522,10 @@ msgstr "she/her"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show All Events"
 msgstr "Show All Events"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Show colours and formatting in channel topics. When off, topics are shown as plain text"
+msgstr "Show colours and formatting in channel topics. When off, topics are shown as plain text"
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Show comments"
