@@ -99,7 +99,7 @@ class MainActivity : TauriActivity() {
           .setContentTitle(title)
           .setContentText(body)
           .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-          .setSmallIcon(R.mipmap.ic_launcher)
+          .setSmallIcon(R.drawable.ic_notification)
           .setPriority(NotificationCompat.PRIORITY_HIGH)
           .setDefaults(NotificationCompat.DEFAULT_ALL)
           .setAutoCancel(true)
@@ -187,7 +187,8 @@ class MainActivity : TauriActivity() {
       } else {
         startService(serviceIntent)
       }
-    } catch (_: Throwable) {
+    } catch (e: Throwable) {
+      Log.e("Obby", "startKeepAliveService failed: ${e.message}", e)
     }
   }
   
@@ -265,7 +266,7 @@ class IrcKeepAliveService : Service() {
         val notification = NotificationCompat.Builder(ctx, CHANNEL_ID)
           .setContentTitle("Obby")
           .setContentText(status)
-          .setSmallIcon(R.mipmap.ic_launcher)
+          .setSmallIcon(R.drawable.ic_notification)
           .setOngoing(true)
           .setSilent(true)
           .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -328,7 +329,7 @@ class IrcKeepAliveService : Service() {
       val notification = NotificationCompat.Builder(this, CHANNEL_ID)
         .setContentTitle("Obby")
         .setContentText("Connected to IRC")
-        .setSmallIcon(R.mipmap.ic_launcher)
+        .setSmallIcon(R.drawable.ic_notification)
         .setOngoing(true)
         .setSilent(true)
         .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -342,6 +343,7 @@ class IrcKeepAliveService : Service() {
       }
     } catch (e: Throwable) {
       Log.e("Obby", "IrcKeepAliveService startForeground failed: ${e.message}", e)
+      stopSelf()
     }
     return START_NOT_STICKY
   }
