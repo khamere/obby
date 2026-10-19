@@ -3,4 +3,3 @@
 /target/
 plugins/*/target/
 /gen/schemas
-/.cargo/config.toml
