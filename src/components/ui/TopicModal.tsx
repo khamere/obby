@@ -3,9 +3,11 @@ import { Trans } from "@lingui/react/macro";
 import type React from "react";
 import { useState } from "react";
 import ircClient from "../../lib/ircClient";
-import { hasOpPermission, mircToHtml } from "../../lib/ircUtils";
+import { hasOpPermission } from "../../lib/ircUtils";
 import BaseModal from "../../lib/modal/BaseModal";
 import { Button, ModalBody, ModalFooter } from "../../lib/modal/components";
+import { renderTopic } from "../../lib/topicRender";
+import useStore from "../../store";
 import type { Channel, User } from "../../types";
 import { EnhancedLinkWrapper } from "./LinkWrapper";
 import { TextArea } from "./TextInput";
@@ -26,6 +28,7 @@ export const TopicModal: React.FC<TopicModalProps> = ({
   currentUser,
 }) => {
   const [editedTopic, setEditedTopic] = useState(channel.topic || "");
+  const formatTopics = useStore((s) => s.globalSettings.formatTopics);
 
   const currentUserInChannel = channel.users.find(
     (u) => u.username === currentUser?.username,
@@ -65,7 +68,7 @@ export const TopicModal: React.FC<TopicModalProps> = ({
               aria-label="Channel topic"
             >
               {channel.topic ? (
-                mircToHtml(channel.topic, "topic-")
+                renderTopic(channel.topic, "topic-", { format: formatTopics })
               ) : (
                 <span className="italic">No topic set</span>
               )}
