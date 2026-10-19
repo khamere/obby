@@ -5,7 +5,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { FaDesktop, FaHashtag, FaUsers, FaVolumeUp } from "react-icons/fa";
 import { useJoinAndSelectChannel } from "../../hooks/useJoinAndSelectChannel";
 import ircClient from "../../lib/ircClient";
-import { getChannelAvatarUrl, serverFilehosts } from "../../lib/ircUtils";
+import {
+  getChannelAvatarUrl,
+  mircToHtml,
+  serverFilehosts,
+} from "../../lib/ircUtils";
 import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
 import { BaseModal } from "../../lib/modal/BaseModal";
 import useStore from "../../store";
@@ -616,7 +620,13 @@ const ChannelListModal: React.FC = () => {
                         </span>
                       </div>
                       <p className="text-discord-text-dim text-sm break-words mt-0.5">
-                        {channel.topic || t`No topic`}
+                        {channel.topic
+                          ? mircToHtml(
+                              channel.topic,
+                              `${channel.channel}-topic-`,
+                              { linkify: false },
+                            )
+                          : t`No topic`}
                       </p>
                     </div>
                   </div>
