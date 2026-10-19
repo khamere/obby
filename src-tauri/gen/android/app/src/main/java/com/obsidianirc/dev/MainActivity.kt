@@ -14,6 +14,7 @@ import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.os.PowerManager
 import android.util.Log
 import android.view.View
 import android.view.ViewTreeObserver
@@ -51,12 +52,12 @@ class MainActivity : TauriActivity() {
     // Only called from Rust over JNI, so R8 sees no callers and would strip it.
     @Keep
     @JvmStatic
-    fun showIrcNotification(id: Int, title: String, body: String) {
+    fun showIrcNotification(id: Int, title: String, body: String): Boolean {
       try {
         val ctx = appContext
         if (ctx == null) {
           Log.e("Obby", "Cannot show IRC notification: appContext is null")
-          return
+          return false
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
           if (
@@ -64,7 +65,7 @@ class MainActivity : TauriActivity() {
               PackageManager.PERMISSION_GRANTED
           ) {
             Log.w("Obby", "Cannot show IRC notification: POST_NOTIFICATIONS permission not granted")
-            return
+            return false
           }
         }
 
@@ -98,18 +99,35 @@ class MainActivity : TauriActivity() {
           .setContentTitle(title)
           .setContentText(body)
           .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-          .setSmallIcon(android.R.drawable.stat_notify_chat)
+          .setSmallIcon(R.mipmap.ic_launcher)
           .setPriority(NotificationCompat.PRIORITY_HIGH)
           .setDefaults(NotificationCompat.DEFAULT_ALL)
           .setAutoCancel(true)
           .setContentIntent(pendingIntent)
           .build()
 
+        // Acquire a transient wake lock (3 seconds) to ensure sound and vibration are dispatched
+        // while the device is in low-power deep sleep, without draining battery when idle.
+        try {
+          val pm = ctx.getSystemService(Context.POWER_SERVICE) as? PowerManager
+          val wl = pm?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Obby:IrcNotificationWakeLock")
+          wl?.acquire(3000L)
+        } catch (_: Throwable) {
+        }
+
         manager.notify(id, notification)
         Log.i("Obby", "Displayed IRC notification id=$id")
+        return true
       } catch (e: Throwable) {
         Log.e("Obby", "Failed to show IRC notification: ${e.message}", e)
+        return false
       }
+    }
+
+    @Keep
+    @JvmStatic
+    fun updateKeepAliveStatus(status: String) {
+      IrcKeepAliveService.updateStatus(status)
     }
   }
 
@@ -221,16 +239,60 @@ class MainActivity : TauriActivity() {
 }
 
 class IrcKeepAliveService : Service() {
+  companion object {
+    private const val NOTIFICATION_ID = 1001
+    private const val CHANNEL_ID = "obby_keepalive"
+
+    @Keep
+    @JvmStatic
+    fun updateStatus(status: String) {
+      try {
+        val ctx = MainActivity.appContext ?: return
+        val manager = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+
+        val openIntent = Intent(ctx, MainActivity::class.java).apply {
+          action = Intent.ACTION_MAIN
+          addCategory(Intent.CATEGORY_LAUNCHER)
+          flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+          PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        } else {
+          PendingIntent.FLAG_UPDATE_CURRENT
+        }
+        val pendingIntent = PendingIntent.getActivity(ctx, 0, openIntent, pendingFlags)
+
+        val notification = NotificationCompat.Builder(ctx, CHANNEL_ID)
+          .setContentTitle("Obby")
+          .setContentText(status)
+          .setSmallIcon(R.mipmap.ic_launcher)
+          .setOngoing(true)
+          .setSilent(true)
+          .setPriority(NotificationCompat.PRIORITY_LOW)
+          .setContentIntent(pendingIntent)
+          .build()
+
+        manager.notify(NOTIFICATION_ID, notification)
+      } catch (e: Throwable) {
+        Log.e("Obby", "Failed to update keepalive status: ${e.message}", e)
+      }
+    }
+  }
+
   override fun onBind(intent: Intent?): IBinder? = null
+
+  override fun onCreate() {
+    super.onCreate()
+    MainActivity.appContext = applicationContext
+  }
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     try {
       MainActivity.appContext = applicationContext
-      val channelId = "obby_keepalive"
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val channel = NotificationChannel(
-          channelId,
+          CHANNEL_ID,
           "IRC Background Connection",
           NotificationManager.IMPORTANCE_LOW,
         ).apply {
@@ -263,7 +325,7 @@ class IrcKeepAliveService : Service() {
       }
       val pendingIntent = PendingIntent.getActivity(this, 0, openIntent, pendingFlags)
 
-      val notification = NotificationCompat.Builder(this, channelId)
+      val notification = NotificationCompat.Builder(this, CHANNEL_ID)
         .setContentTitle("Obby")
         .setContentText("Connected to IRC")
         .setSmallIcon(R.mipmap.ic_launcher)
@@ -274,13 +336,17 @@ class IrcKeepAliveService : Service() {
         .build()
 
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-        startForeground(1001, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
       } else {
-        startForeground(1001, notification)
+        startForeground(NOTIFICATION_ID, notification)
       }
     } catch (e: Throwable) {
       Log.e("Obby", "IrcKeepAliveService startForeground failed: ${e.message}", e)
     }
-    return START_STICKY
+    return START_NOT_STICKY
+  }
+
+  override fun onDestroy() {
+    super.onDestroy()
   }
 }

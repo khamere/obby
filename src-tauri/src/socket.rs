@@ -138,21 +138,27 @@ fn show_android_notification(id: i32, title: &str, body: &str) -> bool {
         let res = env.call_static_method(
             class,
             "showIrcNotification",
-            "(ILjava/lang/String;Ljava/lang/String;)V",
+            "(ILjava/lang/String;Ljava/lang/String;)Z",
             &[
                 jni::objects::JValue::Int(id),
                 jni::objects::JValue::Object(&j_title),
                 jni::objects::JValue::Object(&j_body),
             ],
         );
-        if res.is_ok() {
-            log::info!("[Obby] showIrcNotification succeeded via MAIN_ACTIVITY_CLASS");
-            return true;
+        if let Ok(res_val) = res {
+            if let Ok(shown) = res_val.z() {
+                if shown {
+                    log::info!("[Obby] showIrcNotification succeeded via MAIN_ACTIVITY_CLASS");
+                    return true;
+                }
+                log::warn!("[Obby] showIrcNotification returned false via MAIN_ACTIVITY_CLASS");
+            }
+        } else {
+            log::warn!(
+                "[Obby] showIrcNotification via MAIN_ACTIVITY_CLASS failed: {:?}",
+                res
+            );
         }
-        log::warn!(
-            "[Obby] showIrcNotification via MAIN_ACTIVITY_CLASS failed: {:?}",
-            res
-        );
         let _ = env.exception_clear();
     }
 
@@ -162,27 +168,57 @@ fn show_android_notification(id: i32, title: &str, body: &str) -> bool {
             let res = env.call_static_method(
                 &class,
                 "showIrcNotification",
-                "(ILjava/lang/String;Ljava/lang/String;)V",
+                "(ILjava/lang/String;Ljava/lang/String;)Z",
                 &[
                     jni::objects::JValue::Int(id),
                     jni::objects::JValue::Object(&j_title),
                     jni::objects::JValue::Object(&j_body),
                 ],
             );
-            if res.is_ok() {
-                log::info!("[Obby] showIrcNotification succeeded via activity_ref class");
-                return true;
+            if let Ok(res_val) = res {
+                if let Ok(shown) = res_val.z() {
+                    if shown {
+                        log::info!("[Obby] showIrcNotification succeeded via activity_ref class");
+                        return true;
+                    }
+                    log::warn!("[Obby] showIrcNotification returned false via activity_ref class");
+                }
+            } else {
+                log::warn!(
+                    "[Obby] showIrcNotification via activity_ref class failed: {:?}",
+                    res
+                );
             }
-            log::warn!(
-                "[Obby] showIrcNotification via activity_ref class failed: {:?}",
-                res
-            );
             let _ = env.exception_clear();
         }
     }
 
     log::warn!("[Obby] show_android_notification failed all attempts");
     false
+}
+
+#[cfg(target_os = "android")]
+pub fn update_android_keepalive_status(status: &str) {
+    let Some(vm) = ANDROID_JVM.get() else {
+        return;
+    };
+    let Ok(mut env) = vm.attach_current_thread() else {
+        return;
+    };
+    let Ok(j_status) = env.new_string(status) else {
+        let _ = env.exception_clear();
+        return;
+    };
+    if let Some(class_ref) = MAIN_ACTIVITY_CLASS.get() {
+        let class: &jni::objects::JClass = class_ref.as_obj().into();
+        let _ = env.call_static_method(
+            class,
+            "updateKeepAliveStatus",
+            "(Ljava/lang/String;)V",
+            &[jni::objects::JValue::Object(&j_status)],
+        );
+        let _ = env.exception_clear();
+    }
 }
 
 pub fn dispatch_native_notification(app_handle: &tauri::AppHandle, title: String, body: String) {
@@ -398,6 +434,27 @@ fn contains_whole_word_ci(haystack: &str, needle: &str) -> bool {
     false
 }
 
+fn is_generic_ident(ident: &str) -> bool {
+    let s = ident.trim().trim_start_matches('~').to_ascii_lowercase();
+    matches!(
+        s.as_str(),
+        "" | "*"
+            | "user"
+            | "u"
+            | "guest"
+            | "ident"
+            | "android"
+            | "client"
+            | "chat"
+            | "web"
+            | "gateway"
+            | "default"
+            | "unknown"
+            | "irc"
+            | "mobile"
+    )
+}
+
 fn is_self_sender(sender_nick: &str, sender_user: &str, nicks: &ConnectionNicks) -> bool {
     let check_candidate = |candidate: &str| -> bool {
         let cand_clean = candidate.trim();
@@ -421,7 +478,22 @@ fn is_self_sender(sender_nick: &str, sender_user: &str, nicks: &ConnectionNicks)
                     || val_clean.eq_ignore_ascii_case(cand_norm))
         };
 
-        matches_val(sender_nick) || (!sender_user.is_empty() && matches_val(sender_user))
+        if matches_val(sender_nick) {
+            return true;
+        }
+
+        // Only match sender_user if neither sender_user nor cand_clean is a generic ident
+        // and cand_clean is at least 3 characters long (e.g. bridging bots matching own nick).
+        if !sender_user.is_empty()
+            && !is_generic_ident(sender_user)
+            && !is_generic_ident(cand_clean)
+            && cand_clean.len() >= 3
+            && matches_val(sender_user)
+        {
+            return true;
+        }
+
+        false
     };
 
     if check_candidate(&nicks.current) {
@@ -583,7 +655,10 @@ fn inspect_incoming_irc_line(
             if let Some((_, user_host)) = params_str.split_once('!') {
                 if let Some((user, _)) = user_host.split_once('@') {
                     let clean_user = user.trim_start_matches('~');
-                    if !clean_user.is_empty() {
+                    if !clean_user.is_empty()
+                        && !is_generic_ident(clean_user)
+                        && clean_user.len() >= 3
+                    {
                         if let Ok(mut n) = nick_lock.lock() {
                             n.add_alias(clean_user);
                         }
@@ -601,7 +676,7 @@ fn inspect_incoming_irc_line(
                         .next()
                         .unwrap_or("")
                         .trim_start_matches('~');
-                    if !ident.is_empty() {
+                    if !ident.is_empty() && !is_generic_ident(ident) && ident.len() >= 3 {
                         if let Ok(mut n) = nick_lock.lock() {
                             n.add_alias(ident);
                         }
@@ -779,88 +854,115 @@ async fn read_task<R>(
 {
     let mut read_buf = vec![0u8; 4096];
     let mut line_buffer = Vec::new();
+    let mut last_activity = tokio::time::Instant::now();
+    let mut ping_interval = tokio::time::interval(Duration::from_secs(50));
+    ping_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
 
     loop {
-        match reader.read(&mut read_buf).await {
-            Ok(0) => {
-                // Connection closed by server
-                // Emit any remaining partial data as a final message
-                if !line_buffer.is_empty() {
-                    let _ = app_handle.emit(
-                        "tcp-message",
-                        ReceivedPayload {
-                            id: client_id.clone(),
-                            event: MessageEvent {
-                                message: Some(MessageData {
-                                    data: line_buffer.clone(),
-                                }),
-                                error: None,
-                                connected: None,
-                            },
-                        },
-                    );
-                }
-
-                let _ = app_handle.emit(
-                    "tcp-message",
-                    ReceivedPayload {
-                        id: client_id.clone(),
-                        event: MessageEvent {
-                            message: None,
-                            error: None,
-                            connected: Some(false),
-                        },
-                    },
-                );
-
-                // Remove connection from state
-                let mut connections = state.lock().await;
-                connections.remove(&client_id);
-                break;
-            }
-            Ok(n) => {
-                // Append new data to line buffer
-                line_buffer.extend_from_slice(&read_buf[..n]);
-
-                while let Some(pos) = line_buffer.windows(2).position(|w| w == b"\r\n") {
-                    let line_data = line_buffer[..pos + 2].to_vec();
-                    line_buffer.drain(..pos + 2);
-
-                    if let Ok(line_str) = std::str::from_utf8(&line_data) {
-                        inspect_incoming_irc_line(line_str, &write_tx, &nick_lock, &app_handle);
+        tokio::select! {
+            _ = ping_interval.tick() => {
+                if APP_IN_BACKGROUND.load(Ordering::Relaxed) {
+                    if last_activity.elapsed() >= Duration::from_secs(120) {
+                        log::warn!("[Obby] read_task: keepalive timeout for client {}, disconnecting dead connection", client_id);
+                        break;
                     }
-
-                    let _ = app_handle.emit(
-                        "tcp-message",
-                        ReceivedPayload {
-                            id: client_id.clone(),
-                            event: MessageEvent {
-                                message: Some(MessageData { data: line_data }),
-                                error: None,
-                                connected: None,
-                            },
-                        },
-                    );
+                    if last_activity.elapsed() >= Duration::from_secs(50) {
+                        let _ = write_tx.try_send("PING :obby-keepalive\r\n".to_string());
+                    }
                 }
             }
-            Err(e) => {
-                // Read error - emit error event and stop
-                let _ = app_handle.emit(
-                    "tcp-message",
-                    ReceivedPayload {
-                        id: client_id.clone(),
-                        event: MessageEvent {
-                            message: None,
-                            error: Some(format!("Read error: {}", e)),
-                            connected: Some(false),
-                        },
-                    },
-                );
+            res = reader.read(&mut read_buf) => {
+                match res {
+                    Ok(0) => {
+                        // Connection closed by server
+                        // Emit any remaining partial data as a final message
+                        if !line_buffer.is_empty() {
+                            let _ = app_handle.emit(
+                                "tcp-message",
+                                ReceivedPayload {
+                                    id: client_id.clone(),
+                                    event: MessageEvent {
+                                        message: Some(MessageData {
+                                            data: line_buffer.clone(),
+                                        }),
+                                        error: None,
+                                        connected: None,
+                                    },
+                                },
+                            );
+                        }
 
-                // Remove connection from state
-                let mut connections = state.lock().await;
-                connections.remove(&client_id);
-                break;
+                        let _ = app_handle.emit(
+                            "tcp-message",
+                            ReceivedPayload {
+                                id: client_id.clone(),
+                                event: MessageEvent {
+                                    message: None,
+                                    error: None,
+                                    connected: Some(false),
+                                },
+                            },
+                        );
+
+                        // Remove connection from state
+                        let mut connections = state.lock().await;
+                        connections.remove(&client_id);
+                        #[cfg(target_os = "android")]
+                        if connections.is_empty() {
+                            update_android_keepalive_status("Disconnected from IRC");
+                        }
+                        break;
+                    }
+                    Ok(n) => {
+                        last_activity = tokio::time::Instant::now();
+                        // Append new data to line buffer
+                        line_buffer.extend_from_slice(&read_buf[..n]);
+
+                        while let Some(pos) = line_buffer.windows(2).position(|w| w == b"\r\n") {
+                            let line_data = line_buffer[..pos + 2].to_vec();
+                            line_buffer.drain(..pos + 2);
+
+                            if let Ok(line_str) = std::str::from_utf8(&line_data) {
+                                inspect_incoming_irc_line(line_str, &write_tx, &nick_lock, &app_handle);
+                            }
+
+                            let _ = app_handle.emit(
+                                "tcp-message",
+                                ReceivedPayload {
+                                    id: client_id.clone(),
+                                    event: MessageEvent {
+                                        message: Some(MessageData { data: line_data }),
+                                        error: None,
+                                        connected: None,
+                                    },
+                                },
+                            );
+                        }
+                    }
+                    Err(e) => {
+                        // Read error - emit error event and stop
+                        let _ = app_handle.emit(
+                            "tcp-message",
+                            ReceivedPayload {
+                                id: client_id.clone(),
+                                event: MessageEvent {
+                                    message: None,
+                                    error: Some(format!("Read error: {}", e)),
+                                    connected: Some(false),
+                                },
+                            },
+                        );
+
+                        // Remove connection from state
+                        let mut connections = state.lock().await;
+                        connections.remove(&client_id);
+                        #[cfg(target_os = "android")]
+                        if connections.is_empty() {
+                            update_android_keepalive_status("Disconnected from IRC");
+                        }
+                        break;
+                    }
+                }
             }
         }
     }
@@ -915,52 +1017,76 @@ async fn websocket_read_task<R>(
     R: Stream<Item = Result<Message, tokio_tungstenite::tungstenite::Error>> + Unpin,
 {
     let mut error = None;
+    let mut last_activity = tokio::time::Instant::now();
+    let mut ping_interval = tokio::time::interval(Duration::from_secs(50));
+    ping_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
 
-    while let Some(message) = reader.next().await {
-        match message {
-            Ok(Message::Text(text)) => {
-                for line in text.lines() {
-                    inspect_incoming_irc_line(line, &write_tx, &nick_lock, &app_handle);
-                }
-                let _ = app_handle.emit(
-                    "tcp-message",
-                    ReceivedPayload {
-                        id: client_id.clone(),
-                        event: MessageEvent {
-                            message: Some(MessageData {
-                                data: text.as_bytes().to_vec(),
-                            }),
-                            error: None,
-                            connected: None,
-                        },
-                    },
-                );
-            }
-            Ok(Message::Binary(data)) => {
-                if let Ok(text) = std::str::from_utf8(&data) {
-                    for line in text.lines() {
-                        inspect_incoming_irc_line(line, &write_tx, &nick_lock, &app_handle);
+    loop {
+        tokio::select! {
+            _ = ping_interval.tick() => {
+                if APP_IN_BACKGROUND.load(Ordering::Relaxed) {
+                    if last_activity.elapsed() >= Duration::from_secs(120) {
+                        log::warn!("[Obby] websocket_read_task: keepalive timeout for client {}, disconnecting dead connection", client_id);
+                        error = Some("WebSocket keepalive timeout".to_string());
+                        break;
+                    }
+                    if last_activity.elapsed() >= Duration::from_secs(50) {
+                        let _ = write_tx.try_send("PING :obby-keepalive\r\n".to_string());
                     }
                 }
-                let _ = app_handle.emit(
-                    "tcp-message",
-                    ReceivedPayload {
-                        id: client_id.clone(),
-                        event: MessageEvent {
-                            message: Some(MessageData {
-                                data: data.to_vec(),
-                            }),
-                            error: None,
-                            connected: None,
-                        },
-                    },
-                );
             }
-            Ok(Message::Close(_)) => break,
-            Ok(Message::Ping(_) | Message::Pong(_) | Message::Frame(_)) => {}
-            Err(e) => {
-                error = Some(format!("WebSocket read error: {}", e));
-                break;
+            msg = reader.next() => {
+                match msg {
+                    Some(Ok(Message::Text(text))) => {
+                        last_activity = tokio::time::Instant::now();
+                        for line in text.lines() {
+                            inspect_incoming_irc_line(line, &write_tx, &nick_lock, &app_handle);
+                        }
+                        let _ = app_handle.emit(
+                            "tcp-message",
+                            ReceivedPayload {
+                                id: client_id.clone(),
+                                event: MessageEvent {
+                                    message: Some(MessageData {
+                                        data: text.as_bytes().to_vec(),
+                                    }),
+                                    error: None,
+                                    connected: None,
+                                },
+                            },
+                        );
+                    }
+                    Some(Ok(Message::Binary(data))) => {
+                        last_activity = tokio::time::Instant::now();
+                        if let Ok(text) = std::str::from_utf8(&data) {
+                            for line in text.lines() {
+                                inspect_incoming_irc_line(line, &write_tx, &nick_lock, &app_handle);
+                            }
+                        }
+                        let _ = app_handle.emit(
+                            "tcp-message",
+                            ReceivedPayload {
+                                id: client_id.clone(),
+                                event: MessageEvent {
+                                    message: Some(MessageData {
+                                        data: data.to_vec(),
+                                    }),
+                                    error: None,
+                                    connected: None,
+                                },
+                            },
+                        );
+                    }
+                    Some(Ok(Message::Close(_))) => break,
+                    Some(Ok(Message::Ping(_) | Message::Pong(_) | Message::Frame(_))) => {
+                        last_activity = tokio::time::Instant::now();
+                    }
+                    Some(Err(e)) => {
+                        error = Some(format!("WebSocket read error: {}", e));
+                        break;
+                    }
+                    None => break,
+                }
             }
         }
     }
@@ -976,7 +1102,12 @@ async fn websocket_read_task<R>(
             },
         },
     );
-    state.lock().await.remove(&client_id);
+    let mut connections = state.lock().await;
+    connections.remove(&client_id);
+    #[cfg(target_os = "android")]
+    if connections.is_empty() {
+        update_android_keepalive_status("Disconnected from IRC");
+    }
 }
 
 async fn websocket_write_task<W>(
@@ -1058,6 +1189,8 @@ async fn connect_websocket(
             nick: nick_lock,
         },
     );
+    #[cfg(target_os = "android")]
+    update_android_keepalive_status("Connected to IRC");
 
     let _ = app_handle.emit(
         "tcp-message",
@@ -1123,6 +1256,8 @@ pub async fn connect(
         )
     })?
     .map_err(|e| format!("Failed to connect to {}:{}: {}", host, port, e))?;
+
+    let _ = tcp_stream.set_nodelay(true);
 
     // Create channels for write operations
     let (write_tx, write_rx) = mpsc::channel::<String>(100);
@@ -1268,6 +1403,8 @@ pub async fn connect(
             nick: nick_lock,
         },
     );
+    #[cfg(target_os = "android")]
+    update_android_keepalive_status("Connected to IRC");
 
     // Emit connected event
     let _ = app_handle.emit(
@@ -1324,6 +1461,10 @@ pub async fn disconnect(client_id: String, state: State<'_, SocketState>) -> Res
         if let Some(shutdown_tx) = handle.shutdown_tx.take() {
             let _ = shutdown_tx.send(());
         }
+        #[cfg(target_os = "android")]
+        if connections.is_empty() {
+            update_android_keepalive_status("Disconnected from IRC");
+        }
         Ok(())
     } else {
         Err(format!("No connection found for client_id: {}", client_id))
@@ -1379,7 +1520,8 @@ pub async fn send(
             } else if trimmed.len() > 5 && trimmed[..5].eq_ignore_ascii_case("USER ") {
                 let user_part = trimmed[5..].split_whitespace().next().unwrap_or("");
                 if let Some(base_user) = user_part.split('/').next() {
-                    if !base_user.is_empty() {
+                    if !base_user.is_empty() && !is_generic_ident(base_user) && base_user.len() >= 3
+                    {
                         if let Ok(mut n) = nick_lock.lock() {
                             n.add_alias(base_user);
                         }
@@ -1543,6 +1685,14 @@ mod tests {
         // Non-matching
         assert!(!is_self_sender("alice", "alice", &nicks));
         assert!(!is_self_sender("mrkmrtns_imposter", "other", &nicks));
+
+        // Generic idents must not cause false positive self-sender match
+        let mut generic_nicks = ConnectionNicks::default();
+        generic_nicks.set_current("mrkmrtns");
+        generic_nicks.add_alias("user");
+        assert!(!is_self_sender("alice", "user", &generic_nicks));
+        assert!(!is_self_sender("bob", "android", &generic_nicks));
+        assert!(!is_self_sender("carol", "guest", &generic_nicks));
     }
 
     #[test]
