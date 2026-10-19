@@ -1743,6 +1743,10 @@ msgstr "Lettertype"
 msgid "Font size"
 msgstr "Lettergrootte"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Format Channel Topics"
+msgstr "Kanaalonderwerpen opmaken"
+
 #. placeholder {0}: filteredMessages.length
 #: src/components/layout/ChannelMessageList.tsx
 msgid "Found {0} messages matching \"{searchQuery}\""
@@ -3518,6 +3522,10 @@ msgstr "zij/haar"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show All Events"
 msgstr "Alle gebeurtenissen weergeven"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Show colours and formatting in channel topics. When off, topics are shown as plain text"
+msgstr "Kleuren en opmaak in kanaalonderwerpen tonen. Indien uit worden onderwerpen als platte tekst getoond"
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Show comments"

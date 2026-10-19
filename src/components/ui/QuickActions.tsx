@@ -13,6 +13,7 @@ import {
 import { useJoinAndSelectChannel } from "../../hooks/useJoinAndSelectChannel";
 import { fuzzyMatch } from "../../lib/fuzzySearch";
 import ircClient from "../../lib/ircClient";
+import { stripIrcFormatting } from "../../lib/messageFormatter";
 import { settingsRegistry } from "../../lib/settings";
 import type { SettingSearchResult } from "../../lib/settings/types";
 import useStore from "../../store";
@@ -101,7 +102,7 @@ const QuickActions: React.FC = () => {
               type: "channel",
               id: `channel-${server.id}-${channel.id}`,
               title: channel.name,
-              description: `${server.name}${channel.topic ? ` - ${channel.topic}` : ""}`,
+              description: `${server.name}${channel.topic ? ` - ${stripIrcFormatting(channel.topic)}` : ""}`,
               serverId: server.id,
               score: 1000 + channel.unreadCount,
               data: channel,
@@ -112,7 +113,7 @@ const QuickActions: React.FC = () => {
               type: "channel",
               id: `channel-${server.id}-${channel.id}`,
               title: channel.name,
-              description: `${server.name}${channel.topic ? ` - ${channel.topic}` : ""}`,
+              description: `${server.name}${channel.topic ? ` - ${stripIrcFormatting(channel.topic)}` : ""}`,
               serverId: server.id,
               score: 500 + channel.unreadCount,
               data: channel,
@@ -283,7 +284,7 @@ const QuickActions: React.FC = () => {
             type: "channel",
             id: `channel-${server.id}-${channel.id}`,
             title: channel.name,
-            description: `${server.name}${channel.topic ? ` - ${channel.topic}` : ""}`,
+            description: `${server.name}${channel.topic ? ` - ${stripIrcFormatting(channel.topic)}` : ""}`,
             serverId: server.id,
             score: channelMatch.score + scoreAdjustment,
             data: channel,

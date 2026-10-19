@@ -1743,6 +1743,10 @@ msgstr "Písmo"
 msgid "Font size"
 msgstr "Velikost písma"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Format Channel Topics"
+msgstr "Formátovat témata kanálů"
+
 #. placeholder {0}: filteredMessages.length
 #: src/components/layout/ChannelMessageList.tsx
 msgid "Found {0} messages matching \"{searchQuery}\""
@@ -3518,6 +3522,10 @@ msgstr "ona/její"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show All Events"
 msgstr "Zobrazit všechny události"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Show colours and formatting in channel topics. When off, topics are shown as plain text"
+msgstr "Zobrazovat barvy a formátování v tématech kanálů. Při vypnutí se témata zobrazují jako prostý text"
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Show comments"
