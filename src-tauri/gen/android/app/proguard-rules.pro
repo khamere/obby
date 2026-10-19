@@ -21,14 +21,24 @@
 #-renamesourcefileattribute SourceFile
 # Called only from Rust over JNI (src-tauri/src/socket.rs); R8 cannot see the caller.
 -keep class com.obsidianirc.dev.MainActivity {
-    public static void showIrcNotification(int, java.lang.String, java.lang.String);
+    public static boolean showIrcNotification(int, java.lang.String, java.lang.String);
+    public static void updateKeepAliveStatus(java.lang.String);
     public static void nativeInitAndroid(com.obsidianirc.dev.MainActivity);
     public static void nativeSetAppFocused(boolean);
     public native <methods>;
 }
 -keep class com.obsidianirc.dev.MainActivity$Companion {
-    public void showIrcNotification(int, java.lang.String, java.lang.String);
+    public boolean showIrcNotification(int, java.lang.String, java.lang.String);
+    public void updateKeepAliveStatus(java.lang.String);
     public void nativeInitAndroid(com.obsidianirc.dev.MainActivity);
     public void nativeSetAppFocused(boolean);
     public native <methods>;
+}
+-keep class com.obsidianirc.dev.IrcKeepAliveService {
+    public static void updateStatus(java.lang.String);
+    public *;
+}
+-keep class com.obsidianirc.dev.IrcKeepAliveService$Companion {
+    public void updateStatus(java.lang.String);
+    public *;
 }
