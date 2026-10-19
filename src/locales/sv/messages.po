@@ -1743,6 +1743,10 @@ msgstr "Typsnitt"
 msgid "Font size"
 msgstr "Textstorlek"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Format Channel Topics"
+msgstr "Formatera kanalämnen"
+
 #. placeholder {0}: filteredMessages.length
 #: src/components/layout/ChannelMessageList.tsx
 msgid "Found {0} messages matching \"{searchQuery}\""
@@ -3518,6 +3522,10 @@ msgstr "hon/hennes"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show All Events"
 msgstr "Visa alla händelser"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Show colours and formatting in channel topics. When off, topics are shown as plain text"
+msgstr "Visa färger och formatering i kanalämnen. När av visas ämnen som vanlig text"
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Show comments"

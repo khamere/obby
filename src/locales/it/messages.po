@@ -1743,6 +1743,10 @@ msgstr "Carattere"
 msgid "Font size"
 msgstr "Dimensione carattere"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Format Channel Topics"
+msgstr "Formatta gli argomenti dei canali"
+
 #. placeholder {0}: filteredMessages.length
 #: src/components/layout/ChannelMessageList.tsx
 msgid "Found {0} messages matching \"{searchQuery}\""
@@ -3518,6 +3522,10 @@ msgstr "lei/la"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show All Events"
 msgstr "Mostra tutti gli eventi"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Show colours and formatting in channel topics. When off, topics are shown as plain text"
+msgstr "Mostra colori e formattazione negli argomenti dei canali. Se disattivato, gli argomenti vengono mostrati come testo semplice"
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Show comments"

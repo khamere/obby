@@ -1743,6 +1743,10 @@ msgstr "Fontti"
 msgid "Font size"
 msgstr "Fonttikoko"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Format Channel Topics"
+msgstr "Muotoile kanavien aiheet"
+
 #. placeholder {0}: filteredMessages.length
 #: src/components/layout/ChannelMessageList.tsx
 msgid "Found {0} messages matching \"{searchQuery}\""
@@ -3518,6 +3522,10 @@ msgstr "hän/hänen"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show All Events"
 msgstr "Näytä kaikki tapahtumat"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Show colours and formatting in channel topics. When off, topics are shown as plain text"
+msgstr "Näytä värit ja muotoilu kanavien aiheissa. Pois päältä aiheet näytetään pelkkänä tekstinä"
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Show comments"

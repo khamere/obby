@@ -29,9 +29,11 @@ import {
   serverFilehosts,
 } from "../../lib/ircUtils";
 import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
+import { stripIrcFormatting } from "../../lib/messageFormatter";
 import { chatMute, isServerMuted, useMutes } from "../../lib/mutes";
 import { isTauriMobile } from "../../lib/platformUtils";
 import { serverDisplayName } from "../../lib/serverDisplayName";
+import { renderTopic } from "../../lib/topicRender";
 import useStore, { loadSavedMetadata } from "../../store";
 import type { Channel, PrivateChat, User } from "../../types";
 import { BotToolsHistoryButton } from "../ui/BotToolsHistoryButton";
@@ -139,6 +141,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   const mediaSettings = mediaLevelToSettings(
     useStore((state) => state.globalSettings.mediaVisibilityLevel),
   );
+  const formatTopics = useStore((state) => state.globalSettings.formatTopics);
 
   // Get private chat user metadata - first check localStorage, then check shared channels
   const privateChatUserMetadata = useMemo(() => {
@@ -545,9 +548,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   }
                 }}
                 className="text-discord-text-muted text-xs hover:text-discord-text-strong truncate text-left"
-                title={selectedChannel.topic}
+                title={stripIrcFormatting(selectedChannel.topic)}
               >
-                {selectedChannel.topic}
+                {renderTopic(selectedChannel.topic, "header-topic-", {
+                  format: formatTopics,
+                  linkify: false,
+                })}
               </button>
             ) : isOperator ? (
               <button
