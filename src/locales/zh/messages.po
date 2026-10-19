@@ -1747,6 +1747,10 @@ msgstr "字体"
 msgid "Font size"
 msgstr "字体大小"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Format Channel Topics"
+msgstr "格式化频道主题"
+
 #. placeholder {0}: filteredMessages.length
 #: src/components/layout/ChannelMessageList.tsx
 msgid "Found {0} messages matching \"{searchQuery}\""
@@ -3519,6 +3523,10 @@ msgstr "她/她的"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show All Events"
 msgstr "显示所有事件"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Show colours and formatting in channel topics. When off, topics are shown as plain text"
+msgstr "在频道主题中显示颜色和格式。关闭后，主题将以纯文本显示"
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Show comments"

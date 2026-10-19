@@ -1322,6 +1322,7 @@ const useStore = create<AppState>((set, get) => ({
     notificationVolume: 0.4, // 40% volume by default
     enableHighlights: true,
     coloredNicknames: false,
+    formatTopics: true,
     sendTypingNotifications: true,
     // Event visibility settings (enabled by default)
     showEvents: true,
