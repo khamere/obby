@@ -180,7 +180,7 @@ export function stripIrcFormatting(text: string): string {
     text
       .replace(
         // biome-ignore lint/suspicious/noControlCharactersInRegex: IRC color control codes
-        /\x04(?:[0-9A-Fa-f]{6}(?:,[0-9A-Fa-f]{6})?)?|\x03\d{0,2}(,\d{0,2})?/g,
+        /\x04(?:[0-9A-Fa-f]{6}(?:,[0-9A-Fa-f]{6})?)?|\x03(?:\d{1,2}(?:,\d{1,2})?)?/g,
         "",
       )
       // biome-ignore lint/suspicious/noControlCharactersInRegex: IRC formatting control codes
