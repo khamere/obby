@@ -5,13 +5,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { FaDesktop, FaHashtag, FaUsers, FaVolumeUp } from "react-icons/fa";
 import { useJoinAndSelectChannel } from "../../hooks/useJoinAndSelectChannel";
 import ircClient from "../../lib/ircClient";
-import {
-  getChannelAvatarUrl,
-  mircToHtml,
-  serverFilehosts,
-} from "../../lib/ircUtils";
+import { getChannelAvatarUrl, serverFilehosts } from "../../lib/ircUtils";
 import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
 import { BaseModal } from "../../lib/modal/BaseModal";
+import { renderTopic } from "../../lib/topicRender";
 import useStore from "../../store";
 import { TextInput } from "./TextInput";
 
@@ -61,6 +58,7 @@ const ChannelListModal: React.FC = () => {
   const mediaSettings = mediaLevelToSettings(
     useStore((state) => state.globalSettings.mediaVisibilityLevel),
   );
+  const formatTopics = useStore((state) => state.globalSettings.formatTopics);
   const elist = (selectedServer?.elist || "").toUpperCase();
   const rawChannels = selectedServerId
     ? channelList[selectedServerId] || []
@@ -621,10 +619,10 @@ const ChannelListModal: React.FC = () => {
                       </div>
                       <p className="text-discord-text-dim text-sm break-words mt-0.5">
                         {channel.topic
-                          ? mircToHtml(
+                          ? renderTopic(
                               channel.topic,
                               `${channel.channel}-topic-`,
-                              { linkify: false },
+                              { format: formatTopics, linkify: false },
                             )
                           : t`No topic`}
                       </p>

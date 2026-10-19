@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { TopicModal } from "../../src/components/ui/TopicModal";
+import useStore from "../../src/store";
 import type { Channel, User } from "../../src/types";
 
 vi.mock("@tauri-apps/plugin-os", () => ({
@@ -52,6 +53,37 @@ describe("TopicModal formatting", () => {
     const link = screen.getByText("https://idlerpg.darkpeers.org");
     expect(link.tagName).toBe("A");
     expect(link.className).toContain("external-link-security");
+  });
+});
+
+describe("TopicModal with topic formatting disabled", () => {
+  it("strips colour codes completely instead of showing their digits", () => {
+    useStore.setState((s) => ({
+      globalSettings: { ...s.globalSettings, formatTopics: false },
+    }));
+    render(
+      <TopicModal
+        isOpen
+        onClose={() => {}}
+        channel={channel}
+        serverId="s1"
+        currentUser={viewer}
+      />,
+    );
+    const section = document.body.querySelector('[aria-label="Channel topic"]');
+    expect(section?.textContent).toBe(
+      "Check the IdleRPG site for info and stats - https://idlerpg.darkpeers.org",
+    );
+    const coloured = Array.from(section?.querySelectorAll("span") ?? []).find(
+      (el) => (el as HTMLElement).style.color !== "",
+    );
+    expect(coloured).toBeUndefined();
+    // Links still work in the plain view.
+    const link = screen.getByText("https://idlerpg.darkpeers.org");
+    expect(link.tagName).toBe("A");
+    useStore.setState((s) => ({
+      globalSettings: { ...s.globalSettings, formatTopics: true },
+    }));
   });
 });
 

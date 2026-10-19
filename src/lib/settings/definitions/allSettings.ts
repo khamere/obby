@@ -509,6 +509,18 @@ const preferenceSettings: SettingDefinition[] = [
     priority: 3,
   },
   {
+    id: "preferences.formatTopics",
+    key: "formatTopics",
+    category: "preferences",
+    subcategory: "Chat",
+    title: msg`Format Channel Topics`,
+    description: msg`Show colours and formatting in channel topics. When off, topics are shown as plain text`,
+    type: "toggle",
+    defaultValue: true,
+    searchKeywords: ["topic", "color", "colour", "formatting", "channel"],
+    priority: 4,
+  },
+  {
     id: "preferences.showEvents",
     key: "showEvents",
     category: "preferences",

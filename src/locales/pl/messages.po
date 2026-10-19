@@ -1743,6 +1743,10 @@ msgstr "Czcionka"
 msgid "Font size"
 msgstr "Rozmiar czcionki"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Format Channel Topics"
+msgstr "Formatuj tematy kanałów"
+
 #. placeholder {0}: filteredMessages.length
 #: src/components/layout/ChannelMessageList.tsx
 msgid "Found {0} messages matching \"{searchQuery}\""
@@ -3518,6 +3522,10 @@ msgstr "ona/jej"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show All Events"
 msgstr "Pokaż wszystkie zdarzenia"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Show colours and formatting in channel topics. When off, topics are shown as plain text"
+msgstr "Pokazuj kolory i formatowanie w tematach kanałów. Po wyłączeniu tematy są wyświetlane jako zwykły tekst"
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Show comments"

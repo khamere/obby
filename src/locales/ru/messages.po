@@ -1743,6 +1743,10 @@ msgstr "Шрифт"
 msgid "Font size"
 msgstr "Размер шрифта"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Format Channel Topics"
+msgstr "Форматировать темы каналов"
+
 #. placeholder {0}: filteredMessages.length
 #: src/components/layout/ChannelMessageList.tsx
 msgid "Found {0} messages matching \"{searchQuery}\""
@@ -3518,6 +3522,10 @@ msgstr "она/её"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show All Events"
 msgstr "Показывать все события"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Show colours and formatting in channel topics. When off, topics are shown as plain text"
+msgstr "Показывать цвета и форматирование в темах каналов. Если выключено, темы отображаются как обычный текст"
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Show comments"
