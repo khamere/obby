@@ -1,9 +1,9 @@
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type React from "react";
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import ircClient from "../../lib/ircClient";
-import { hasOpPermission } from "../../lib/ircUtils";
+import { hasOpPermission, mircToHtml } from "../../lib/ircUtils";
 import BaseModal from "../../lib/modal/BaseModal";
 import { Button, ModalBody, ModalFooter } from "../../lib/modal/components";
 import type { Channel, User } from "../../types";
@@ -16,46 +16,6 @@ interface TopicModalProps {
   channel: Channel;
   serverId: string;
   currentUser: User | null;
-}
-
-// Render plain topic text with http/https/irc URLs as <a> tags carrying
-// the "external-link-security" / "irc-link" classes, so EnhancedLinkWrapper
-// intercepts the click and routes through ExternalLinkWarningModal /
-// onIrcLinkClick (matching the message-rendering flow).
-const URL_RX = /\b(?:https?|ircs?):\/\/[^\s<>"'`]+/gi;
-
-function renderTopicWithLinks(text: string): React.ReactNode[] {
-  const out: React.ReactNode[] = [];
-  let last = 0;
-  let i = 0;
-  for (const match of text.matchAll(URL_RX)) {
-    const idx = match.index ?? -1;
-    if (idx < 0) continue;
-    if (idx > last) {
-      out.push(<Fragment key={`t-${i}`}>{text.slice(last, idx)}</Fragment>);
-    }
-    const url = match[0];
-    const isIrc = url.startsWith("irc://") || url.startsWith("ircs://");
-    out.push(
-      <a
-        key={`u-${i++}`}
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`underline text-blue-400 hover:text-blue-300 break-all ${
-          isIrc ? "irc-link" : "external-link-security"
-        }`}
-      >
-        {url}
-      </a>,
-    );
-    last = idx + url.length;
-  }
-  if (last < text.length) {
-    out.push(<Fragment key="tail">{text.slice(last)}</Fragment>);
-  }
-  if (out.length === 0) return [text];
-  return out;
 }
 
 export const TopicModal: React.FC<TopicModalProps> = ({
@@ -95,16 +55,17 @@ export const TopicModal: React.FC<TopicModalProps> = ({
             autoFocus
           />
         ) : (
-          // Read-only path: render as a div with linkified URLs so the
-          // text doesn't sit inside a textarea (which strips markup and
-          // can't have clickable links).
+          // Read-only path: render through the message formatter so mIRC
+          // colour/bold/etc. codes show as intended (instead of leaking
+          // their digits into the text) and URLs become security-wrapped
+          // links that EnhancedLinkWrapper intercepts.
           <EnhancedLinkWrapper>
             <section
               className="w-full p-3 rounded min-h-[120px] text-sm leading-relaxed bg-discord-dark-400/60 text-discord-text-muted whitespace-pre-wrap break-words select-text"
               aria-label="Channel topic"
             >
               {channel.topic ? (
-                renderTopicWithLinks(channel.topic)
+                mircToHtml(channel.topic, "topic-")
               ) : (
                 <span className="italic">No topic set</span>
               )}

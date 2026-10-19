@@ -26,9 +26,11 @@ import {
 import {
   getChannelAvatarUrl,
   getChannelDisplayName,
+  mircToHtml,
   serverFilehosts,
 } from "../../lib/ircUtils";
 import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
+import { stripIrcFormatting } from "../../lib/messageFormatter";
 import { chatMute, isServerMuted, useMutes } from "../../lib/mutes";
 import { isTauriMobile } from "../../lib/platformUtils";
 import { serverDisplayName } from "../../lib/serverDisplayName";
@@ -545,9 +547,11 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   }
                 }}
                 className="text-discord-text-muted text-xs hover:text-discord-text-strong truncate text-left"
-                title={selectedChannel.topic}
+                title={stripIrcFormatting(selectedChannel.topic)}
               >
-                {selectedChannel.topic}
+                {mircToHtml(selectedChannel.topic, "header-topic-", {
+                  linkify: false,
+                })}
               </button>
             ) : isOperator ? (
               <button

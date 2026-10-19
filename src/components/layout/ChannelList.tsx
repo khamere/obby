@@ -29,6 +29,7 @@ import ircClient from "../../lib/ircClient";
 import {
   getChannelAvatarUrl,
   getChannelDisplayName,
+  mircToHtml,
   processMarkdownInText,
   serverFilehosts,
 } from "../../lib/ircUtils";
@@ -797,7 +798,11 @@ export const ChannelList: React.FC<{
                                           •
                                         </span>
                                         <span className="text-discord-text-muted truncate">
-                                          {topic}
+                                          {mircToHtml(
+                                            topic,
+                                            `${channel.id}-topic-`,
+                                            { linkify: false },
+                                          )}
                                         </span>
                                       </>
                                     );
@@ -818,7 +823,11 @@ export const ChannelList: React.FC<{
                                   if (topic) {
                                     return (
                                       <span className="text-discord-text-muted truncate">
-                                        {topic}
+                                        {mircToHtml(
+                                          topic,
+                                          `${channel.id}-topic-`,
+                                          { linkify: false },
+                                        )}
                                       </span>
                                     );
                                   }
