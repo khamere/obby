@@ -340,10 +340,6 @@ export const ircColors = [
   "inherit", // 99 - Default (not universally supported)
 ];
 
-const IRC_FORMAT_RE =
-  // biome-ignore lint/suspicious/noControlCharactersInRegex: IRC formatting codes
-  /\x04(?:[0-9A-Fa-f]{6}(?:,[0-9A-Fa-f]{6})?)?|\x03\d{0,2}(,\d{0,2})?|[\x02\x1D\x1F\x1E\x11\x0F]/g;
-
 /**
  * Build a map of line index → IRC color style for the original text.
  * Only tracks the dominant color per line (first color set on that line).

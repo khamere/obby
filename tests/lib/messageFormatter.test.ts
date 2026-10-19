@@ -9,6 +9,7 @@ import {
   IRC_FORMATTING_CODES,
   isValidFormattingType,
   type MessageFormatting,
+  stripIrcFormatting,
 } from "../../src/lib/messageFormatter";
 
 describe("messageFormatter", () => {
@@ -242,6 +243,35 @@ describe("messageFormatter", () => {
         textDecoration: "none",
         fontFamily: "monospace",
       });
+    });
+  });
+
+  describe("stripIrcFormatting", () => {
+    it("removes colour codes with and without a background", () => {
+      expect(stripIrcFormatting("\x0304Hello")).toBe("Hello");
+      expect(stripIrcFormatting("\x0304,05Hello")).toBe("Hello");
+      expect(stripIrcFormatting("\x034,5Hello")).toBe("Hello");
+      expect(stripIrcFormatting("\x03Hello")).toBe("Hello");
+    });
+
+    it("keeps a comma that is not followed by a background colour", () => {
+      // "<name>, level 5" is how bots usually format this; the comma is text.
+      expect(stripIrcFormatting("\x0312Name\x03, level 5")).toBe(
+        "Name, level 5",
+      );
+      expect(stripIrcFormatting("\x0304,hello")).toBe(",hello");
+      expect(stripIrcFormatting("\x03,hello")).toBe(",hello");
+    });
+
+    it("stops after two digits so following numbers survive", () => {
+      expect(stripIrcFormatting("\x03041234")).toBe("1234");
+      expect(stripIrcFormatting("\x0304,051234")).toBe("1234");
+    });
+
+    it("removes the other formatting codes", () => {
+      expect(
+        stripIrcFormatting("\x02bold\x02 \x1Funder\x1F \x1Ditalic\x1D \x0F"),
+      ).toBe("bold under italic ");
     });
   });
 
