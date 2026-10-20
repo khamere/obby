@@ -11,10 +11,14 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.graphics.Rect
+import android.media.AudioAttributes
+import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.os.PowerManager
+import android.provider.Settings
 import android.util.Log
 import android.view.View
 import android.view.ViewTreeObserver
@@ -49,6 +53,12 @@ class MainActivity : TauriActivity() {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         val manager = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
 
+        val defaultSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+        val audioAttributes = AudioAttributes.Builder()
+          .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+          .setUsage(AudioAttributes.USAGE_NOTIFICATION_COMMUNICATION_INSTANT)
+          .build()
+
         val msgChannel = NotificationChannel(
           "obby_messages",
           "IRC Mentions & Messages",
@@ -56,6 +66,10 @@ class MainActivity : TauriActivity() {
         ).apply {
           description = "Notifications for IRC direct messages and mentions"
           enableVibration(true)
+          enableLights(true)
+          setShowBadge(true)
+          lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
+          setSound(defaultSound, audioAttributes)
         }
         manager.createNotificationChannel(msgChannel)
 
@@ -108,6 +122,17 @@ class MainActivity : TauriActivity() {
           return false
         }
 
+        if (!manager.areNotificationsEnabled()) {
+          Log.w("Obby", "Notifications are disabled at the app level in Android settings")
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+          val ch = manager.getNotificationChannel(channelId)
+          if (ch != null && ch.importance == NotificationManager.IMPORTANCE_NONE) {
+            Log.w("Obby", "Channel $channelId is blocked/silenced in system notification settings")
+          }
+        }
+
         val openIntent = Intent(ctx, MainActivity::class.java).apply {
           action = Intent.ACTION_MAIN
           addCategory(Intent.CATEGORY_LAUNCHER)
@@ -120,23 +145,27 @@ class MainActivity : TauriActivity() {
         }
         val pendingIntent = PendingIntent.getActivity(ctx, id, openIntent, pendingFlags)
 
+        val defaultSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
         val notification = NotificationCompat.Builder(ctx, channelId)
           .setContentTitle(title)
           .setContentText(body)
           .setStyle(NotificationCompat.BigTextStyle().bigText(body))
           .setSmallIcon(R.drawable.ic_notification)
           .setPriority(NotificationCompat.PRIORITY_HIGH)
+          .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+          .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+          .setSound(defaultSound)
           .setDefaults(NotificationCompat.DEFAULT_ALL)
           .setAutoCancel(true)
           .setContentIntent(pendingIntent)
           .build()
 
-        // Acquire a transient wake lock (3 seconds) to ensure sound and vibration are dispatched
+        // Acquire a transient wake lock (5 seconds) to ensure sound and vibration are dispatched
         // while the device is in low-power deep sleep, without draining battery when idle.
         try {
           val pm = ctx.getSystemService(Context.POWER_SERVICE) as? PowerManager
           val wl = pm?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Obby:IrcNotificationWakeLock")
-          wl?.acquire(3000L)
+          wl?.acquire(5000L)
         } catch (_: Throwable) {
         }
 
@@ -166,6 +195,7 @@ class MainActivity : TauriActivity() {
       Log.e("Obby", "nativeInitAndroid failed in onCreate: ${e.message}", e)
     }
     requestNotificationPermissionIfNeeded()
+    requestBatteryOptimizationExemptionIfNeeded()
     startKeepAliveService()
   }
 
@@ -190,6 +220,15 @@ class MainActivity : TauriActivity() {
     super.onPause()
   }
 
+  override fun onStop() {
+    try {
+      nativeSetAppFocused(false)
+    } catch (e: Throwable) {
+      Log.e("Obby", "nativeSetAppFocused(false) failed onStop: ${e.message}", e)
+    }
+    super.onStop()
+  }
+
   override fun onDestroy() {
     cleanupKeyboardDetection()
     super.onDestroy()
@@ -206,6 +245,38 @@ class MainActivity : TauriActivity() {
           arrayOf(Manifest.permission.POST_NOTIFICATIONS),
           1001,
         )
+      }
+    }
+  }
+
+  private fun requestBatteryOptimizationExemptionIfNeeded() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      try {
+        val pm = getSystemService(Context.POWER_SERVICE) as? PowerManager ?: return
+        val pkg = packageName
+        if (!pm.isIgnoringBatteryOptimizations(pkg)) {
+          val manufacturer = Build.MANUFACTURER.lowercase()
+          // Aggressive OEM Android skins (Samsung One UI, Huawei/Honor EMUI/MagicOS, Xiaomi MIUI/HyperOS, etc.)
+          // freeze background TCP sockets when the screen is turned off unless the app is set to "Unrestricted".
+          val isAggressiveOem = manufacturer.contains("samsung") ||
+            manufacturer.contains("huawei") ||
+            manufacturer.contains("honor") ||
+            manufacturer.contains("xiaomi") ||
+            manufacturer.contains("oppo") ||
+            manufacturer.contains("vivo") ||
+            manufacturer.contains("oneplus")
+
+          if (isAggressiveOem) {
+            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+              data = Uri.parse("package:$pkg")
+            }
+            if (intent.resolveActivity(packageManager) != null) {
+              startActivity(intent)
+            }
+          }
+        }
+      } catch (e: Throwable) {
+        Log.w("Obby", "requestBatteryOptimizationExemption failed: ${e.message}")
       }
     }
   }
@@ -399,7 +470,7 @@ class IrcKeepAliveService : Service() {
       Log.e("Obby", "IrcKeepAliveService onStartCommand failed: ${e.message}", e)
       stopSelf()
     }
-    return START_NOT_STICKY
+    return START_STICKY
   }
 
   override fun onDestroy() {
