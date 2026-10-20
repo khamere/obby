@@ -187,8 +187,13 @@ export default defineConfig(({ mode }) => {
     build: {
       // Main chunk includes the full app + react-icons/fa (~35 files); gzip is ~570KB which is fine.
       chunkSizeWarningLimit: 3000,
-      // Tauri uses Chromium on Windows and WebKit on macOS and Linux
-      target: process.env.TAURI_PLATFORM == 'windows' ? 'chrome105' : 'safari13',
+      // Tauri uses Chromium on Windows/Android and WebKit on macOS and iOS
+      target:
+        process.env.TAURI_PLATFORM === 'windows'
+          ? 'chrome105'
+          : process.env.TAURI_PLATFORM === 'android'
+            ? 'chrome64'
+            : 'safari13',
       // don't minify for debug builds
       minify: !process.env.TAURI_DEBUG ? 'esbuild' : false,
       // produce sourcemaps for debug builds

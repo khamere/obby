@@ -199,26 +199,29 @@ fn show_android_notification(id: i32, title: &str, body: &str) -> bool {
 
 #[cfg(target_os = "android")]
 pub fn update_android_keepalive_status(status: &str) {
-    let Some(vm) = ANDROID_JVM.get() else {
-        return;
-    };
-    let Ok(mut env) = vm.attach_current_thread() else {
-        return;
-    };
-    let Ok(j_status) = env.new_string(status) else {
-        let _ = env.exception_clear();
-        return;
-    };
-    if let Some(class_ref) = MAIN_ACTIVITY_CLASS.get() {
-        let class: &jni::objects::JClass = class_ref.as_obj().into();
-        let _ = env.call_static_method(
-            class,
-            "updateKeepAliveStatus",
-            "(Ljava/lang/String;)V",
-            &[jni::objects::JValue::Object(&j_status)],
-        );
-        let _ = env.exception_clear();
-    }
+    let status_str = status.to_string();
+    task::spawn_blocking(move || {
+        let Some(vm) = ANDROID_JVM.get() else {
+            return;
+        };
+        let Ok(mut env) = vm.attach_current_thread() else {
+            return;
+        };
+        let Ok(j_status) = env.new_string(&status_str) else {
+            let _ = env.exception_clear();
+            return;
+        };
+        if let Some(class_ref) = MAIN_ACTIVITY_CLASS.get() {
+            let class: &jni::objects::JClass = class_ref.as_obj().into();
+            let _ = env.call_static_method(
+                class,
+                "updateKeepAliveStatus",
+                "(Ljava/lang/String;)V",
+                &[jni::objects::JValue::Object(&j_status)],
+            );
+            let _ = env.exception_clear();
+        }
+    });
 }
 
 pub fn dispatch_native_notification(app_handle: &tauri::AppHandle, title: String, body: String) {
@@ -232,15 +235,21 @@ pub fn dispatch_native_notification(app_handle: &tauri::AppHandle, title: String
                 return;
             }
             use tauri_plugin_notification::NotificationExt;
-            if let Err(e) = app
+            #[allow(unused_mut)]
+            let mut builder = app
                 .notification()
                 .builder()
                 .id(id)
                 .title(title)
                 .body(body)
-                .auto_cancel()
-                .show()
+                .auto_cancel();
+
+            #[cfg(target_os = "android")]
             {
+                builder = builder.icon("ic_notification");
+            }
+
+            if let Err(e) = builder.show() {
                 log::warn!("[Obby] notification plugin fallback failed: {}", e);
             }
         }));
