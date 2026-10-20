@@ -246,7 +246,7 @@ pub fn dispatch_native_notification(app_handle: &tauri::AppHandle, title: String
 
             #[cfg(target_os = "android")]
             {
-                builder = builder.icon("ic_notification");
+                builder = builder.icon("ic_notification").channel_id("obby_messages");
             }
 
             if let Err(e) = builder.show() {
