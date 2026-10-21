@@ -229,47 +229,55 @@ export function registerChannelHandlers(store: StoreApi<AppState>): void {
   });
 
   // Topic handlers
-  ircClient.on("TOPIC", ({ serverId, channelName, topic, sender }) => {
-    store.setState((state) => {
-      const updatedServers = state.servers.map((server) => {
-        if (server.id === serverId) {
-          const updatedChannels = server.channels.map((channel) => {
-            if (channel.name.toLowerCase() === channelName.toLowerCase()) {
-              return { ...channel, topic };
-            }
-            return channel;
-          });
-          return { ...server, channels: updatedChannels };
-        }
-        return server;
-      });
-      return { servers: updatedServers };
-    });
+  ircClient.on("TOPIC", ({ serverId, channelName, topic, sender, mtags }) => {
+    // A TOPIC replayed from chathistory (draft/event-playback) describes the
+    // past: show it at its own time, but don't overwrite the live topic.
+    const batch = mtags?.batch
+      ? store.getState().activeBatches[serverId]?.[mtags.batch]
+      : undefined;
+    const historic = batch?.type === "chathistory";
+    const timestamp = mtags?.time ? new Date(mtags.time) : new Date();
 
-    // Optionally add a system message showing the topic change
+    if (!historic) {
+      store.setState((state) => {
+        const updatedServers = state.servers.map((server) => {
+          if (server.id === serverId) {
+            const updatedChannels = server.channels.map((channel) => {
+              if (channel.name.toLowerCase() === channelName.toLowerCase()) {
+                return { ...channel, topic };
+              }
+              return channel;
+            });
+            return { ...server, channels: updatedChannels };
+          }
+          return server;
+        });
+        return { servers: updatedServers };
+      });
+    }
+
+    // Add a system message showing the topic change
     const server = store.getState().servers.find((s) => s.id === serverId);
-    const channel = server?.channels.find((c) => c.name === channelName);
+    const channel = server?.channels.find(
+      (c) => c.name.toLowerCase() === channelName.toLowerCase(),
+    );
     if (channel) {
       const topicMessage: Message = {
-        id: `topic-${Date.now()}`,
+        // Deterministic, so the same change replayed on a later reconnect
+        // is dropped by addMessage instead of shown again.
+        id: `topic-${channel.id}-${timestamp.getTime()}-${sender}`,
         channelId: channel.id,
         userId: sender,
         content: t`changed the topic to: ${topic}`,
-        timestamp: new Date(),
+        timestamp,
         serverId: serverId,
         reactions: [],
         type: "system",
         replyMessage: null,
         mentioned: [],
+        fromHistory: historic || undefined,
       };
-
-      const key = `${serverId}-${channel.id}`;
-      store.setState((state) => ({
-        messages: {
-          ...state.messages,
-          [key]: [...(state.messages[key] || []), topicMessage],
-        },
-      }));
+      store.getState().addMessage(topicMessage);
     }
   });
 
