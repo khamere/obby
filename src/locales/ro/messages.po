@@ -1020,6 +1020,11 @@ msgstr "Închide vizualizatorul"
 msgid "Collapse member list"
 msgstr "Restrânge lista de membri"
 
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Collapse server names"
+msgstr "Restrânge numele serverelor"
+
 #: src/components/ui/UserSettings.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Color"
@@ -3567,6 +3572,11 @@ msgstr "Afișează sau ascunde bara laterală cu lista de membri"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show Quits"
 msgstr "Afișați deconectările"
+
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Show server names"
+msgstr "Afișează numele serverelor"
 
 #. placeholder {0}: filteredChannels.length
 #: src/components/ui/ChannelListModal.tsx

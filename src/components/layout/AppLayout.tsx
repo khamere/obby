@@ -31,6 +31,26 @@ export const AppLayout: React.FC = () => {
     closeMedia,
   } = useStore();
 
+  // Collapsed by default: the 72px icon rail is the stock look. Users who
+  // want names (or logos via custom CSS) turn it on once; it is remembered.
+  const [serverNamesExpanded, setServerNamesExpanded] = useState(() => {
+    try {
+      return localStorage.getItem("obby-server-names-expanded") === "true";
+    } catch {
+      return false;
+    }
+  });
+  const toggleServerNames = () =>
+    setServerNamesExpanded((previous) => {
+      const next = !previous;
+      try {
+        localStorage.setItem("obby-server-names-expanded", String(next));
+      } catch {
+        /* storage may be unavailable */
+      }
+      return next;
+    });
+
   const [channelListWidth, setChannelListWidth] = useState<number>(
     ui.sidebarPreferences?.channelList.width ?? 264,
   );
@@ -203,11 +223,19 @@ export const AppLayout: React.FC = () => {
           return (
             <div className="flex w-full h-full">
               {__HIDE_SERVER_LIST__ ? null : (
-                <div className="w-[72px] flex-shrink-0 h-full min-h-0 bg-discord-dark-300 select-none">
-                  <ServerList />
+                <div
+                  className="server-list flex-shrink-0 h-full min-h-0 bg-discord-dark-300 select-none"
+                  style={{
+                    width: serverNamesExpanded ? "min(46vw, 200px)" : "72px",
+                  }}
+                >
+                  <ServerList
+                    expanded={serverNamesExpanded}
+                    onToggleExpanded={toggleServerNames}
+                  />
                 </div>
               )}
-              <div className="w-[calc(100vw-72px)] h-full bg-discord-dark-100">
+              <div className="flex-1 min-w-0 h-full bg-discord-dark-100">
                 <ChannelList
                   onToggle={() => toggleChannelList(!isChannelListVisible)}
                 />
@@ -218,8 +246,14 @@ export const AppLayout: React.FC = () => {
         return (
           <>
             {__HIDE_SERVER_LIST__ ? null : (
-              <div className="server-list flex-shrink-0 h-full min-h-0 bg-discord-dark-300 z-30 w-[72px] select-none">
-                <ServerList />
+              <div
+                className="server-list flex-shrink-0 h-full min-h-0 bg-discord-dark-300 z-30 select-none"
+                style={{ width: serverNamesExpanded ? "224px" : "72px" }}
+              >
+                <ServerList
+                  expanded={serverNamesExpanded}
+                  onToggleExpanded={toggleServerNames}
+                />
               </div>
             )}
             <ResizableSidebar

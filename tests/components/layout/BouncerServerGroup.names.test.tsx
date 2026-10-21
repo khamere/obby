@@ -69,7 +69,10 @@ describe("soju sidebar labels", () => {
     const row = screen.getByRole("button", { name: "upload.cx" });
     expect(row).toHaveAttribute("title", "upload.cx");
     expect(within(row).getByText("U", { exact: true })).toBeInTheDocument();
-    expect(within(row).getAllByText("upload.cx")).toHaveLength(1);
+    expect(row.querySelector(".obby-server-name")).toHaveTextContent(
+      "upload.cx",
+    );
+    expect(within(row).getAllByText("upload.cx")).toHaveLength(2);
     expect(
       Array.from(document.querySelectorAll(".obby-server-row")).map((el) =>
         el.getAttribute("aria-label"),
@@ -104,6 +107,6 @@ describe("soju sidebar labels", () => {
     fireEvent.touchStart(row, { touches: [{ clientX: 10, clientY: 10 }] });
     act(() => vi.advanceTimersByTime(1000));
     expect(screen.getByText("Edit Server")).toBeVisible();
-    expect(screen.getAllByText("upload.cx").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("upload.cx").length).toBeGreaterThan(2);
   });
 });
