@@ -472,8 +472,7 @@ export interface EventMap {
     serverId: string;
     channel: string;
   };
-  TOPIC: {
-    serverId: string;
+  TOPIC: EventWithTags & {
     channelName: string;
     topic: string;
     sender: string;

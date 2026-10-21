@@ -11,16 +11,15 @@ import {
 import type { AppState } from "../index";
 import * as storage from "../localStorage";
 
+// Goes through addMessage so an event line replayed from chathistory on a
+// later reconnect (same content, time and user) is dropped, not shown again.
 function appendMessage(
   store: StoreApi<AppState>,
-  serverId: string,
-  channelId: string,
+  _serverId: string,
+  _channelId: string,
   message: Message,
 ): void {
-  const key = `${serverId}-${channelId}`;
-  store.setState((s) => ({
-    messages: { ...s.messages, [key]: [...(s.messages[key] || []), message] },
-  }));
+  store.getState().addMessage(message);
 }
 
 function makeEventMessage(
@@ -672,48 +671,64 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
 
   ircClient.on(
     "KICK",
-    ({ serverId, username, target, channelName, reason }) => {
-      store.setState((state) => {
-        const updatedServers = state.servers.map((server) => {
-          const updatedChannels = server.channels.map((channel) => {
-            if (channel.name.toLowerCase() === channelName.toLowerCase()) {
-              return {
-                ...channel,
-                users: channel.users.filter((user) => user.username !== target),
-              };
-            }
-            return channel;
-          });
-          return { ...server, channels: updatedChannels };
-        });
+    ({ serverId, username, target, channelName, reason, mtags }) => {
+      // A KICK replayed from chathistory (draft/event-playback) describes the
+      // past: show it at its own time, but don't touch the live member list.
+      const batch = mtags?.batch
+        ? store.getState().activeBatches[serverId]?.[mtags.batch]
+        : undefined;
+      const historic = batch?.type === "chathistory";
+      const timestamp = mtags?.time ? new Date(mtags.time) : new Date();
 
-        return { servers: updatedServers };
-      });
+      if (!historic) {
+        store.setState((state) => {
+          const updatedServers = state.servers.map((server) => {
+            const updatedChannels = server.channels.map((channel) => {
+              if (channel.name.toLowerCase() === channelName.toLowerCase()) {
+                return {
+                  ...channel,
+                  users: channel.users.filter(
+                    (user) => user.username !== target,
+                  ),
+                };
+              }
+              return channel;
+            });
+            return { ...server, channels: updatedChannels };
+          });
+
+          return { servers: updatedServers };
+        });
+      }
 
       const state = store.getState();
       if (state.globalSettings.showEvents && state.globalSettings.showKicks) {
         const server = state.servers.find((s) => s.id === serverId);
         if (server) {
-          const channel = server.channels.find((c) => c.name === channelName);
+          const channel = server.channels.find(
+            (c) => c.name.toLowerCase() === channelName.toLowerCase(),
+          );
           if (channel) {
-            appendMessage(
-              store,
-              serverId,
+            const message = makeEventMessage(
+              "kick",
+              reason
+                ? t`was kicked from ${channelName} by ${username} (${reason})`
+                : t`was kicked from ${channelName} by ${username}`,
+              target,
               channel.id,
-              makeEventMessage(
-                "kick",
-                reason
-                  ? t`was kicked from ${channelName} by ${username} (${reason})`
-                  : t`was kicked from ${channelName} by ${username}`,
-                target,
-                channel.id,
-                serverId,
-                new Date(),
-              ),
+              serverId,
+              timestamp,
+              historic || undefined,
             );
+            // Deterministic, so the same kick replayed on a later reconnect
+            // is dropped by addMessage instead of shown again.
+            message.id = `kick-${channel.id}-${timestamp.getTime()}-${username}-${target}`;
+            store.getState().addMessage(message);
           }
         }
       }
+
+      if (historic) return;
 
       const server = state.servers.find((s) => s.id === serverId);
       if (server) {

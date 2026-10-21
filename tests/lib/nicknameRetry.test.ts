@@ -75,6 +75,7 @@ describe("Nickname retry functionality", () => {
         ...defaultUIExtensions,
       },
       addGlobalNotification: vi.fn(),
+      addMessage: vi.fn(),
       appendRawLogLine: vi.fn(),
     };
 
@@ -175,6 +176,7 @@ describe("Nickname retry functionality", () => {
         ...defaultUIExtensions,
       },
       addGlobalNotification: vi.fn(),
+      addMessage: vi.fn(),
       appendRawLogLine: vi.fn(),
     };
 
