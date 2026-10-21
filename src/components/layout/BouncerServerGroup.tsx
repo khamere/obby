@@ -311,6 +311,11 @@ const GroupedAvatar: React.FC<GroupedAvatarProps> = ({
           </div>
         )}
 
+        <span className="obby-server-name">
+          {isControl ? "Bouncer: " : ""}
+          {displayName}
+        </span>
+
         {hasMentions && !isSelected && (
           <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-red-500 rounded-full border-[1.5px] border-discord-dark-600" />
         )}

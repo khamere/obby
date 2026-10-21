@@ -1020,6 +1020,11 @@ msgstr "뷰어 닫기"
 msgid "Collapse member list"
 msgstr "멤버 목록 접기"
 
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Collapse server names"
+msgstr "서버 이름 접기"
+
 #: src/components/ui/UserSettings.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Color"
@@ -3567,6 +3572,11 @@ msgstr "멤버 목록 사이드바 표시 또는 숨기기"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show Quits"
 msgstr "QUIT 표시"
+
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Show server names"
+msgstr "서버 이름 표시"
 
 #. placeholder {0}: filteredChannels.length
 #: src/components/ui/ChannelListModal.tsx

@@ -1020,6 +1020,11 @@ msgstr "Fechar visualizador"
 msgid "Collapse member list"
 msgstr "Recolher lista de membros"
 
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Collapse server names"
+msgstr "Recolher nomes dos servidores"
+
 #: src/components/ui/UserSettings.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Color"
@@ -3567,6 +3572,11 @@ msgstr "Mostrar ou ocultar a barra lateral de membros"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show Quits"
 msgstr "Mostrar desconexões"
+
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Show server names"
+msgstr "Mostrar nomes dos servidores"
 
 #. placeholder {0}: filteredChannels.length
 #: src/components/ui/ChannelListModal.tsx

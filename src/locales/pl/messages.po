@@ -1020,6 +1020,11 @@ msgstr "Zamknij przeglądarkę"
 msgid "Collapse member list"
 msgstr "Zwiń listę członków"
 
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Collapse server names"
+msgstr "Zwiń nazwy serwerów"
+
 #: src/components/ui/UserSettings.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Color"
@@ -3567,6 +3572,11 @@ msgstr "Pokaż lub ukryj panel listy członków"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show Quits"
 msgstr "Pokaż rozłączenia"
+
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Show server names"
+msgstr "Pokaż nazwy serwerów"
 
 #. placeholder {0}: filteredChannels.length
 #: src/components/ui/ChannelListModal.tsx

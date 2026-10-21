@@ -1020,6 +1020,11 @@ msgstr "Закрыть просмотрщик"
 msgid "Collapse member list"
 msgstr "Свернуть список участников"
 
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Collapse server names"
+msgstr "Свернуть названия серверов"
+
 #: src/components/ui/UserSettings.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Color"
@@ -3567,6 +3572,11 @@ msgstr "Показать или скрыть боковую панель спи�
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show Quits"
 msgstr "Показывать выходы"
+
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Show server names"
+msgstr "Показать названия серверов"
 
 #. placeholder {0}: filteredChannels.length
 #: src/components/ui/ChannelListModal.tsx
