@@ -1020,6 +1020,11 @@ msgstr "ビューアを閉じる"
 msgid "Collapse member list"
 msgstr "メンバーリストを折りたたむ"
 
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Collapse server names"
+msgstr "サーバー名を折りたたむ"
+
 #: src/components/ui/UserSettings.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Color"
@@ -3567,6 +3572,11 @@ msgstr "メンバーリストのサイドバーを表示/非表示にする"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show Quits"
 msgstr "退出を表示"
+
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Show server names"
+msgstr "サーバー名を表示"
 
 #. placeholder {0}: filteredChannels.length
 #: src/components/ui/ChannelListModal.tsx

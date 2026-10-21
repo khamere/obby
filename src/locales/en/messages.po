@@ -1019,6 +1019,11 @@ msgstr "Close viewer"
 msgid "Collapse member list"
 msgstr "Collapse member list"
 
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Collapse server names"
+msgstr "Collapse server names"
+
 #: src/components/ui/UserSettings.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Color"
@@ -3566,6 +3571,11 @@ msgstr "Show or hide the member list sidebar"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show Quits"
 msgstr "Show Quits"
+
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Show server names"
+msgstr "Show server names"
 
 #. placeholder {0}: filteredChannels.length
 #: src/components/ui/ChannelListModal.tsx

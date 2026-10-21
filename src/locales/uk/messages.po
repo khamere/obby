@@ -1020,6 +1020,11 @@ msgstr "Закрити переглядач"
 msgid "Collapse member list"
 msgstr "Згорнути список учасників"
 
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Collapse server names"
+msgstr "Згорнути назви серверів"
+
 #: src/components/ui/UserSettings.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Color"
@@ -3567,6 +3572,11 @@ msgstr "Показати або приховати бічну панель зі 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show Quits"
 msgstr "Показати виходи"
+
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Show server names"
+msgstr "Показати назви серверів"
 
 #. placeholder {0}: filteredChannels.length
 #: src/components/ui/ChannelListModal.tsx

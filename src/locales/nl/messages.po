@@ -1020,6 +1020,11 @@ msgstr "Viewer sluiten"
 msgid "Collapse member list"
 msgstr "Ledenlijst inklappen"
 
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Collapse server names"
+msgstr "Servernamen inklappen"
+
 #: src/components/ui/UserSettings.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Color"
@@ -3567,6 +3572,11 @@ msgstr "Zijbalk met ledenlijst weergeven of verbergen"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show Quits"
 msgstr "Afmeldingen weergeven"
+
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Show server names"
+msgstr "Servernamen tonen"
 
 #. placeholder {0}: filteredChannels.length
 #: src/components/ui/ChannelListModal.tsx

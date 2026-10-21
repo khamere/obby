@@ -1020,6 +1020,11 @@ msgstr "Zavřít prohlížeč"
 msgid "Collapse member list"
 msgstr "Sbalit seznam členů"
 
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Collapse server names"
+msgstr "Sbalit názvy serverů"
+
 #: src/components/ui/UserSettings.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Color"
@@ -3567,6 +3572,11 @@ msgstr "Zobrazit nebo skrýt boční panel se seznamem členů"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show Quits"
 msgstr "Zobrazit odchody"
+
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Show server names"
+msgstr "Zobrazit názvy serverů"
 
 #. placeholder {0}: filteredChannels.length
 #: src/components/ui/ChannelListModal.tsx
