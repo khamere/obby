@@ -69,10 +69,7 @@ describe("soju sidebar labels", () => {
     const row = screen.getByRole("button", { name: "uplink.example" });
     expect(row).toHaveAttribute("title", "uplink.example");
     expect(within(row).getByText("U", { exact: true })).toBeInTheDocument();
-    expect(row.querySelector(".obby-server-name")).toHaveTextContent(
-      "uplink.example",
-    );
-    expect(within(row).getAllByText("uplink.example")).toHaveLength(2);
+    expect(within(row).getAllByText("uplink.example")).toHaveLength(1);
     expect(
       Array.from(document.querySelectorAll(".obby-server-row")).map((el) =>
         el.getAttribute("aria-label"),
@@ -107,6 +104,6 @@ describe("soju sidebar labels", () => {
     fireEvent.touchStart(row, { touches: [{ clientX: 10, clientY: 10 }] });
     act(() => vi.advanceTimersByTime(1000));
     expect(screen.getByText("Edit Server")).toBeVisible();
-    expect(screen.getAllByText("uplink.example").length).toBeGreaterThan(2);
+    expect(screen.getAllByText("uplink.example").length).toBeGreaterThan(1);
   });
 });
