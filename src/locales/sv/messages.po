@@ -1020,6 +1020,11 @@ msgstr "Stäng visaren"
 msgid "Collapse member list"
 msgstr "Dölj medlemslistan"
 
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Collapse server names"
+msgstr "Fäll ihop servernamn"
+
 #: src/components/ui/UserSettings.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Color"
@@ -3567,6 +3572,11 @@ msgstr "Visa eller dölj medlemslistans sidopanel"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show Quits"
 msgstr "Visa quit-meddelanden"
+
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Show server names"
+msgstr "Visa servernamn"
 
 #. placeholder {0}: filteredChannels.length
 #: src/components/ui/ChannelListModal.tsx

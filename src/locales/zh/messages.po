@@ -1020,6 +1020,11 @@ msgstr "关闭查看器"
 msgid "Collapse member list"
 msgstr "收起成员列表"
 
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Collapse server names"
+msgstr "收起服务器名称"
+
 #: src/components/ui/UserSettings.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Color"
@@ -3567,6 +3572,11 @@ msgstr "显示或隐藏成员列表侧栏"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show Quits"
 msgstr "显示退出事件"
+
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Show server names"
+msgstr "显示服务器名称"
 
 #. placeholder {0}: filteredChannels.length
 #: src/components/ui/ChannelListModal.tsx

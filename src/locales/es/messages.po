@@ -1020,6 +1020,11 @@ msgstr "Cerrar visor"
 msgid "Collapse member list"
 msgstr "Contraer lista de miembros"
 
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Collapse server names"
+msgstr "Contraer nombres de servidores"
+
 #: src/components/ui/UserSettings.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Color"
@@ -3567,6 +3572,11 @@ msgstr "Mostrar u ocultar la barra lateral de miembros"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show Quits"
 msgstr "Mostrar desconexiones"
+
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Show server names"
+msgstr "Mostrar nombres de servidores"
 
 #. placeholder {0}: filteredChannels.length
 #: src/components/ui/ChannelListModal.tsx

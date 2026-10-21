@@ -1020,6 +1020,11 @@ msgstr "Ansicht schließen"
 msgid "Collapse member list"
 msgstr "Mitgliederliste einklappen"
 
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Collapse server names"
+msgstr "Servernamen einklappen"
+
 #: src/components/ui/UserSettings.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Color"
@@ -3567,6 +3572,11 @@ msgstr "Seitenleiste der Mitgliederliste ein- oder ausblenden"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show Quits"
 msgstr "Verbindungstrennungen anzeigen"
+
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Show server names"
+msgstr "Servernamen anzeigen"
 
 #. placeholder {0}: filteredChannels.length
 #: src/components/ui/ChannelListModal.tsx

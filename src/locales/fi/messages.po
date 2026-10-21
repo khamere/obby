@@ -1020,6 +1020,11 @@ msgstr "Sulje katseluohjelma"
 msgid "Collapse member list"
 msgstr "Pienennä jäsenlista"
 
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Collapse server names"
+msgstr "Piilota palvelinten nimet"
+
 #: src/components/ui/UserSettings.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Color"
@@ -3567,6 +3572,11 @@ msgstr "Näytä tai piilota jäsenlistan sivupalkki"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show Quits"
 msgstr "Näytä poistumisviestit"
+
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Show server names"
+msgstr "Näytä palvelinten nimet"
 
 #. placeholder {0}: filteredChannels.length
 #: src/components/ui/ChannelListModal.tsx

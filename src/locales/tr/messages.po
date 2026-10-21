@@ -1020,6 +1020,11 @@ msgstr "Görüntüleyiciyi kapat"
 msgid "Collapse member list"
 msgstr "Üye listesini daralt"
 
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Collapse server names"
+msgstr "Sunucu adlarını daralt"
+
 #: src/components/ui/UserSettings.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Color"
@@ -3567,6 +3572,11 @@ msgstr "Üye listesi kenar çubuğunu göster veya gizle"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show Quits"
 msgstr "Ayrılmaları Göster"
+
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "Show server names"
+msgstr "Sunucu adlarını göster"
 
 #. placeholder {0}: filteredChannels.length
 #: src/components/ui/ChannelListModal.tsx
