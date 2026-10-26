@@ -20,6 +20,20 @@ Zipline v3 and v4 both work. Other uploaders that take a multipart `file`
 field on `POST <address>/api/upload` and answer with the file URL (in the
 `Location` header, a `url` field or the body) work too.
 
+## Metadata is removed first
+
+Screenshots and photos carry more than pixels. Photos hold EXIF data such as
+the camera, the time and often the GPS position; desktop screenshots hold the
+monitor name and window position; many files hold XMP, IPTC or comment
+blocks. By default Obby strips all of this from PNG, JPEG and WebP images
+before uploading, whichever host the file goes to. The picture itself is not
+re-encoded, so it looks the same and colour profiles stay. A JPEG's rotation
+tag is kept, since without it phone photos would show sideways.
+
+Other file types are sent unchanged. If an image is too damaged to parse, it
+is not uploaded rather than sent with its metadata. Turn the behaviour off
+under **Settings → Preferences → File uploads → Remove metadata from images**.
+
 ## The host must allow uploads from Obby
 
 The upload is a cross-origin request from the Obby site to your Zipline, so

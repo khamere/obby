@@ -34,6 +34,7 @@ import {
   wrapForUpload,
 } from "../../lib/e2ee/media";
 import { e2eeSessionKey } from "../../lib/e2ee/session";
+import { stripImageFile } from "../../lib/imageMetadata";
 import ircClient from "../../lib/ircClient";
 import { parseIrcUrl } from "../../lib/ircUrlParser";
 import {
@@ -1145,12 +1146,24 @@ export const ChatArea: React.FC<{
         try {
           const onProgress = (loaded: number, total: number) =>
             updateJob(job.id, { loaded, total });
+          // Metadata comes off before encryption, so the ciphertext holds the
+          // clean bytes, and before validation, so the size check sees what
+          // is actually sent. A file the stripper cannot parse is not sent
+          // as-is: the setting promises the metadata is gone.
+          let source = job.file;
+          if (globalSettings.stripImageMetadata) {
+            try {
+              source = await stripImageFile(source);
+            } catch {
+              throw t`Could not remove the metadata from this image, so it was not uploaded.`;
+            }
+          }
           // Ciphertext uploads under its own extension and header: the real
           // name and type travel in the descriptor, where the host can't read
           // them, and nothing on the host tries to re-encode the bytes.
           const media =
             encryptTarget && canEncryptMedia(job.file.size)
-              ? encryptMedia(await readFileBytes(job.file))
+              ? encryptMedia(await readFileBytes(source))
               : null;
           const upload = media
             ? new File(
@@ -1160,7 +1173,7 @@ export const ChatArea: React.FC<{
                 ciphertextFileName(),
                 { type: "application/octet-stream" },
               )
-            : job.file;
+            : source;
           // Checked against what actually goes to the host, which for an
           // encrypted attachment is the ciphertext under its own extension.
           // Checking the original would clear a jpeg the host never sees and
@@ -1206,12 +1219,12 @@ export const ChatArea: React.FC<{
                 });
           updateJob(job.id, {
             status: "done",
-            loaded: job.file.size,
-            total: job.file.size,
+            loaded: source.size,
+            total: source.size,
             url,
           });
           uploadAbortsRef.current.delete(job.id);
-          return media ? buildMediaDescriptor(url, media, job.file) : url;
+          return media ? buildMediaDescriptor(url, media, source) : url;
         } catch (err) {
           uploadAbortsRef.current.delete(job.id);
           const msg = typeof err === "string" ? err : String(err);

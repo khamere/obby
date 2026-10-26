@@ -677,6 +677,10 @@ msgstr "Блокування"
 msgid "Base text size; everything scales with it"
 msgstr "Базовий розмір тексту; все масштабується разом із ним"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Before an image is uploaded, remove EXIF, GPS, camera, comment and screenshot details from PNG, JPEG and WebP files. The picture itself is not changed."
+msgstr "Перед завантаженням зображення видаляти EXIF, GPS, дані камери, коментарі та відомості про знімок екрана з файлів PNG, JPEG і WebP. Саме зображення не змінюється."
+
 #: src/components/layout/ChannelList.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/ui/BotsModal.tsx
@@ -1185,6 +1189,10 @@ msgstr "Не вдалося завантажити це посилання."
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Could not load this link. It must point to the raw .css file."
 msgstr "Не вдалося завантажити це посилання. Воно має вести прямо на файл .css."
+
+#: src/components/layout/ChatArea.tsx
+msgid "Could not remove the metadata from this image, so it was not uploaded."
+msgstr "Не вдалося видалити метадані з цього зображення, тому його не завантажено."
 
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Couldn't set up encryption with {nick}."
@@ -3124,6 +3132,10 @@ msgstr "Видалити"
 #: src/components/ui/ModerationModal.tsx
 msgid "Remove {username} from the channel"
 msgstr "Видалити {username} з каналу"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Remove metadata from images"
+msgstr "Видаляти метадані із зображень"
 
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Remove pattern"

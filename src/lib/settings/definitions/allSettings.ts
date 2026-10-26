@@ -701,6 +701,27 @@ const preferenceSettings: SettingDefinition[] = [
     priority: 13,
     customComponent: UserFilehostField,
   },
+  {
+    id: "preferences.stripImageMetadata",
+    key: "stripImageMetadata",
+    category: "preferences",
+    subcategory: "File uploads",
+    title: msg`Remove metadata from images`,
+    description: msg`Before an image is uploaded, remove EXIF, GPS, camera, comment and screenshot details from PNG, JPEG and WebP files. The picture itself is not changed.`,
+    type: "toggle",
+    defaultValue: true,
+    searchKeywords: [
+      "metadata",
+      "exif",
+      "gps",
+      "location",
+      "privacy",
+      "strip",
+      "upload",
+      "screenshot",
+    ],
+    priority: 14,
+  },
 ];
 
 /**
