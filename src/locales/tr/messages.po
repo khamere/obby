@@ -677,6 +677,10 @@ msgstr "Yasaklar"
 msgid "Base text size; everything scales with it"
 msgstr "Temel metin boyutu; her şey buna göre ölçeklenir"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Before an image is uploaded, remove EXIF, GPS, camera, comment and screenshot details from PNG, JPEG and WebP files. The picture itself is not changed."
+msgstr "Bir görsel yüklenmeden önce PNG, JPEG ve WebP dosyalarından EXIF, GPS, kamera, yorum ve ekran görüntüsü bilgilerini kaldır. Görselin kendisi değişmez."
+
 #: src/components/layout/ChannelList.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/ui/BotsModal.tsx
@@ -1185,6 +1189,10 @@ msgstr "Bu bağlantı yüklenemedi."
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Could not load this link. It must point to the raw .css file."
 msgstr "Bu bağlantı yüklenemedi. Doğrudan .css dosyasına işaret etmelidir."
+
+#: src/components/layout/ChatArea.tsx
+msgid "Could not remove the metadata from this image, so it was not uploaded."
+msgstr "Bu görselin meta verileri kaldırılamadı, bu yüzden yüklenmedi."
 
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Couldn't set up encryption with {nick}."
@@ -3124,6 +3132,10 @@ msgstr "Kaldır"
 #: src/components/ui/ModerationModal.tsx
 msgid "Remove {username} from the channel"
 msgstr "{username} kullanıcısını kanaldan kaldır"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Remove metadata from images"
+msgstr "Görsellerden meta verileri kaldır"
 
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Remove pattern"

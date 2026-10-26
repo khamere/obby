@@ -1354,6 +1354,7 @@ const useStore = create<AppState>((set, get) => ({
     coloredNicknames: false,
     formatTopics: true,
     sendTypingNotifications: true,
+    stripImageMetadata: true,
     // Event visibility settings (enabled by default)
     showEvents: true,
     showNickChanges: true,
