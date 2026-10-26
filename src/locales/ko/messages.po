@@ -677,6 +677,10 @@ msgstr "차단 목록"
 msgid "Base text size; everything scales with it"
 msgstr "기본 글자 크기. 모든 요소가 이에 맞춰 조절됩니다"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Before an image is uploaded, remove EXIF, GPS, camera, comment and screenshot details from PNG, JPEG and WebP files. The picture itself is not changed."
+msgstr "이미지를 업로드하기 전에 PNG, JPEG, WebP 파일에서 EXIF, GPS, 카메라, 댓글, 스크린샷 정보를 제거합니다. 이미지 자체는 변경되지 않습니다."
+
 #: src/components/layout/ChannelList.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/ui/BotsModal.tsx
@@ -1185,6 +1189,10 @@ msgstr "이 링크를 불러올 수 없습니다."
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Could not load this link. It must point to the raw .css file."
 msgstr "이 링크를 불러올 수 없습니다. 원본 .css 파일을 가리켜야 합니다."
+
+#: src/components/layout/ChatArea.tsx
+msgid "Could not remove the metadata from this image, so it was not uploaded."
+msgstr "이 이미지의 메타데이터를 제거할 수 없어 업로드되지 않았습니다."
 
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Couldn't set up encryption with {nick}."
@@ -3124,6 +3132,10 @@ msgstr "제거"
 #: src/components/ui/ModerationModal.tsx
 msgid "Remove {username} from the channel"
 msgstr "채널에서 {username} 제거"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Remove metadata from images"
+msgstr "이미지에서 메타데이터 제거"
 
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Remove pattern"

@@ -677,6 +677,10 @@ msgstr "Estot"
 msgid "Base text size; everything scales with it"
 msgstr "Tekstin peruskoko; kaikki skaalautuu sen mukaan"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Before an image is uploaded, remove EXIF, GPS, camera, comment and screenshot details from PNG, JPEG and WebP files. The picture itself is not changed."
+msgstr "Poista ennen kuvan lähettämistä EXIF-, GPS-, kamera-, kommentti- ja kuvakaappaustiedot PNG-, JPEG- ja WebP-tiedostoista. Itse kuva ei muutu."
+
 #: src/components/layout/ChannelList.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/ui/BotsModal.tsx
@@ -1185,6 +1189,10 @@ msgstr "Linkkiä ei voitu ladata."
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Could not load this link. It must point to the raw .css file."
 msgstr "Linkkiä ei voitu ladata. Sen on osoitettava suoraan .css-tiedostoon."
+
+#: src/components/layout/ChatArea.tsx
+msgid "Could not remove the metadata from this image, so it was not uploaded."
+msgstr "Tämän kuvan metatietoja ei voitu poistaa, joten sitä ei lähetetty."
 
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Couldn't set up encryption with {nick}."
@@ -3124,6 +3132,10 @@ msgstr "Poista"
 #: src/components/ui/ModerationModal.tsx
 msgid "Remove {username} from the channel"
 msgstr "Poista {username} kanavalta"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Remove metadata from images"
+msgstr "Poista metatiedot kuvista"
 
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Remove pattern"

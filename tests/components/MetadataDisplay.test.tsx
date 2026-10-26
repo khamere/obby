@@ -195,6 +195,7 @@ describe("Metadata Display Features", () => {
         accountName: "",
         accountPassword: "",
         enableMultilineInput: true,
+        stripImageMetadata: true,
         multilineOnShiftEnter: true,
         autoFallbackToSingleLine: true,
         mediaVisibilityLevel: 3,
