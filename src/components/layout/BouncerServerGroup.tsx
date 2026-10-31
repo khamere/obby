@@ -9,6 +9,7 @@ import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
 import { isServerMuted, useMutes } from "../../lib/mutes";
 import { networkHost } from "../../lib/networkHost";
 import { serverDisplayName } from "../../lib/serverDisplayName";
+import { serverHasUnreadMention } from "../../lib/unreadMentions";
 import useStore from "../../store";
 import type { Server } from "../../types";
 import ServerBottomSheet from "../mobile/ServerBottomSheet";
@@ -77,10 +78,7 @@ export const BouncerServerGroup: React.FC<BouncerServerGroupProps> = ({
 
   useMutes(); // re-render when mutes change
   const hasGroupMentions = [control, ...sortedChildren].some(
-    (s) =>
-      !isServerMuted(s.id) &&
-      (s.channels.some((ch) => ch.isMentioned) ||
-        s.privateChats?.some((pc) => pc.isMentioned)),
+    (s) => !isServerMuted(s.id) && serverHasUnreadMention(s),
   );
 
   const dividerColor = hexWithAlpha(accent, 0.2);
@@ -200,9 +198,7 @@ const GroupedAvatar: React.FC<GroupedAvatarProps> = ({
 
   useMutes(); // re-render when mutes change
   const hasMentions =
-    !isServerMuted(server.id) &&
-    (server.channels.some((ch) => ch.isMentioned) ||
-      server.privateChats?.some((pc) => pc.isMentioned));
+    !isServerMuted(server.id) && serverHasUnreadMention(server);
 
   const handleLongPress = useCallback(() => {
     if (isSelected) setBottomSheetOpen(true);

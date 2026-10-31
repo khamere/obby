@@ -35,6 +35,7 @@ import {
 import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
 import { isTauriDesktop, isTauriMobile } from "../../lib/platformUtils";
 import { renderTopic } from "../../lib/topicRender";
+import { hasUnreadMention } from "../../lib/unreadMentions";
 import useStore, { loadSavedMetadata } from "../../store";
 import type { PrivateChat, User } from "../../types";
 import TouchableContextMenu from "../mobile/TouchableContextMenu";
@@ -850,8 +851,7 @@ export const ChannelList: React.FC<{
                               <FaSpinner className="w-3 h-3 text-discord-text-dim animate-spin" />
                             ) : (
                               selectedChannelId !== channel.id &&
-                              (channel.isMentioned &&
-                              (channel.mentionCount ?? 0) > 0 ? (
+                              (hasUnreadMention(channel) ? (
                                 <span className="bg-red-500 text-white text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
                                   {channel.mentionCount}
                                 </span>
@@ -1429,8 +1429,7 @@ export const ChannelList: React.FC<{
                         <div className="flex items-center gap-2">
                           {/* Unread/Mention indicators */}
                           {selectedPrivateChatId !== privateChat.id &&
-                            (privateChat.isMentioned &&
-                            (privateChat.mentionCount ?? 0) > 0 ? (
+                            (hasUnreadMention(privateChat) ? (
                               <span className="bg-red-500 text-white text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
                                 {privateChat.mentionCount}
                               </span>
