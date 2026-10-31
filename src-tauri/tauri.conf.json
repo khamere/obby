@@ -50,9 +50,7 @@
     "deep-link": {
       "mobile": [
         {
-          "schemes": ["irc", "ircs"],
-          "host": "*",
-          "appLink": false
+          "scheme": ["irc", "ircs"]
         },
         {
           "host": "obsidianirc.github.io",

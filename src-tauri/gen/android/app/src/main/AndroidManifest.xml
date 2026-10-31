@@ -39,16 +39,12 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" />
-                <data android:scheme="http" />
                 <data android:scheme="irc" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" />
-                <data android:scheme="http" />
                 <data android:scheme="ircs" />
             </intent-filter>
             <!-- DEEP LINK PLUGIN. AUTO-GENERATED. DO NOT REMOVE. -->
@@ -58,9 +54,8 @@
                 <action android:name="org.chromium.arc.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" />
-                <data android:scheme="http" />
-                <data android:host="*" />
+                <data android:scheme="irc" />
+                <data android:scheme="ircs" />
                 
                 
                 
