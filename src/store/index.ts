@@ -519,6 +519,9 @@ interface UIState {
   // Profile view request - set when we want to open a user profile after closing settings
   profileViewRequest: { serverId: string; username: string } | null;
   topicModalRequest: { serverId: string; channelId: string } | null;
+  // Scroll a buffer to one message, fetching older history until it is
+  // loaded. `target` is a message's internal id or its IRC msgid.
+  jumpRequest?: { channelKey: string; target: string } | null;
   // Settings navigation - for Quick Actions to specify which category and setting to open/highlight
   settingsNavigation: {
     category?:
@@ -1053,6 +1056,8 @@ export interface AppState {
   toggleUserProfileModal: (isOpen?: boolean) => void;
   setProfileViewRequest: (serverId: string, username: string) => void;
   clearProfileViewRequest: () => void;
+  requestJumpToMessage: (channelKey: string, target: string) => void;
+  clearJumpRequest: () => void;
   setTopicModalRequest: (serverId: string, channelId: string) => void;
   clearTopicModalRequest: () => void;
   setSettingsNavigation: (navigation: {
@@ -1328,6 +1333,7 @@ const useStore = create<AppState>((set, get) => ({
     serverNoticesPopupMinimized: false,
     // Profile view request
     profileViewRequest: null,
+    jumpRequest: null,
     topicModalRequest: null,
     // Settings navigation
     settingsNavigation: null,
@@ -3649,6 +3655,16 @@ const useStore = create<AppState>((set, get) => ({
         topicModalRequest: null,
       },
     }));
+  },
+
+  requestJumpToMessage: (channelKey, target) => {
+    set((state) => ({
+      ui: { ...state.ui, jumpRequest: { channelKey, target } },
+    }));
+  },
+
+  clearJumpRequest: () => {
+    set((state) => ({ ui: { ...state.ui, jumpRequest: null } }));
   },
 
   setTopicModalRequest: (serverId, channelId) => {
