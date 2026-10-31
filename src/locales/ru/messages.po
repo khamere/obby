@@ -2097,6 +2097,10 @@ msgstr "подключился и отключился"
 msgid "Joined the channel"
 msgstr "Присоединился к каналу"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Jump to message"
+msgstr "Перейти к сообщению"
+
 #: src/components/ui/MentionJumpBar.tsx
 msgid "Jump to the oldest one"
 msgstr "Перейти к самому старому"
@@ -2281,6 +2285,10 @@ msgstr "Управление аккаунтом и аутентификацие�
 msgid "Manage your profile information and metadata"
 msgstr "Управление информацией профиля и метаданными"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mark all read"
+msgstr "Отметить всё как прочитанное"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Mark as bot - usually 'on' or empty"
 msgstr "Пометить как бота — обычно «on» или пусто"
@@ -2339,6 +2347,12 @@ msgstr "Фон списка участников"
 #: src/components/layout/MemberList.tsx
 msgid "Members — {0}"
 msgstr "Участники — {0}"
+
+#: src/components/ui/MentionsInbox.tsx
+#: src/components/ui/MentionsInbox.tsx
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mentions"
+msgstr "Упоминания"
 
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "Message"
@@ -2699,6 +2713,10 @@ msgstr "Пользователи по вашему запросу не найд�
 msgid "No WHOIS data available"
 msgstr "Данные WHOIS недоступны"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Nobody has mentioned you yet."
+msgstr "Вас ещё никто не упоминал."
+
 #: src/components/message/JsonLogMessage.tsx
 msgid "None"
 msgstr "Нет"
@@ -2716,6 +2734,10 @@ msgstr "Обычный — стандартная защита"
 #: src/components/ui/UploadProgressOverlay.tsx
 msgid "Not encrypted"
 msgstr "Не зашифровано"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Not in this channel"
+msgstr "Вы не в этом канале"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Notification Sound"

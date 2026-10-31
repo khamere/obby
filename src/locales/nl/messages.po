@@ -2097,6 +2097,10 @@ msgstr "is toegetreden en vertrokken"
 msgid "Joined the channel"
 msgstr "Het kanaal betreden"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Jump to message"
+msgstr "Naar bericht springen"
+
 #: src/components/ui/MentionJumpBar.tsx
 msgid "Jump to the oldest one"
 msgstr "Naar de oudste springen"
@@ -2281,6 +2285,10 @@ msgstr "Je account en authenticatie beheren"
 msgid "Manage your profile information and metadata"
 msgstr "Je profielgegevens en metadata beheren"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mark all read"
+msgstr "Alles als gelezen markeren"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Mark as bot - usually 'on' or empty"
 msgstr "Markeren als bot — gewoonlijk 'aan' of leeg"
@@ -2339,6 +2347,12 @@ msgstr "Achtergrond ledenlijst"
 #: src/components/layout/MemberList.tsx
 msgid "Members — {0}"
 msgstr "Leden — {0}"
+
+#: src/components/ui/MentionsInbox.tsx
+#: src/components/ui/MentionsInbox.tsx
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mentions"
+msgstr "Vermeldingen"
 
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "Message"
@@ -2699,6 +2713,10 @@ msgstr "Geen gebruikers gevonden die overeenkomen met je zoekopdracht"
 msgid "No WHOIS data available"
 msgstr "Geen WHOIS-gegevens beschikbaar"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Nobody has mentioned you yet."
+msgstr "Nog niemand heeft je vermeld."
+
 #: src/components/message/JsonLogMessage.tsx
 msgid "None"
 msgstr "Geen"
@@ -2716,6 +2734,10 @@ msgstr "Normaal — Standaardbeveiliging"
 #: src/components/ui/UploadProgressOverlay.tsx
 msgid "Not encrypted"
 msgstr "Niet versleuteld"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Not in this channel"
+msgstr "Niet in dit kanaal"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Notification Sound"

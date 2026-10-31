@@ -1069,6 +1069,7 @@ export interface AppState {
   // Marks the mention seen and scrolls its channel to it.
   jumpToMention: (entry: MentionEntry) => void;
   dismissMentions: (channelKey: string) => void;
+  markAllMentionsSeen: () => void;
   clearJumpRequest: () => void;
   setTopicModalRequest: (serverId: string, channelId: string) => void;
   clearTopicModalRequest: () => void;
@@ -1286,7 +1287,7 @@ const useStore = create<AppState>((set, get) => ({
   tictactoe: { games: {}, open: null },
   channelOrder: loadChannelOrder(),
   bouncerGroupAccents: storage.bouncerGroupAccents.load(),
-  mentionLog: [],
+  mentionLog: storage.mentionLog.load(),
   processedMessageIds: new Set<string>(),
   hasConnectedToSavedServers: false,
   aiWorkflows: {},
@@ -3705,6 +3706,12 @@ const useStore = create<AppState>((set, get) => ({
     }));
   },
 
+  markAllMentionsSeen: () => {
+    set((state) => ({
+      mentionLog: markMentionsSeen(state.mentionLog, () => true),
+    }));
+  },
+
   clearJumpRequest: () => {
     set((state) => ({ ui: { ...state.ui, jumpRequest: null } }));
   },
@@ -4674,3 +4681,9 @@ registerAllProtocolHandlers(ircClient, useStore);
 
 export default useStore;
 registerAllHandlers(useStore);
+
+useStore.subscribe((state, prev) => {
+  if (state.mentionLog !== prev.mentionLog) {
+    storage.mentionLog.save(state.mentionLog);
+  }
+});

@@ -2097,6 +2097,10 @@ msgstr "参加して退出しました"
 msgid "Joined the channel"
 msgstr "チャンネルに参加しました"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Jump to message"
+msgstr "メッセージへ移動"
+
 #: src/components/ui/MentionJumpBar.tsx
 msgid "Jump to the oldest one"
 msgstr "最も古いものへ移動"
@@ -2281,6 +2285,10 @@ msgstr "アカウントと認証を管理する"
 msgid "Manage your profile information and metadata"
 msgstr "プロフィール情報とメタデータを管理する"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mark all read"
+msgstr "すべて既読にする"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Mark as bot - usually 'on' or empty"
 msgstr "ボットとしてマーク — 通常は「on」または空欄"
@@ -2339,6 +2347,12 @@ msgstr "メンバーリストの背景"
 #: src/components/layout/MemberList.tsx
 msgid "Members — {0}"
 msgstr "メンバー — {0}"
+
+#: src/components/ui/MentionsInbox.tsx
+#: src/components/ui/MentionsInbox.tsx
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mentions"
+msgstr "メンション"
 
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "Message"
@@ -2699,6 +2713,10 @@ msgstr "検索に一致するユーザーが見つかりません"
 msgid "No WHOIS data available"
 msgstr "WHOISデータがありません"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Nobody has mentioned you yet."
+msgstr "まだ誰からもメンションされていません。"
+
 #: src/components/message/JsonLogMessage.tsx
 msgid "None"
 msgstr "なし"
@@ -2716,6 +2734,10 @@ msgstr "通常 — 標準的な保護"
 #: src/components/ui/UploadProgressOverlay.tsx
 msgid "Not encrypted"
 msgstr "暗号化されていません"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Not in this channel"
+msgstr "このチャンネルに参加していません"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Notification Sound"
