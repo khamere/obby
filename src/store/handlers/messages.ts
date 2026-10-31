@@ -44,6 +44,27 @@ function historyBatchId(
     : undefined;
 }
 
+// A mention in the open channel of a visible window has been seen as it
+// arrived; anywhere else it waits in the jump bar.
+function recordChannelMention(
+  store: StoreApi<AppState>,
+  message: Message,
+  channelName: string,
+  isActiveChannel: boolean,
+): void {
+  store.getState().recordMention({
+    messageId: message.id,
+    msgid: message.msgid,
+    serverId: message.serverId,
+    channelId: message.channelId,
+    channelName,
+    sender: message.userId,
+    content: message.content,
+    timestamp: new Date(message.timestamp).toISOString(),
+    seen: isActiveChannel && document.visibilityState === "visible",
+  });
+}
+
 // A live message from a nick proves they're connected, even on servers
 // where MONITOR never answers.
 export function markPrivateChatPeerOnline(
@@ -384,6 +405,14 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           return newState;
         });
 
+        if (
+          hasMention &&
+          !isHistoricalMessage &&
+          !isSilenced(server.id, channel.id, true)
+        ) {
+          recordChannelMention(store, newMessage, channelName, isActiveChannel);
+        }
+
         // Play notification sound if appropriate (but not for historical messages)
         if (!isHistoricalMessage) {
           const state = store.getState();
@@ -561,6 +590,20 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           getCurrentSelection(multilineCurrentState).selectedChannelId ===
             channel.id &&
           multilineCurrentState.ui.selectedServerId === server.id;
+
+        if (
+          hasMention &&
+          !isOwnMessage &&
+          !isHistoricalMessage &&
+          !isSilenced(server.id, channel.id, true)
+        ) {
+          recordChannelMention(
+            store,
+            newMessage,
+            channelName ?? channel.name,
+            isActiveChannel,
+          );
+        }
 
         if (!isActiveChannel && !isOwnMessage && !isHistoricalMessage) {
           // A mention still notifies in a muted channel, not in a muted server.
