@@ -508,8 +508,12 @@ export function renderMarkdown(
 
   // Custom image renderer that respects external content settings
   renderer.image = ({ href, title, text }) => {
-    // Sanitize URL to prevent javascript: and other malicious protocols
-    const sanitizedHref = href.replace(/^(javascript|data|vbscript):/i, "#");
+    // Sanitize URL to prevent javascript: and other malicious protocols.
+    // marked accepts quotes in a destination, so the href is escaped for
+    // the attribute too; a quote in it would otherwise start new attributes.
+    const sanitizedHref = escapeHtml(
+      href.replace(/^(javascript|data|vbscript):/i, "#"),
+    );
 
     if (!showExternalContent) {
       // Return a placeholder or link instead of the image
@@ -519,7 +523,7 @@ export function renderMarkdown(
       const linkClass = isExternalLink
         ? "text-blue-500 hover:text-blue-700 underline external-link-security"
         : "text-blue-500 hover:text-blue-700 underline";
-      return `<a href="${sanitizedHref}" target="_blank" rel="noopener noreferrer" class="${linkClass}">[Image: ${text || sanitizedHref}]</a>`;
+      return `<a href="${sanitizedHref}" target="_blank" rel="noopener noreferrer" class="${linkClass}">[Image: ${escapeHtml(text || "") || sanitizedHref}]</a>`;
     }
     // Allow the image to render normally, but make it clickable
     const titleAttr = title ? ` title="${title.replace(/"/g, "&quot;")}"` : "";
@@ -537,8 +541,11 @@ export function renderMarkdown(
 
   // Custom link renderer to sanitize URLs
   renderer.link = ({ href, title, text }) => {
-    // Sanitize URL to prevent javascript: and other malicious protocols
-    const sanitizedHref = href.replace(/^(javascript|data|vbscript):/i, "#");
+    // Sanitize URL to prevent javascript: and other malicious protocols, and
+    // escape it for the attribute so a quote cannot add attributes.
+    const sanitizedHref = escapeHtml(
+      href.replace(/^(javascript|data|vbscript):/i, "#"),
+    );
     const titleAttr = title ? ` title="${title.replace(/"/g, "&quot;")}"` : "";
 
     // Add special class for external links that need security warnings
