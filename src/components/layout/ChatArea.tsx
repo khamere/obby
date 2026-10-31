@@ -61,6 +61,7 @@ import { findMessageRow } from "../../lib/highlightRow";
 import { stripImageFile } from "../../lib/imageMetadata";
 import ircClient from "../../lib/ircClient";
 import { parseIrcUrl } from "../../lib/ircUrlParser";
+import { serverFilehosts } from "../../lib/ircUtils";
 import { listDevices, screenCaptureSupported } from "../../lib/mediaDevices";
 import {
   describeUploadFailure,
@@ -70,6 +71,7 @@ import {
   uploadFileTokenless,
   validateFileAgainstInfo,
 } from "../../lib/mediaUpload";
+import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
 import {
   type FormattingType,
   getPreviewStyles,
@@ -576,10 +578,24 @@ export const ChatArea: React.FC<{
       "draft/emoji"
     ]?.value;
   }, [servers, selectedServerId, selectedChannelId]);
-  const { shortcodes: customEmojiShortcodes } = useEmojiResolver([
-    channelEmojiPackUrl,
-    networkEmojiPackUrl,
-  ]);
+  // Packs and their images follow the avatar rule for this server.
+  const emojiFileHostsKey = serverFilehosts(
+    servers.find((s) => s.id === selectedServerId),
+  ).join(" ");
+  const mediaVisibilityLevel = globalSettings.mediaVisibilityLevel;
+  const allowEmojiUrl = useCallback(
+    (url: string) =>
+      canShowAvatarUrl(
+        url,
+        emojiFileHostsKey.split(" ").filter(Boolean),
+        mediaLevelToSettings(mediaVisibilityLevel),
+      ),
+    [emojiFileHostsKey, mediaVisibilityLevel],
+  );
+  const { shortcodes: customEmojiShortcodes } = useEmojiResolver(
+    [channelEmojiPackUrl, networkEmojiPackUrl],
+    allowEmojiUrl,
+  );
   const pickerCustomEmojis = useMemo(
     () => packEntriesForPicker(customEmojiShortcodes),
     [customEmojiShortcodes],
