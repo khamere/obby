@@ -1,132 +1,104 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { useMessageHistory } from "../../src/hooks/useMessageHistory";
-import type { Message } from "../../src/types";
+import {
+  recordSentInput,
+  type SentInput,
+  useMessageHistory,
+} from "../../src/hooks/useMessageHistory";
 
-const msg = (userId: string, content: string, id = content): Message =>
-  ({
-    id,
-    type: "message",
-    userId,
-    content,
-    channelId: "#test",
-    serverId: "s1",
-    timestamp: new Date(),
-    reactions: [],
-    replyMessage: null,
-    mentioned: [],
-  }) as unknown as Message;
-
-const render = (
-  messages: Message[] = [],
-  historyKey = "s1:#test",
-  currentUsername: string | null = "me",
-) =>
-  renderHook(
-    ({ messages, historyKey }) =>
-      useMessageHistory({
-        messages,
-        currentUsername,
-        historyKey,
-      }),
-    { initialProps: { messages, historyKey } },
-  );
+function walk(bufferKey: string, keys: ("up" | "down")[]) {
+  const { result } = renderHook(() => useMessageHistory(bufferKey));
+  return keys.map((key) => {
+    let text: SentInput | null = null;
+    act(() => {
+      text =
+        key === "up"
+          ? result.current.navigateUp()
+          : result.current.navigateDown();
+    });
+    return text;
+  });
+}
 
 describe("useMessageHistory", () => {
-  it("recalls sent inputs newest first and restores the draft on the way down", () => {
-    const { result } = render();
-    act(() => result.current.recordSent("first"));
-    act(() => result.current.recordSent("second"));
-
-    let text: string | null = null;
-    act(() => {
-      text = result.current.navigateUp("draft");
-    });
-    expect(text).toBe("second");
-    act(() => {
-      text = result.current.navigateUp("second");
-    });
-    expect(text).toBe("first");
-    // Stays at the oldest entry instead of wrapping or clearing.
-    act(() => {
-      text = result.current.navigateUp("first");
-    });
-    expect(text).toBe("first");
-
-    act(() => {
-      text = result.current.navigateDown();
-    });
-    expect(text).toBe("second");
-    act(() => {
-      text = result.current.navigateDown();
-    });
-    expect(text).toBe("draft");
-    expect(result.current.messageHistoryIndex).toBe(-1);
-  });
-
-  it("records slash commands and skips blanks and consecutive duplicates", () => {
-    const { result } = render();
-    act(() => result.current.recordSent("/mode #test +m"));
-    act(() => result.current.recordSent("   "));
-    act(() => result.current.recordSent("/mode #test +m"));
-    act(() => result.current.recordSent("hello"));
-    expect(result.current.userMessageHistory).toEqual([
+  it("recalls typed input and commands per buffer, newest first, back to an empty composer", () => {
+    recordSentInput("s-#a", "hello");
+    recordSentInput("s-#a", "/join #b");
+    recordSentInput("s-#a", "/join #b");
+    recordSentInput("s-#a", "   ");
+    recordSentInput("s-#other", "elsewhere");
+    expect(walk("s-#a", ["up", "up", "up", "down", "down"])).toEqual([
+      "/join #b",
       "hello",
-      "/mode #test +m",
+      "hello",
+      "/join #b",
+      "",
     ]);
   });
 
-  it("falls back to own channel messages and merges them behind sent inputs", () => {
-    const messages = [
-      msg("me", "old one"),
-      msg("someone", "not mine"),
-      msg("me", "\u0002bold\u0002 two"),
-      msg("me", "typed"),
-    ];
-    const { result } = render(messages);
-    expect(result.current.userMessageHistory).toEqual([
-      "typed",
-      "bold two",
-      "old one",
-    ]);
+  it("recalls input sent after the last render", () => {
+    const { result } = renderHook(() => useMessageHistory("s-#late"));
+    recordSentInput("s-#late", "/whois someone");
+    let recalled: SentInput | null = null;
+    act(() => {
+      recalled = result.current.navigateUp();
+    });
+    expect(recalled).toBe("/whois someone");
+  });
 
-    act(() => result.current.recordSent("typed"));
-    expect(result.current.userMessageHistory).toEqual([
-      "typed",
-      "bold two",
-      "old one",
+  it("recalls bot command form runs between typed lines", () => {
+    const run = {
+      botNick: "bot",
+      command: { name: "translate", options: [{ name: "text" }] },
+      values: { text: "hi" },
+    };
+    recordSentInput("s-#bots", "hello");
+    recordSentInput("s-#bots", run);
+    recordSentInput("s-#bots", { ...run, values: { text: "hi" } });
+    expect(walk("s-#bots", ["up", "up", "up"])).toEqual([
+      run,
+      "hello",
+      "hello",
     ]);
   });
 
-  it("keeps a separate history per conversation and leaves history mode on switch", () => {
-    const { result, rerender } = render([], "s1:#a");
-    act(() => result.current.recordSent("in a"));
-    act(() => {
-      result.current.navigateUp("");
+  it("skips lines that can carry a password", () => {
+    for (const line of [
+      "/oper admin hunter2",
+      "/ns identify hunter2",
+      "/msg NickServ IDENTIFY hunter2",
+      "/msg Q AUTH account hunter2",
+      "/PASS hunter2",
+      "/quote PASS hunter2",
+      "hello\n/oper admin hunter2",
+    ])
+      recordSentInput("s-#secret", line);
+    recordSentInput("s-nickserv", "IDENTIFY hunter2", "NickServ");
+    recordSentInput("s-#secret", {
+      botNick: "bot",
+      command: {
+        name: "connect",
+        options: [{ name: "key", type: "password" }],
+      },
+      values: { key: "hunter2" },
     });
-    expect(result.current.messageHistoryIndex).toBe(0);
-
-    rerender({ messages: [], historyKey: "s1:#b" });
-    expect(result.current.messageHistoryIndex).toBe(-1);
-    expect(result.current.userMessageHistory).toEqual([]);
-    act(() => result.current.recordSent("in b"));
-
-    rerender({ messages: [], historyKey: "s1:#a" });
-    expect(result.current.userMessageHistory).toEqual(["in a"]);
+    recordSentInput("s-#secret", {
+      botNick: "bot",
+      command: { name: "login" },
+      values: {},
+    });
+    expect(walk("s-#secret", ["up"])).toEqual([null]);
+    expect(walk("s-nickserv", ["up"])).toEqual([null]);
+    recordSentInput("s-#secret", "/msg friend hi");
+    expect(walk("s-#secret", ["up", "up"])).toEqual([
+      "/msg friend hi",
+      "/msg friend hi",
+    ]);
   });
 
-  it("exitHistory drops the saved draft when the user starts typing", () => {
-    const { result } = render();
-    act(() => result.current.recordSent("x"));
-    act(() => {
-      result.current.navigateUp("draft");
-    });
-    act(() => result.current.exitHistory());
-    expect(result.current.messageHistoryIndex).toBe(-1);
-    let text: string | null = null;
-    act(() => {
-      text = result.current.navigateDown();
-    });
-    expect(text).toBeNull();
+  it("keeps the last 100 entries", () => {
+    for (let i = 0; i < 150; i++) recordSentInput("s-#cap", `line ${i}`);
+    const recalled = walk("s-#cap", Array(150).fill("up"));
+    expect(recalled.at(-1)).toBe("line 50");
   });
 });

@@ -90,6 +90,9 @@ describe("mention indicators", () => {
       activeBatches: {},
       processedMessageIds: new Set(),
     });
+    // Unread counts are taken from the read marker, which starts at the
+    // welcome on a server without markers.
+    feed("@time=2026-10-31T09:00:00.000Z :irc.example 001 me :Welcome");
   });
 
   afterEach(() => {
@@ -119,24 +122,18 @@ describe("mention indicators", () => {
   });
 
   it("clears badges when another session marks everything read", () => {
-    useStore.setState((state) => ({
+    select({ selectedChannelId: null, selectedPrivateChatId: null });
+    useStore.setState({
       messages: {
-        "s1-c1": [message("m1", "2026-10-31T10:00:00.000Z")],
+        "s1-c1": [
+          { ...message("m1", "2026-10-31T10:00:00.000Z"), mentioned: ["me"] },
+        ],
       },
-      servers: state.servers.map((s) => ({
-        ...s,
-        channels: s.channels.map((c) => ({
-          ...c,
-          unreadCount: 3,
-          mentionCount: 1,
-          isMentioned: true,
-        })),
-      })),
-    }));
+    });
 
     feed(":server MARKREAD #test timestamp=2026-10-31T09:59:59.000Z");
     expect(chan().isMentioned).toBe(true);
-    expect(chan().unreadCount).toBe(3);
+    expect(chan().unreadCount).toBe(1);
 
     feed(":server MARKREAD #test timestamp=2026-10-31T10:00:00.000Z");
     expect(chan().readMarker).toBe("2026-10-31T10:00:00.000Z");

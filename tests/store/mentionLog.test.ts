@@ -103,10 +103,10 @@ describe("mention log", () => {
       "@msgid=b :bob!u@h PRIVMSG #two :me second",
     );
     useStore.getState().jumpToMention(log()[0]);
-    expect(useStore.getState().ui.jumpRequest).toEqual({
-      channelKey: "s1-c2",
-      target: "a",
-    });
+    const loaded = Object.values(useStore.getState().messages)
+      .flat()
+      .find((m) => m.msgid === "a");
+    expect(useStore.getState().ui.messageJump?.messageId).toBe(loaded?.id);
     expect(unseenMentions(log(), "s1-c2").map((m) => m.msgid)).toEqual(["b"]);
 
     useStore.getState().dismissMentions("s1-c2");

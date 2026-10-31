@@ -156,6 +156,21 @@ export function handleListEnd(
   ctx.triggerEvent("LIST_END", { serverId });
 }
 
+export function handleJoinRefused(
+  ctx: IRCClientContext,
+  serverId: string,
+  parv: string[],
+  numeric: string,
+): void {
+  ctx.triggerEvent("JOIN_REFUSED", {
+    serverId,
+    channelName: parv[1],
+    // UnrealIRCd answers a join over set::anti-flood::join-flood with 500.
+    isThrottled: numeric === "500",
+    numeric,
+  });
+}
+
 export function handleRplChannelModeIs(
   ctx: IRCClientContext,
   serverId: string,

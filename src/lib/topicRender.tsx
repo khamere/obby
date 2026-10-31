@@ -20,7 +20,7 @@ export function renderTopic(
 ): React.ReactNode {
   const { format, linkify = true } = options;
   if (format) {
-    return mircToHtml(topic, keyPrefix, { linkify });
+    return mircToHtml(topic, keyPrefix, undefined, { linkify });
   }
   const plain = stripIrcFormatting(topic);
   return linkify ? mircToHtml(plain, keyPrefix) : plain;

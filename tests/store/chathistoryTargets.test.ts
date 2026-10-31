@@ -98,11 +98,12 @@ describe("CHATHISTORY TARGETS replies", () => {
     ircClient.nicks.delete(serverId);
   });
 
-  it("reopens an unpinned private chat for a nick target and fetches its history", () => {
+  it("reopens an unpinned private chat for a nick target", () => {
     feed(":soju CHATHISTORY TARGETS alice 2026-10-14T18:14:42.492Z");
     vi.runOnlyPendingTimers();
     expect(pms()).toEqual([{ username: "alice", isPinned: false }]);
-    expect(sent()).toContain("CHATHISTORY LATEST alice * 50");
+    // Its history is loaded when the chat is opened on screen.
+    expect(sent()).toContain("MONITOR + alice");
   });
 
   it("ignores channel targets and our own nick", () => {

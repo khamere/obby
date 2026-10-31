@@ -2,9 +2,11 @@ import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import type * as React from "react";
 import { memo, useCallback, useMemo, useRef, useState } from "react";
 import { FaLock, FaLockOpen } from "react-icons/fa";
-import { useJoinAndSelectChannel } from "../../hooks/useJoinAndSelectChannel";
+import { useShallow } from "zustand/react/shallow";
+import { useIsTouchInput } from "../../hooks/useIsTouchInput";
 import { useLongPress } from "../../hooks/useLongPress";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { workflowIdFromTags } from "../../lib/botTools";
 import { formatCopyAuthor } from "../../lib/chatMarkdownCopy";
 import { renderWithCustomEmoji, useEmojiResolver } from "../../lib/customEmoji";
 import { decodeMediaDescriptor } from "../../lib/e2ee/media";
@@ -14,21 +16,29 @@ import {
   isUndecryptableMessage,
   isUnprotectedMessage,
 } from "../../lib/e2ee/messageFlags";
+import { highlightNames } from "../../lib/highlightNames";
+import { LOCAL_HISTORY_TAG } from "../../lib/history/historyLines";
+import { decodeHtmlEntities } from "../../lib/htmlEntities";
 import ircClient from "../../lib/ircClient";
 import {
+  findFirstUrl,
   isUrlFromFilehost,
   isUserVerified,
+  type LinkLabels,
+  makeLinkLabels,
   processMarkdownInText,
   serverFilehosts,
 } from "../../lib/ircUtils";
 import {
   canShowMedia,
+  extractHostname,
   extractMediaFromMessage,
   type MediaEntry,
   type MediaType,
   mediaLevelToSettings,
 } from "../../lib/mediaUtils";
 import { stripIrcFormatting } from "../../lib/messageFormatter";
+import { isWhisper } from "../../lib/messageGrouping";
 import { nickColor, useNickColor } from "../../lib/nickColor";
 import {
   buildNickMatcher,
@@ -38,12 +48,10 @@ import {
 import useStore, { loadSavedMetadata } from "../../store";
 import type { MessageType, PrivateChat, User } from "../../types";
 import MessageBottomSheet from "../mobile/MessageBottomSheet";
+import MessageReaderSheet from "../mobile/MessageReaderSheet";
 import HoverTooltip from "../ui/HoverTooltip";
 import { EnhancedLinkWrapper } from "../ui/LinkWrapper";
 import { BotInvocationChip } from "./BotInvocationChip";
-import { BotToolsMessagePill } from "./BotToolsMessagePill";
-import { BotToolsPlaceholderBody } from "./BotToolsPlaceholderBody";
-import type { CollapsibleMessageHandle } from "./CollapsibleMessage";
 import EncryptedMediaPreview from "./EncryptedMediaPreview";
 import { InviteMessage } from "./InviteMessage";
 import {
@@ -64,7 +72,7 @@ import {
 import { MediaPreview } from "./MediaPreview";
 import { UnloadedReply } from "./MessageReply";
 import { MessageStatusIndicator } from "./MessageStatusIndicator";
-import { MotdBlock } from "./MotdBlock";
+import WorkflowLine from "./WorkflowLine";
 
 interface MessageItemProps {
   message: MessageType;
@@ -95,6 +103,7 @@ interface MessageItemProps {
   onRedactMessage?: (message: MessageType) => void;
   hideReply?: boolean;
   isHighlighted?: boolean;
+  isSearchHit?: boolean;
 }
 
 // Stable empty member list so PM rows share one cached nick map.
@@ -181,19 +190,22 @@ export const MessageItem = memo((props: MessageItemProps) => {
     onRedactMessage,
     hideReply,
     isHighlighted,
+    isSearchHit,
   } = props;
   const { t } = useLingui();
   // channelId is null in DMs (drives avatar lookup); privateChatId is the message store key.
   const mediaChannelId = channelId ?? privateChatId;
   const pmUserCache = useRef(new Map<string, User>());
   const isNarrowView = useMediaQuery();
-  const isTouchDevice = useMediaQuery("(pointer: coarse)");
-  const collapsibleRef = useRef<CollapsibleMessageHandle>(null);
-  const [messageNeedsCollapsing, setMessageNeedsCollapsing] = useState(false);
+  const isTouchDevice = useIsTouchInput();
   const messageRowRef = useRef<HTMLDivElement>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [isReaderOpen, setIsReaderOpen] = useState(false);
   const longPress = useLongPress({
-    onLongPress: () => setSheetOpen(true),
+    onLongPress: () => {
+      (document.activeElement as HTMLElement | null)?.blur();
+      setSheetOpen(true);
+    },
   });
 
   const handleMessageMouseEnter = () => {
@@ -362,17 +374,28 @@ export const MessageItem = memo((props: MessageItemProps) => {
     [encryptedMediaTag],
   );
 
-  // Check if message redaction is supported and possible
-  const server = useStore(
-    useCallback(
-      (state) => state.servers.find((s) => s.id === message.serverId),
-      [message.serverId],
-    ),
+  // Every row subscribes here, so we select plain values: a whole server
+  // object changes on any channel update and would re-render every message.
+  // The filehost origins travel as one string so the shallow compare holds.
+  const { canServerRedact, fileHostsKey, channelEmojiUrl, serverEmojiPackUrl } =
+    useStore(
+      useShallow((state) => {
+        const server = state.servers.find((s) => s.id === message.serverId);
+        return {
+          canServerRedact: !!server?.capabilities?.includes(
+            "draft/message-redaction",
+          ),
+          fileHostsKey: serverFilehosts(server).join(" "),
+          channelEmojiUrl: server?.channels.find((c) => c.id === channelId)
+            ?.metadata?.["draft/emoji"]?.value,
+          serverEmojiPackUrl: server?.emojiPackUrl,
+        };
+      }),
+    );
+  const fileHosts = useMemo(
+    () => fileHostsKey.split(" ").filter(Boolean),
+    [fileHostsKey],
   );
-  // Origins trusted for uploaded media: vendor obby.world/FILEHOST plus the
-  // tokenless draft/FILEHOST list. fileHostsKey is a stable memo dependency.
-  const fileHosts = serverFilehosts(server);
-  const fileHostsKey = fileHosts.join(" ");
   const mediaVisibilityLevel = useStore(
     useCallback((state) => state.globalSettings.mediaVisibilityLevel, []),
   );
@@ -386,7 +409,7 @@ export const MessageItem = memo((props: MessageItemProps) => {
     !isSystem &&
     isCurrentUser &&
     !!message.msgid &&
-    !!server?.capabilities?.includes("draft/message-redaction") &&
+    canServerRedact &&
     !!onRedactMessage;
   const canReply = !hideReply && message.type === "message";
 
@@ -411,21 +434,32 @@ export const MessageItem = memo((props: MessageItemProps) => {
   // draft/custom-emoji: gather pack URLs for this message's channel +
   // network in priority order so a channel pack can shadow a network
   // shortcode of the same name.
-  const channelEmojiUrl = useMemo(() => {
-    const ch = server?.channels.find((c) => c.id === channelId);
-    return ch?.metadata?.["draft/emoji"]?.value;
-  }, [server, channelId]);
   const { resolve: resolveEmoji } = useEmojiResolver([
     channelEmojiUrl,
-    server?.emojiPackUrl,
+    serverEmojiPackUrl,
   ]);
+
+  // We label only plaintext messages, and lead with the real host because the linked page supplies the title.
+  const isEncrypted = isFromEncryptedSession(message) || !!encryptedMedia;
+  const workflowId = useMemo(
+    () => message.botToolsWorkflowId ?? workflowIdFromTags(message.tags),
+    [message.botToolsWorkflowId, message.tags],
+  );
+  const linkLabels = useMemo<LinkLabels | undefined>(() => {
+    if (!message.linkPreviewTitle || isEncrypted) return undefined;
+    const url = findFirstUrl(stripIrcFormatting(message.content));
+    const host = url && extractHostname(url);
+    return url && host
+      ? makeLinkLabels(
+          url,
+          `${host} · ${decodeHtmlEntities(message.linkPreviewTitle)}`,
+        )
+      : undefined;
+  }, [message.content, message.linkPreviewTitle, isEncrypted]);
 
   const htmlContent = useMemo(() => {
     const keyPrefix = message.id || message.msgid || "msg";
-    if (message.motdLines) {
-      return <MotdBlock lines={message.motdLines} keyPrefix={keyPrefix} />;
-    }
-    return renderWithCustomEmoji(
+    const body = renderWithCustomEmoji(
       messageContent,
       resolveEmoji,
       (subtext, key) =>
@@ -434,17 +468,22 @@ export const MessageItem = memo((props: MessageItemProps) => {
           showExternalContent,
           enableMarkdownRendering,
           key,
+          linkLabels,
         ),
       `${keyPrefix}-em`,
     );
+    // A reply says who it answers on its own, so only a name said out loud in
+    // the text needs pointing at.
+    return highlightNames(body, message.mentioned);
   }, [
     messageContent,
     showExternalContent,
     enableMarkdownRendering,
     message.id,
     message.msgid,
-    message.motdLines,
+    message.mentioned,
     resolveEmoji,
+    linkLabels,
   ]);
 
   const enableHighlights = useStore(
@@ -456,9 +495,14 @@ export const MessageItem = memo((props: MessageItemProps) => {
   const coloredNicknames = useStore(
     useCallback((state) => state.globalSettings.coloredNicknames, []),
   );
-  const channelUsers = useMemo(
-    () => server?.channels.find((c) => c.id === channelId)?.users ?? NO_USERS,
-    [server, channelId],
+  const channelUsers = useStore(
+    useCallback(
+      (state) =>
+        state.servers
+          .find((s) => s.id === message.serverId)
+          ?.channels.find((c) => c.id === channelId)?.users ?? NO_USERS,
+      [message.serverId, channelId],
+    ),
   );
   const openPrivateChatWith = useCallback(
     (nick: string) => {
@@ -476,19 +520,6 @@ export const MessageItem = memo((props: MessageItemProps) => {
     },
     [message.serverId],
   );
-  const joinAndSelectChannel = useJoinAndSelectChannel();
-  const openChannel = useCallback(
-    (name: string) => {
-      const serverId = message.serverId;
-      const { servers, selectChannel } = useStore.getState();
-      const existing = servers
-        .find((s) => s.id === serverId)
-        ?.channels.find((c) => c.name.toLowerCase() === name.toLowerCase());
-      if (existing) selectChannel(existing.id, { navigate: true });
-      else joinAndSelectChannel(serverId, name);
-    },
-    [message.serverId, joinAndSelectChannel],
-  );
   // Our own messages never highlight us; with highlights off our nick is
   // just another member name.
   const highlightSelf = enableHighlights && !isCurrentUser;
@@ -502,7 +533,6 @@ export const MessageItem = memo((props: MessageItemProps) => {
           customMentions,
           onNickClick: openPrivateChatWith,
           colorFor: coloredNicknames ? nickColor : undefined,
-          onChannelClick: openChannel,
         }),
       ),
     [
@@ -513,7 +543,6 @@ export const MessageItem = memo((props: MessageItemProps) => {
       customMentions,
       openPrivateChatWith,
       coloredNicknames,
-      openChannel,
     ],
   );
   // A nick colored letter by letter is split across spans, so the rendered
@@ -547,9 +576,8 @@ export const MessageItem = memo((props: MessageItemProps) => {
     </HoverTooltip>
   ) : (
     <CollapsibleMessage
-      ref={collapsibleRef}
       content={highlightedContent}
-      onNeedsCollapsing={setMessageNeedsCollapsing}
+      onRequestRead={() => setIsReaderOpen(true)}
     />
   );
 
@@ -599,6 +627,18 @@ export const MessageItem = memo((props: MessageItemProps) => {
     });
   }, []);
 
+  // A preview that ends up with nothing to show reports its URL here, so a
+  // single-URL message falls back to its ordinary text instead of going blank.
+  const [failedPreviewUrl, setFailedPreviewUrl] = useState<string | null>(null);
+  const handleRenderFailed = useCallback((url: string) => {
+    setFailedPreviewUrl(url);
+  }, []);
+
+  const isSingleMediaCandidate =
+    isSingleToken && mediaEntries.length === 1 && mediaEntries[0].type !== null;
+  const isSingleKnownMediaMessage =
+    isSingleMediaCandidate && mediaEntries[0].url !== failedPreviewUrl;
+
   // A file this network hosts, sent inside an encrypted session, still sits on
   // the host in the clear, so the row says so while keeping the normal preview,
   // seeking and thumbnails. Counted before the trust filter, so turning
@@ -630,13 +670,7 @@ export const MessageItem = memo((props: MessageItemProps) => {
     return <SystemMessage message={message} onIrcLinkClick={onIrcLinkClick} />;
   }
 
-  // Handle whisper messages (channel-context tag, ratified or draft variant)
-  if (
-    message.tags?.["+channel-context"] ||
-    message.tags?.["channel-context"] ||
-    message.tags?.["+draft/channel-context"] ||
-    message.tags?.["draft/channel-context"]
-  ) {
+  if (isWhisper(message)) {
     return (
       <>
         {showDate && (
@@ -818,17 +852,34 @@ export const MessageItem = memo((props: MessageItemProps) => {
     }
   };
 
+  const handleScrollToReply = () => {
+    if (message.replyMessage?.id)
+      useStore.getState().revealMessage(message.replyMessage.id);
+  };
+
+  // A reply whose original is not loaded still shows as a reply; the msgid
+  // finds the original once history has brought it in.
   const unloadedReplyId = message.replyMessage
     ? null
     : (message.tags?.["+reply"] ?? message.tags?.["+draft/reply"])?.trim() ||
       null;
-
-  const jumpToReplyTarget = (target: string | null | undefined) => {
-    if (!target) return;
-    useStore
+  const revealByMsgid = (msgid: string) => {
+    const key = `${message.serverId}-${message.channelId}`;
+    const loaded = useStore
       .getState()
-      .requestJumpToMessage(`${message.serverId}-${message.channelId}`, target);
+      .messages[key]?.find(
+        (m) => m.msgid === msgid || m.multilineMessageIds?.includes(msgid),
+      );
+    if (loaded) useStore.getState().revealMessage(loaded.id);
   };
+
+  // Someone said our name, or answered something we said. Either way the row
+  // is worth finding again while scrolling past everything else.
+  const isAimedAtUs =
+    !isCurrentUser &&
+    (message.mentioned.length > 0 ||
+      (!!ircCurrentUser &&
+        message.replyMessage?.userId === ircCurrentUser.username));
 
   const isClickable =
     message.userId !== "system" && ircCurrentUser?.username !== username;
@@ -843,11 +894,9 @@ export const MessageItem = memo((props: MessageItemProps) => {
       data-header={showHeader ? "true" : "false"}
       className={`obby-message-row px-4 hover:bg-discord-message-hover group relative transition-colors duration-150 ${
         showHeader ? "mt-4" : "py-0.5"
-      }${isHighlighted ? " bg-primary/10 ring-1 ring-primary/30 rounded" : ""}${
-        (mentionsSelf || mentionsSelfInText) && !isUnprotected
-          ? " obby-mention-row"
-          : ""
-      }${
+      }${isAimedAtUs ? " message-aimed-at-us" : ""}${
+        isHighlighted ? " bg-primary/10 ring-1 ring-primary/30 rounded" : ""
+      }${isSearchHit ? " search-hit" : ""}${
         isUnprotected
           ? " border-l-2 border-amber-500/70 bg-amber-500/[0.06]"
           : isUndecryptable
@@ -900,6 +949,7 @@ export const MessageItem = memo((props: MessageItemProps) => {
               isVerified={isVerified}
               isIrcOp={isIrcOp}
               unprotected={isUnprotected}
+              isSavedLocally={message.tags?.[LOCAL_HISTORY_TAG] !== undefined}
             />
           )}
 
@@ -907,6 +957,8 @@ export const MessageItem = memo((props: MessageItemProps) => {
             {isBot && (
               <BotInvocationChip
                 tagValue={message.tags?.["+draft/invoked-by"]}
+                serverId={message.serverId}
+                botNick={message.userId}
               />
             )}
             {message.replyMessage && (
@@ -915,13 +967,11 @@ export const MessageItem = memo((props: MessageItemProps) => {
                 theme={theme}
                 onUsernameClick={handleReplyUsernameClick}
                 onIrcLinkClick={onIrcLinkClick}
-                onReplyClick={() => jumpToReplyTarget(message.replyMessage?.id)}
+                onReplyClick={handleScrollToReply}
               />
             )}
             {unloadedReplyId && (
-              <UnloadedReply
-                onClick={() => jumpToReplyTarget(unloadedReplyId)}
-              />
+              <UnloadedReply onClick={() => revealByMsgid(unloadedReplyId)} />
             )}
 
             {encryptedMedia && (
@@ -949,9 +999,7 @@ export const MessageItem = memo((props: MessageItemProps) => {
             )}
 
             <EnhancedLinkWrapper onIrcLinkClick={onIrcLinkClick}>
-              {isSingleToken &&
-              mediaEntries.length === 1 &&
-              mediaEntries[0].type !== null ? (
+              {isSingleKnownMediaMessage ? (
                 // Known type: hide URL, show only the preview
                 <MediaPreview
                   entry={mediaEntries[0]}
@@ -963,12 +1011,9 @@ export const MessageItem = memo((props: MessageItemProps) => {
                   serverId={message.serverId}
                   channelId={mediaChannelId}
                   onOpenProfile={onOpenProfile}
+                  onRenderFailed={handleRenderFailed}
                 />
               ) : (
-                // The workflow pill is absolutely positioned in the
-                // avatar gutter to the LEFT of the body, so the body
-                // stays at its natural alignment and isn't pushed
-                // sideways by the pill's width.
                 <div
                   className="relative"
                   style={{
@@ -977,23 +1022,14 @@ export const MessageItem = memo((props: MessageItemProps) => {
                     wordBreak: "break-word",
                   }}
                 >
-                  <span
-                    className="absolute top-[5px] z-10"
-                    style={{ right: "100%", marginRight: "4px" }}
-                  >
-                    <BotToolsMessagePill
+                  {workflowId && (
+                    <WorkflowLine
                       serverId={message.serverId}
-                      tags={message.tags}
+                      workflowId={workflowId}
+                      isPending={!!message.botToolsPending}
                     />
-                  </span>
-                  {message.botToolsPending && message.botToolsWorkflowId ? (
-                    <BotToolsPlaceholderBody
-                      serverId={message.serverId}
-                      workflowId={message.botToolsWorkflowId}
-                    />
-                  ) : (
-                    collapsibleContent
                   )}
+                  {!message.botToolsPending && collapsibleContent}
                 </div>
               )}
             </EnhancedLinkWrapper>
@@ -1012,11 +1048,7 @@ export const MessageItem = memo((props: MessageItemProps) => {
             {/* Embedded media below text — first always visible,
                   known-type extras collapsed behind a "show more" toggle to prevent floods.
                   Null-type extras render inline since they show nothing if the probe fails. */}
-            {!(
-              isSingleToken &&
-              mediaEntries.length === 1 &&
-              mediaEntries[0].type !== null
-            ) &&
+            {!isSingleMediaCandidate &&
               mediaEntries.length > 0 &&
               (() => {
                 const {
@@ -1083,7 +1115,7 @@ export const MessageItem = memo((props: MessageItemProps) => {
                           ))}
                           <button
                             type="button"
-                            className="mt-1 text-xs text-discord-text-muted hover:text-discord-text cursor-pointer underline"
+                            className="mt-1 text-xs text-discord-text-muted hover:text-discord-text-normal cursor-pointer underline"
                             onClick={() => setShowAllImages(false)}
                           >
                             <Trans>Show less</Trans>
@@ -1092,7 +1124,7 @@ export const MessageItem = memo((props: MessageItemProps) => {
                       ) : (
                         <button
                           type="button"
-                          className="mt-1 text-xs text-discord-text-muted hover:text-discord-text cursor-pointer underline"
+                          className="mt-1 text-xs text-discord-text-muted hover:text-discord-text-normal cursor-pointer underline"
                           onClick={() => setShowAllImages(true)}
                         >
                           <Plural
@@ -1107,18 +1139,18 @@ export const MessageItem = memo((props: MessageItemProps) => {
               })()}
 
             {/* Render link preview if available */}
-            {(message.linkPreviewTitle ||
-              message.linkPreviewSnippet ||
-              message.linkPreviewMeta) && (
-              <LinkPreview
-                title={message.linkPreviewTitle}
-                snippet={message.linkPreviewSnippet}
-                imageUrl={message.linkPreviewMeta}
-                theme={theme}
-                messageContent={message.content}
-                serverId={serverId}
-              />
-            )}
+            {!isEncrypted &&
+              (message.linkPreviewTitle ||
+                message.linkPreviewSnippet ||
+                message.linkPreviewMeta) && (
+                <LinkPreview
+                  title={message.linkPreviewTitle}
+                  snippet={message.linkPreviewSnippet}
+                  imageUrl={message.linkPreviewMeta}
+                  messageContent={message.content}
+                  serverId={serverId}
+                />
+              )}
           </div>
 
           <ReactionsWithActions
@@ -1175,6 +1207,20 @@ export const MessageItem = memo((props: MessageItemProps) => {
           canDelete={canRedact}
           canOpenMedia={canOpenMedia}
         />
+      )}
+      {isReaderOpen && (
+        <MessageReaderSheet
+          isOpen
+          onClose={() => setIsReaderOpen(false)}
+          author={displayName || message.userId}
+          time={copyTime}
+          copyText={stripIrcFormatting(message.content)}
+          onReply={canReply ? () => setReplyTo(message) : undefined}
+        >
+          <EnhancedLinkWrapper onIrcLinkClick={onIrcLinkClick}>
+            {htmlContent}
+          </EnhancedLinkWrapper>
+        </MessageReaderSheet>
       )}
     </div>
   );

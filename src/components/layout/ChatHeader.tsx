@@ -19,10 +19,11 @@ import {
   FaRobot,
   FaSearch,
   FaThumbtack,
-  FaTimes,
   FaUser,
   FaUserPlus,
 } from "react-icons/fa";
+import { useShallow } from "zustand/react/shallow";
+import { useIsTouchInput } from "../../hooks/useIsTouchInput";
 import {
   getChannelAvatarUrl,
   getChannelDisplayName,
@@ -32,18 +33,18 @@ import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
 import { stripIrcFormatting } from "../../lib/messageFormatter";
 import { chatMute, isServerMuted, useMutes } from "../../lib/mutes";
 import { isTauriMobile } from "../../lib/platformUtils";
+import { currentChatScope } from "../../lib/search/searchScope";
+import type { SearchScope } from "../../lib/search/searchTypes";
 import { serverDisplayName } from "../../lib/serverDisplayName";
 import { renderTopic } from "../../lib/topicRender";
 import useStore, { loadSavedMetadata } from "../../store";
 import type { Channel, PrivateChat, User } from "../../types";
 import { BotToolsHistoryButton } from "../ui/BotToolsHistoryButton";
 import E2EELockControl from "../ui/E2EELockControl";
-import HeaderOverflowMenu, {
-  type HeaderOverflowMenuItem,
-} from "../ui/HeaderOverflowMenu";
 import { MentionsInbox } from "../ui/MentionsInbox";
+import Menu, { type MenuItem } from "../ui/Menu";
 import MuteModal from "../ui/MuteModal";
-import { TextInput } from "../ui/TextInput";
+import OperatorKey from "../ui/OperatorKey";
 import TopicModal from "../ui/TopicModal";
 
 interface ChatHeaderProps {
@@ -58,15 +59,47 @@ interface ChatHeaderProps {
   globalSettings: {
     notificationVolume: number;
   };
-  searchQuery: string;
   onToggleChanList: () => void;
   onToggleMemberList: () => void;
-  onSearchQueryChange: (query: string) => void;
   onToggleNotificationVolume: () => void;
   onOpenChannelSettings: () => void;
   onOpenInviteUser: () => void;
   onOpenBots: () => void;
 }
+
+const HeaderSearchButton: React.FC<{ scope: SearchScope }> = ({ scope }) => {
+  const { t } = useLingui();
+  const openQuickActions = useStore((state) => state.openQuickActions);
+  const isTouch = useIsTouchInput();
+  const label = t`Search messages`;
+  const open = () => openQuickActions("messages", scope);
+  if (isTouch)
+    return (
+      <button
+        type="button"
+        className="w-11 h-11 shrink-0 flex items-center justify-center text-white"
+        onClick={open}
+        aria-label={label}
+        title={label}
+      >
+        <span className="chip-outline w-8 h-8 justify-center rounded-lg px-0">
+          <FaSearch className="text-sm" />
+        </span>
+      </button>
+    );
+  return (
+    <button
+      type="button"
+      className="chip-outline h-8"
+      onClick={open}
+      aria-label={label}
+      title={label}
+    >
+      <FaSearch className="text-xs" />
+      <Trans>Search</Trans>
+    </button>
+  );
+};
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
   selectedChannel,
@@ -78,10 +111,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   isMemberListVisible,
   isNarrowView,
   globalSettings,
-  searchQuery,
   onToggleChanList,
   onToggleMemberList,
-  onSearchQueryChange,
   onToggleNotificationVolume,
   onOpenChannelSettings,
   onOpenInviteUser,
@@ -89,20 +120,30 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
 }) => {
   const { t } = useLingui();
   const {
-    toggleChannelListModal,
+    openPage,
+    openProfile,
     toggleMemberList,
     setMobileViewActiveColumn,
     pinPrivateChat,
     unpinPrivateChat,
     setTopicModalRequest,
     clearTopicModalRequest,
-    setProfileViewRequest,
-    toggleUserProfileModal,
     openMediaExplorer,
-  } = useStore();
+  } = useStore(
+    useShallow((state) => ({
+      openPage: state.openPage,
+      openProfile: state.openProfile,
+      toggleMemberList: state.toggleMemberList,
+      setMobileViewActiveColumn: state.setMobileViewActiveColumn,
+      pinPrivateChat: state.pinPrivateChat,
+      unpinPrivateChat: state.unpinPrivateChat,
+      setTopicModalRequest: state.setTopicModalRequest,
+      clearTopicModalRequest: state.clearTopicModalRequest,
+      openMediaExplorer: state.openMediaExplorer,
+    })),
+  );
   const ui = useStore((state) => state.ui);
   const topicModalRequest = useStore((state) => state.ui.topicModalRequest);
-  const profileViewRequest = useStore((state) => state.ui.profileViewRequest);
   const botsLoadingCount = useStore(
     (state) =>
       state.servers.find((s) => s.id === selectedServerId)?.botCommandsLoading
@@ -110,7 +151,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   );
   const nativeMobile = isTauriMobile();
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
-  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [isOverflowMenuOpen, setIsOverflowMenuOpen] = useState(false);
   const [isMuteModalOpen, setIsMuteModalOpen] = useState(false);
   useMutes(); // re-render when mutes change
@@ -261,15 +301,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             🤖
           </span>
         )}
-        {isIrcOp && (
-          <span
-            className="inline ml-0.5"
-            style={{ fontSize: "0.9em" }}
-            title={t`IRC Operator`}
-          >
-            🔑
-          </span>
-        )}
+        {isIrcOp && <OperatorKey className="ml-0.5" />}
       </>
     );
   };
@@ -303,10 +335,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   const hasMedia =
     hasMediaInMessages || Boolean(selectedChannel?.topic?.includes("http"));
 
-  // Reset search expanded state and overflow menu when channel or mobile view changes
   // biome-ignore lint/correctness/useExhaustiveDependencies: Need to reset when channel or page changes
   useEffect(() => {
-    setIsSearchExpanded(false);
     setIsOverflowMenuOpen(false);
   }, [selectedChannelId, mobileViewActiveColumn]);
 
@@ -326,11 +356,11 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         : t`Select a channel`
       : t`Home`;
     return (
-      <div className="px-4 py-2.5 border-b border-discord-dark-400 shadow-sm flex items-center min-h-12">
+      <div className="chat-header px-4 py-2.5 border-b border-discord-dark-400 shadow-sm flex items-center min-h-12">
         {(isNarrowView || !isChanListVisible) && (
           <button
             onClick={onToggleChanList}
-            className="p-2 md:p-0 text-discord-channels-default hover:text-discord-text-strong flex-shrink-0"
+            className="p-3 -m-1 md:p-0 md:m-0 text-discord-channels-default hover:text-discord-text-strong flex-shrink-0"
             aria-label={t`Expand channel list`}
           >
             {isNarrowView ? <FaChevronLeft /> : <FaChevronRight />}
@@ -341,8 +371,40 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
     );
   }
 
-  // Define overflow menu items based on context
-  const overflowMenuItems: HeaderOverflowMenuItem[] = [
+  const chatScope = currentChatScope(servers, selectedServerId, {
+    selectedChannelId: selectedChannel?.id ?? null,
+    selectedPrivateChatId: selectedPrivateChat?.id ?? null,
+  });
+
+  const memberListToggleLabel = isMemberListVisible
+    ? t`Collapse member list`
+    : t`Expand member list`;
+
+  const openPrivateChatProfile = () => {
+    if (!selectedServerId || !selectedPrivateChat) return;
+    openProfile(selectedServerId, selectedPrivateChat.username);
+  };
+
+  const overflowMenuItems: MenuItem[] = [
+    {
+      label: selectedPrivateChat?.isPinned
+        ? t`Unpin conversation`
+        : t`Pin conversation`,
+      icon: <FaThumbtack />,
+      onClick: () => {
+        if (!selectedServerId || !selectedPrivateChat) return;
+        if (selectedPrivateChat.isPinned)
+          unpinPrivateChat(selectedServerId, selectedPrivateChat.id);
+        else pinPrivateChat(selectedServerId, selectedPrivateChat.id);
+      },
+      show: !!selectedPrivateChat && !!selectedServerId,
+    },
+    {
+      label: t`See profile`,
+      icon: <FaInfoCircle />,
+      onClick: openPrivateChatProfile,
+      show: !!selectedPrivateChat && !!selectedServerId,
+    },
     {
       label: t`Media`,
       icon: <FaFilm />,
@@ -352,10 +414,10 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           openMediaExplorer(selectedServerId, chatId);
         }
       },
-      show: hasMedia,
+      show: hasMedia && nativeMobile,
     },
     {
-      label: t`Channel Settings`,
+      label: t`Edit Channel`,
       icon: <FaPenAlt />,
       onClick: onOpenChannelSettings,
       show: !!selectedChannel,
@@ -368,7 +430,9 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
     },
     {
       label:
-        botsLoadingCount > 0 ? t`Bots (loading ${botsLoadingCount})` : t`Bots`,
+        botsLoadingCount > 0
+          ? t`Manage Bots (loading ${botsLoadingCount})`
+          : t`Manage Bots`,
       icon: (
         <FaRobot
           className={
@@ -392,63 +456,17 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
       show: !!selectedPrivateChat,
     },
     {
-      label: t`Server Channels`,
+      label: t`Browse Channels`,
       icon: <FaList />,
-      onClick: () => toggleChannelListModal(true),
+      onClick: () =>
+        selectedServerId &&
+        openPage({ kind: "channelBrowser", serverId: selectedServerId }),
       show: true,
     },
   ].filter((item) => item.show);
 
   return (
-    <div className="pl-4 pr-0 md:px-4 border-b border-discord-dark-400 shadow-sm flex items-center min-h-12 relative">
-      {/* Full-width search overlay (narrow view only) */}
-      {isSearchExpanded && (selectedChannel || selectedPrivateChat) && (
-        <div className="md:hidden absolute inset-0 z-10 flex items-center gap-2 px-2 bg-discord-dark-500">
-          {selectedChannel ? (
-            selectedChannel.name.startsWith("^") ? (
-              <FaMicrophone className="text-discord-text-muted text-lg flex-shrink-0" />
-            ) : selectedChannel.name.startsWith("$") ? (
-              <FaDesktop className="text-discord-text-muted text-lg flex-shrink-0" />
-            ) : (
-              <FaHashtag className="text-discord-text-muted text-lg flex-shrink-0" />
-            )
-          ) : (
-            <FaUser className="text-discord-text-muted text-lg flex-shrink-0" />
-          )}
-          <TextInput
-            autoFocus
-            placeholder={t`Search messages…`}
-            value={searchQuery}
-            onChange={(e) => onSearchQueryChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                setIsSearchExpanded(false);
-                onSearchQueryChange("");
-              }
-            }}
-            className="flex-1 bg-discord-dark-400 text-discord-text-strong text-sm rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-discord-text-link min-w-0"
-          />
-          <button
-            className="p-2 text-discord-text-muted hover:text-discord-text-strong flex-shrink-0"
-            onClick={() => {
-              if (searchQuery) {
-                onSearchQueryChange("");
-              } else {
-                // Blur before closing so iOS WKWebView fires will-hide and clears
-                // root.style.position/bottom and data-keyboard-visible properly.
-                // Without this, onMouseDown's preventDefault keeps focus on the input,
-                // the unmount doesn't trigger the native keyboard dismiss sequence,
-                // and data-keyboard-visible stays set — blocking all swipe gestures.
-                (document.activeElement as HTMLElement)?.blur();
-                setIsSearchExpanded(false);
-              }
-            }}
-            onMouseDown={(e) => e.preventDefault()}
-          >
-            <FaTimes />
-          </button>
-        </div>
-      )}
+    <div className="chat-header pl-4 pr-0 md:px-4 border-b border-discord-dark-400 shadow-sm flex items-center min-h-12 relative">
       {/* CHANNELS */}
       {selectedChannel && (
         <div className="flex items-center justify-between w-full gap-2">
@@ -456,7 +474,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           {(isNarrowView || !isChanListVisible) && (
             <button
               onClick={onToggleChanList}
-              className="p-2 md:p-0 text-discord-channels-default hover:text-discord-text-strong flex-shrink-0"
+              className="p-3 -m-1 md:p-0 md:m-0 text-discord-channels-default hover:text-discord-text-strong flex-shrink-0"
               aria-label={t`Expand channel list`}
             >
               {isNarrowView ? <FaChevronLeft /> : <FaChevronRight />}
@@ -533,11 +551,20 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           {/* Center: Title and Topic stacked */}
           <div className="flex flex-col justify-center min-w-0 flex-1">
             {/* Title */}
-            <h2 className="font-bold text-discord-text-strong truncate">
-              {getChannelDisplayName(
-                selectedChannel.name,
-                selectedChannel.metadata,
-              )}
+            <h2 className="min-w-0 flex">
+              <button
+                type="button"
+                onClick={onOpenChannelSettings}
+                title={
+                  isOperator ? t`Edit channel settings` : t`See channel info`
+                }
+                className="font-bold text-discord-text-strong truncate text-left hover:underline"
+              >
+                {getChannelDisplayName(
+                  selectedChannel.name,
+                  selectedChannel.metadata,
+                )}
+              </button>
             </h2>
 
             {/* Topic text, or placeholder for ops when topic is empty */}
@@ -565,7 +592,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 }}
                 className="text-discord-channels-default/40 text-xs hover:text-discord-channels-default truncate text-left italic"
               >
-                <Trans>Click to set topic</Trans>
+                <Trans>Set a topic…</Trans>
               </button>
             ) : null}
           </div>
@@ -603,11 +630,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                       toggleMemberList(!isMemberListVisible);
                     }
                   }}
-                  aria-label={
-                    isMemberListVisible
-                      ? t`Collapse member list`
-                      : t`Expand member list`
-                  }
+                  aria-label={memberListToggleLabel}
+                  title={memberListToggleLabel}
                   data-testid="toggle-member-list"
                 >
                   {(
@@ -622,44 +646,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 </button>
               )}
 
-              {/* Desktop action buttons */}
-              <button
-                className="hidden md:block hover:text-discord-text-normal"
-                onClick={onOpenChannelSettings}
-                title={t`Channel Settings`}
-              >
-                <FaPenAlt />
-              </button>
-              <button
-                className="hidden md:block hover:text-discord-text-normal"
-                onClick={onOpenInviteUser}
-                title={t`Invite User`}
-              >
-                <FaUserPlus />
-              </button>
-              <button
-                className={`hidden md:block ${
-                  botsLoadingCount > 0
-                    ? "text-blue-500 animate-pulse-bright"
-                    : "hover:text-discord-text-normal"
-                }`}
-                onClick={onOpenBots}
-                title={
-                  botsLoadingCount > 0
-                    ? t`Bots — receiving ${botsLoadingCount} command list(s)`
-                    : t`Bots on this network`
-                }
-                aria-label={t`Bots`}
-              >
-                <FaRobot />
-              </button>
-              <button
-                className="hidden md:block hover:text-discord-text-normal"
-                onClick={() => toggleChannelListModal(true)}
-                title={t`Server Channels`}
-              >
-                <FaList />
-              </button>
               {/* Media explorer — in overflow menu on native mobile, inline button elsewhere */}
               {hasMedia && !nativeMobile && (
                 <button
@@ -681,39 +667,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   channel={selectedChannel.name}
                 />
               )}
-              {/* Search */}
-              <button
-                className="md:hidden p-2 hover:text-discord-text-normal"
-                onClick={() => setIsSearchExpanded(!isSearchExpanded)}
-                aria-label={t`Toggle search`}
-                title={t`Search`}
-              >
-                <FaSearch />
-              </button>
-
-              <div className="hidden md:block relative">
-                <TextInput
-                  placeholder={t`Search`}
-                  value={searchQuery}
-                  onChange={(e) => onSearchQueryChange(e.target.value)}
-                  className="bg-discord-dark-400 text-discord-text-muted text-sm rounded px-2 py-1 pr-14 w-32 focus:outline-none focus:ring-1 focus:ring-discord-text-link"
-                />
-                {searchQuery && (
-                  <button
-                    className="absolute right-6 top-1.5 text-red-400 hover:text-red-300 text-xs"
-                    onClick={() => onSearchQueryChange("")}
-                    title={t`Clear search`}
-                  >
-                    <FaTimes />
-                  </button>
-                )}
-                <FaSearch className="absolute right-2 top-1.5 text-xs" />
-              </div>
+              <HeaderSearchButton scope={chatScope} />
 
               {/* Overflow menu */}
               <button
                 ref={overflowButtonRef}
-                className="md:hidden p-2 hover:text-discord-text-normal"
+                className="md:hidden p-3 -m-1 hover:text-discord-text-normal"
                 onClick={() => setIsOverflowMenuOpen(!isOverflowMenuOpen)}
                 aria-label={t`More actions`}
                 aria-expanded={isOverflowMenuOpen}
@@ -733,56 +692,82 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             {(isNarrowView || !isChanListVisible) && (
               <button
                 onClick={onToggleChanList}
-                className="p-2 md:p-0 text-discord-channels-default hover:text-discord-text-strong mr-4 flex-shrink-0"
+                className="p-3 -m-1 md:p-0 md:m-0 text-discord-channels-default hover:text-discord-text-strong mr-4 flex-shrink-0"
                 aria-label={t`Expand channel list`}
               >
                 {isNarrowView ? <FaChevronLeft /> : <FaChevronRight />}
               </button>
             )}
-            <div className="relative w-10 h-10 flex-shrink-0">
-              {(() => {
-                const selectedServer = servers.find(
-                  (s) => s.id === selectedServerId,
-                );
-                const shouldShowAvatar =
-                  canShowAvatarUrl(
-                    privateChatAvatar,
-                    serverFilehosts(selectedServer),
-                    mediaSettings,
-                  ) && !avatarLoadFailed;
+            <button
+              type="button"
+              className="flex items-center gap-3 min-w-0 text-left"
+              onClick={openPrivateChatProfile}
+            >
+              <span className="block relative w-10 h-10 flex-shrink-0">
+                {(() => {
+                  const selectedServer = servers.find(
+                    (s) => s.id === selectedServerId,
+                  );
+                  const shouldShowAvatar =
+                    canShowAvatarUrl(
+                      privateChatAvatar,
+                      serverFilehosts(selectedServer),
+                      mediaSettings,
+                    ) && !avatarLoadFailed;
 
-                return shouldShowAvatar ? (
-                  <img
-                    src={privateChatAvatar}
-                    alt={selectedPrivateChat.username}
-                    className="w-full h-full rounded-full object-cover"
-                    onError={() => setAvatarLoadFailed(true)}
-                  />
-                ) : (
-                  <div className="w-full h-full rounded-full bg-discord-dark-400 flex items-center justify-center">
-                    <FaUser className="text-discord-text-muted text-xl" />
-                  </div>
-                );
-              })()}
-              <span
-                className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-discord-dark-200 ${
-                  selectedPrivateChat.isOnline
-                    ? selectedPrivateChat.isAway
-                      ? "bg-yellow-500"
-                      : "bg-green-500"
-                    : "bg-discord-text-faint"
-                }`}
-                title={
-                  selectedPrivateChat.isOnline
-                    ? selectedPrivateChat.isAway
-                      ? t`Away`
-                      : t`Online`
-                    : t`Offline`
-                }
-              />
-            </div>
-            <div className="flex flex-col">
-              <h2 className="font-bold text-discord-text-strong">
+                  return shouldShowAvatar ? (
+                    <img
+                      src={privateChatAvatar}
+                      alt={selectedPrivateChat.username}
+                      className="w-full h-full rounded-full object-cover"
+                      onError={() => setAvatarLoadFailed(true)}
+                    />
+                  ) : (
+                    <span className="w-full h-full rounded-full bg-discord-dark-400 flex items-center justify-center">
+                      <FaUser className="text-discord-text-muted text-xl" />
+                    </span>
+                  );
+                })()}
+                <span
+                  className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-discord-dark-200 ${
+                    selectedPrivateChat.isOnline
+                      ? selectedPrivateChat.isAway
+                        ? "bg-yellow-500"
+                        : "bg-green-500"
+                      : "bg-gray-500"
+                  }`}
+                  title={
+                    selectedPrivateChat.isOnline
+                      ? selectedPrivateChat.isAway
+                        ? t`Away`
+                        : t`Online`
+                      : t`Offline`
+                  }
+                />
+              </span>
+              <span className="flex flex-col min-w-0">
+                <span className="block font-bold text-white truncate">
+                  {(() => {
+                    const userMetadata = getUserMetadata(
+                      selectedPrivateChat.username,
+                    );
+                    const displayName = userMetadata?.["display-name"]?.value;
+                    const user = getUserFromChannels(
+                      selectedPrivateChat.username,
+                    );
+                    return (
+                      <>
+                        {displayName || selectedPrivateChat.username}
+                        {renderUserBadges(
+                          selectedPrivateChat.username,
+                          selectedPrivateChat,
+                          user,
+                          !displayName,
+                        )}
+                      </>
+                    );
+                  })()}
+                </span>
                 {(() => {
                   const userMetadata = getUserMetadata(
                     selectedPrivateChat.username,
@@ -791,92 +776,37 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   const user = getUserFromChannels(
                     selectedPrivateChat.username,
                   );
-                  return (
-                    <>
-                      {displayName || selectedPrivateChat.username}
-                      {renderUserBadges(
-                        selectedPrivateChat.username,
-                        selectedPrivateChat,
-                        user,
-                        !displayName,
-                      )}
-                    </>
-                  );
-                })()}
-              </h2>
-              {(() => {
-                const userMetadata = getUserMetadata(
-                  selectedPrivateChat.username,
-                );
-                const displayName = userMetadata?.["display-name"]?.value;
-                const user = getUserFromChannels(selectedPrivateChat.username);
 
-                if (displayName) {
-                  return (
-                    <div className="flex items-center gap-1.5 text-xs truncate mt-0.5">
-                      <span className="bg-gray-300 text-black px-1 py-0 rounded font-bold whitespace-nowrap text-[10px]">
-                        {selectedPrivateChat.username}
-                        {renderUserBadges(
-                          selectedPrivateChat.username,
-                          selectedPrivateChat,
-                          user,
-                        )}
+                  if (displayName) {
+                    return (
+                      <span className="flex items-center gap-1.5 text-xs truncate mt-0.5">
+                        <span className="bg-gray-300 text-black px-1 py-0 rounded font-bold whitespace-nowrap text-[10px]">
+                          {selectedPrivateChat.username}
+                          {renderUserBadges(
+                            selectedPrivateChat.username,
+                            selectedPrivateChat,
+                            user,
+                          )}
+                        </span>
                       </span>
-                    </div>
-                  );
-                }
-
-                return privateChatUserMetadata?.status?.value ? (
-                  <span className="text-xs text-discord-text-muted">
-                    {privateChatUserMetadata.status.value}
-                  </span>
-                ) : null;
-              })()}
-            </div>
-            {selectedServerId && (
-              <button
-                className={`ml-2 ${
-                  selectedPrivateChat.isPinned
-                    ? "text-green-500 hover:text-green-400"
-                    : "text-discord-text-muted hover:text-yellow-400"
-                }`}
-                onClick={() => {
-                  if (selectedPrivateChat.isPinned) {
-                    unpinPrivateChat(selectedServerId, selectedPrivateChat.id);
-                  } else {
-                    pinPrivateChat(selectedServerId, selectedPrivateChat.id);
-                  }
-                }}
-                title={selectedPrivateChat.isPinned ? t`Unpin` : t`Pin`}
-              >
-                <FaThumbtack
-                  className={
-                    selectedPrivateChat.isPinned ? "" : "rotate-[25deg]"
-                  }
-                  style={
-                    selectedPrivateChat.isPinned
-                      ? {}
-                      : { transform: "rotate(25deg)" }
-                  }
-                />
-              </button>
-            )}
-            {selectedServerId && (
-              <button
-                className="ml-2 text-discord-text-muted hover:text-discord-text-strong"
-                onClick={() => {
-                  if (selectedServerId && selectedPrivateChat) {
-                    setProfileViewRequest(
-                      selectedServerId,
-                      selectedPrivateChat.username,
                     );
-                    toggleUserProfileModal(true);
                   }
-                }}
-                title={t`User Profile`}
-              >
-                <FaInfoCircle />
-              </button>
+
+                  return privateChatUserMetadata?.status?.value ? (
+                    <span className="text-xs text-discord-text-muted">
+                      {privateChatUserMetadata.status.value}
+                    </span>
+                  ) : null;
+                })()}
+              </span>
+            </button>
+            {selectedServerId && (
+              <span className="text-xs [&_button]:p-0.5 flex items-center">
+                <E2EELockControl
+                  serverId={selectedServerId}
+                  nick={selectedPrivateChat.username}
+                />
+              </span>
             )}
           </div>
 
@@ -906,46 +836,16 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   <FaFilm />
                 </button>
               )}
-              {selectedServerId && selectedPrivateChat && (
-                <E2EELockControl
-                  serverId={selectedServerId}
-                  nick={selectedPrivateChat.username}
-                />
-              )}
-              <button
-                className="hidden md:block hover:text-discord-text-normal"
-                onClick={() => {
-                  if (selectedServerId && selectedPrivateChat) {
-                    useStore
-                      .getState()
-                      .tictactoeInvite(
-                        selectedServerId,
-                        selectedPrivateChat.username,
-                      );
-                  }
-                }}
-                aria-label={t`Play Tic-Tac-Toe`}
-                title={t`Play Tic-Tac-Toe`}
-              >
-                <span aria-hidden="true">🎮</span>
-              </button>
               {selectedServerId && (
                 <BotToolsHistoryButton
                   serverId={selectedServerId}
                   channel={selectedPrivateChat.username}
                 />
               )}
-              <button
-                className="md:hidden p-2 hover:text-discord-text-normal"
-                onClick={() => setIsSearchExpanded(!isSearchExpanded)}
-                aria-label={t`Toggle search`}
-                title={t`Search`}
-              >
-                <FaSearch />
-              </button>
+              <HeaderSearchButton scope={chatScope} />
               <button
                 ref={overflowButtonRef}
-                className="md:hidden p-2 hover:text-discord-text-normal"
+                className="p-2 hover:text-discord-text-normal"
                 onClick={() => setIsOverflowMenuOpen(!isOverflowMenuOpen)}
                 aria-label={t`More actions`}
                 aria-expanded={isOverflowMenuOpen}
@@ -953,25 +853,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               >
                 <FaEllipsisV />
               </button>
-
-              <div className="hidden md:block relative">
-                <TextInput
-                  placeholder={t`Search`}
-                  value={searchQuery}
-                  onChange={(e) => onSearchQueryChange(e.target.value)}
-                  className="bg-discord-dark-400 text-discord-text-muted text-sm rounded px-2 py-1 pr-14 w-32 focus:outline-none focus:ring-1 focus:ring-discord-text-link"
-                />
-                {searchQuery && (
-                  <button
-                    className="absolute right-6 top-1.5 text-red-400 hover:text-red-300 text-xs"
-                    onClick={() => onSearchQueryChange("")}
-                    title={t`Clear search`}
-                  >
-                    <FaTimes />
-                  </button>
-                )}
-                <FaSearch className="absolute right-2 top-1.5 text-xs" />
-              </div>
             </div>
           )}
         </div>
@@ -984,7 +865,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             {(isNarrowView || !isChanListVisible) && (
               <button
                 onClick={onToggleChanList}
-                className="p-2 md:p-0 text-discord-channels-default hover:text-discord-text-strong mr-4 flex-shrink-0"
+                className="p-3 -m-1 md:p-0 md:m-0 text-discord-channels-default hover:text-discord-text-strong mr-4 flex-shrink-0"
                 aria-label={t`Expand channel list`}
               >
                 {isNarrowView ? <FaChevronLeft /> : <FaChevronRight />}
@@ -1025,7 +906,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         />
       )}
 
-      <HeaderOverflowMenu
+      <Menu
         isOpen={isOverflowMenuOpen}
         onClose={() => setIsOverflowMenuOpen(false)}
         menuItems={overflowMenuItems}

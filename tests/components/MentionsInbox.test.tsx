@@ -85,10 +85,10 @@ describe("MentionsInbox", () => {
     const state = useStore.getState();
     expect(state.ui.selectedServerId).toBe("s2");
     expect(state.ui.perServerSelections.s2?.selectedChannelId).toBe("c2");
-    expect(state.ui.jumpRequest).toEqual({
-      channelKey: "s2-c2",
-      target: "act",
-    });
+    const loaded = Object.values(state.messages)
+      .flat()
+      .find((m) => m.msgid === "act");
+    expect(state.ui.messageJump?.messageId).toBe(loaded?.id);
     expect(state.mentionLog.find((m) => m.msgid === "act")?.seen).toBe(true);
   });
 

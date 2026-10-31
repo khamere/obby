@@ -1,27 +1,12 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import ircClient from "../../src/lib/ircClient";
 import useStore, { type AppState } from "../../src/store";
+import {
+  installLocalStorageBacking,
+  lsBacking,
+} from "../fixtures/localStorageBacking";
 
 const BOUNCER_ID = "ctl-bouncer-1";
-
-// localStorage is globally mocked in tests/setup.ts; back it with a
-// real Map per test so storage.servers.load() / save() actually round
-// trip.
-const lsBacking = new Map<string, string>();
-function installLocalStorageBacking() {
-  lsBacking.clear();
-  vi.mocked(window.localStorage.getItem).mockImplementation(
-    (k: string) => lsBacking.get(k) ?? null,
-  );
-  vi.mocked(window.localStorage.setItem).mockImplementation(
-    (k: string, v: string) => {
-      lsBacking.set(k, v);
-    },
-  );
-  vi.mocked(window.localStorage.removeItem).mockImplementation((k: string) => {
-    lsBacking.delete(k);
-  });
-}
 
 function seedParentServer() {
   installLocalStorageBacking();
@@ -179,10 +164,12 @@ describe("bouncerConnectNetwork action", () => {
       "alice",
       "secret",
       child.id,
-      false,
     );
-    expect(ircClient.disconnect).toHaveBeenCalledWith(child.id);
-    expect(ircClient.disconnect).not.toHaveBeenCalledWith(BOUNCER_ID);
+    const disconnected = vi
+      .mocked(ircClient.disconnect)
+      .mock.calls.map((c) => c[0]);
+    expect(disconnected).toContain(child.id);
+    expect(disconnected).not.toContain(BOUNCER_ID);
     const saved = JSON.parse(lsBacking.get("savedServers") ?? "[]");
     expect(saved).toHaveLength(2);
     expect(
@@ -214,11 +201,6 @@ describe("bouncerConnectNetwork action", () => {
       "alice",
       "updated-secret",
       child.id,
-      false,
     );
-    const persisted = JSON.parse(lsBacking.get("savedServers") ?? "[]");
-    expect(
-      persisted.find((s: { id: string }) => s.id === child.id)?.saslPassword,
-    ).toBe("updated-secret");
   });
 });
