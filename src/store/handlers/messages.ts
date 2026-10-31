@@ -1608,9 +1608,9 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
                     unreadCount: reset ? 0 : pc.unreadCount + 1,
                     mentionCount: reset ? 0 : (pc.mentionCount ?? 0) + 1,
                     // All PMs are considered mentions (except historical
-                    // ones and muted DMs/servers).
+                    // ones, muted DMs/servers and the DM being read).
                     isMentioned:
-                      !isHistoricalMessage &&
+                      !reset &&
                       !isSilenced(response.serverId, privateChat.id, true),
                   };
                 }

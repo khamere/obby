@@ -18,6 +18,7 @@ import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
 import { isServerMuted, useMutes } from "../../lib/mutes";
 import { networkHost } from "../../lib/networkHost";
 import { serverDisplayName } from "../../lib/serverDisplayName";
+import { serverHasUnreadMention } from "../../lib/unreadMentions";
 import useStore from "../../store";
 import type { Server } from "../../types";
 import ServerBottomSheet from "../mobile/ServerBottomSheet";
@@ -61,9 +62,7 @@ const ServerIcon: React.FC<ServerIconProps> = ({
 
   useMutes(); // re-render when mutes change
   const hasMentions =
-    !isServerMuted(server.id) &&
-    (server.channels.some((ch) => ch.isMentioned) ||
-      server.privateChats?.some((pc) => pc.isMentioned));
+    !isServerMuted(server.id) && serverHasUnreadMention(server);
 
   const iconUrl = server.icon;
   const showIcon = canShowAvatarUrl(
