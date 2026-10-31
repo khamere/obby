@@ -1,4 +1,5 @@
 import type { ServerConfig } from "../types";
+import type { MentionEntry } from "./mentionLog";
 import type {
   ChannelOrderMap,
   ClosedPrivateChatsMap,
@@ -18,7 +19,26 @@ const KEYS = {
   UI_SELECTION: "uiSelections",
   MIGRATION_VERSION: "migrationVersion",
   BOUNCER_GROUP_ACCENTS: "bouncerGroupAccents",
+  MENTION_LOG: "mentionLog",
 } as const;
+
+export const mentionLog = {
+  load: (): MentionEntry[] => {
+    try {
+      const data = JSON.parse(localStorage.getItem(KEYS.MENTION_LOG) || "[]");
+      return Array.isArray(data) ? data : [];
+    } catch {
+      return [];
+    }
+  },
+  save: (log: MentionEntry[]) => {
+    try {
+      localStorage.setItem(KEYS.MENTION_LOG, JSON.stringify(log));
+    } catch {
+      // storage full or disabled: the inbox just won't survive a reload
+    }
+  },
+};
 
 export const bouncerGroupAccents = {
   load: (): Record<string, string> => {

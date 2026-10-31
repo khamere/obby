@@ -2097,6 +2097,10 @@ msgstr "참여했다가 퇴장했습니다"
 msgid "Joined the channel"
 msgstr "채널에 참여했습니다"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Jump to message"
+msgstr "메시지로 이동"
+
 #: src/components/ui/MentionJumpBar.tsx
 msgid "Jump to the oldest one"
 msgstr "가장 오래된 멘션으로 이동"
@@ -2281,6 +2285,10 @@ msgstr "계정 및 인증 관리"
 msgid "Manage your profile information and metadata"
 msgstr "프로필 정보 및 메타데이터 관리"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mark all read"
+msgstr "모두 읽음으로 표시"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Mark as bot - usually 'on' or empty"
 msgstr "봇으로 표시 - 보통 'on' 또는 비워두기"
@@ -2339,6 +2347,12 @@ msgstr "멤버 목록 배경"
 #: src/components/layout/MemberList.tsx
 msgid "Members — {0}"
 msgstr "멤버 — {0}명"
+
+#: src/components/ui/MentionsInbox.tsx
+#: src/components/ui/MentionsInbox.tsx
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mentions"
+msgstr "멘션"
 
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "Message"
@@ -2699,6 +2713,10 @@ msgstr "검색 결과와 일치하는 사용자가 없습니다"
 msgid "No WHOIS data available"
 msgstr "WHOIS 데이터를 사용할 수 없습니다"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Nobody has mentioned you yet."
+msgstr "아직 아무도 회원님을 언급하지 않았습니다."
+
 #: src/components/message/JsonLogMessage.tsx
 msgid "None"
 msgstr "없음"
@@ -2716,6 +2734,10 @@ msgstr "기본 - 표준 보호"
 #: src/components/ui/UploadProgressOverlay.tsx
 msgid "Not encrypted"
 msgstr "암호화되지 않음"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Not in this channel"
+msgstr "이 채널에 참여하지 않음"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Notification Sound"

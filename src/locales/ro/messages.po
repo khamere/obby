@@ -2097,6 +2097,10 @@ msgstr "s-a alăturat și a ieșit"
 msgid "Joined the channel"
 msgstr "S-a alăturat canalului"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Jump to message"
+msgstr "Sari la mesaj"
+
 #: src/components/ui/MentionJumpBar.tsx
 msgid "Jump to the oldest one"
 msgstr "Sari la cea mai veche"
@@ -2281,6 +2285,10 @@ msgstr "Gestionează-ți contul și autentificarea"
 msgid "Manage your profile information and metadata"
 msgstr "Gestionează informațiile profilului și metadatele"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mark all read"
+msgstr "Marchează tot ca citit"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Mark as bot - usually 'on' or empty"
 msgstr "Marcați ca bot, de obicei 'on' sau gol"
@@ -2339,6 +2347,12 @@ msgstr "Fundal listă membri"
 #: src/components/layout/MemberList.tsx
 msgid "Members — {0}"
 msgstr "Membri — {0}"
+
+#: src/components/ui/MentionsInbox.tsx
+#: src/components/ui/MentionsInbox.tsx
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mentions"
+msgstr "Mențiuni"
 
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "Message"
@@ -2699,6 +2713,10 @@ msgstr "Niciun utilizator găsit care să corespundă căutării"
 msgid "No WHOIS data available"
 msgstr "Nu există date WHOIS disponibile"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Nobody has mentioned you yet."
+msgstr "Nu te-a menționat nimeni încă."
+
 #: src/components/message/JsonLogMessage.tsx
 msgid "None"
 msgstr "Niciunul"
@@ -2716,6 +2734,10 @@ msgstr "Normal – Protecție standard"
 #: src/components/ui/UploadProgressOverlay.tsx
 msgid "Not encrypted"
 msgstr "Necriptat"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Not in this channel"
+msgstr "Nu ești în acest canal"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Notification Sound"

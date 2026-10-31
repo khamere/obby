@@ -2097,6 +2097,10 @@ msgstr "已加入并退出"
 msgid "Joined the channel"
 msgstr "已加入频道"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Jump to message"
+msgstr "跳转到消息"
+
 #: src/components/ui/MentionJumpBar.tsx
 msgid "Jump to the oldest one"
 msgstr "跳到最早的一条"
@@ -2281,6 +2285,10 @@ msgstr "管理您的账户和身份验证"
 msgid "Manage your profile information and metadata"
 msgstr "管理您的个人资料信息和元数据"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mark all read"
+msgstr "全部标为已读"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Mark as bot - usually 'on' or empty"
 msgstr "标记为机器人——通常为 'on' 或空"
@@ -2339,6 +2347,12 @@ msgstr "成员列表背景"
 #: src/components/layout/MemberList.tsx
 msgid "Members — {0}"
 msgstr "成员 — {0}"
+
+#: src/components/ui/MentionsInbox.tsx
+#: src/components/ui/MentionsInbox.tsx
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mentions"
+msgstr "提及"
 
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "Message"
@@ -2699,6 +2713,10 @@ msgstr "未找到与搜索条件匹配的用户"
 msgid "No WHOIS data available"
 msgstr "无可用 WHOIS 数据"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Nobody has mentioned you yet."
+msgstr "还没有人提及你。"
+
 #: src/components/message/JsonLogMessage.tsx
 msgid "None"
 msgstr "无"
@@ -2716,6 +2734,10 @@ msgstr "普通 – 标准保护"
 #: src/components/ui/UploadProgressOverlay.tsx
 msgid "Not encrypted"
 msgstr "未加密"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Not in this channel"
+msgstr "不在此频道中"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Notification Sound"
