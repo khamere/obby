@@ -2097,6 +2097,10 @@ msgstr "a rejoint et quitté"
 msgid "Joined the channel"
 msgstr "A rejoint le canal"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Jump to message"
+msgstr "Aller au message"
+
 #: src/components/ui/MentionJumpBar.tsx
 msgid "Jump to the oldest one"
 msgstr "Aller à la plus ancienne"
@@ -2281,6 +2285,10 @@ msgstr "Gérez votre compte et l'authentification"
 msgid "Manage your profile information and metadata"
 msgstr "Gérez les informations de votre profil et vos métadonnées"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mark all read"
+msgstr "Tout marquer comme lu"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Mark as bot - usually 'on' or empty"
 msgstr "Marquer comme bot, généralement 'on' ou vide"
@@ -2339,6 +2347,12 @@ msgstr "Fond de la liste des membres"
 #: src/components/layout/MemberList.tsx
 msgid "Members — {0}"
 msgstr "Membres — {0}"
+
+#: src/components/ui/MentionsInbox.tsx
+#: src/components/ui/MentionsInbox.tsx
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mentions"
+msgstr "Mentions"
 
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "Message"
@@ -2699,6 +2713,10 @@ msgstr "Aucun utilisateur ne correspond à votre recherche"
 msgid "No WHOIS data available"
 msgstr "Aucune donnée WHOIS disponible"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Nobody has mentioned you yet."
+msgstr "Personne ne vous a encore mentionné."
+
 #: src/components/message/JsonLogMessage.tsx
 msgid "None"
 msgstr "Aucun"
@@ -2716,6 +2734,10 @@ msgstr "Normal – Protection standard"
 #: src/components/ui/UploadProgressOverlay.tsx
 msgid "Not encrypted"
 msgstr "Non chiffré"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Not in this channel"
+msgstr "Vous n'êtes pas dans ce salon"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Notification Sound"

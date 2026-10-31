@@ -2097,6 +2097,10 @@ msgstr "liittyi ja poistui"
 msgid "Joined the channel"
 msgstr "Liittyi kanavalle"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Jump to message"
+msgstr "Siirry viestiin"
+
 #: src/components/ui/MentionJumpBar.tsx
 msgid "Jump to the oldest one"
 msgstr "Siirry vanhimpaan"
@@ -2281,6 +2285,10 @@ msgstr "Hallinnoi tiliäsi ja tunnistautumista"
 msgid "Manage your profile information and metadata"
 msgstr "Hallinnoi profiilitietojasi ja metatietoja"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mark all read"
+msgstr "Merkitse kaikki luetuiksi"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Mark as bot - usually 'on' or empty"
 msgstr "Merkitse botiksi – yleensä 'on' tai tyhjä"
@@ -2339,6 +2347,12 @@ msgstr "Jäsenluettelon tausta"
 #: src/components/layout/MemberList.tsx
 msgid "Members — {0}"
 msgstr "Jäsenet — {0}"
+
+#: src/components/ui/MentionsInbox.tsx
+#: src/components/ui/MentionsInbox.tsx
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mentions"
+msgstr "Maininnat"
 
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "Message"
@@ -2699,6 +2713,10 @@ msgstr "Hakua vastaavia käyttäjiä ei löydetty"
 msgid "No WHOIS data available"
 msgstr "WHOIS-tietoja ei saatavilla"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Nobody has mentioned you yet."
+msgstr "Kukaan ei ole vielä maininnut sinua."
+
 #: src/components/message/JsonLogMessage.tsx
 msgid "None"
 msgstr "Ei mitään"
@@ -2716,6 +2734,10 @@ msgstr "Normaali – tavallinen suojaus"
 #: src/components/ui/UploadProgressOverlay.tsx
 msgid "Not encrypted"
 msgstr "Ei salattu"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Not in this channel"
+msgstr "Et ole tällä kanavalla"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Notification Sound"
