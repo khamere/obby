@@ -41,6 +41,7 @@ import E2EELockControl from "../ui/E2EELockControl";
 import HeaderOverflowMenu, {
   type HeaderOverflowMenuItem,
 } from "../ui/HeaderOverflowMenu";
+import { MentionsInbox } from "../ui/MentionsInbox";
 import MuteModal from "../ui/MuteModal";
 import { TextInput } from "../ui/TextInput";
 import TopicModal from "../ui/TopicModal";
@@ -572,6 +573,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           {/* Right: Action buttons */}
           {selectedServerId && (
             <div className="flex items-center gap-0 md:gap-3 text-discord-text-muted flex-shrink-0">
+              <MentionsInbox />
               {/* Bell */}
               <button
                 className="p-2 md:p-0 hover:text-discord-text-normal"
@@ -880,6 +882,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
 
           {selectedServerId && (
             <div className="flex items-center gap-0 md:gap-4 text-discord-text-muted flex-shrink-0">
+              <MentionsInbox />
               <button
                 className="p-2 md:p-0 hover:text-discord-text-normal"
                 onClick={() => setIsMuteModalOpen(true)}

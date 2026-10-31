@@ -2097,6 +2097,10 @@ msgstr "gick med och lämnade"
 msgid "Joined the channel"
 msgstr "Gick med i kanalen"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Jump to message"
+msgstr "Hoppa till meddelandet"
+
 #: src/components/ui/MentionJumpBar.tsx
 msgid "Jump to the oldest one"
 msgstr "Hoppa till den äldsta"
@@ -2281,6 +2285,10 @@ msgstr "Hantera ditt konto och autentisering"
 msgid "Manage your profile information and metadata"
 msgstr "Hantera din profilinformation och metadata"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mark all read"
+msgstr "Markera alla som lästa"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Mark as bot - usually 'on' or empty"
 msgstr "Markera som bot – vanligtvis 'on' eller tomt"
@@ -2339,6 +2347,12 @@ msgstr "Bakgrund medlemslista"
 #: src/components/layout/MemberList.tsx
 msgid "Members — {0}"
 msgstr "Medlemmar — {0}"
+
+#: src/components/ui/MentionsInbox.tsx
+#: src/components/ui/MentionsInbox.tsx
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mentions"
+msgstr "Omnämnanden"
 
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "Message"
@@ -2699,6 +2713,10 @@ msgstr "Inga användare hittades som matchar din sökning"
 msgid "No WHOIS data available"
 msgstr "Ingen WHOIS-data tillgänglig"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Nobody has mentioned you yet."
+msgstr "Ingen har nämnt dig än."
+
 #: src/components/message/JsonLogMessage.tsx
 msgid "None"
 msgstr "Ingen"
@@ -2716,6 +2734,10 @@ msgstr "Normal – standardskydd"
 #: src/components/ui/UploadProgressOverlay.tsx
 msgid "Not encrypted"
 msgstr "Inte krypterat"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Not in this channel"
+msgstr "Inte i den här kanalen"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Notification Sound"

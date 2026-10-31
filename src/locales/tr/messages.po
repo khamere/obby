@@ -2097,6 +2097,10 @@ msgstr "katıldı ve ayrıldı"
 msgid "Joined the channel"
 msgstr "Kanala katıldı"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Jump to message"
+msgstr "Mesaja git"
+
 #: src/components/ui/MentionJumpBar.tsx
 msgid "Jump to the oldest one"
 msgstr "En eskisine git"
@@ -2281,6 +2285,10 @@ msgstr "Hesabınızı ve kimlik doğrulamayı yönetin"
 msgid "Manage your profile information and metadata"
 msgstr "Profil bilgilerinizi ve meta verilerinizi yönetin"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mark all read"
+msgstr "Tümünü okundu işaretle"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Mark as bot - usually 'on' or empty"
 msgstr "Bot olarak işaretle - genellikle 'on' veya boş"
@@ -2339,6 +2347,12 @@ msgstr "Üye listesi arka planı"
 #: src/components/layout/MemberList.tsx
 msgid "Members — {0}"
 msgstr "Üyeler — {0}"
+
+#: src/components/ui/MentionsInbox.tsx
+#: src/components/ui/MentionsInbox.tsx
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mentions"
+msgstr "Bahsetmeler"
 
 #: src/components/ui/ObbyWhoisModal.tsx
 msgid "Message"
@@ -2699,6 +2713,10 @@ msgstr "Aramanızla eşleşen kullanıcı bulunamadı"
 msgid "No WHOIS data available"
 msgstr "WHOIS verisi mevcut değil"
 
+#: src/components/ui/MentionsInbox.tsx
+msgid "Nobody has mentioned you yet."
+msgstr "Henüz kimse senden bahsetmedi."
+
 #: src/components/message/JsonLogMessage.tsx
 msgid "None"
 msgstr "Yok"
@@ -2716,6 +2734,10 @@ msgstr "Normal - Standart koruma"
 #: src/components/ui/UploadProgressOverlay.tsx
 msgid "Not encrypted"
 msgstr "Şifrelenmemiş"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Not in this channel"
+msgstr "Bu kanalda değilsin"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Notification Sound"
