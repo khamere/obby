@@ -22,7 +22,7 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; media-src 'self' https: data: blob:; font-src 'self' data:; connect-src 'self' https: wss: blob: data: ipc: http://ipc.localhost https://ipc.localhost; worker-src 'self' blob:; frame-src https://www.youtube.com https://www.youtube-nocookie.com https://w.soundcloud.com; object-src 'self' https: blob:; base-uri 'self'; form-action 'self'; manifest-src 'self'"
     },
     "macOSPrivateApi": true
   },
