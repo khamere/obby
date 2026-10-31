@@ -28,6 +28,10 @@ import LoadingSpinner from "../ui/LoadingSpinner";
 import { ScrollToBottomButton } from "../ui/ScrollToBottomButton";
 
 export const DEFAULT_VISIBLE_MESSAGE_COUNT = 100;
+// How far back a jump to a message may page through history (50 per page).
+const MAX_JUMP_PAGES = 20;
+// Messages kept rendered below a jump target so it can sit mid-screen.
+const JUMP_CONTEXT = 20;
 
 // Stable empty array — prevents selector from returning a new [] on every render
 // when the channel has no messages yet (undefined ?? [] would create a new ref each time).
@@ -264,6 +268,30 @@ export const ChannelMessageList = forwardRef<
       (channelMessages.length > 0 || !!historyState?.historyOldestTime);
     const hasMoreMessages = locallyHidden || serverHasMore;
 
+    // Returns false when there is no timestamp to page back from.
+    const requestOlderHistory = (): boolean => {
+      if (!historyTarget) return false;
+      const oldest = channelMessages[0];
+      const oldestTime = oldest?.timestamp
+        ? new Date(oldest.timestamp).toISOString()
+        : undefined;
+      const replayTime = historyState?.historyOldestTime;
+      const ts = !oldestTime
+        ? replayTime
+        : !replayTime
+          ? oldestTime
+          : Date.parse(replayTime) < Date.parse(oldestTime)
+            ? replayTime
+            : oldestTime;
+      if (!ts) return false;
+      // WebSocket responses are macrotasks; the caller's React batch
+      // always commits before the response arrives, so flushSync is unnecessary.
+      isFetchingMoreRef.current = true;
+      setIsFetchingMore(true);
+      ircClient.requestChathistoryBefore(serverId, historyTarget, ts);
+      return true;
+    };
+
     const eventGroups = useMemo(
       () => groupConsecutiveEvents(displayedMessages),
       [displayedMessages],
@@ -423,6 +451,84 @@ export const ChannelMessageList = forwardRef<
       }
     }, [displayedMessages, mobileViewActiveColumn, scrollToBottom, isActive]);
 
+    const jumpRequest = useStore((state) =>
+      state.ui.jumpRequest?.channelKey === channelKey
+        ? state.ui.jumpRequest
+        : null,
+    );
+    const [jumpMissed, setJumpMissed] = useState(false);
+    const jumpPagesRef = useRef(0);
+    const lastJumpRef = useRef<typeof jumpRequest>(null);
+
+    // Walks back through history a page at a time until the requested message
+    // is loaded, widens the window until it is rendered, then scrolls to it.
+    // Instant scroll, so the inner ResizeObserver never sees the list still at
+    // the bottom and snaps back there.
+    // biome-ignore lint/correctness/useExhaustiveDependencies: requestOlderHistory and store actions are recreated every render
+    useLayoutEffect(() => {
+      if (!jumpRequest || !isActive || searchQuery.trim()) return;
+      if (lastJumpRef.current !== jumpRequest) {
+        lastJumpRef.current = jumpRequest;
+        jumpPagesRef.current = 0;
+        setJumpMissed(false);
+      }
+      const { target } = jumpRequest;
+      const index = filteredMessages.findIndex(
+        (m) =>
+          m.id === target ||
+          m.msgid === target ||
+          m.multilineMessageIds?.includes(target),
+      );
+
+      if (index === -1) {
+        if (isLoadingHistory || isFetchingMore) return;
+        if (
+          serverHasMore &&
+          jumpPagesRef.current < MAX_JUMP_PAGES &&
+          requestOlderHistory()
+        ) {
+          jumpPagesRef.current += 1;
+          return;
+        }
+        setJumpMissed(true);
+        useStore.getState().clearJumpRequest();
+        return;
+      }
+
+      const needed = filteredMessages.length - index + JUMP_CONTEXT;
+      if (visibleMessageCount < needed) {
+        setVisibleMessageCount(needed);
+        return;
+      }
+
+      const container = messagesContainerRef.current;
+      const targetId = filteredMessages[index].id;
+      const element = Array.from(
+        container?.querySelectorAll<HTMLElement>("[data-message-id]") ?? [],
+      ).find((el) => el.dataset.messageId === targetId);
+      if (!container || !element) return;
+      element.scrollIntoView({ block: "center" });
+      wasAtBottomRef.current = false;
+      lastScrollTopRef.current = container.scrollTop;
+      resizeObserverPrevSHRef.current = container.scrollHeight;
+      element.classList.add("message-flash");
+      setTimeout(() => element.classList.remove("message-flash"), 2000);
+      useStore.getState().clearJumpRequest();
+    }, [
+      jumpRequest,
+      isActive,
+      filteredMessages,
+      visibleMessageCount,
+      isLoadingHistory,
+      isFetchingMore,
+    ]);
+
+    useEffect(() => {
+      if (!jumpMissed) return;
+      const timer = setTimeout(() => setJumpMissed(false), 4000);
+      return () => clearTimeout(timer);
+    }, [jumpMissed]);
+
     return (
       <>
         <div
@@ -463,30 +569,8 @@ export const ChannelMessageList = forwardRef<
                         setVisibleMessageCount(
                           (prev) => prev + DEFAULT_VISIBLE_MESSAGE_COUNT,
                         );
-                      } else if (serverHasMore && historyTarget) {
-                        const oldest = channelMessages[0];
-                        const oldestTime = oldest?.timestamp
-                          ? new Date(oldest.timestamp).toISOString()
-                          : undefined;
-                        const replayTime = historyState?.historyOldestTime;
-                        const ts = !oldestTime
-                          ? replayTime
-                          : !replayTime
-                            ? oldestTime
-                            : Date.parse(replayTime) < Date.parse(oldestTime)
-                              ? replayTime
-                              : oldestTime;
-                        if (ts) {
-                          // WebSocket responses are macrotasks; the click handler's React batch
-                          // always commits before the response arrives, so flushSync is unnecessary.
-                          isFetchingMoreRef.current = true;
-                          setIsFetchingMore(true);
-                          ircClient.requestChathistoryBefore(
-                            serverId,
-                            historyTarget,
-                            ts,
-                          );
-                        }
+                      } else if (serverHasMore) {
+                        requestOlderHistory();
                       }
                     }}
                     disabled={isFetchingMore || isLoadingHistory}
@@ -596,6 +680,16 @@ export const ChannelMessageList = forwardRef<
           )}
           <div ref={messagesEndRef} className="h-px" />
         </div>
+        {jumpMissed && (
+          <div className="relative h-0 z-50">
+            <div
+              role="status"
+              className="absolute bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap px-3 py-1.5 text-xs rounded-full bg-discord-dark-400 text-discord-text-normal border border-discord-text-strong/10 shadow-lg"
+            >
+              {t`Couldn't find that message in the history.`}
+            </div>
+          </div>
+        )}
         <ScrollToBottomButton
           isVisible={isScrolledUp}
           onClick={scrollToBottom}

@@ -167,3 +167,28 @@ export const MessageReply: React.FC<MessageReplyProps> = ({
     </div>
   );
 };
+
+// A reply whose original is older than the loaded history: draft/reply
+// carries only the msgid, so there is no author or text to show until a
+// jump has paged back far enough to load it.
+export const UnloadedReply: React.FC<{ onClick: () => void }> = ({
+  onClick,
+}) => {
+  const { t } = useLingui();
+  return (
+    <button
+      type="button"
+      className="flex min-w-0 w-full overflow-hidden text-left bg-black/[0.22] mb-2 rounded-md border border-discord-text-strong/[0.04] cursor-pointer hover:bg-black/[0.32] transition-colors"
+      onClick={onClick}
+      title={t`Load older messages and jump to the original`}
+    >
+      <div className="w-0.5 flex-shrink-0 bg-discord-reply/70 rounded-l" />
+      <div className="flex items-center gap-1.5 py-1.5 px-2.5 min-w-0">
+        <RiReplyFill className="text-[11px] flex-shrink-0 text-discord-reply/70" />
+        <span className="text-xs italic text-discord-text-muted opacity-80 truncate">
+          {t`Reply to an earlier message`}
+        </span>
+      </div>
+    </button>
+  );
+};

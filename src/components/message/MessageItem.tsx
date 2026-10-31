@@ -62,6 +62,7 @@ import {
   WhisperMessage,
 } from "./index";
 import { MediaPreview } from "./MediaPreview";
+import { UnloadedReply } from "./MessageReply";
 import { MessageStatusIndicator } from "./MessageStatusIndicator";
 import { MotdBlock } from "./MotdBlock";
 
@@ -817,28 +818,16 @@ export const MessageItem = memo((props: MessageItemProps) => {
     }
   };
 
-  const handleScrollToReply = () => {
-    if (!message.replyMessage?.id) return;
+  const unloadedReplyId = message.replyMessage
+    ? null
+    : (message.tags?.["+reply"] ?? message.tags?.["+draft/reply"])?.trim() ||
+      null;
 
-    const targetElement = document.querySelector(
-      `[data-message-id="${message.replyMessage.id}"]`,
-    );
-
-    if (targetElement) {
-      // Scroll to the message
-      targetElement.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-
-      // Add flash animation
-      targetElement.classList.add("message-flash");
-
-      // Remove the class after animation completes
-      setTimeout(() => {
-        targetElement.classList.remove("message-flash");
-      }, 2000);
-    }
+  const jumpToReplyTarget = (target: string | null | undefined) => {
+    if (!target) return;
+    useStore
+      .getState()
+      .requestJumpToMessage(`${message.serverId}-${message.channelId}`, target);
   };
 
   const isClickable =
@@ -926,7 +915,12 @@ export const MessageItem = memo((props: MessageItemProps) => {
                 theme={theme}
                 onUsernameClick={handleReplyUsernameClick}
                 onIrcLinkClick={onIrcLinkClick}
-                onReplyClick={handleScrollToReply}
+                onReplyClick={() => jumpToReplyTarget(message.replyMessage?.id)}
+              />
+            )}
+            {unloadedReplyId && (
+              <UnloadedReply
+                onClick={() => jumpToReplyTarget(unloadedReplyId)}
               />
             )}
 
