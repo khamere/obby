@@ -37,6 +37,7 @@ import { e2eeSessionKey } from "../../lib/e2ee/session";
 import { stripImageFile } from "../../lib/imageMetadata";
 import ircClient from "../../lib/ircClient";
 import { parseIrcUrl } from "../../lib/ircUrlParser";
+import { addLocalDmCopy } from "../../lib/localDmCopy";
 import {
   fetchUploadInfo,
   uploadFile,
@@ -1269,19 +1270,12 @@ export const ChatArea: React.FC<{
       if (!encrypted) {
         ircClient.sendRaw(selectedServerId, `PRIVMSG ${target} :${line}`);
         if (selectedPrivateChat && currentUser) {
-          const outgoing = {
-            id: uuidv4(),
-            content: line,
-            timestamp: new Date(),
-            userId: currentUser.username || currentUser.id,
-            channelId: selectedPrivateChat.id,
-            serverId: selectedServerId,
-            type: "message" as const,
-            reactions: [],
-            replyMessage: null,
-            mentioned: [],
-          };
-          useStore.getState().addMessage(outgoing);
+          addLocalDmCopy(
+            selectedServerId,
+            selectedPrivateChat.id,
+            currentUser,
+            line,
+          );
         }
       }
     }
@@ -1380,24 +1374,13 @@ export const ChatArea: React.FC<{
     }
 
     ircClient.sendRaw(selectedServerId, `PRIVMSG ${target} :${gifUrl}`);
-
-    // Add to store for immediate display (only for private chats, channels echo back)
     if (selectedPrivateChat && currentUser) {
-      const outgoingMessage = {
-        id: uuidv4(),
-        content: gifUrl,
-        timestamp: new Date(),
-        userId: currentUser.username || currentUser.id,
-        channelId: selectedPrivateChat.id,
-        serverId: selectedServerId,
-        type: "message" as const,
-        reactions: [],
-        replyMessage: null,
-        mentioned: [],
-      };
-
-      const { addMessage } = useStore.getState();
-      addMessage(outgoingMessage);
+      addLocalDmCopy(
+        selectedServerId,
+        selectedPrivateChat.id,
+        currentUser,
+        gifUrl,
+      );
     }
   };
 
