@@ -4,15 +4,21 @@ import WebKit
 
 class KeyboardPlugin: Plugin {
   private var keyboardObserver: KeyboardObserver?
+  private var appLifecycleObserver: AppLifecycleObserver?
 
   override public func load(webview: WKWebView) {
     super.load(webview: webview)
+    // The page pads itself with env(safe-area-inset-*), so we keep UIKit from
+    // insetting the scroll view as well, which on some devices shrinks the
+    // page by both insets and leaves a bare strip under it.
+    webview.scrollView.contentInsetAdjustmentBehavior = .never
 
     keyboardObserver = KeyboardObserver(webview: webview) { [weak self] event in
       self?.sendKeyboardEvent(event)
     }
 
     keyboardObserver?.startObserving()
+    appLifecycleObserver = AppLifecycleObserver(webview: webview)
   }
 
   deinit {
@@ -38,6 +44,18 @@ struct KeyboardEvent {
 class KeyboardObserver {
   private var onKeyboardEvent: ((KeyboardEvent) -> Void)?
   private weak var webview: WKWebView?
+  private var scrollPin: NSKeyValueObservation?
+
+  // WebKit scrolls the whole page to reveal the focused field while the
+  // keyboard slides in, and the page already shrinks itself above the
+  // keyboard, so we hold the page at the top or the header bounces.
+  private func pinScrollToTop() {
+    guard let scrollView = webview?.scrollView else { return }
+    scrollView.contentOffset = .zero
+    scrollPin = scrollView.observe(\.contentOffset) { scrollView, _ in
+      if scrollView.contentOffset != .zero { scrollView.contentOffset = .zero }
+    }
+  }
 
   init(webview: WKWebView, onEvent: @escaping (KeyboardEvent) -> Void) {
     self.webview = webview
@@ -72,6 +90,7 @@ class KeyboardObserver {
       return
     }
 
+    pinScrollToTop()
     onKeyboardEvent?(
       KeyboardEvent(
         eventType: "will-show",
@@ -111,6 +130,7 @@ class KeyboardObserver {
     }
 
     // Re-enable scrolling before WKWebView resets its viewport for keyboard hide.
+    scrollPin = nil
     webview?.scrollView.isScrollEnabled = true
 
     onKeyboardEvent?(

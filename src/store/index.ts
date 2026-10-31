@@ -2,14 +2,24 @@ import { v4 as uuidv4, v5 as uuidv5 } from "uuid";
 import { create } from "zustand";
 import { BOT_TOOLS_TAG, encodeBotToolsValue } from "../lib/botTools";
 import { encodeBouncerAttrs } from "../lib/bouncerAttrs";
+import { getSelectionHistory, recordSelection } from "../lib/channelHistory";
+import { classifyChannelName } from "../lib/channelMentions";
 import { DEFAULT_CHAT_LOOK } from "../lib/chatLook";
 import type { E2EEScheme, E2EESessionState } from "../lib/e2ee/session";
 import { e2eeSessionKey } from "../lib/e2ee/session";
 import ircClient from "../lib/ircClient";
 import { makeLabel } from "../lib/labeledResponse";
 import type { MediaType } from "../lib/mediaUtils";
+import { recordPlace, recordSearch } from "../lib/search/recents";
+import { serializeSearchQuery } from "../lib/search/searchQuery";
+import type { SearchQuery, SearchScope } from "../lib/search/searchTypes";
 import { DEFAULT_THEME_SETTINGS } from "../lib/theme";
 import { DEFAULT_TYPOGRAPHY } from "../lib/typography";
+import {
+  releaseServerVoiceClients,
+  releaseVoiceClient,
+  setVoiceStore,
+} from "../lib/voice";
 import {
   clearServerConnectionTimeout,
   registerAllProtocolHandlers,
@@ -38,30 +48,48 @@ import {
   verifyE2EESession as e2eeVerify,
 } from "./handlers/e2ee";
 import { routeOutgoingPM } from "./handlers/e2eeOutbound";
+import { hasSavedHistory, settleSavedHistory } from "./handlers/history";
 import {
   endOtrSession as otrEnd,
   startOtrSession as otrStart,
   verifyOtrSession as otrVerify,
   trustOtrChangedKey,
 } from "./handlers/otr";
+import { markChatRead } from "./handlers/readMarker";
 import * as tictactoeActions from "./handlers/tictactoeActions";
-import { MAX_MESSAGES_PER_CHANNEL } from "./helpers";
+import { rememberRequestedNick } from "./handlers/users";
+import {
+  compareMessageOrder,
+  ensureUrlFormat,
+  isAppInFront,
+  MAX_MESSAGES_PER_CHANNEL,
+  normalizeHost,
+} from "./helpers";
 import * as storage from "./localStorage";
 import {
   addMention,
   type MentionEntry,
   markMentionsSeen,
   mentionChannelKey,
-  mentionTarget,
 } from "./mentionLog";
 import { enqueueMetadataList } from "./metadataLazyQueue";
 import { runPendingMigrations } from "./migrations";
+import {
+  markKeyedJoin,
+  markPendingJoin,
+  setAutomaticJoin,
+} from "./pendingJoins";
 import type {
+  AppPage,
   ChannelOrderMap,
   ConnectionDetails,
   GlobalSettings,
+  HistoryWindow,
   layoutColumn,
   MediaVisibilityLevel,
+  QuickActionsMode,
+  QuickActionsState,
+  SidePane,
   UISelections,
 } from "./types";
 
@@ -113,23 +141,48 @@ export function rememberMsgIds(set: Set<string>, ids: string[]): Set<string> {
   return next;
 }
 
-// Helper function to normalize host for comparison (extract hostname from URL or return as-is)
-function normalizeHost(host: string): string {
-  if (host.includes("://")) {
-    // Extract hostname from URL format
-    const withoutProtocol = host.replace(/^(irc|ircs|wss):\/\//, "");
-    return withoutProtocol.split(":")[0]; // Get just hostname, strip port if present
-  }
-  return host;
+// We connect a saved server under its own id, so servers that share an address stay apart.
+function connectSavedServer(
+  connect: AppState["connect"],
+  config: ServerConfig,
+): Promise<Server> {
+  const urlHost = ensureUrlFormat(config.host, config.port);
+  return connect(
+    config.name || normalizeHost(urlHost),
+    urlHost,
+    config.port,
+    config.nickname,
+    config.saslEnabled,
+    config.password,
+    config.saslAccountName,
+    config.saslPassword,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    config.id,
+  );
 }
 
-// Helper function to ensure host is in URL format
-function ensureUrlFormat(host: string, port: number): string {
-  if (host.includes("://")) {
-    return host; // Already in URL format
-  }
-  // Convert old hostname-only format to URL — always wss://
-  return `wss://${host}:${port}`;
+// We log a bouncer network in with its bouncer's saved host and credentials, then bind it to its network.
+function connectBouncerChild(
+  childId: string,
+  netid: string,
+  name: string,
+  savedParent: ServerConfig,
+): Promise<Server> {
+  ircClient.setPendingBouncerBind(childId, netid);
+  return ircClient.connect(
+    name,
+    ensureUrlFormat(savedParent.host, savedParent.port),
+    savedParent.port,
+    savedParent.nickname,
+    savedParent.password,
+    savedParent.saslAccountName,
+    savedParent.saslPassword,
+    childId,
+  );
 }
 
 // Types for batch event processing
@@ -184,35 +237,6 @@ export const getChannelMessages = (serverId: string, channelId: string) => {
   const key = `${serverId}-${channelId}`;
   return state.messages[key] || [];
 };
-
-// draft/read-marker: find the latest message timestamp (across normal
-// chat messages -- system / event rows are ignored so reading a "X
-// joined" line doesn't move the marker).  Returns an ISO 8601 string
-// in the spec's format, or null if there's nothing to mark.
-const ISO_DROP_END_RX = /Z?$/;
-function _toMarkreadIso(d: Date): string {
-  // The spec mandates "YYYY-MM-DDThh:mm:ss.sssZ" -- exactly the form
-  // toISOString() emits.
-  return d.toISOString().replace(ISO_DROP_END_RX, "Z");
-}
-
-export function getLatestMessageTimestampIso(
-  serverId: string,
-  bufferId: string,
-): string | null {
-  const state = useStore.getState();
-  const key = `${serverId}-${bufferId}`;
-  const messages = state.messages[key];
-  if (!messages || messages.length === 0) return null;
-  let latest: number | null = null;
-  for (const msg of messages) {
-    if (msg.type !== "message" && msg.type !== undefined) continue;
-    const t = msg.timestamp ? new Date(msg.timestamp).getTime() : Number.NaN;
-    if (Number.isNaN(t)) continue;
-    if (latest === null || t > latest) latest = t;
-  }
-  return latest === null ? null : _toMarkreadIso(new Date(latest));
-}
 
 export const findChannelMessageById = (
   serverId: string,
@@ -349,52 +373,6 @@ function restoreServerMetadata(serverId: string) {
   });
 }
 
-// Fetch our own metadata from the server and update saved values
-async function fetchAndMergeOwnMetadata(serverId: string): Promise<void> {
-  return new Promise((resolve) => {
-    const nickname = ircClient.getNick(serverId);
-    if (!nickname) {
-      resolve();
-      return;
-    }
-
-    // Mark as fetching
-    useStore.setState((state) => ({
-      metadataFetchInProgress: {
-        ...state.metadataFetchInProgress,
-        [serverId]: true,
-      },
-    }));
-
-    // Request all metadata for ourselves (target "*" means us)
-    const defaultKeys = [
-      "url",
-      "website",
-      "status",
-      "location",
-      "avatar",
-      "color",
-      "display-name",
-      "pronouns",
-    ];
-
-    // Get our metadata from the server
-    ircClient.metadataGet(serverId, "*", defaultKeys);
-
-    // Wait a bit for responses to come in, then resolve
-    // The METADATA_KEYVALUE handler will update saved values
-    setTimeout(() => {
-      useStore.setState((state) => ({
-        metadataFetchInProgress: {
-          ...state.metadataFetchInProgress,
-          [serverId]: false,
-        },
-      }));
-      resolve();
-    }, 1000);
-  });
-}
-
 // Fetch channel metadata for the channel list modal
 // Uses caching to avoid refetching and rate limiting
 function fetchChannelMetadata(serverId: string, channelNames: string[]) {
@@ -472,29 +450,32 @@ interface UIState {
     memberList: { isVisible: boolean; width: number };
   };
   isAddServerModalOpen: boolean | undefined;
-  isEditServerModalOpen: boolean;
-  editServerId: string | null;
+  page: AppPage | null;
+  sidePane: SidePane | null;
   // Bouncer-network edit hand-off: set by editBouncerNetwork(),
   // consumed by BouncerNetworksPanel on mount to open its inline form
   // on the named netid. Cleared once the panel reads it.
   pendingBouncerEdit?: { bouncerServerId: string; netid: string } | null;
   disconnectConfirmTarget?: string | null;
+  removeServerConfirmTarget?: string | null;
   disconnectNetworkConfirmTarget?: {
     bouncerServerId: string;
     netid: string;
     childServerId: string;
   } | null;
-  isTwoFactorSettingsOpen: boolean;
-  twoFactorSettingsServerId: string | null;
-  isSettingsModalOpen: boolean;
-  isQuickActionsOpen: boolean;
+  quickActions: QuickActionsState | null;
+  // The message list holding this id scrolls to it and flashes it.
+  messageJump: { messageId: string } | null;
   isDarkMode: boolean;
   isNarrowView: boolean;
   isMobileMenuOpen: boolean;
   isMemberListVisible: boolean;
   isChannelListVisible: boolean;
-  isChannelListModalOpen: boolean;
   mobileViewActiveColumn: layoutColumn;
+  // The open chat shows older messages than the newest, so new ones are unseen.
+  isChatAwayFromPresent?: boolean;
+  isAppFocused?: boolean;
+  homeView?: "plugins";
   isServerMenuOpen: boolean;
   contextMenu: {
     isOpen: boolean;
@@ -508,14 +489,15 @@ interface UIState {
   // bots modal — UserProfileModal sets this to {serverId, botNick}
   // when the user clicks "Show in Bots Menu" and ChatArea picks it up
   // to open the modal pre-selected on that bot.
-  pendingBotsModalOpen: { serverId: string; botNick: string } | null;
-  // Cross-component deep-link from the member-list context menu's Bot
-  // Commands submenu — clicking a command sets this and ChatArea picks
-  // it up to open the slash-command param modal.
   pendingBotCommandPick: {
     serverId: string;
     botNick: string;
     command: import("../types").BotCommand;
+  } | null;
+  pendingComposerCommand: {
+    serverId: string;
+    botNick: string;
+    name: string;
   } | null;
   inputAttachments: Attachment[];
   // Link security warning modal state - array to support multiple concurrent warnings
@@ -523,29 +505,12 @@ interface UIState {
   // Server notices popup state
   isServerNoticesPopupOpen: boolean;
   serverNoticesPopupMinimized: boolean;
-  // Profile view request - set when we want to open a user profile after closing settings
-  profileViewRequest: { serverId: string; username: string } | null;
   topicModalRequest: { serverId: string; channelId: string } | null;
-  // Scroll a buffer to one message, fetching older history until it is
-  // loaded. `target` is a message's internal id or its IRC msgid.
-  jumpRequest?: { channelKey: string; target: string } | null;
-  // Settings navigation - for Quick Actions to specify which category and setting to open/highlight
-  settingsNavigation: {
-    category?:
-      | "profile"
-      | "notifications"
-      | "preferences"
-      | "media"
-      | "account";
-    highlightedSettingId?: string;
-  } | null;
   // Shimmer effect for newly connected servers
   serverShimmer?: Set<string>; // Set of server IDs that should show shimmer
   // Request focus on chat input (used when closing modals)
   shouldFocusChatInput: boolean;
-  isUserProfileModalOpen: boolean;
   // Request state for ChatArea modals (using request pattern)
-  channelSettingsRequest: { serverId: string; channelId: string } | null;
   inviteUserRequest: { serverId: string; channelId: string } | null;
   // Global media viewer state — kept at root level so resizing never closes it
   openedMedia: {
@@ -643,12 +608,15 @@ export interface AppState {
   selectedServerId: string | null;
   connectionError: string | null;
   messages: Record<string, Message[]>;
+  historyWindows: Record<string, HistoryWindow>;
   e2eeSessions: Record<string, E2EESessionState>;
   e2eeSelfFingerprint: string | null;
   e2eeOtrSelfFingerprint: string | null;
   e2eeVerifyTarget: { serverId: string; nick: string } | null;
   typingUsers: Record<string, User[]>;
   typingTimers: Record<string, Record<string, NodeJS.Timeout>>;
+  // null where the browser has no Notification API.
+  notificationPermission: NotificationPermission | null;
   globalNotifications: {
     id: string;
     type: "fail" | "warn" | "note";
@@ -659,6 +627,9 @@ export interface AppState {
     serverId: string;
     timestamp: Date;
   }[];
+  // Problems a server reported since the user last opened its notices.
+  serverAlerts: Record<string, number>;
+  unreadServerNotices: Record<string, boolean>;
   rawLog: Record<
     string,
     {
@@ -668,7 +639,6 @@ export interface AppState {
       timestamp: number;
     }[]
   >;
-  rawLogViewerServerId: string | null;
   channelList: Record<
     string,
     { channel: string; userCount: number; topic: string }[]
@@ -719,7 +689,6 @@ export interface AppState {
     }
   >; // batchId -> batch info
   activeBatches: Record<string, Record<string, BatchInfo>>; // serverId -> batchId -> batch info
-  metadataFetchInProgress: Record<string, boolean>; // serverId -> is fetching own metadata
   userMetadataRequested: Record<string, Set<string>>; // serverId -> Set of usernames we've requested metadata for
   metadataChangeCounter: number; // Counter incremented on metadata changes for reactivity
   // soju.im/bouncer-networks: per-bouncer (i.e. per control-connection)
@@ -777,6 +746,11 @@ export interface AppState {
   // `AUTHENTICATE 2FA-REQUIRED`; the modal observes this and prompts the
   // user for a TOTP code.  Cleared on submit / cancel / SASL completion.
   pendingTotpStepUp: { serverId: string; account: string } | null;
+  channelKeyPrompt: {
+    serverId: string;
+    channelName: string;
+    isWrongKey: boolean;
+  } | null;
   // 2FA management state per server (populated by `2FA LIST` / `2FA STATUS`).
   twofaStatus: Record<string, "enabled" | "disabled" | "unknown">;
   twofaCredentials: Record<
@@ -834,10 +808,17 @@ export interface AppState {
     registerPassword?: string,
     isNewServer?: boolean,
     oauthConfig?: ServerOAuthConfig,
+    serverId?: string,
   ) => Promise<Server>;
   disconnect: (serverId: string) => void;
-  joinChannel: (serverId: string, channelName: string) => void;
+  joinChannel: (
+    serverId: string,
+    channelName: string,
+    key?: string,
+    options?: { isAutomatic?: boolean },
+  ) => void;
   leaveChannel: (serverId: string, channelName: string) => void;
+  forgetChannel: (serverId: string, channelName: string) => void;
   sendMessage: (serverId: string, channelId: string, content: string) => void;
   startE2EESession: (
     serverId: string,
@@ -899,7 +880,7 @@ export interface AppState {
   twofaDisable: (serverId: string, type: string, data: string) => void;
   submitTotpStepUp: (serverId: string, code: string) => void;
   cancelTotpStepUp: (serverId: string) => void;
-  toggleTwoFactorSettings: (isOpen?: boolean, serverId?: string | null) => void;
+  closeChannelKeyPrompt: () => void;
   // Tic-tac-toe actions
   tictactoeInvite: (serverId: string, opponent: string) => void;
   tictactoeAccept: (serverId: string, opponent: string) => void;
@@ -1006,16 +987,14 @@ export interface AppState {
     target?: string;
     serverId: string;
   }) => void;
-  removeGlobalNotification: (notificationId: string) => void;
   clearGlobalNotifications: () => void;
+  syncNotificationPermission: () => void;
   appendRawLogLine: (entry: {
     serverId: string;
     direction: "tx" | "rx" | "info";
     line: string;
   }) => void;
   clearRawLog: (serverId: string) => void;
-  openRawLogViewer: (serverId: string) => void;
-  closeRawLogViewer: () => void;
   selectServer: (
     serverId: string | null,
     options?: { clearSelection?: boolean },
@@ -1045,7 +1024,6 @@ export interface AppState {
     isOpen?: boolean,
     prefillDetails?: ConnectionDetails | null,
   ) => void;
-  toggleEditServerModal: (isOpen?: boolean, serverId?: string | null) => void;
   // Edit a bouncer-bound child server through the BouncerNetworksPanel
   // (parent's inline form) instead of the generic AddServerModal --
   // most ServerConfig fields are unused / inherited from the parent
@@ -1053,36 +1031,41 @@ export interface AppState {
   editBouncerNetwork: (childServerId: string) => void;
   consumePendingBouncerEdit: () => void;
   requestDeleteServer: (serverId: string) => void;
+  confirmRemoveServer: (shouldDeleteHistory: boolean) => void;
+  cancelRemoveServer: () => void;
   cancelDeleteServer: () => void;
   cancelDisconnectNetwork: () => void;
-  confirmDisconnectNetwork: () => void;
+  confirmDisconnectNetwork: (shouldDeleteHistory: boolean) => void;
+  confirmDisconnectBouncer: (shouldDeleteHistory: boolean) => void;
   setBouncerGroupAccent: (parentServerId: string, hex: string | null) => void;
-  toggleSettingsModal: (isOpen?: boolean) => void;
+  openPage: (page: AppPage) => void;
+  closePage: () => void;
+  openProfile: (serverId: string, username: string) => void;
+  openBot: (serverId: string, botNick?: string) => void;
+  closeProfile: () => void;
+  // With no argument: closed opens Go to, open flips the mode.
   toggleQuickActions: (isOpen?: boolean) => void;
+  openQuickActions: (mode: QuickActionsMode, scope?: SearchScope) => void;
+  openSearchResults: (
+    query: SearchQuery,
+    options?: { isLive?: boolean; isPaneKept?: boolean },
+  ) => void;
+  closeSearchResults: () => void;
+  setSearchChatShown: (isChatShown: boolean, hitMessageId?: string) => void;
+  // Selects the joined channel or the private chat with this nick, opening it
+  // when needed, and returns its id.
+  openChat: (serverId: string, target: string) => string | null;
+  revealMessage: (messageId: string) => void;
+  clearMessageJump: () => void;
   requestChatInputFocus: () => void;
   clearChatInputFocus: () => void;
-  toggleUserProfileModal: (isOpen?: boolean) => void;
-  setProfileViewRequest: (serverId: string, username: string) => void;
-  clearProfileViewRequest: () => void;
-  requestJumpToMessage: (channelKey: string, target: string) => void;
   recordMention: (entry: MentionEntry) => void;
   // Marks the mention seen and scrolls its channel to it.
   jumpToMention: (entry: MentionEntry) => void;
   dismissMentions: (channelKey: string) => void;
   markAllMentionsSeen: () => void;
-  clearJumpRequest: () => void;
   setTopicModalRequest: (serverId: string, channelId: string) => void;
   clearTopicModalRequest: () => void;
-  setSettingsNavigation: (navigation: {
-    category?:
-      | "profile"
-      | "notifications"
-      | "preferences"
-      | "media"
-      | "account";
-    highlightedSettingId?: string;
-  }) => void;
-  clearSettingsNavigation: () => void;
   toggleDarkMode: () => void;
   toggleMobileMenu: (isOpen?: boolean) => void;
   toggleMemberList: (isVisible?: boolean) => void;
@@ -1091,28 +1074,23 @@ export interface AppState {
     channelList?: { isVisible: boolean; width: number };
     memberList?: { isVisible: boolean; width: number };
   }) => void;
-  toggleChannelListModal: (isOpen?: boolean) => void;
-  requestBotsModalOpen: (serverId: string, botNick: string) => void;
-  clearBotsModalOpenRequest: () => void;
   requestBotCommandPick: (
     serverId: string,
     botNick: string,
     command: import("../types").BotCommand,
   ) => void;
   clearBotCommandPickRequest: () => void;
+  requestComposerCommand: (
+    serverId: string,
+    botNick: string,
+    name: string,
+  ) => void;
+  clearComposerCommandRequest: () => void;
   toggleServerMenu: (isOpen?: boolean) => void;
   // New modal actions for QuickActions
   toggleTopicModal: (
     isOpen: boolean,
     context?: { serverId: string; channelId: string },
-  ) => void;
-  toggleUserProfileModalWithContext: (
-    isOpen: boolean,
-    context?: { serverId: string; username: string },
-  ) => void;
-  setChannelSettingsRequest: (
-    serverId: string | null,
-    channelId: string | null,
   ) => void;
   setInviteUserRequest: (
     serverId: string | null,
@@ -1141,7 +1119,6 @@ export interface AppState {
   stopActiveMedia: () => void;
   setMediaInlineVisible: (visible: boolean, currentTime?: number) => void;
   setActiveMediaThumbnail: (url: string, thumbnailUrl: string) => void;
-  toggleNotificationVolume: () => void;
   setIsNarrowView: (isNarrow: boolean) => void;
   showContextMenu: (
     x: number,
@@ -1151,6 +1128,7 @@ export interface AppState {
   ) => void;
   hideContextMenu: () => void;
   setMobileViewActiveColumn: (column: layoutColumn) => void;
+  setHomeView: (view: "plugins" | undefined) => void;
   setMobileView: (view: layoutColumn) => void;
   // Server notices popup actions
   toggleServerNoticesPopup: (isOpen?: boolean) => void;
@@ -1246,7 +1224,38 @@ const getCurrentSelection = (state: AppState) => {
   return getServerSelection(state, state.ui.selectedServerId);
 };
 
+/** Where leaving a call on this server should land: the most recently
+ *  selected ordinary channel or private chat that still exists, otherwise
+ *  the first ordinary channel. Exported as a pure function so the fallback
+ *  is directly testable without going through a component. */
+export function resolveCallReturnTarget(
+  state: AppState,
+  serverId: string,
+): { type: "channel" | "privateChat"; id: string } | null {
+  const server = state.servers.find((s) => s.id === serverId);
+  if (!server) return null;
+
+  for (const id of getSelectionHistory(serverId)) {
+    const channel = server.channels.find((c) => c.id === id);
+    if (channel) {
+      if (classifyChannelName(channel.name) === "text") {
+        return { type: "channel", id: channel.id };
+      }
+      continue;
+    }
+    const privateChat = server.privateChats?.find((pc) => pc.id === id);
+    if (privateChat) return { type: "privateChat", id: privateChat.id };
+  }
+
+  const firstText = server.channels.find(
+    (c) => classifyChannelName(c.name) === "text",
+  );
+  return firstText ? { type: "channel", id: firstText.id } : null;
+}
+
 // Create store with Zustand
+let searchSession = 0;
+
 const useStore = create<AppState>((set, get) => ({
   servers: [],
   currentUser: null,
@@ -1255,15 +1264,18 @@ const useStore = create<AppState>((set, get) => ({
   isAddingNewServer: false,
   connectionError: null,
   rawLog: {},
-  rawLogViewerServerId: null,
   messages: {},
+  historyWindows: {},
   e2eeSessions: {},
   e2eeSelfFingerprint: null,
   e2eeOtrSelfFingerprint: null,
   e2eeVerifyTarget: null,
   typingUsers: {},
   typingTimers: {},
+  notificationPermission: globalThis.Notification?.permission ?? null,
   globalNotifications: [],
+  serverAlerts: {},
+  unreadServerNotices: {},
   channelList: {},
   channelListBuffer: {},
   channelListFilters: {},
@@ -1273,7 +1285,6 @@ const useStore = create<AppState>((set, get) => ({
   metadataSubscriptions: {},
   metadataBatches: {},
   activeBatches: {},
-  metadataFetchInProgress: {},
   userMetadataRequested: {},
   metadataChangeCounter: 0,
   bouncers: {},
@@ -1281,6 +1292,7 @@ const useStore = create<AppState>((set, get) => ({
   inviteLinks: {},
   pendingRegistration: null,
   pendingTotpStepUp: null,
+  channelKeyPrompt: null,
   twofaStatus: {},
   twofaCredentials: {},
   pendingTwofaChallenge: null,
@@ -1302,15 +1314,14 @@ const useStore = create<AppState>((set, get) => ({
       memberList: { isVisible: true, width: 280 },
     },
     isAddServerModalOpen: false,
-    isEditServerModalOpen: false,
-    isTwoFactorSettingsOpen: false,
-    twoFactorSettingsServerId: null,
-    editServerId: null,
+    page: null,
+    sidePane: null,
     pendingBouncerEdit: null,
     disconnectConfirmTarget: null,
+    removeServerConfirmTarget: null,
     disconnectNetworkConfirmTarget: null,
-    isSettingsModalOpen: false,
-    isQuickActionsOpen: false,
+    quickActions: null,
+    messageJump: null,
     isDarkMode: true,
     isNarrowView:
       typeof window !== "undefined"
@@ -1326,8 +1337,9 @@ const useStore = create<AppState>((set, get) => ({
         : false,
     isChannelListVisible:
       loadUISelections().sidebarPreferences?.channelList.isVisible ?? true,
-    isChannelListModalOpen: false,
     mobileViewActiveColumn: "serverList", // Always start on server/channel list, never auto-navigate to chat
+    isChatAwayFromPresent: false,
+    isAppFocused: isAppInFront(),
     isServerMenuOpen: false,
     contextMenu: {
       isOpen: false,
@@ -1337,8 +1349,8 @@ const useStore = create<AppState>((set, get) => ({
       itemId: null,
     },
     prefillServerDetails: null,
-    pendingBotsModalOpen: null,
     pendingBotCommandPick: null,
+    pendingComposerCommand: null,
     inputAttachments: [],
     // Link security warning modal state
     linkSecurityWarnings: [],
@@ -1347,15 +1359,10 @@ const useStore = create<AppState>((set, get) => ({
     serverNoticesPopupMinimized: false,
     // Profile view request
     profileViewRequest: null,
-    jumpRequest: null,
     topicModalRequest: null,
-    // Settings navigation
-    settingsNavigation: null,
     // Chat input focus request
     shouldFocusChatInput: false,
-    isUserProfileModalOpen: false,
     // Request state for ChatArea modals
-    channelSettingsRequest: null,
     inviteUserRequest: null,
     openedMedia: null,
     activeMedia: null,
@@ -1385,6 +1392,9 @@ const useStore = create<AppState>((set, get) => ({
     customMentions: [],
     // Ignore list
     ignoreList: ["HistServ!*@*"],
+    keepHistory: true,
+    pushMethod: "fcm",
+    historyLimitMb: 500,
     // Hosted chat mode settings
     nickname: "",
     accountName: "",
@@ -1397,6 +1407,7 @@ const useStore = create<AppState>((set, get) => ({
     mediaVisibilityLevel: 1 as MediaVisibilityLevel,
     // Markdown settings
     enableMarkdownRendering: false,
+    showMotd: true,
     // Status messages
     awayMessage: "",
     quitMessage: "",
@@ -1404,6 +1415,14 @@ const useStore = create<AppState>((set, get) => ({
     ...DEFAULT_THEME_SETTINGS,
     ...DEFAULT_TYPOGRAPHY,
     ...DEFAULT_CHAT_LOOK,
+    // Call device settings -- null means the system default
+    callAudioInput: null,
+    callVideoInput: null,
+    callAudioOutput: null,
+    callCameraFacing: "user",
+    callEchoCancellation: true,
+    callNoiseSuppression: true,
+    callAutoGainControl: true,
     ...loadSavedGlobalSettings(), // Load saved settings from localStorage
   },
 
@@ -1422,17 +1441,26 @@ const useStore = create<AppState>((set, get) => ({
     registerPassword,
     isNewServer,
     oauthConfig,
+    serverId,
   ) => {
-    // Check if already connected to this server
     const state = get();
+    // One network can hold several accounts, so a saved server is the same
+    // one only when the address and the login both match.
+    const existingSavedServer = serverId
+      ? loadSavedServers().find((s) => s.id === serverId)
+      : loadSavedServers().find(
+          (s) =>
+            normalizeHost(s.host) === normalizeHost(host) &&
+            s.port === port &&
+            s.nickname === nickname &&
+            (s.saslAccountName ?? "") === (saslAccountName ?? ""),
+        );
+    const targetId = serverId ?? existingSavedServer?.id;
     const existingServer = state.servers.find(
-      (s) =>
-        normalizeHost(s.host) === normalizeHost(host) &&
-        s.port === port &&
-        s.isConnected,
+      (s) => s.id === targetId && s.isConnected,
     );
     if (existingServer) {
-      // Already connected, just return the existing server
+      if (isNewServer) get().selectServer(existingServer.id);
       return existingServer;
     }
 
@@ -1442,13 +1470,30 @@ const useStore = create<AppState>((set, get) => ({
       connectionError: null,
     });
 
-    try {
-      // Look up saved server to get its ID
-      const existingSavedServers: ServerConfig[] = loadSavedServers();
-      const existingSavedServer = existingSavedServers.find(
-        (s) => normalizeHost(s.host) === normalizeHost(host) && s.port === port,
-      );
+    const knownServer = state.servers.find((s) => s.id === targetId);
+    const newServerId =
+      isNewServer && !knownServer ? (targetId ?? uuidv4()) : undefined;
+    if (newServerId) {
+      set((state) => ({
+        servers: [
+          ...state.servers,
+          {
+            id: newServerId,
+            name: name || normalizeHost(host),
+            host: normalizeHost(host),
+            port,
+            channels: [],
+            privateChats: [],
+            isConnected: false,
+            connectionState: "connecting",
+            users: [],
+          },
+        ],
+      }));
+      get().selectServer(newServerId);
+    }
 
+    try {
       // Auth-handler reads OAuth out of localStorage when SASL fires, so
       // persist any caller-supplied oauth config BEFORE opening the
       // socket -- otherwise the first SASL turn would race past it.
@@ -1473,7 +1518,7 @@ const useStore = create<AppState>((set, get) => ({
         password,
         saslAccountName,
         saslPassword,
-        existingSavedServer?.id, // Pass the saved server ID if it exists
+        existingSavedServer?.id ?? newServerId,
         oauthBearerEnabled,
       );
 
@@ -1483,18 +1528,9 @@ const useStore = create<AppState>((set, get) => ({
       // Ensure host is in URL format for storage
       const urlHost = ensureUrlFormat(host, port);
 
-      // Find existing server using normalized comparison
-      const savedServer = savedServers.find(
-        (s) =>
-          normalizeHost(s.host) === normalizeHost(urlHost) && s.port === port,
-      );
+      const savedServer = savedServers.find((s) => s.id === server.id);
       const channelsToJoin = savedServer?.channels || [];
-
-      // Remove existing server entry using normalized comparison
-      const updatedServers = savedServers.filter(
-        (s) =>
-          normalizeHost(s.host) !== normalizeHost(urlHost) || s.port !== port,
-      );
+      const updatedServers = savedServers.filter((s) => s.id !== server.id);
 
       updatedServers.push({
         id: server.id,
@@ -1521,9 +1557,7 @@ const useStore = create<AppState>((set, get) => ({
 
       set((state) => {
         const existingServerIndex = state.servers.findIndex(
-          (s) =>
-            normalizeHost(s.host) === normalizeHost(server.host) &&
-            s.port === port,
+          (s) => s.id === server.id,
         );
         if (existingServerIndex !== -1) {
           const updatedServers = [...state.servers];
@@ -1548,10 +1582,7 @@ const useStore = create<AppState>((set, get) => ({
       const isLocalhost = host === "localhost" || host === "127.0.0.1";
       if (isLocalhost) {
         const savedServers = loadSavedServers();
-        const serverConfig = savedServers.find(
-          (s) =>
-            normalizeHost(s.host) === normalizeHost(host) && s.port === port,
-        );
+        const serverConfig = savedServers.find((s) => s.id === server.id);
 
         // Only show warning if not already skipped
         if (!serverConfig?.skipLocalhostWarning) {
@@ -1602,8 +1633,7 @@ const useStore = create<AppState>((set, get) => ({
 
       set((state) => {
         const existingServerIndex = state.servers.findIndex(
-          (s) =>
-            normalizeHost(s.host) === normalizeHost(host) && s.port === port,
+          (s) => s.id === (targetId ?? newServerId),
         );
         if (existingServerIndex !== -1) {
           // Update existing server to disconnected
@@ -1634,6 +1664,7 @@ const useStore = create<AppState>((set, get) => ({
 
   disconnect: (serverId) => {
     clearServerConnectionTimeout(serverId);
+    releaseServerVoiceClients(serverId);
     const quitMessage = get().globalSettings.quitMessage;
     ircClient.disconnect(serverId, quitMessage);
 
@@ -1723,15 +1754,19 @@ const useStore = create<AppState>((set, get) => ({
     ircClient.sendRaw(serverId, `INVITELINK DELETE ${shareId}`);
   },
 
-  joinChannel: (serverId, channelName) => {
-    const channel = ircClient.joinChannel(serverId, channelName);
+  joinChannel: (serverId, channelName, key, options) => {
+    const channel = ircClient.joinChannel(serverId, channelName, key);
     if (channel) {
+      if (key) markKeyedJoin(serverId, channel.name);
+      setAutomaticJoin(serverId, channel.name, !!options?.isAutomatic);
+      const isSameChannel = (name: string) =>
+        name.toLowerCase() === channel.name.toLowerCase();
       set((state) => {
         const updatedServers = state.servers.map((server) => {
           if (server.id === serverId) {
             // Check if channel already exists in store
-            const existingChannel = server.channels.find(
-              (c) => c.name.toLowerCase() === channelName.toLowerCase(),
+            const existingChannel = server.channels.find((c) =>
+              isSameChannel(c.name),
             );
             if (existingChannel) {
               // Channel already exists, don't add duplicate
@@ -1745,20 +1780,21 @@ const useStore = create<AppState>((set, get) => ({
           return server;
         });
 
-        // Skip for bouncer sessions: savedServer lookup is host:port-keyed
-        // and a soju bouncer's parent + every bound child share that.
+        // We skip bouncer sessions because the bouncer rejoins their channels itself.
         const currentServer = state.servers.find((s) => s.id === serverId);
         const isBouncerSession =
           !!currentServer?.isBouncerControl || !!currentServer?.bouncerNetid;
-        if (!isBouncerSession) {
+        const isNewRow = !currentServer?.channels.some((c) =>
+          isSameChannel(c.name),
+        );
+        if (isBouncerSession) {
+          if (isNewRow) markPendingJoin(serverId, channel.name);
+        } else {
           const savedServers = loadSavedServers();
-          const savedServer = savedServers.find(
-            (s) =>
-              normalizeHost(s.host) ===
-                normalizeHost(currentServer?.host || "") &&
-              s.port === currentServer?.port,
-          );
-          if (savedServer && !savedServer.channels.includes(channel.name)) {
+          const savedServer = savedServers.find((s) => s.id === serverId);
+          if (savedServer && !savedServer.channels.some(isSameChannel)) {
+            // We track only channels this join adds to the saved list, so a refused autojoin keeps the channels the user saved.
+            markPendingJoin(serverId, channel.name);
             savedServer.channels.push(channel.name);
             saveServersToLocalStorage(savedServers);
           }
@@ -1787,15 +1823,24 @@ const useStore = create<AppState>((set, get) => ({
   },
 
   leaveChannel: (serverId, channelName) => {
+    // A voice call keeps running after its view unmounts, so leaving the
+    // channel is the only thing left that can end it.
+    releaseVoiceClient(serverId, channelName);
     ircClient.leaveChannel(serverId, channelName); // Send PART command to the IRC server
+    get().forgetChannel(serverId, channelName);
+  },
 
+  forgetChannel: (serverId, channelName) => {
+    const isForgotten = (name: string) =>
+      name.toLowerCase() === channelName.toLowerCase();
+    ircClient.forgetChannel(serverId, channelName);
     set((state) => {
       const updatedServers = state.servers.map((server) => {
         if (server.id === serverId) {
           return {
             ...server,
             channels: server.channels.filter(
-              (channel) => channel.name !== channelName,
+              (channel) => !isForgotten(channel.name),
             ),
           };
         }
@@ -1808,15 +1853,11 @@ const useStore = create<AppState>((set, get) => ({
         !!currentServer?.isBouncerControl || !!currentServer?.bouncerNetid;
       if (!isBouncerSession) {
         const savedServers = loadSavedServers();
-        const savedServer = savedServers.find(
-          (s) =>
-            normalizeHost(s.host) ===
-              normalizeHost(currentServer?.host || "") &&
-            s.port === currentServer?.port,
-        );
+        const savedServer = savedServers.find((s) => s.id === serverId);
         if (savedServer) {
-          savedServer.channels =
-            currentServer?.channels.map((c) => c.name) || [];
+          savedServer.channels = savedServer.channels.filter(
+            (name) => !isForgotten(name),
+          );
           saveServersToLocalStorage(savedServers);
         }
       }
@@ -1825,25 +1866,32 @@ const useStore = create<AppState>((set, get) => ({
       const currentOrder = state.channelOrder[serverId] || [];
       const newChannelOrder = {
         ...state.channelOrder,
-        [serverId]: currentOrder.filter((name) => name !== channelName),
+        [serverId]: currentOrder.filter((name) => !isForgotten(name)),
       };
       saveChannelOrder(newChannelOrder);
 
       // Clear selection if the left channel was the selected one
       const currentSelection = getServerSelection(state, serverId);
       const server = state.servers.find((s) => s.id === serverId);
-      const leftChannel = server?.channels.find((c) => c.name === channelName);
+      const leftChannel = server?.channels.find((c) => isForgotten(c.name));
 
       let updatedUI = state.ui;
       if (
         leftChannel &&
         currentSelection?.selectedChannelId === leftChannel.id
       ) {
+        // Leaving a call on a narrow layout goes back to the channel list
+        // rather than opening whichever conversation happens to be first.
+        const backToList =
+          state.ui.isNarrowView && classifyChannelName(channelName) !== "text";
         const remainingChannels =
           updatedServers.find((s) => s.id === serverId)?.channels || [];
-        const nextChannel = remainingChannels[0] || null;
+        const nextChannel = backToList ? null : remainingChannels[0] || null;
         updatedUI = {
           ...state.ui,
+          mobileViewActiveColumn: backToList
+            ? "serverList"
+            : state.ui.mobileViewActiveColumn,
           perServerSelections: setServerSelection(state, serverId, {
             selectedChannelId: nextChannel?.id || null,
             selectedChannelName: nextChannel?.name || null,
@@ -1997,6 +2045,7 @@ const useStore = create<AppState>((set, get) => ({
     ircClient.sendRaw(serverId, "AUTHENTICATE *");
     set({ pendingTotpStepUp: null });
   },
+  closeChannelKeyPrompt: () => set({ channelKeyPrompt: null }),
 
   setAway: (serverId, message) => {
     const awayMsg = message || get().globalSettings.awayMessage || "Away";
@@ -2095,6 +2144,7 @@ const useStore = create<AppState>((set, get) => ({
   },
 
   changeNick: (serverId, newNick) => {
+    rememberRequestedNick(serverId, newNick);
     ircClient.changeNick(serverId, newNick);
   },
 
@@ -2118,23 +2168,15 @@ const useStore = create<AppState>((set, get) => ({
         return state; // Don't add duplicate message
       }
 
-      // Add message and sort chronologically by timestamp
-      const updatedMessages = [...currentMessages, message].sort((a, b) => {
-        const timeA =
-          a.timestamp instanceof Date
-            ? a.timestamp.getTime()
-            : new Date(a.timestamp).getTime();
-        const timeB =
-          b.timestamp instanceof Date
-            ? b.timestamp.getTime()
-            : new Date(b.timestamp).getTime();
-        return timeA - timeB;
-      });
+      const updatedMessages = [...currentMessages, message].sort(
+        compareMessageOrder,
+      );
 
-      // Once explicit backfill expands scrollback, live messages must not discard it.
+      // Cap per-channel history to prevent unbounded memory growth in long sessions.
+      // A detached window moves its newer lines to the present right after, so we leave it whole.
       const cappedMessages =
-        currentMessages.length <= MAX_MESSAGES_PER_CHANNEL &&
-        updatedMessages.length > MAX_MESSAGES_PER_CHANNEL
+        updatedMessages.length > MAX_MESSAGES_PER_CHANNEL &&
+        !state.historyWindows[channelKey]
           ? updatedMessages.slice(-MAX_MESSAGES_PER_CHANNEL)
           : updatedMessages;
 
@@ -2143,6 +2185,12 @@ const useStore = create<AppState>((set, get) => ({
           ...state.messages,
           [channelKey]: cappedMessages,
         },
+        ...(message.channelId === "server-notices" && {
+          unreadServerNotices: {
+            ...state.unreadServerNotices,
+            [message.serverId]: true,
+          },
+        }),
       };
     });
   },
@@ -2167,7 +2215,7 @@ const useStore = create<AppState>((set, get) => ({
       return {
         messages: {
           ...state.messages,
-          [channelKey]: next,
+          [channelKey]: next.sort(compareMessageOrder),
         },
       };
     });
@@ -2255,9 +2303,15 @@ const useStore = create<AppState>((set, get) => ({
   },
 
   addGlobalNotification: (notification) => {
+    const isRepeat = get().globalNotifications.some(
+      (n) =>
+        n.serverId === notification.serverId &&
+        n.message === notification.message,
+    );
+    if (isRepeat) return;
     set((state) => ({
       globalNotifications: [
-        ...state.globalNotifications,
+        ...state.globalNotifications.slice(-2),
         {
           id: uuidv4(),
           ...notification,
@@ -2280,12 +2334,10 @@ const useStore = create<AppState>((set, get) => ({
     }
   },
 
-  removeGlobalNotification: (notificationId) => {
-    set((state) => ({
-      globalNotifications: state.globalNotifications.filter(
-        (n) => n.id !== notificationId,
-      ),
-    }));
+  syncNotificationPermission: () => {
+    const permission = globalThis.Notification?.permission ?? null;
+    if (get().notificationPermission !== permission)
+      set({ notificationPermission: permission });
   },
 
   clearGlobalNotifications: () => {
@@ -2312,14 +2364,6 @@ const useStore = create<AppState>((set, get) => ({
     set((state) => ({
       rawLog: { ...state.rawLog, [serverId]: [] },
     }));
-  },
-
-  openRawLogViewer: (serverId) => {
-    set(() => ({ rawLogViewerServerId: serverId }));
-  },
-
-  closeRawLogViewer: () => {
-    set(() => ({ rawLogViewerServerId: null }));
   },
 
   selectServer: (serverId, options) => {
@@ -2372,55 +2416,7 @@ const useStore = create<AppState>((set, get) => ({
         server?.privateChats?.find((pc) => pc.id === selectedPrivateChatId)
           ?.username || null;
 
-      // When the user switches *to* a server, the channel or PM that
-      // restores into focus has now been "looked at" -- clear its
-      // unread / mention indicators.  Without this the badge sticks
-      // on the just-foregrounded buffer until the user clicks somewhere
-      // else and back.
-      let updatedServers = state.servers;
-      if (selectedChannelId || selectedPrivateChatId) {
-        updatedServers = state.servers.map((s) => {
-          if (s.id !== serverId) return s;
-          let touched = false;
-          const channels = s.channels.map((ch) => {
-            if (ch.id !== selectedChannelId) return ch;
-            if (
-              ch.unreadCount === 0 &&
-              !ch.isMentioned &&
-              (ch.mentionCount ?? 0) === 0
-            )
-              return ch;
-            touched = true;
-            return {
-              ...ch,
-              unreadCount: 0,
-              mentionCount: 0,
-              isMentioned: false,
-            };
-          });
-          const privateChats = s.privateChats?.map((pc) => {
-            if (pc.id !== selectedPrivateChatId) return pc;
-            if (
-              pc.unreadCount === 0 &&
-              !pc.isMentioned &&
-              (pc.mentionCount ?? 0) === 0
-            )
-              return pc;
-            touched = true;
-            return {
-              ...pc,
-              unreadCount: 0,
-              mentionCount: 0,
-              isMentioned: false,
-            };
-          });
-          if (!touched) return s;
-          return { ...s, channels, privateChats };
-        });
-      }
-
       return {
-        servers: updatedServers,
         ui: {
           ...state.ui,
           selectedServerId: serverId,
@@ -2463,6 +2459,8 @@ const useStore = create<AppState>((set, get) => ({
   },
 
   selectChannel: (channelId, options) => {
+    // Choosing a chat leaves any open page, so the chat shows.
+    if (options?.navigate) get().closePage();
     set((state) => {
       // Special case for server notices
       if (channelId === "server-notices") {
@@ -2499,13 +2497,10 @@ const useStore = create<AppState>((set, get) => ({
         }
       }
 
-      // Mark channel as read
       if (serverId && channelId) {
-        ircClient.markChannelAsRead(serverId, channelId);
-
         const server = state.servers.find((s) => s.id === serverId);
-        const channelName =
-          server?.channels.find((c) => c.id === channelId)?.name || null;
+        const ch = server?.channels.find((c) => c.id === channelId);
+        const channelName = ch?.name || null;
 
         // Self-heal stale memberships: when the local cache says we're
         // in a real (non-private) channel but the user list is empty,
@@ -2517,8 +2512,7 @@ const useStore = create<AppState>((set, get) => ({
         // are commonly orphaned across restarts -- the cost of an
         // extra JOIN line is nothing compared to the 401 the user
         // sees today.
-        if (channelName && server) {
-          const ch = server.channels.find((c) => c.id === channelId);
+        if (channelName && server && !ch?.needsKey) {
           const isVoiceOrStream =
             channelName.startsWith("^") || channelName.startsWith("$");
           const lostMembership =
@@ -2533,45 +2527,15 @@ const useStore = create<AppState>((set, get) => ({
           }
         }
 
-        // draft/read-marker: tell the server how far we've read so
-        // our other sessions clear their unread state too. The marker
-        // is keyed to the user's account on the server, so skip the
-        // request entirely when the user isn't logged in -- the
-        // server would just FAIL MARKREAD :Account required.
-        if (
-          channelName &&
-          server?.capabilities?.includes("draft/read-marker") &&
-          ircClient.getCurrentUser(serverId)?.account
-        ) {
-          const ts = getLatestMessageTimestampIso(serverId, channelId);
-          if (ts) ircClient.markreadSet(serverId, channelName, ts);
-        }
-
-        // Update unread state in store
-        const updatedServers = state.servers.map((server) => {
-          if (server.id === serverId) {
-            const updatedChannels = server.channels.map((channel) => {
-              if (channel.id === channelId) {
-                return {
-                  ...channel,
-                  unreadCount: 0,
-                  mentionCount: 0,
-                  isMentioned: false,
-                };
-              }
-              return channel;
-            });
-
-            return {
-              ...server,
-              channels: updatedChannels,
-            };
-          }
-          return server;
-        });
-
         return {
-          servers: updatedServers,
+          ...(ch?.needsKey &&
+            options?.navigate && {
+              channelKeyPrompt: {
+                serverId,
+                channelName: ch.name,
+                isWrongKey: false,
+              },
+            }),
           ui: {
             ...state.ui,
             selectedServerId: serverId,
@@ -2621,6 +2585,7 @@ const useStore = create<AppState>((set, get) => ({
     const channelObj = selectedServer?.channels.find(
       (c) => c.id === selection?.selectedChannelId,
     );
+
     patchUISelections({
       selectedServerId: newState.ui.selectedServerId,
       perServerSelections: newState.ui.perServerSelections,
@@ -2633,35 +2598,7 @@ const useStore = create<AppState>((set, get) => ({
   },
 
   markChannelAsRead: (serverId, channelId) => {
-    ircClient.markChannelAsRead(serverId, channelId);
-
-    set((state) => {
-      const updatedServers = state.servers.map((server) => {
-        if (server.id === serverId) {
-          const updatedChannels = server.channels.map((channel) => {
-            if (channel.id === channelId) {
-              return {
-                ...channel,
-                unreadCount: 0,
-                mentionCount: 0,
-                isMentioned: false,
-              };
-            }
-            return channel;
-          });
-
-          return {
-            ...server,
-            channels: updatedChannels,
-          };
-        }
-        return server;
-      });
-
-      return {
-        servers: updatedServers,
-      };
-    });
+    markChatRead(useStore, serverId, channelId);
   },
 
   reorderChannels: (serverId, channelIds) => {
@@ -2684,11 +2621,7 @@ const useStore = create<AppState>((set, get) => ({
 
       if (!isBouncerSession) {
         const savedServers = loadSavedServers();
-        const savedServer = savedServers.find(
-          (s) =>
-            normalizeHost(s.host) === normalizeHost(server.host) &&
-            s.port === server.port,
-        );
+        const savedServer = savedServers.find((s) => s.id === serverId);
         if (savedServer) {
           savedServer.channels = channelNames;
           saveServersToLocalStorage(savedServers);
@@ -2700,6 +2633,8 @@ const useStore = create<AppState>((set, get) => ({
   },
 
   selectPrivateChat: (privateChatId, options) => {
+    // Choosing a chat leaves any open page, so the chat shows.
+    if (options?.navigate) get().closePage();
     set((state) => {
       // Find which server this private chat belongs to
       let serverId = state.ui.selectedServerId;
@@ -2728,60 +2663,13 @@ const useStore = create<AppState>((set, get) => ({
         return state;
       }
 
-      // Mark private chat as read
       if (serverId && privateChatId) {
         const server = state.servers.find((s) => s.id === serverId);
-        const pc = server?.privateChats?.find((pc) => pc.id === privateChatId);
-        const pcUsername = pc?.username || null;
-
-        // draft/read-marker: PMs aren't auto-pushed by the server,
-        // so the first time we open one ask for its stored marker
-        // (so the unread badge can clear if another device already
-        // read past it).  After that, push the latest timestamp like
-        // we do for channels. The marker is keyed to the user's
-        // account on the server, so skip when the user isn't logged
-        // in (server would FAIL MARKREAD :Account required).
-        if (
-          pcUsername &&
-          server?.capabilities?.includes("draft/read-marker") &&
-          ircClient.getCurrentUser(serverId)?.account
-        ) {
-          if (!pc?.readMarkerFetched) {
-            ircClient.markreadGet(serverId, pcUsername);
-          }
-          const ts = getLatestMessageTimestampIso(serverId, privateChatId);
-          if (ts) ircClient.markreadSet(serverId, pcUsername, ts);
-        }
-
-        const updatedServers = state.servers.map((server) => {
-          if (server.id === serverId) {
-            const updatedPrivateChats =
-              server.privateChats?.map((privateChat) => {
-                if (privateChat.id === privateChatId) {
-                  return {
-                    ...privateChat,
-                    unreadCount: 0,
-                    mentionCount: 0,
-                    isMentioned: false,
-                    // Mark as fetched so we don't spam GETs on every
-                    // re-selection of the same PM.  The reply will
-                    // overwrite this with the actual marker.
-                    readMarkerFetched: true,
-                  };
-                }
-                return privateChat;
-              }) || [];
-
-            return {
-              ...server,
-              privateChats: updatedPrivateChats,
-            };
-          }
-          return server;
-        });
+        const pcUsername =
+          server?.privateChats?.find((pc) => pc.id === privateChatId)
+            ?.username || null;
 
         return {
-          servers: updatedServers,
           ui: {
             ...state.ui,
             selectedServerId: serverId,
@@ -2832,6 +2720,7 @@ const useStore = create<AppState>((set, get) => ({
     const pcObj = selectedServer?.privateChats?.find(
       (pc) => pc.id === selection?.selectedPrivateChatId,
     );
+
     patchUISelections({
       selectedServerId: newState.ui.selectedServerId,
       perServerSelections: newState.ui.perServerSelections,
@@ -2870,7 +2759,7 @@ const useStore = create<AppState>((set, get) => ({
         // Request chathistory for this PM (if server supports it)
         if (server.capabilities?.includes("draft/chathistory")) {
           setTimeout(() => {
-            ircClient.sendRaw(serverId, `CHATHISTORY LATEST ${username} * 50`);
+            ircClient.requestChathistoryLatest(serverId, username);
           }, 50);
         }
 
@@ -2987,7 +2876,7 @@ const useStore = create<AppState>((set, get) => ({
       // Request chathistory for this new PM (if server supports it)
       if (server.capabilities?.includes("draft/chathistory")) {
         setTimeout(() => {
-          ircClient.sendRaw(serverId, `CHATHISTORY LATEST ${username} * 50`);
+          ircClient.requestChathistoryLatest(serverId, username);
         }, 50);
       }
 
@@ -3093,7 +2982,7 @@ const useStore = create<AppState>((set, get) => ({
       const maxOrder = Math.max(
         0,
         ...(server.privateChats
-          ?.filter((pc) => pc.isPinned && pc.order !== undefined)
+          ?.filter((pc) => pc.order !== undefined)
           .map((pc) => pc.order as number) || []),
       );
 
@@ -3171,7 +3060,7 @@ const useStore = create<AppState>((set, get) => ({
         if (s.id === serverId) {
           const updatedPrivateChats = s.privateChats?.map((pc) => {
             const newOrder = privateChatIds.indexOf(pc.id);
-            if (newOrder !== -1 && pc.isPinned) {
+            if (newOrder !== -1) {
               return { ...pc, order: newOrder };
             }
             return pc;
@@ -3228,24 +3117,11 @@ const useStore = create<AppState>((set, get) => ({
 
     const connectionPromises: Promise<unknown>[] = [];
     for (const savedServer of parents) {
-      const {
-        id,
-        name,
-        host,
-        port,
-        nickname,
-        password,
-        saslEnabled,
-        saslAccountName,
-        saslPassword,
-      } = savedServer;
+      const { id, name, host, port } = savedServer;
 
       const urlHost = ensureUrlFormat(host, port);
 
-      const existingServer = get().servers.find(
-        (s) =>
-          normalizeHost(s.host) === normalizeHost(urlHost) && s.port === port,
-      );
+      const existingServer = get().servers.find((s) => s.id === id);
 
       if (!existingServer) {
         const connectingServer: Server = {
@@ -3268,21 +3144,15 @@ const useStore = create<AppState>((set, get) => ({
         }));
       }
 
-      let connectionPromise: Promise<unknown> = get().connect(
-        name || normalizeHost(urlHost),
-        urlHost,
-        port,
-        nickname,
-        saslEnabled,
-        password,
-        saslAccountName,
-        saslPassword,
+      let connectionPromise: Promise<unknown> = connectSavedServer(
+        get().connect,
+        savedServer,
       );
       connectionPromise = connectionPromise.catch((error) => {
         console.error(`Failed to reconnect to server ${urlHost}`, error);
         set((state) => ({
           servers: state.servers.map((s) =>
-            normalizeHost(s.host) === normalizeHost(urlHost) && s.port === port
+            s.id === id
               ? { ...s, connectionState: "disconnected" as const }
               : s,
           ),
@@ -3307,6 +3177,10 @@ const useStore = create<AppState>((set, get) => ({
       return;
     }
 
+    // We close the live connection and any pending retry, so only the saved credentials log in.
+    releaseServerVoiceClients(serverId);
+    ircClient.disconnect(serverId, state.globalSettings.quitMessage);
+
     // Update server state to connecting
     set((state) => ({
       servers: state.servers.map((s) =>
@@ -3319,54 +3193,8 @@ const useStore = create<AppState>((set, get) => ({
     try {
       // Get saved server config to get credentials
       const savedServers = loadSavedServers();
-      if (server.bouncerNetid && server.bouncerServerId) {
-        const savedChild = savedServers.find((s) => s.id === serverId);
-        const savedParent = savedServers.find(
-          (s) => s.id === server.bouncerServerId,
-        );
-        if (!savedChild || !savedParent) {
-          throw new Error(
-            `No saved bouncer configuration found for server ${serverId}`,
-          );
-        }
-        // Each network shares an endpoint but needs its own identity and fresh parent credentials.
-        const childConfig = {
-          ...savedChild,
-          host: savedParent.host,
-          port: savedParent.port,
-          nickname: savedParent.nickname,
-          password: savedParent.password,
-          saslEnabled: savedParent.saslEnabled,
-          saslAccountName: savedParent.saslAccountName,
-          saslPassword: savedParent.saslPassword,
-          oauth: savedParent.oauth,
-        };
-        saveServersToLocalStorage(
-          savedServers.map((s) => (s.id === serverId ? childConfig : s)),
-        );
-        ircClient.disconnect(serverId);
-        ircClient.setPendingBouncerBind(serverId, server.bouncerNetid);
-        await ircClient.connect(
-          server.name,
-          ensureUrlFormat(childConfig.host, childConfig.port),
-          childConfig.port,
-          childConfig.nickname,
-          childConfig.password,
-          childConfig.saslAccountName,
-          childConfig.saslPassword,
-          serverId,
-          !!(
-            childConfig.oauth?.enabled &&
-            (childConfig.oauth.accessToken || childConfig.oauth.idToken)
-          ),
-        );
-        return;
-      }
-      const savedServer = savedServers.find(
-        (s) =>
-          normalizeHost(s.host) === normalizeHost(server.host) &&
-          s.port === server.port,
-      );
+      const configId = server.bouncerServerId ?? serverId;
+      const savedServer = savedServers.find((s) => s.id === configId);
 
       if (!savedServer) {
         console.error(`No saved configuration found for server ${serverId}`, {
@@ -3377,19 +3205,16 @@ const useStore = create<AppState>((set, get) => ({
         throw new Error(`No saved configuration found for server ${serverId}`);
       }
 
-      // Ensure host is in URL format (handles old hostname-only entries)
-      const urlHost = ensureUrlFormat(savedServer.host, savedServer.port);
-
-      await get().connect(
-        savedServer.name || normalizeHost(savedServer.host),
-        urlHost, // Use full URL
-        savedServer.port,
-        savedServer.nickname,
-        savedServer.saslEnabled,
-        savedServer.password,
-        savedServer.saslAccountName,
-        savedServer.saslPassword,
-      );
+      if (server.bouncerServerId && server.bouncerNetid) {
+        await connectBouncerChild(
+          serverId,
+          server.bouncerNetid,
+          server.name,
+          savedServer,
+        );
+      } else {
+        await connectSavedServer(get().connect, savedServer);
+      }
     } catch (error) {
       console.error(`Failed to reconnect to server ${serverId}`, error);
       // Update server state back to disconnected
@@ -3418,6 +3243,7 @@ const useStore = create<AppState>((set, get) => ({
 
     for (const id of toRemove) {
       clearServerConnectionTimeout(id);
+      releaseServerVoiceClients(id);
       ircClient.removeServer(id);
     }
 
@@ -3487,16 +3313,6 @@ const useStore = create<AppState>((set, get) => ({
     }));
   },
 
-  toggleEditServerModal: (isOpen, serverId = null) => {
-    set((state) => ({
-      ui: {
-        ...state.ui,
-        isEditServerModalOpen: isOpen ?? false,
-        editServerId: serverId,
-      },
-    }));
-  },
-
   editBouncerNetwork: (childServerId) => {
     const state = get();
     const child = state.servers.find((s) => s.id === childServerId);
@@ -3543,7 +3359,31 @@ const useStore = create<AppState>((set, get) => ({
       }));
       return;
     }
+    if (!target) return;
+    // Only a server with saved history needs a confirmation, which asks
+    // whether to keep that history for when it is added again.
+    hasSavedHistory(serverId)
+      .then((hasHistory) => {
+        if (!hasHistory) get().deleteServer(serverId);
+        else
+          set((s) => ({
+            ui: { ...s.ui, removeServerConfirmTarget: serverId },
+          }));
+      })
+      .catch(() => get().deleteServer(serverId));
+  },
+
+  confirmRemoveServer: (shouldDeleteHistory) => {
+    const serverId = get().ui.removeServerConfirmTarget;
+    const target = get().servers.find((s) => s.id === serverId);
+    set((s) => ({ ui: { ...s.ui, removeServerConfirmTarget: null } }));
+    if (!serverId || !target) return;
+    void settleSavedHistory(target, shouldDeleteHistory);
     get().deleteServer(serverId);
+  },
+
+  cancelRemoveServer: () => {
+    set((s) => ({ ui: { ...s.ui, removeServerConfirmTarget: null } }));
   },
 
   cancelDeleteServer: () => {
@@ -3558,10 +3398,22 @@ const useStore = create<AppState>((set, get) => ({
     }));
   },
 
-  confirmDisconnectNetwork: () => {
+  confirmDisconnectBouncer: (shouldDeleteHistory) => {
+    const state = get();
+    const targetId = state.ui.disconnectConfirmTarget;
+    if (!targetId) return;
+    for (const server of state.servers)
+      if (server.id === targetId || server.bouncerServerId === targetId)
+        void settleSavedHistory(server, shouldDeleteHistory);
+    state.deleteServer(targetId);
+  },
+
+  confirmDisconnectNetwork: (shouldDeleteHistory) => {
     const state = get();
     const target = state.ui.disconnectNetworkConfirmTarget;
     if (!target) return;
+    const child = state.servers.find((s) => s.id === target.childServerId);
+    if (child) void settleSavedHistory(child, shouldDeleteHistory);
     state.bouncerDelNetwork(target.bouncerServerId, target.netid);
     state.deleteServer(target.childServerId);
     set((s) => ({
@@ -3600,81 +3452,174 @@ const useStore = create<AppState>((set, get) => ({
     }));
   },
 
-  toggleTwoFactorSettings: (isOpen, serverId = null) => {
+  // On a phone a page covers whichever column opened it, so closing it
+  // returns there.
+  openPage: (page) => {
+    set((state) => ({ ui: { ...state.ui, page, quickActions: null } }));
+  },
+
+  closePage: () => {
+    set((state) => ({ ui: { ...state.ui, page: null } }));
+  },
+
+  openProfile: (serverId, username) => {
     set((state) => ({
       ui: {
         ...state.ui,
-        isTwoFactorSettingsOpen: isOpen ?? false,
-        twoFactorSettingsServerId: isOpen ? serverId : null,
+        page: null,
+        sidePane: { kind: "profile", serverId, username },
+        mobileViewActiveColumn: state.ui.isNarrowView
+          ? "memberList"
+          : state.ui.mobileViewActiveColumn,
       },
     }));
   },
 
-  toggleSettingsModal: (isOpen) => {
+  openBot: (serverId, botNick) => {
     set((state) => ({
       ui: {
         ...state.ui,
-        isSettingsModalOpen:
-          isOpen !== undefined ? isOpen : !state.ui.isSettingsModalOpen,
+        page: null,
+        sidePane: { kind: "bot", serverId, botNick },
+        mobileViewActiveColumn: state.ui.isNarrowView
+          ? "memberList"
+          : state.ui.mobileViewActiveColumn,
       },
     }));
+  },
+
+  closeProfile: () => {
+    set((state) =>
+      state.ui.sidePane?.kind === "profile" || state.ui.sidePane?.kind === "bot"
+        ? { ui: { ...state.ui, sidePane: null } }
+        : {},
+    );
   },
 
   toggleQuickActions: (isOpen) => {
+    set((state) => {
+      const current = state.ui.quickActions;
+      const next: QuickActionsState | null =
+        isOpen === false
+          ? null
+          : !current
+            ? { mode: "goto" }
+            : isOpen
+              ? current
+              : { mode: current.mode === "goto" ? "messages" : "goto" };
+      return { ui: { ...state.ui, quickActions: next } };
+    });
+  },
+
+  openQuickActions: (mode, scope) => {
+    set((state) => ({ ui: { ...state.ui, quickActions: { mode, scope } } }));
+  },
+
+  openSearchResults: (query, { isLive = false, isPaneKept = false } = {}) => {
+    if (
+      !isLive &&
+      get().globalSettings.keepHistory !== false &&
+      serializeSearchQuery(query)
+    )
+      recordSearch(query);
     set((state) => ({
       ui: {
         ...state.ui,
-        isQuickActionsOpen:
-          isOpen !== undefined ? isOpen : !state.ui.isQuickActionsOpen,
+        page: null,
+        sidePane: {
+          kind: "search",
+          query,
+          session:
+            isPaneKept && state.ui.sidePane?.kind === "search"
+              ? state.ui.sidePane.session
+              : ++searchSession,
+        },
+        quickActions: null,
+        mobileViewActiveColumn: state.ui.isNarrowView
+          ? "memberList"
+          : state.ui.mobileViewActiveColumn,
       },
     }));
   },
 
-  requestChatInputFocus: () => {
-    set((state) => ({
-      ui: { ...state.ui, shouldFocusChatInput: true },
-    }));
+  closeSearchResults: () => {
+    set((state) =>
+      state.ui.sidePane?.kind === "search"
+        ? {
+            ui: {
+              ...state.ui,
+              sidePane: null,
+              mobileViewActiveColumn: state.ui.isNarrowView
+                ? "chatView"
+                : state.ui.mobileViewActiveColumn,
+            },
+          }
+        : {},
+    );
   },
 
-  clearChatInputFocus: () => {
-    set((state) => ({
-      ui: { ...state.ui, shouldFocusChatInput: false },
-    }));
+  setSearchChatShown: (isChatShown, hitMessageId) => {
+    set((state) => {
+      const { sidePane, selectedServerId, perServerSelections, isNarrowView } =
+        state.ui;
+      if (sidePane?.kind !== "search") return {};
+      const selection = selectedServerId
+        ? perServerSelections[selectedServerId]
+        : undefined;
+      const chatId =
+        selection?.selectedChannelId ?? selection?.selectedPrivateChatId;
+      return {
+        ui: {
+          ...state.ui,
+          sidePane: {
+            ...sidePane,
+            isChatShown,
+            hitChatId: isChatShown ? (chatId ?? undefined) : sidePane.hitChatId,
+            hitMessageId: hitMessageId ?? sidePane.hitMessageId,
+          },
+          mobileViewActiveColumn: isNarrowView
+            ? isChatShown
+              ? "chatView"
+              : "memberList"
+            : state.ui.mobileViewActiveColumn,
+        },
+      };
+    });
   },
 
-  toggleUserProfileModal: (isOpen) => {
-    set((state) => ({
-      ui: {
-        ...state.ui,
-        isUserProfileModalOpen:
-          isOpen !== undefined ? isOpen : !state.ui.isUserProfileModalOpen,
-      },
-    }));
+  openChat: (serverId, target) => {
+    const findServer = () => get().servers.find((s) => s.id === serverId);
+    const server = findServer();
+    if (!server) return null;
+    const lower = target.toLowerCase();
+    get().selectServer(serverId);
+    const channel = server.channels.find((c) => c.name.toLowerCase() === lower);
+    if (channel) {
+      get().selectChannel(channel.id, { navigate: true });
+      return channel.id;
+    }
+    if (ircClient.isChannel(serverId, target)) return null;
+    const findPrivateChat = () =>
+      findServer()?.privateChats?.find(
+        (pc) => pc.username.toLowerCase() === lower,
+      );
+    if (!findPrivateChat()) get().openPrivateChat(serverId, target);
+    const privateChat = findPrivateChat();
+    if (!privateChat) return null;
+    get().selectPrivateChat(privateChat.id, { navigate: true });
+    return privateChat.id;
   },
 
-  setProfileViewRequest: (serverId, username) => {
-    set((state) => ({
-      ui: {
-        ...state.ui,
-        profileViewRequest: { serverId, username },
-      },
-    }));
+  revealMessage: (messageId) => {
+    const isLoaded = Object.values(get().messages).some((list) =>
+      list.some((m) => m.id === messageId),
+    );
+    if (!isLoaded) return;
+    set((state) => ({ ui: { ...state.ui, messageJump: { messageId } } }));
   },
 
-  clearProfileViewRequest: () => {
-    set((state) => ({
-      ui: {
-        ...state.ui,
-        profileViewRequest: null,
-        topicModalRequest: null,
-      },
-    }));
-  },
-
-  requestJumpToMessage: (channelKey, target) => {
-    set((state) => ({
-      ui: { ...state.ui, jumpRequest: { channelKey, target } },
-    }));
+  clearMessageJump: () => {
+    set((state) => ({ ui: { ...state.ui, messageJump: null } }));
   },
 
   recordMention: (entry) => {
@@ -3687,14 +3632,17 @@ const useStore = create<AppState>((set, get) => ({
         state.mentionLog,
         (m) => m.messageId === entry.messageId,
       ),
-      ui: {
-        ...state.ui,
-        jumpRequest: {
-          channelKey: mentionChannelKey(entry),
-          target: mentionTarget(entry),
-        },
-      },
     }));
+    // The log keeps the internal id while the message is loaded and its
+    // msgid for after it has been paged out and loaded again.
+    const loaded = Object.values(get().messages)
+      .flat()
+      .find(
+        (m) =>
+          m.id === entry.messageId ||
+          (!!entry.msgid && m.msgid === entry.msgid),
+      );
+    if (loaded) get().revealMessage(loaded.id);
   },
 
   dismissMentions: (channelKey) => {
@@ -3712,8 +3660,16 @@ const useStore = create<AppState>((set, get) => ({
     }));
   },
 
-  clearJumpRequest: () => {
-    set((state) => ({ ui: { ...state.ui, jumpRequest: null } }));
+  requestChatInputFocus: () => {
+    set((state) => ({
+      ui: { ...state.ui, shouldFocusChatInput: true },
+    }));
+  },
+
+  clearChatInputFocus: () => {
+    set((state) => ({
+      ui: { ...state.ui, shouldFocusChatInput: false },
+    }));
   },
 
   setTopicModalRequest: (serverId, channelId) => {
@@ -3730,24 +3686,6 @@ const useStore = create<AppState>((set, get) => ({
       ui: {
         ...state.ui,
         topicModalRequest: null,
-      },
-    }));
-  },
-
-  setSettingsNavigation: (navigation) => {
-    set((state) => ({
-      ui: {
-        ...state.ui,
-        settingsNavigation: navigation,
-      },
-    }));
-  },
-
-  clearSettingsNavigation: () => {
-    set((state) => ({
-      ui: {
-        ...state.ui,
-        settingsNavigation: null,
       },
     }));
   },
@@ -3856,31 +3794,6 @@ const useStore = create<AppState>((set, get) => ({
     });
   },
 
-  toggleChannelListModal: (isOpen) => {
-    set((state) => ({
-      ui: {
-        ...state.ui,
-        isChannelListModalOpen:
-          isOpen !== undefined ? isOpen : !state.ui.isChannelListModalOpen,
-      },
-    }));
-  },
-
-  requestBotsModalOpen: (serverId, botNick) => {
-    set((state) => ({
-      ui: {
-        ...state.ui,
-        pendingBotsModalOpen: { serverId, botNick },
-      },
-    }));
-  },
-
-  clearBotsModalOpenRequest: () => {
-    set((state) => ({
-      ui: { ...state.ui, pendingBotsModalOpen: null },
-    }));
-  },
-
   requestBotCommandPick: (serverId, botNick, command) => {
     set((state) => ({
       ui: {
@@ -3893,6 +3806,21 @@ const useStore = create<AppState>((set, get) => ({
   clearBotCommandPickRequest: () => {
     set((state) => ({
       ui: { ...state.ui, pendingBotCommandPick: null },
+    }));
+  },
+
+  requestComposerCommand: (serverId, botNick, name) => {
+    set((state) => ({
+      ui: {
+        ...state.ui,
+        pendingComposerCommand: { serverId, botNick, name },
+      },
+    }));
+  },
+
+  clearComposerCommandRequest: () => {
+    set((state) => ({
+      ui: { ...state.ui, pendingComposerCommand: null },
     }));
   },
 
@@ -3912,26 +3840,6 @@ const useStore = create<AppState>((set, get) => ({
         ...state.ui,
         isTopicModalOpen: isOpen,
         topicModalContext: isOpen && context ? context : null,
-      },
-    }));
-  },
-
-  toggleUserProfileModalWithContext: (isOpen, context) => {
-    set((state) => ({
-      ui: {
-        ...state.ui,
-        isSettingsModalOpen: isOpen,
-        userProfileModalContext: isOpen && context ? context : null,
-      },
-    }));
-  },
-
-  setChannelSettingsRequest: (serverId, channelId) => {
-    set((state) => ({
-      ui: {
-        ...state.ui,
-        channelSettingsRequest:
-          serverId && channelId ? { serverId, channelId } : null,
       },
     }));
   },
@@ -4056,20 +3964,6 @@ const useStore = create<AppState>((set, get) => ({
     });
   },
 
-  toggleNotificationVolume: () => {
-    set((state) => {
-      const newVolume = state.globalSettings.notificationVolume > 0 ? 0 : 0.4;
-      const newGlobalSettings = {
-        ...state.globalSettings,
-        notificationVolume: newVolume,
-      };
-      saveGlobalSettingsToLocalStorage(newGlobalSettings);
-      return {
-        globalSettings: newGlobalSettings,
-      };
-    });
-  },
-
   setIsNarrowView: (isNarrow: boolean) => {
     set((state) => {
       if (state.ui.isNarrowView === isNarrow) return state;
@@ -4137,6 +4031,9 @@ const useStore = create<AppState>((set, get) => ({
       },
     }));
   },
+
+  setHomeView: (view) =>
+    set((state) => ({ ui: { ...state.ui, homeView: view } })),
 
   setMobileViewActiveColumn: (column: layoutColumn) => {
     // Dismiss mobile keyboard when navigating away
@@ -4542,25 +4439,8 @@ const useStore = create<AppState>((set, get) => ({
       return { servers: [...state.servers, seed] };
     });
 
-    // Queue the BIND so the next CAP END for this new connection
-    // emits `BOUNCER BIND <netid>` first.
-    ircClient.setPendingBouncerBind(childId, netid);
-
-    // The in-memory Server.host is stripped to a bare hostname during
-    // the original parent connect, which loses the protocol + path for
-    // WSS URLs (e.g. wss://obby.t3ks.com:6662/socket -> obby.t3ks.com).
-    // Use the persisted savedParent.host instead so the child landing
-    // on the same listener actually opens /socket, not the bare root.
-    return ircClient.connect(
-      friendly,
-      savedParent.host,
-      savedParent.port,
-      savedParent.nickname,
-      savedParent.password,
-      savedParent.saslAccountName,
-      savedParent.saslPassword,
-      childId,
-    );
+    // We connect with the persisted parent host, since the in-memory one lost its protocol and path.
+    return connectBouncerChild(childId, netid, friendly, savedParent);
   },
 
   sendRaw: (serverId, command) => {
@@ -4639,6 +4519,43 @@ const useStore = create<AppState>((set, get) => ({
   },
 }));
 
+let lastRecentPlaceId: string | null = null;
+function recordRecentPlace(state: AppState, serverId: string, itemId: string) {
+  if (itemId === lastRecentPlaceId) return;
+  const server = state.servers.find((s) => s.id === serverId);
+  const channel = server?.channels.find((c) => c.id === itemId);
+  const privateChat = server?.privateChats.find((pc) => pc.id === itemId);
+  if (!channel && !privateChat) return;
+  if (state.globalSettings.keepHistory === false) return;
+  lastRecentPlaceId = itemId;
+  recordPlace(
+    channel
+      ? { serverId, name: channel.name, kind: "channel" }
+      : { serverId, name: privateChat?.username ?? "", kind: "dm" },
+  );
+}
+
+// Seed the shared selection history from whatever localStorage restored at
+// startup, then keep it current for every later selection change however it
+// arrives (click, Ctrl+Tab, or another restore) -- this is what makes a
+// call's return target correct even when the active channel was never
+// chosen through selectChannel/selectPrivateChat.
+for (const [serverId, selection] of Object.entries(
+  useStore.getState().ui.perServerSelections,
+)) {
+  const itemId = selection.selectedChannelId ?? selection.selectedPrivateChatId;
+  if (itemId) recordSelection(serverId, itemId);
+}
+useStore.subscribe((state) => {
+  const serverId = state.ui.selectedServerId;
+  if (!serverId) return;
+  const selection = state.ui.perServerSelections[serverId];
+  const itemId =
+    selection?.selectedChannelId ?? selection?.selectedPrivateChatId;
+  if (itemId) recordSelection(serverId, itemId);
+  if (itemId) recordRecentPlace(state, serverId, itemId);
+});
+
 // Initialize protocol handlers
 registerAllProtocolHandlers(ircClient, useStore);
 
@@ -4687,3 +4604,4 @@ useStore.subscribe((state, prev) => {
     storage.mentionLog.save(state.mentionLog);
   }
 });
+setVoiceStore(useStore);

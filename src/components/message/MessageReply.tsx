@@ -6,7 +6,6 @@ import {
   FaFilm,
   FaImage,
   FaLock,
-  FaTimes,
   FaVolumeUp,
 } from "react-icons/fa";
 
@@ -29,12 +28,14 @@ import { canShowImageUrl } from "../../lib/imageUtils";
 import { serverFilehosts } from "../../lib/ircUtils";
 import {
   type AttachmentKind,
+  bodyWithoutAttachmentLinks,
   describeAttachment,
 } from "../../lib/messageAttachments";
 import { stripIrcFormatting } from "../../lib/messageFormatter";
 import { useNickColor } from "../../lib/nickColor";
 import useStore from "../../store";
 import type { MessageType } from "../../types";
+import { CloseButton } from "../ui/CloseButton";
 
 const KIND_ICONS = {
   image: FaImage,
@@ -81,11 +82,15 @@ export const MessageReply: React.FC<MessageReplyProps> = ({
     onUsernameClick?.(e);
   };
 
-  const plainContent = stripIrcFormatting(replyMessage.content)
+  const attachment = describeAttachment(replyMessage);
+  const plainContent = stripIrcFormatting(
+    attachment
+      ? bodyWithoutAttachmentLinks(replyMessage)
+      : replyMessage.content,
+  )
     .replace(/\n+/g, " ")
     .trim();
 
-  const attachment = describeAttachment(replyMessage);
   const thumbnailUrl =
     attachment?.thumbnailUrl &&
     canShowImageUrl(
@@ -100,6 +105,9 @@ export const MessageReply: React.FC<MessageReplyProps> = ({
 
   return (
     <div
+      // The quote sits on a translucent ground, so a tinted row would otherwise
+      // show straight through it. This lets the row paint an opaque one.
+      data-reply-quote={onClose ? undefined : ""}
       className={`flex min-w-0 w-full overflow-hidden transition-colors
         ${
           onClose
@@ -150,20 +158,7 @@ export const MessageReply: React.FC<MessageReplyProps> = ({
           draggable={false}
         />
       )}
-      {onClose && (
-        <button
-          type="button"
-          className="flex-shrink-0 self-center p-3 mr-1 rounded-lg hover:bg-discord-text-strong/10 text-discord-text-muted hover:text-discord-text-normal transition-colors"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={(e) => {
-            e.stopPropagation();
-            onClose();
-          }}
-          aria-label={t`Cancel reply`}
-        >
-          <FaTimes className="text-base" />
-        </button>
-      )}
+      {onClose && <CloseButton label={t`Cancel reply`} onClick={onClose} />}
     </div>
   );
 };

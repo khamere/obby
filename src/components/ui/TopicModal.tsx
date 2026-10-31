@@ -65,7 +65,7 @@ export const TopicModal: React.FC<TopicModalProps> = ({
           <EnhancedLinkWrapper>
             <section
               className="w-full p-3 rounded min-h-[120px] text-sm leading-relaxed bg-discord-dark-400/60 text-discord-text-muted whitespace-pre-wrap break-words select-text"
-              aria-label="Channel topic"
+              aria-label={t`Channel Topic`}
             >
               {channel.topic ? (
                 renderTopic(channel.topic, "topic-", { format: formatTopics })

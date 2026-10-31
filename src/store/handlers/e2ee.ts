@@ -34,6 +34,7 @@ import { FragmentReassembler, frameValues } from "../../lib/e2ee/transport";
 import { isUserIgnored } from "../../lib/ignoreUtils";
 import ircClient from "../../lib/ircClient";
 import { makeLabel, shouldUseLabeledResponse } from "../../lib/labeledResponse";
+import { isHistoryEvent } from "../helpers";
 import type { AppState } from "../index";
 import {
   armNegotiationTimer,
@@ -251,7 +252,7 @@ function onPayload(
           serverId,
           sender,
           willAccept
-            ? t`${sender} restarted encryption, so this conversation is being set up again.`
+            ? t`${sender} restarted encryption. Wait a moment before you send a message.`
             : t`${sender} restarted encryption. This conversation stays unencrypted until you accept.`,
         );
       }
@@ -435,7 +436,7 @@ function handleUnreadable(
   injectSystemNotice(
     serverId,
     nick,
-    t`${nick} is sending encrypted messages this device cannot read. Encryption has to be started again before they open.`,
+    t`${nick} is sending encrypted messages this device cannot decrypt. Start encryption again to read them.`,
   );
 }
 
@@ -477,10 +478,10 @@ export function registerE2EEHandlers(store: StoreApi<AppState>): void {
     const raw = mtags?.[E2EE_TAG];
     if (raw === undefined) return;
     // echo-message reflects our own control frames back; processing them spawns
-    // phantom self-sessions. CHATHISTORY (batch) replays must not drive state.
+    // phantom self-sessions, and replayed history must not drive state either.
     const self = ircClient.getNick(serverId);
     if (self && sender.toLowerCase() === self.toLowerCase()) return;
-    if (mtags?.batch !== undefined) return;
+    if (isHistoryEvent(store.getState(), serverId, mtags)) return;
     if (isE2EESenderIgnored(sender)) return;
     dispatchDecoded(serverId, sender, raw);
   });

@@ -1,25 +1,27 @@
 import { t } from "@lingui/core/macro";
 import type { StoreApi } from "zustand";
+import { LOCAL_BATCH_PREFIX } from "../../lib/history/historyLines";
 import ircClient from "../../lib/ircClient";
 import type { Message } from "../../types";
-import type { BatchInfo } from "../helpers";
+import {
+  type BatchInfo,
+  capMergedMessages,
+  compareMessageOrder,
+  hasMsgid,
+  redactedMessage,
+  withoutReaction,
+  withReaction,
+} from "../helpers";
 import { type AppState, rememberMsgIds } from "../index";
-
-function earlierHistoryTime(
-  previous?: string,
-  received?: string,
-): string | undefined {
-  if (!received) return previous;
-  if (!previous) return received;
-  return Date.parse(previous) < Date.parse(received) ? previous : received;
-}
+import { isServerPageComing } from "./history";
 
 // Chathistory messages are buffered here (outside the store) to avoid one
 // store.setState per incoming PRIVMSG.  Only flushed at BATCH_END.
-// Batch ids are only unique per connection (soju numbers them per
-// downstream), so the buffers are keyed by server + batch id.
 export const chathistoryBuffers = new Map<string, Message[]>();
 
+// Batch ids are only unique per connection: soju numbers them per downstream,
+// so two bouncer networks reconnecting together both run "+1, +2, ..." and
+// their replays would land in one buffer. The maps are keyed by server too.
 export function historyBufferKey(serverId: string, batchId: string): string {
   return `${serverId}\u0000${batchId}`;
 }
@@ -38,29 +40,60 @@ export function bufferChathistoryMessage(
   buf.push(msg);
 }
 
-interface BufferedReaction {
-  emoji: string;
-  userId: string;
-  targetMsgId: string;
-  isUnreact: boolean;
-}
+type HistoryEdit =
+  | {
+      kind: "react" | "unreact";
+      emoji: string;
+      userId: string;
+      targetMsgId: string;
+    }
+  | { kind: "redact"; sender: string; targetMsgId: string };
 
-// Reactions that arrive via TAGMSG during a chathistory batch are buffered here.
-// The target message is still in chathistoryBuffers at that point, not in the store.
-export const reactionBuffers = new Map<string, BufferedReaction[]>();
+// Reactions and redactions inside a chathistory batch point at messages that
+// are still in chathistoryBuffers, so we hold them until BATCH_END too.
+export const historyEditBuffers = new Map<string, HistoryEdit[]>();
 
-export function bufferChathistoryReaction(
+export function bufferHistoryEdit(
   serverId: string,
   batchId: string,
-  r: BufferedReaction,
+  edit: HistoryEdit,
 ): void {
   const key = historyBufferKey(serverId, batchId);
-  let buf = reactionBuffers.get(key);
+  let buf = historyEditBuffers.get(key);
   if (!buf) {
     buf = [];
-    reactionBuffers.set(key, buf);
+    historyEditBuffers.set(key, buf);
   }
-  buf.push(r);
+  buf.push(edit);
+}
+
+function applyHistoryEdit(message: Message, edit: HistoryEdit): Message {
+  switch (edit.kind) {
+    case "react":
+      return withReaction(message, edit.emoji, edit.userId) ?? message;
+    case "unreact":
+      return withoutReaction(message, edit.emoji, edit.userId) ?? message;
+    case "redact":
+      return redactedMessage(message, edit.sender);
+  }
+}
+
+// Every message of the page is in `merged` now, so replies and edits can find
+// targets that arrived later in the same batch.
+function resolveHistoryPage(merged: Message[], edits: HistoryEdit[]) {
+  return merged.map((message) => {
+    let updated = message;
+    const replyId = (updated.tags?.["+reply"] ??
+      updated.tags?.["+draft/reply"]) as string | undefined;
+    if (!updated.replyMessage && replyId) {
+      const found = merged.find((r) => hasMsgid(r, replyId));
+      if (found) updated = { ...updated, replyMessage: found };
+    }
+    for (const edit of edits)
+      if (hasMsgid(message, edit.targetMsgId))
+        updated = applyHistoryEdit(updated, edit);
+    return updated;
+  });
 }
 
 function processBatchedNetsplit(
@@ -233,15 +266,13 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
     });
   });
 
-  ircClient.on("BATCH_END", (response) => {
-    const { serverId, batchId, historyMessageCount, historyOldestTime } =
-      response;
-    const bufKey = historyBufferKey(serverId, batchId);
+  ircClient.on("BATCH_END", ({ serverId, batchId }) => {
     // Capture chathistory channel name so we can fire the loading event AFTER setState.
     // Calling triggerEvent inside store.setState causes a nested setState race: the inner
     // call sets isLoadingHistory=false, but the outer callback then returns stale servers
     // state (isLoadingHistory still true), overwriting the inner change.
     let chathistoryChannelName: string | null = null;
+    let isServerPageStillComing = false;
 
     store.setState((state) => {
       const serverBatches = state.activeBatches[serverId];
@@ -294,16 +325,36 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
       // Remove the completed batch
       const { [batchId]: removed, ...remainingBatches } = serverBatches;
 
+      // We fetched this page for disk only, so we leave the chat and its
+      // load-more state as they are.
+      if (ircClient.endDiskOnlyBatch(serverId, batchId)) {
+        chathistoryChannelName = null;
+        chathistoryBuffers.delete(historyBufferKey(serverId, batchId));
+        historyEditBuffers.delete(historyBufferKey(serverId, batchId));
+        return {
+          activeBatches: {
+            ...state.activeBatches,
+            [serverId]: remainingBatches,
+          },
+        };
+      }
+
       if (batch.type === "chathistory" && batch.parameters?.[0]) {
         const channelName = batch.parameters[0];
+        // A server page we asked for may still come, so saved rows leave the chat loading.
+        isServerPageStillComing =
+          batchId.startsWith(LOCAL_BATCH_PREFIX) &&
+          isServerPageComing(serverId, channelName);
+        if (isServerPageStillComing) chathistoryChannelName = null;
         const server = state.servers.find((s) => s.id === serverId);
         const channel = server?.channels.find(
           (c) => c.name.toLowerCase() === channelName.toLowerCase(),
         );
         if (channel) {
           const key = `${serverId}-${channel.id}`;
-          const pending = chathistoryBuffers.get(bufKey) ?? [];
-          chathistoryBuffers.delete(bufKey);
+          const pending =
+            chathistoryBuffers.get(historyBufferKey(serverId, batchId)) ?? [];
+          chathistoryBuffers.delete(historyBufferKey(serverId, batchId));
           const existing = state.messages[key] || [];
 
           // Dedup buffered messages against what's already in the store (event messages
@@ -323,57 +374,20 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
               ),
           );
 
-          const merged = [...existing, ...newMessages].sort(
-            (a, b) =>
-              new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+          const capped = capMergedMessages(
+            existing,
+            [...existing, ...newMessages].sort(compareMessageOrder),
+            state.historyWindows[key],
           );
+          const merged = capped.messages;
+          const historyWindows = capped.window
+            ? { ...state.historyWindows, [key]: capped.window }
+            : state.historyWindows;
 
-          // Apply buffered reactions and re-resolve reply references now that
-          // all messages from the batch are in `merged` and visible to each other.
-          const pendingReactions = reactionBuffers.get(bufKey) ?? [];
-          reactionBuffers.delete(bufKey);
-
-          const finalMessages = merged.map((m) => {
-            let updated = m;
-
-            // Re-resolve reply if it was null when the message was buffered
-            // (the reply target may have been later in the same batch).
-            if (
-              !updated.replyMessage &&
-              (updated.tags?.["+reply"] || updated.tags?.["+draft/reply"])
-            ) {
-              const replyId = (updated.tags["+reply"] ??
-                updated.tags["+draft/reply"]) as string;
-              const found = merged.find(
-                (r) =>
-                  r.msgid === replyId ||
-                  r.multilineMessageIds?.includes(replyId),
-              );
-              if (found) updated = { ...updated, replyMessage: found };
-            }
-
-            // Apply any reactions/unreactions buffered for this message.
-            const relevant = pendingReactions.filter(
-              (r) => r.targetMsgId === m.msgid,
-            );
-            if (relevant.length === 0) return updated;
-
-            let reactions = [...updated.reactions];
-            for (const r of relevant) {
-              if (r.isUnreact) {
-                reactions = reactions.filter(
-                  (e) => !(e.emoji === r.emoji && e.userId === r.userId),
-                );
-              } else if (
-                !reactions.some(
-                  (e) => e.emoji === r.emoji && e.userId === r.userId,
-                )
-              ) {
-                reactions.push({ emoji: r.emoji, userId: r.userId });
-              }
-            }
-            return { ...updated, reactions };
-          });
+          const edits =
+            historyEditBuffers.get(historyBufferKey(serverId, batchId)) ?? [];
+          historyEditBuffers.delete(historyBufferKey(serverId, batchId));
+          const finalMessages = resolveHistoryPage(merged, edits);
 
           const newMsgIds = newMessages
             .filter((m) => m.msgid)
@@ -385,6 +399,7 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
               [serverId]: remainingBatches,
             },
             messages: { ...state.messages, [key]: finalMessages },
+            historyWindows,
             processedMessageIds: rememberMsgIds(
               state.processedMessageIds,
               newMsgIds,
@@ -397,12 +412,8 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
                   if (ch.id !== channel.id) return ch;
                   return {
                     ...ch,
-                    hasMoreHistory: (historyMessageCount ?? pending.length) > 0,
-                    historyOldestTime: earlierHistoryTime(
-                      ch.historyOldestTime,
-                      historyOldestTime,
-                    ),
-                    isLoadingHistory: false,
+                    hasMoreHistory: pending.length > 0,
+                    isLoadingHistory: isServerPageStillComing,
                   };
                 }),
               };
@@ -416,10 +427,12 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
         );
         if (privateChat) {
           const key = `${serverId}-${privateChat.id}`;
-          const pending = chathistoryBuffers.get(bufKey) ?? [];
-          chathistoryBuffers.delete(bufKey);
-          const pendingReactions = reactionBuffers.get(bufKey) ?? [];
-          reactionBuffers.delete(bufKey);
+          const pending =
+            chathistoryBuffers.get(historyBufferKey(serverId, batchId)) ?? [];
+          chathistoryBuffers.delete(historyBufferKey(serverId, batchId));
+          const edits =
+            historyEditBuffers.get(historyBufferKey(serverId, batchId)) ?? [];
+          historyEditBuffers.delete(historyBufferKey(serverId, batchId));
           const existing = state.messages[key] || [];
 
           const existingIds = new Set(
@@ -437,48 +450,17 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
               ),
           );
 
-          // Keep requested PM scrollback: trimming the oldest entries here
-          // would discard each older page once the recent-message limit is hit.
-          const merged = [...existing, ...newMessages].sort(
-            (a, b) =>
-              new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+          const capped = capMergedMessages(
+            existing,
+            [...existing, ...newMessages].sort(compareMessageOrder),
+            state.historyWindows[key],
           );
+          const merged = capped.messages;
+          const historyWindows = capped.window
+            ? { ...state.historyWindows, [key]: capped.window }
+            : state.historyWindows;
 
-          const finalMessages = merged.map((m) => {
-            let updated = m;
-            if (
-              !updated.replyMessage &&
-              (updated.tags?.["+reply"] || updated.tags?.["+draft/reply"])
-            ) {
-              const replyId = (updated.tags["+reply"] ??
-                updated.tags["+draft/reply"]) as string;
-              const found = merged.find(
-                (r) =>
-                  r.msgid === replyId ||
-                  r.multilineMessageIds?.includes(replyId),
-              );
-              if (found) updated = { ...updated, replyMessage: found };
-            }
-            const relevant = pendingReactions.filter(
-              (r) => r.targetMsgId === m.msgid,
-            );
-            if (relevant.length === 0) return updated;
-            let reactions = [...updated.reactions];
-            for (const r of relevant) {
-              if (r.isUnreact) {
-                reactions = reactions.filter(
-                  (e) => !(e.emoji === r.emoji && e.userId === r.userId),
-                );
-              } else if (
-                !reactions.some(
-                  (e) => e.emoji === r.emoji && e.userId === r.userId,
-                )
-              ) {
-                reactions.push({ emoji: r.emoji, userId: r.userId });
-              }
-            }
-            return { ...updated, reactions };
-          });
+          const finalMessages = resolveHistoryPage(merged, edits);
 
           const newMsgIds = newMessages
             .filter((m) => m.msgid)
@@ -490,6 +472,7 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
               [serverId]: remainingBatches,
             },
             messages: { ...state.messages, [key]: finalMessages },
+            historyWindows,
             processedMessageIds: rememberMsgIds(
               state.processedMessageIds,
               newMsgIds,
@@ -499,19 +482,10 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
                 ? s
                 : {
                     ...s,
-                    privateChats: s.privateChats?.map((chat) =>
-                      chat.id !== privateChat.id
-                        ? chat
-                        : {
-                            ...chat,
-                            hasMoreHistory:
-                              (historyMessageCount ?? pending.length) > 0,
-                            historyOldestTime: earlierHistoryTime(
-                              chat.historyOldestTime,
-                              historyOldestTime,
-                            ),
-                            isLoadingHistory: false,
-                          },
+                    privateChats: s.privateChats?.map((pc) =>
+                      pc.id === privateChat.id
+                        ? { ...pc, hasMoreHistory: pending.length > 0 }
+                        : pc,
                     ),
                   },
             ),
@@ -519,8 +493,8 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
         }
 
         // Unknown target — still clean up buffers to prevent dangling data
-        chathistoryBuffers.delete(bufKey);
-        reactionBuffers.delete(bufKey);
+        chathistoryBuffers.delete(historyBufferKey(serverId, batchId));
+        historyEditBuffers.delete(historyBufferKey(serverId, batchId));
       }
 
       return {

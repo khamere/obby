@@ -28,16 +28,16 @@ describe("serverDisplayName", () => {
       }),
     ).toBe("My Tracker");
   });
-  test.each<Record<string, string>>([
-    {},
-    { name: "" },
-  ])("a known nameless network falls back to NETWORK, then its saved name", (attributes) => {
-    const network = { netid: "1", attributes };
-    expect(serverDisplayName(server, network)).toBe("Nether.RIP");
-    expect(
-      serverDisplayName({ ...server, networkName: undefined }, network),
-    ).toBe("upload.cx");
-  });
+  test.each<Record<string, string>>([{}, { name: "" }])(
+    "a known nameless network falls back to NETWORK, then its saved name",
+    (attributes) => {
+      const network = { netid: "1", attributes };
+      expect(serverDisplayName(server, network)).toBe("Nether.RIP");
+      expect(
+        serverDisplayName({ ...server, networkName: undefined }, network),
+      ).toBe("upload.cx");
+    },
+  );
   test("an unnamed child falls back to NETWORK", () => {
     expect(serverDisplayName({ ...server, name: "" })).toBe("Nether.RIP");
     expect(

@@ -1,18 +1,29 @@
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
+import { useBackButton } from "../../hooks/useBackButton";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { useSwipeNavigation } from "../../hooks/useSwipeNavigation";
-import { isTauriAndroid } from "../../lib/platformUtils";
+import { ConfirmDialogHost } from "../../lib/modal/ConfirmDialog";
 import useStore from "../../store";
 import type { layoutColumn } from "../../store/types";
+import { ChannelLinkProvider } from "../message/ChannelLinkProvider";
+import PageHost, { preloadPages } from "../pages/PageHost";
+import ExternalLinkGuard from "../ui/ExternalLinkGuard";
 import { GlobalNotifications } from "../ui/GlobalNotifications";
+import LinkHoverLayer from "../ui/LinkHoverLayer";
 import { MediaViewerModal } from "../ui/MediaViewerModal";
-import RawLogViewer from "../ui/RawLogViewer";
+import { goBackInPage } from "../ui/page/PageShell";
+import TitleTooltipLayer from "../ui/TitleTooltipLayer";
+import { VoicePipOverlay } from "../voice/VoicePipOverlay";
 import { ChannelList } from "./ChannelList";
 import { ChatArea } from "./ChatArea";
 import { MemberList } from "./MemberList";
+import { PageLayer } from "./PageLayer";
 import { ResizableSidebar } from "./ResizableSidebar";
 import { ServerList } from "./ServerList";
+import { SidePane } from "./SidePane";
+import SwipeBackScreen from "./SwipeBackScreen";
 import { VoiceChannelView } from "./VoiceChannelView";
 
 const PAGE_ORDER: layoutColumn[] = ["serverList", "chatView", "memberList"];
@@ -22,14 +33,46 @@ const getColumnFromPage = (page: number): layoutColumn => PAGE_ORDER[page];
 
 export const AppLayout: React.FC = () => {
   const {
-    ui,
+    sidebarPreferences,
+    selectedServerId,
+    perServerSelections,
+    isDarkMode,
+    isMobileMenuOpen,
+    isMemberListVisible,
+    isChannelListVisible,
+    mobileViewActiveColumn,
+    page,
+    sidePane,
+    isNarrowView,
+    openedMedia,
     toggleMobileMenu,
     toggleMemberList,
     toggleChannelList,
     setMobileViewActiveColumn,
     setIsNarrowView,
     closeMedia,
-  } = useStore();
+  } = useStore(
+    useShallow((state) => ({
+      sidebarPreferences: state.ui.sidebarPreferences,
+      selectedServerId: state.ui.selectedServerId,
+      perServerSelections: state.ui.perServerSelections,
+      isDarkMode: state.ui.isDarkMode,
+      isMobileMenuOpen: state.ui.isMobileMenuOpen,
+      isMemberListVisible: state.ui.isMemberListVisible,
+      isChannelListVisible: state.ui.isChannelListVisible,
+      mobileViewActiveColumn: state.ui.mobileViewActiveColumn,
+      page: state.ui.page,
+      sidePane: state.ui.sidePane,
+      isNarrowView: state.ui.isNarrowView,
+      openedMedia: state.ui.openedMedia,
+      toggleMobileMenu: state.toggleMobileMenu,
+      toggleMemberList: state.toggleMemberList,
+      toggleChannelList: state.toggleChannelList,
+      setMobileViewActiveColumn: state.setMobileViewActiveColumn,
+      setIsNarrowView: state.setIsNarrowView,
+      closeMedia: state.closeMedia,
+    })),
+  );
 
   // Collapsed by default: the 72px icon rail is the stock look. Users who
   // want names (or logos via custom CSS) turn it on once; it is remembered.
@@ -52,14 +95,13 @@ export const AppLayout: React.FC = () => {
     });
 
   const [channelListWidth, setChannelListWidth] = useState<number>(
-    ui.sidebarPreferences?.channelList.width ?? 264,
+    sidebarPreferences?.channelList.width ?? 264,
   );
   const [memberListWidth, setMemberListWidth] = useState<number>(
-    ui.sidebarPreferences?.memberList.width ?? 280,
+    sidebarPreferences?.memberList.width ?? 280,
   );
 
-  const selectedServerId = ui.selectedServerId;
-  const currentSelection = ui.perServerSelections[selectedServerId || ""] || {
+  const currentSelection = perServerSelections[selectedServerId || ""] || {
     selectedChannelId: null,
     selectedPrivateChatId: null,
   };
@@ -76,13 +118,7 @@ export const AppLayout: React.FC = () => {
   const isVoiceChannel =
     !!selectedChannel?.name.startsWith("^") ||
     !!selectedChannel?.name.startsWith("$");
-  const {
-    isDarkMode,
-    isMobileMenuOpen,
-    isMemberListVisible,
-    isChannelListVisible,
-    mobileViewActiveColumn,
-  } = ui;
+  const hasSidePane = !!sidePane;
 
   const isBouncerControlSelected = useStore(
     (s) =>
@@ -92,8 +128,8 @@ export const AppLayout: React.FC = () => {
 
   const shouldShowMemberList =
     isMemberListVisible &&
+    !!selectedChannel &&
     !selectedPrivateChatId &&
-    !isVoiceChannel &&
     !isBouncerControlSelected;
 
   const handleChannelListWidthChange = useCallback((width: number) => {
@@ -116,6 +152,11 @@ export const AppLayout: React.FC = () => {
         width,
       },
     });
+  }, []);
+
+  useEffect(() => {
+    const idle = window.requestIdleCallback ?? ((cb) => setTimeout(cb, 2000));
+    idle(() => preloadPages());
   }, []);
 
   // Set theme class on body
@@ -150,15 +191,15 @@ export const AppLayout: React.FC = () => {
 
   const isNarrowViewFromHook = useMediaQuery();
   const isTooNarrowForMemberList = useMediaQuery("(max-width: 1080px)");
-  const isNarrowView = ui.isNarrowView;
 
   // Desktop narrow: member list shows as overlay in ChatArea instead of sidebar
   const showMemberListAsOverlay = !isNarrowView && isTooNarrowForMemberList;
   const shouldShowMemberListSidebar =
-    shouldShowMemberList && !showMemberListAsOverlay;
+    (shouldShowMemberList || hasSidePane) && !showMemberListAsOverlay && !page;
 
   // Member list page doesn't exist in DMs — only channels have a member list.
-  const hasMemberPage = !!selectedServerId && !selectedPrivateChatId;
+  const hasMemberPage =
+    (!!selectedServerId && !selectedPrivateChatId) || hasSidePane;
 
   // Clamp the active column synchronously so currentPageIndex is never out of
   // range during the same render that totalPages drops from 3 to 2 (e.g. when
@@ -182,7 +223,7 @@ export const AppLayout: React.FC = () => {
     setMobileViewActiveColumn,
   ]);
 
-  const openRawLogViewer = useStore((s) => s.openRawLogViewer);
+  const openPage = useStore((s) => s.openPage);
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       if (
@@ -195,13 +236,13 @@ export const AppLayout: React.FC = () => {
           state.ui.selectedServerId ?? state.servers[0]?.id ?? null;
         if (targetServerId) {
           event.preventDefault();
-          openRawLogViewer(targetServerId);
+          openPage({ kind: "rawLog", serverId: targetServerId });
         }
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [openRawLogViewer]);
+  }, [openPage]);
 
   const {
     containerRef,
@@ -236,9 +277,7 @@ export const AppLayout: React.FC = () => {
                 </div>
               )}
               <div className="flex-1 min-w-0 h-full bg-discord-dark-100">
-                <ChannelList
-                  onToggle={() => toggleChannelList(!isChannelListVisible)}
-                />
+                <ChannelList />
               </div>
             </div>
           );
@@ -258,7 +297,7 @@ export const AppLayout: React.FC = () => {
             )}
             <ResizableSidebar
               bypass={false}
-              isVisible={isChannelListVisible}
+              isVisible={isChannelListVisible && !page}
               defaultWidth={264}
               initialWidth={channelListWidth}
               minWidth={80}
@@ -268,52 +307,57 @@ export const AppLayout: React.FC = () => {
               onWidthChange={handleChannelListWidthChange}
             >
               <div className="channel-list w-full h-full bg-discord-dark-100 md:block z-20">
-                <ChannelList
-                  onToggle={() => toggleChannelList(!isChannelListVisible)}
-                />
+                <ChannelList />
               </div>
             </ResizableSidebar>
           </>
         );
-      case "chatView":
+      case "chatView": {
+        const overlay = page && !isNarrowView && <PageHost page={page} />;
+        // A page covers the chat and keeps it mounted, so the draft, the
+        // scroll position and a running call survive opening Settings.
+        const voiceTopSlot =
+          isVoiceChannel && selectedServerId && selectedChannel ? (
+            <VoiceChannelView
+              serverId={selectedServerId}
+              channelName={selectedChannel.name}
+            />
+          ) : undefined;
         return (
           <div
             className={`${isNarrowView ? "w-full" : "flex-grow"} h-full bg-discord-dark-200 flex flex-col min-w-0 z-10`}
           >
-            {(() => {
-              // Both `^` (voice) and `$` (stream) channels render through
-              // ChatArea with the VoiceChannelView injected as a topSlot,
-              // so the channel's ChatHeader stays at the very top of the
-              // panel and the voice grid + chat live beneath it as one
-              // continuous column.
-              const voiceTopSlot =
-                isVoiceChannel && selectedServerId && selectedChannel ? (
-                  <VoiceChannelView
-                    serverId={selectedServerId}
-                    channelName={selectedChannel.name}
-                  />
-                ) : undefined;
-              return (
-                <ChatArea
-                  isChanListVisible={isChannelListVisible}
-                  onToggleChanList={() => {
-                    if (isNarrowView) {
-                      setMobileViewActiveColumn("serverList");
-                    } else {
-                      toggleChannelList(!isChannelListVisible);
-                    }
-                  }}
-                  topSlot={voiceTopSlot}
-                />
-              );
-            })()}
+            {overlay}
+            <div className={overlay ? "hidden" : "contents"}>
+              <ChatArea
+                isChanListVisible={isChannelListVisible}
+                onToggleChanList={() => {
+                  if (isNarrowView) {
+                    setMobileViewActiveColumn("serverList");
+                  } else {
+                    toggleChannelList(!isChannelListVisible);
+                  }
+                }}
+                topSlot={voiceTopSlot}
+              />
+            </div>
           </div>
         );
+      }
       case "memberList":
         if (isNarrowView) {
           return (
             <div className="w-full h-full bg-discord-dark-100">
-              <MemberList />
+              {sidePane?.kind === "profile" || sidePane?.kind === "bot" ? (
+                <SwipeBackScreen
+                  under={<MemberList />}
+                  onBack={() => useStore.getState().closeProfile()}
+                >
+                  <SidePane />
+                </SwipeBackScreen>
+              ) : (
+                <SidePane />
+              )}
             </div>
           );
         }
@@ -330,7 +374,7 @@ export const AppLayout: React.FC = () => {
             onWidthChange={handleMemberListWidthChange}
           >
             <div className="flex-1 overflow-hidden h-full bg-discord-dark-100">
-              <MemberList />
+              <SidePane />
             </div>
           </ResizableSidebar>
         );
@@ -358,94 +402,131 @@ export const AppLayout: React.FC = () => {
     return getLayoutColumnElement(column);
   };
 
-  // Handle mobile back button
-  // TODO: ios
-  if (isTauriAndroid()) {
-    window.androidBackCallback = () => {
-      switch (mobileViewActiveColumn) {
-        case "chatView":
-          setMobileViewActiveColumn("serverList");
-          toggleChannelList(true);
-          return false; // the android back will be prevented
-        case "memberList":
-          setMobileViewActiveColumn("chatView");
-          toggleMemberList(false);
-          return false; // the android back will be prevented
-        default:
-          return true; // the default android back
-      }
-    };
-  }
+  useBackButton(() => {
+    // An open dialog, sheet or menu closes on Escape, so back closes it
+    // before it moves anything underneath.
+    if (document.querySelector("[aria-modal='true'], [data-popover-panel]")) {
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+      return false;
+    }
+    if (useStore.getState().ui.openedMedia) {
+      useStore.getState().closeMedia();
+      return false;
+    }
+    const {
+      page: openedPage,
+      sidePane: openedPane,
+      mobileViewActiveColumn: activeColumn,
+    } = useStore.getState().ui;
+    if (openedPage) {
+      if (!goBackInPage()) useStore.getState().closePage();
+      return false;
+    }
+    if (openedPane?.kind === "profile") {
+      useStore.getState().closeProfile();
+      return false;
+    }
+    if (openedPane?.kind === "search") {
+      if (activeColumn === "chatView")
+        useStore.getState().setSearchChatShown(false);
+      else useStore.getState().closeSearchResults();
+      return false;
+    }
+    if (!isNarrowView) return true;
+    switch (mobileViewActiveColumn) {
+      case "chatView":
+        setMobileViewActiveColumn("serverList");
+        toggleChannelList(true);
+        return false;
+      case "memberList":
+        setMobileViewActiveColumn("chatView");
+        toggleMemberList(false);
+        return false;
+      default:
+        return true;
+    }
+  });
 
   return (
-    <div
-      className={`flex h-full overflow-hidden bg-discord-dark-300 keyboard-aware-layout ${
-        isDarkMode ? "text-discord-text-strong" : "text-gray-900"
-      }`}
-      style={{
-        paddingTop: "var(--safe-area-inset-top)",
-        paddingRight: "var(--safe-area-inset-right)",
-        paddingBottom: "var(--safe-area-inset-bottom)",
-        paddingLeft: "var(--safe-area-inset-left)",
-      }}
-    >
-      {isNarrowView ? (
-        <div
-          ref={containerRef}
-          className="relative w-full h-full overflow-hidden"
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          style={{
-            touchAction: "pan-y",
-            willChange: "transform",
-          }}
-        >
+    <ChannelLinkProvider>
+      <div
+        className={`flex h-full overflow-hidden bg-discord-dark-300 ${
+          isDarkMode ? "text-discord-text-strong" : "text-gray-900"
+        }`}
+        style={{
+          paddingTop: "var(--safe-area-inset-top)",
+          paddingRight: "var(--safe-area-inset-right)",
+          paddingLeft: "var(--safe-area-inset-left)",
+        }}
+      >
+        {isNarrowView ? (
           <div
-            className="flex h-full"
+            ref={containerRef}
+            // We clip so a field focused in an off-screen column cannot scroll the pager sideways.
+            className="relative w-full h-full overflow-clip"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
             style={{
-              transform: `translateX(calc(-${currentPageIndex * 100}vw + ${offset}px))`,
-              transition: isTransitioning
-                ? "transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)"
-                : "none",
+              touchAction: "pan-y",
+              willChange: "transform",
             }}
           >
-            {PAGE_ORDER.filter(
-              (col) => col !== "memberList" || hasMemberPage,
-            ).map((column) => (
-              <div
-                key={column}
-                className="h-full flex-shrink-0"
-                style={{ width: "100vw" }}
-                data-swipe-page={column}
-              >
-                {getLayoutColumnElement(column)}
-              </div>
-            ))}
+            <div
+              className="flex w-full h-full"
+              inert={!!page}
+              aria-hidden={!!page || undefined}
+              style={{
+                transform: `translateX(calc(-${currentPageIndex * 100}% + ${offset}px))`,
+                transition: isTransitioning
+                  ? "transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)"
+                  : "none",
+              }}
+            >
+              {PAGE_ORDER.filter(
+                (col) => col !== "memberList" || hasMemberPage,
+              ).map((column) => (
+                <div
+                  key={column}
+                  className="w-full h-full flex-shrink-0"
+                  data-swipe-page={column}
+                >
+                  {getLayoutColumnElement(column)}
+                </div>
+              ))}
+            </div>
+            {page && <PageLayer page={page} />}
           </div>
-        </div>
-      ) : (
-        <>
-          {getLayoutColumn("serverList")}
-          {getLayoutColumn("chatView")}
-          {selectedServerId && getLayoutColumn("memberList")}
-        </>
-      )}
-      <GlobalNotifications />
-      {/* Rendered here so window resizes never unmount it */}
-      <MediaViewerModal
-        isOpen={!!ui.openedMedia}
-        url={ui.openedMedia?.url ?? ""}
-        sourceMsgId={ui.openedMedia?.sourceMsgId}
-        onClose={closeMedia}
-        serverId={ui.openedMedia?.serverId}
-        channelId={ui.openedMedia?.channelId}
-        preferTopicEntry={ui.openedMedia?.preferTopicEntry}
-        preferLastEntry={ui.openedMedia?.preferLastEntry}
-        decryptedType={ui.openedMedia?.decryptedType}
-      />
-      <RawLogViewer />
-    </div>
+        ) : (
+          <>
+            {getLayoutColumn("serverList")}
+            {getLayoutColumn("chatView")}
+            {(selectedServerId || sidePane?.kind === "search") &&
+              getLayoutColumn("memberList")}
+          </>
+        )}
+        <GlobalNotifications />
+        <ConfirmDialogHost />
+        <VoicePipOverlay />
+        {/* Rendered here so window resizes never unmount it */}
+        <MediaViewerModal
+          isOpen={!!openedMedia}
+          url={openedMedia?.url ?? ""}
+          sourceMsgId={openedMedia?.sourceMsgId}
+          onClose={closeMedia}
+          serverId={openedMedia?.serverId}
+          channelId={openedMedia?.channelId}
+          preferTopicEntry={openedMedia?.preferTopicEntry}
+          preferLastEntry={openedMedia?.preferLastEntry}
+          decryptedType={openedMedia?.decryptedType}
+        />
+        <LinkHoverLayer />
+        <ExternalLinkGuard />
+        <TitleTooltipLayer />
+      </div>
+    </ChannelLinkProvider>
   );
 };
 

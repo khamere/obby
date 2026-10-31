@@ -1,13 +1,76 @@
 use std::{collections::HashMap, sync::Arc};
+use tauri::{webview::PageLoadEvent, Manager};
 use tokio::sync::Mutex;
 
+#[cfg(any(mobile, test))]
+mod chat_notice;
+#[cfg(any(mobile, test))]
+mod history_poll;
+mod overlay;
+mod screen_record;
+#[cfg(target_os = "windows")]
+mod screen_record_windows;
 mod socket;
+mod youtube_player;
 
 use socket::{connect, disconnect, listen, send, SocketState};
 
+// The opener plugin spawns /usr/bin/open on macOS, so we call NSWorkspace to open links from Obby itself.
+#[cfg(target_os = "macos")]
+#[tauri::command]
+async fn open_external_url(_app: tauri::AppHandle, url: String) -> Result<(), String> {
+    use objc2_app_kit::NSWorkspace;
+    use objc2_foundation::{NSString, NSURL};
+
+    let ns_url = NSURL::URLWithString(&NSString::from_str(&url)).ok_or("invalid url")?;
+    if NSWorkspace::sharedWorkspace().openURL(&ns_url) {
+        Ok(())
+    } else {
+        Err(format!("could not open {url}"))
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+#[tauri::command]
+async fn open_external_url(app: tauri::AppHandle, url: String) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+
+    app.opener()
+        .open_url(url, None::<&str>)
+        .map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 async fn download_image(app: tauri::AppHandle, url: String) -> Result<String, String> {
-    download_image_impl(app, url).await
+    let response = reqwest::get(&url).await.map_err(|e| e.to_string())?;
+    let bytes = response.bytes().await.map_err(|e| e.to_string())?;
+    save_bytes(app, extract_filename(&url), bytes.to_vec()).await?;
+    Ok(String::new())
+}
+
+/// Saves a file the webview holds, such as an attachment that has not been sent.
+/// We take the bytes as the raw request body because a recording can be hundreds
+/// of megabytes, and the name as base64 because a header carries only ASCII.
+#[tauri::command]
+async fn save_file(app: tauri::AppHandle, request: tauri::ipc::Request<'_>) -> Result<(), String> {
+    use base64::Engine;
+
+    // Android has no custom protocol IPC, so there the bytes arrive as a JSON number array.
+    let bytes = match request.body() {
+        tauri::ipc::InvokeBody::Raw(bytes) => bytes.clone(),
+        tauri::ipc::InvokeBody::Json(value) => {
+            serde_json::from_value::<Vec<u8>>(value.clone()).map_err(|e| e.to_string())?
+        }
+    };
+    let filename = request
+        .headers()
+        .get("x-file-name")
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| base64::engine::general_purpose::STANDARD.decode(value).ok())
+        .and_then(|name| String::from_utf8(name).ok())
+        .filter(|name| !name.is_empty())
+        .unwrap_or_else(|| "file".into());
+    save_bytes(app, filename, bytes).await
 }
 
 fn extract_filename(url: &str) -> String {
@@ -20,11 +83,11 @@ fn extract_filename(url: &str) -> String {
 }
 
 #[cfg(desktop)]
-async fn download_image_impl(_app: tauri::AppHandle, url: String) -> Result<String, String> {
-    let response = reqwest::get(&url).await.map_err(|e| e.to_string())?;
-    let filename = extract_filename(&url);
-    let bytes = response.bytes().await.map_err(|e| e.to_string())?;
-
+async fn save_bytes(
+    _app: tauri::AppHandle,
+    filename: String,
+    bytes: Vec<u8>,
+) -> Result<(), String> {
     if let Some(file) = rfd::AsyncFileDialog::new()
         .set_file_name(&filename)
         .save_file()
@@ -32,15 +95,15 @@ async fn download_image_impl(_app: tauri::AppHandle, url: String) -> Result<Stri
     {
         std::fs::write(file.path(), &bytes).map_err(|e| e.to_string())?;
     }
-    Ok(String::new())
+    Ok(())
 }
 
 #[cfg(target_os = "ios")]
-async fn download_image_impl(_app: tauri::AppHandle, url: String) -> Result<String, String> {
-    let response = reqwest::get(&url).await.map_err(|e| e.to_string())?;
-    let filename = extract_filename(&url);
-    let bytes = response.bytes().await.map_err(|e| e.to_string())?;
-
+async fn save_bytes(
+    _app: tauri::AppHandle,
+    filename: String,
+    bytes: Vec<u8>,
+) -> Result<(), String> {
     // Write to the temp directory; iOS cleans this up automatically.
     let tmp_path = std::env::temp_dir().join(&filename);
     std::fs::write(&tmp_path, &bytes).map_err(|e| e.to_string())?;
@@ -49,16 +112,12 @@ async fn download_image_impl(_app: tauri::AppHandle, url: String) -> Result<Stri
         tauri_plugin_share_sheet::share_file(path_str);
     }
 
-    Ok(String::new())
+    Ok(())
 }
 
 #[cfg(target_os = "android")]
-async fn download_image_impl(app: tauri::AppHandle, url: String) -> Result<String, String> {
+async fn save_bytes(app: tauri::AppHandle, filename: String, bytes: Vec<u8>) -> Result<(), String> {
     use tauri_plugin_dialog::DialogExt;
-
-    let response = reqwest::get(&url).await.map_err(|e| e.to_string())?;
-    let filename = extract_filename(&url);
-    let bytes = response.bytes().await.map_err(|e| e.to_string())?;
 
     if bytes.is_empty() {
         return Err("Downloaded file is empty".to_string());
@@ -74,13 +133,11 @@ async fn download_image_impl(app: tauri::AppHandle, url: String) -> Result<Strin
         });
 
     if let Ok(Some(dest)) = rx.await {
-        // Convert bytes::Bytes to Vec so it can be moved into spawn_blocking.
-        let bytes_vec = bytes.to_vec();
         match dest {
             tauri_plugin_dialog::FilePath::Path(path) => {
                 // Rare on Android but handle it — run on a blocking thread.
                 tokio::task::spawn_blocking(move || {
-                    std::fs::write(&path, &bytes_vec).map_err(|e| e.to_string())
+                    std::fs::write(&path, &bytes).map_err(|e| e.to_string())
                 })
                 .await
                 .map_err(|e| format!("Thread join error: {e}"))??;
@@ -92,15 +149,13 @@ async fn download_image_impl(app: tauri::AppHandle, url: String) -> Result<Strin
                 // because Tauri needs them to remain JVM-attached to route the result
                 // back to JavaScript via WebView.evaluateJavascript().
                 let uri_str = uri.to_string();
-                tokio::task::spawn_blocking(move || {
-                    write_bytes_to_content_uri(&bytes_vec, &uri_str)
-                })
-                .await
-                .map_err(|e| format!("Thread join error: {e}"))??;
+                tokio::task::spawn_blocking(move || write_bytes_to_content_uri(&bytes, &uri_str))
+                    .await
+                    .map_err(|e| format!("Thread join error: {e}"))??;
             }
         }
     }
-    Ok(String::new())
+    Ok(())
 }
 
 #[cfg(target_os = "android")]
@@ -199,9 +254,17 @@ pub fn run() {
 
     #[cfg(desktop)]
     {
-        builder = builder.plugin(tauri_plugin_single_instance::init(|_app, argv, _cwd| {
-            println!("a new app instance was opened with {argv:?} and the deep link event was already triggered");
-        }));
+        // Opening the app again brings back a window we hid to the tray.
+        builder = builder
+            .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.unminimize();
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }))
+            .plugin(tauri_plugin_updater::Builder::new().build())
+            .plugin(tauri_plugin_process::init());
     }
 
     #[cfg(target_os = "ios")]
@@ -209,9 +272,14 @@ pub fn run() {
         builder = builder.plugin(tauri_plugin_ios_keyboard::init());
     }
 
+    builder = builder.plugin(tauri_plugin_notification::init());
+
     #[cfg(any(target_os = "ios", target_os = "android"))]
     {
         builder = builder.plugin(tauri_plugin_haptics::init());
+        builder = builder.plugin(tauri_plugin_geolocation::init());
+        // We register this after the notification plugin so our iOS delegate wraps its delegate.
+        builder = builder.plugin(tauri_plugin_mobile_notifications::init());
     }
 
     #[cfg(target_os = "android")]
@@ -223,7 +291,6 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_os::init())
-        .plugin(tauri_plugin_notification::init())
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -243,13 +310,48 @@ pub fn run() {
             Ok(())
         })
         .manage(SocketState(Arc::new(Mutex::new(HashMap::new()))))
+        .on_page_load(|webview, payload| {
+            if webview.label() != "main" || payload.event() != PageLoadEvent::Started {
+                return;
+            }
+            let state = webview.state::<SocketState>().inner().clone();
+            tauri::async_runtime::spawn(async move { socket::disconnect_all(&state).await });
+        })
+        .manage(screen_record::RecorderState::default())
+        .manage(youtube_player::YoutubePlayerPort(
+            if cfg!(any(target_os = "ios", target_os = "macos")) {
+                youtube_player::start()
+            } else {
+                None
+            },
+        ))
         .invoke_handler(tauri::generate_handler![
             connect,
             disconnect,
             listen,
             send,
-            download_image
+            download_image,
+            save_file,
+            open_external_url,
+            overlay::prepare_region_overlay,
+            screen_record::region_recording_supported,
+            screen_record::screen_recording_allowed,
+            screen_record::start_region_recording,
+            screen_record::stop_region_recording,
+            screen_record::cancel_region_recording,
+            screen_record::take_recording,
+            youtube_player::youtube_player_port
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|_app, _event| {
+            // Clicking the dock icon brings back a window the tray hid.
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Reopen { .. } = _event {
+                if let Some(window) = _app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }
+        });
 }
