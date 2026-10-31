@@ -47,6 +47,13 @@ import {
 import * as tictactoeActions from "./handlers/tictactoeActions";
 import { MAX_MESSAGES_PER_CHANNEL } from "./helpers";
 import * as storage from "./localStorage";
+import {
+  addMention,
+  type MentionEntry,
+  markMentionsSeen,
+  mentionChannelKey,
+  mentionTarget,
+} from "./mentionLog";
 import { enqueueMetadataList } from "./metadataLazyQueue";
 import { runPendingMigrations } from "./migrations";
 import type {
@@ -796,6 +803,7 @@ export interface AppState {
   channelOrder: ChannelOrderMap; // serverId -> ordered array of channel names
   // Per-bouncer accent color (hex string, e.g. "#fcd34d")
   bouncerGroupAccents: Record<string, string>;
+  mentionLog: MentionEntry[];
   // Message deduplication tracking
   processedMessageIds: Set<string>; // Set of msgid values that have already been processed
   // Auto-connect prevention
@@ -1057,6 +1065,10 @@ export interface AppState {
   setProfileViewRequest: (serverId: string, username: string) => void;
   clearProfileViewRequest: () => void;
   requestJumpToMessage: (channelKey: string, target: string) => void;
+  recordMention: (entry: MentionEntry) => void;
+  // Marks the mention seen and scrolls its channel to it.
+  jumpToMention: (entry: MentionEntry) => void;
+  dismissMentions: (channelKey: string) => void;
   clearJumpRequest: () => void;
   setTopicModalRequest: (serverId: string, channelId: string) => void;
   clearTopicModalRequest: () => void;
@@ -1274,6 +1286,7 @@ const useStore = create<AppState>((set, get) => ({
   tictactoe: { games: {}, open: null },
   channelOrder: loadChannelOrder(),
   bouncerGroupAccents: storage.bouncerGroupAccents.load(),
+  mentionLog: [],
   processedMessageIds: new Set<string>(),
   hasConnectedToSavedServers: false,
   aiWorkflows: {},
@@ -3660,6 +3673,35 @@ const useStore = create<AppState>((set, get) => ({
   requestJumpToMessage: (channelKey, target) => {
     set((state) => ({
       ui: { ...state.ui, jumpRequest: { channelKey, target } },
+    }));
+  },
+
+  recordMention: (entry) => {
+    set((state) => ({ mentionLog: addMention(state.mentionLog, entry) }));
+  },
+
+  jumpToMention: (entry) => {
+    set((state) => ({
+      mentionLog: markMentionsSeen(
+        state.mentionLog,
+        (m) => m.messageId === entry.messageId,
+      ),
+      ui: {
+        ...state.ui,
+        jumpRequest: {
+          channelKey: mentionChannelKey(entry),
+          target: mentionTarget(entry),
+        },
+      },
+    }));
+  },
+
+  dismissMentions: (channelKey) => {
+    set((state) => ({
+      mentionLog: markMentionsSeen(
+        state.mentionLog,
+        (m) => mentionChannelKey(m) === channelKey,
+      ),
     }));
   },
 

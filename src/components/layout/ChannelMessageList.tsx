@@ -21,10 +21,12 @@ import { groupConsecutiveEvents } from "../../lib/eventGrouping";
 import ircClient from "../../lib/ircClient";
 import { shouldShowMessageHeader } from "../../lib/messageGrouping";
 import useStore from "../../store";
+import { markMentionsSeen, unseenMentions } from "../../store/mentionLog";
 import type { Message as MessageType } from "../../types";
 import { CollapsedEventMessage } from "../message/CollapsedEventMessage";
 import { MessageItem } from "../message/MessageItem";
 import LoadingSpinner from "../ui/LoadingSpinner";
+import { MentionJumpBar } from "../ui/MentionJumpBar";
 import { ScrollToBottomButton } from "../ui/ScrollToBottomButton";
 
 export const DEFAULT_VISIBLE_MESSAGE_COUNT = 100;
@@ -451,6 +453,62 @@ export const ChannelMessageList = forwardRef<
       }
     }, [displayedMessages, mobileViewActiveColumn, scrollToBottom, isActive]);
 
+    // A mention scrolled into view of a visible window no longer needs the
+    // jump bar to find it.
+    const mentionLog = useStore((state) => state.mentionLog);
+    // biome-ignore lint/correctness/useExhaustiveDependencies: channelMessages is read fresh on every pass
+    useEffect(() => {
+      const container = messagesContainerRef.current;
+      if (!container || !isActive || !channelId) return;
+      let frame = 0;
+      const check = () => {
+        frame = 0;
+        if (document.visibilityState !== "visible") return;
+        const pending = unseenMentions(
+          useStore.getState().mentionLog,
+          channelKey,
+        );
+        const box = container.getBoundingClientRect();
+        if (pending.length === 0 || box.height === 0) return;
+        const elements = new Map<string, HTMLElement>();
+        for (const el of container.querySelectorAll<HTMLElement>(
+          "[data-message-id]",
+        )) {
+          if (el.dataset.messageId) elements.set(el.dataset.messageId, el);
+        }
+        const seen = new Set<string>();
+        for (const mention of pending) {
+          const message = channelMessages.find(
+            (m) =>
+              m.id === mention.messageId ||
+              (!!mention.msgid && m.msgid === mention.msgid),
+          );
+          const rect =
+            message && elements.get(message.id)?.getBoundingClientRect();
+          if (rect && rect.bottom > box.top && rect.top < box.bottom) {
+            seen.add(mention.messageId);
+          }
+        }
+        if (seen.size === 0) return;
+        useStore.setState((state) => ({
+          mentionLog: markMentionsSeen(state.mentionLog, (m) =>
+            seen.has(m.messageId),
+          ),
+        }));
+      };
+      const schedule = () => {
+        if (!frame) frame = requestAnimationFrame(check);
+      };
+      schedule();
+      container.addEventListener("scroll", schedule, { passive: true });
+      document.addEventListener("visibilitychange", schedule);
+      return () => {
+        if (frame) cancelAnimationFrame(frame);
+        container.removeEventListener("scroll", schedule);
+        document.removeEventListener("visibilitychange", schedule);
+      };
+    }, [isActive, channelId, channelKey, displayedMessages, mentionLog]);
+
     const jumpRequest = useStore((state) =>
       state.ui.jumpRequest?.channelKey === channelKey
         ? state.ui.jumpRequest
@@ -531,6 +589,7 @@ export const ChannelMessageList = forwardRef<
 
     return (
       <>
+        {channelId && isActive && <MentionJumpBar channelKey={channelKey} />}
         <div
           ref={messagesContainerRef}
           className="obby-chat-area flex-grow overflow-y-auto overflow-x-hidden flex flex-col bg-discord-dark-200 text-discord-text-normal relative"
