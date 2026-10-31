@@ -63,8 +63,9 @@ export function notePrivateMessageArrived(
               unreadCount: reset ? 0 : pc.unreadCount + 1,
               mentionCount: reset ? 0 : (pc.mentionCount ?? 0) + 1,
               // A PM is addressed to you by construction, so it counts as a
-              // mention, unless the DM or its server is muted.
-              isMentioned: !isHistorical && !silenced,
+              // mention, unless the DM or its server is muted or you are
+              // reading it right now.
+              isMentioned: !reset && !silenced,
             };
           }) || [],
       };
