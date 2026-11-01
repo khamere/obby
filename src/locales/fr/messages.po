@@ -1001,6 +1001,7 @@ msgstr "Bloquer la commande /INVITE."
 msgid "Block the /KNOCK command."
 msgstr "Bloquer la commande /KNOCK."
 
+#: src/components/layout/BotPane.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/PrivateChatRow.tsx
 #: src/lib/settings/definitions/allSettings.ts
@@ -1275,6 +1276,7 @@ msgstr "nom-du-salon"
 msgid "Channel-scoped"
 msgstr "Limité au canal"
 
+#: src/components/layout/BotPane.tsx
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/ProfilePane.tsx
 #: src/components/ui/HomeScreen.tsx
@@ -4228,6 +4230,7 @@ msgstr "OK"
 msgid "on"
 msgstr "activé"
 
+#: src/components/layout/BotPane.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/MemberList.tsx
 #: src/components/layout/MemberList.tsx
