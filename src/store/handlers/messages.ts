@@ -96,6 +96,28 @@ export function markPrivateChatPeerOnline(
   }));
 }
 
+// A CTCP request (VERSION, PING, TIME): not a conversation, just a question
+// a bot or another client asks. ACTION is a normal message.
+function ctcpRequest(message: string): { name: string; arg: string } | null {
+  if (!message.startsWith("\u0001")) return null;
+  const body = message.split("\u0001").join("");
+  const [name, ...rest] = body.split(" ");
+  if (!name || name.toUpperCase() === "ACTION") return null;
+  return { name: name.toUpperCase(), arg: rest.join(" ") };
+}
+
+function answerCtcp(
+  serverId: string,
+  sender: string,
+  request: { name: string; arg: string },
+): void {
+  const reply = (body: string) =>
+    ircClient.sendRaw(serverId, `NOTICE ${sender} :\u0001${body}\u0001`);
+  if (request.name === "VERSION") reply(`VERSION Obby v${ircClient.version}`);
+  else if (request.name === "PING") reply(`PING ${request.arg}`);
+  else if (request.name === "TIME") reply(`TIME ${new Date().toUTCString()}`);
+}
+
 export function registerMessageHandlers(store: StoreApi<AppState>): void {
   ircClient.on("CHANMSG", (response) => {
     const { mtags, channelName, message, timestamp } = response;
@@ -786,6 +808,29 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
     const server = store
       .getState()
       .servers.find((s) => s.id === response.serverId);
+
+    // A CTCP request to us is answered and noted in Server Notices; it would
+    // otherwise open a private chat showing "VERSION" from a bot every time
+    // the network checks clients.
+    const ctcp = ctcpRequest(message);
+    if (ctcp) {
+      if (replayed || !server) return;
+      answerCtcp(server.id, sender, ctcp);
+      store.getState().addMessage({
+        id: uuidv4(),
+        type: "notice",
+        content: `CTCP ${ctcp.name}${ctcp.arg ? ` ${ctcp.arg}` : ""} request from ${sender}`,
+        timestamp: new Date(timestamp),
+        userId: sender,
+        channelId: "server-notices",
+        serverId: server.id,
+        reactions: [],
+        replyMessage: null,
+        mentioned: [],
+        preformatted: true,
+      });
+      return;
+    }
 
     // A plaintext PM arriving while an encrypted session is active: the row is
     // rendered but flagged. obbyircd is multi-client, so this is often just the
@@ -1523,26 +1568,8 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
 
     if (!server) return;
 
-    const parv = message.split(" ");
-    if (parv[0] === "\u0001VERSION\u0001") {
-      ircClient.sendRaw(
-        server.id,
-        `NOTICE ${response.sender} :\u0001VERSION Obby v${ircClient.version}\u0001`,
-      );
-    }
-    if (parv[0] === "\u0001PING") {
-      ircClient.sendRaw(
-        server.id,
-        `NOTICE ${response.sender} :\u0001PING ${parv[1]}\u0001`,
-      );
-    }
-    if (parv[0] === "\u0001TIME\u0001") {
-      const date = new Date();
-      ircClient.sendRaw(
-        server.id,
-        `NOTICE ${response.sender} :\u0001TIME ${date.toUTCString()}\u0001`,
-      );
-    }
+    const request = ctcpRequest(message);
+    if (request) answerCtcp(server.id, response.sender, request);
   });
 
   // TAGMSG typing

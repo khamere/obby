@@ -85,6 +85,25 @@ describe("server replies in Server Notices", () => {
     expect(motd?.preformatted).toBe(true);
   });
 
+  it("answers a CTCP request and notes it instead of opening a private chat", () => {
+    feed(":py-ctcp!bot@h PRIVMSG me :\u0001VERSION\u0001");
+    const versionReply = vi
+      .mocked(ircClient.sendRaw)
+      .mock.calls.find(
+        ([id, line]) =>
+          id === serverId &&
+          line.startsWith("NOTICE py-ctcp :\u0001VERSION Obby v"),
+      );
+    expect(versionReply).toBeDefined();
+    expect(useStore.getState().servers[0].privateChats).toEqual([]);
+    expect(notices()).toEqual(["CTCP VERSION request from py-ctcp"]);
+    feed(":py-ctcp!bot@h PRIVMSG me :\u0001PING 12345\u0001");
+    expect(ircClient.sendRaw).toHaveBeenCalledWith(
+      serverId,
+      "NOTICE py-ctcp :\u0001PING 12345\u0001",
+    );
+  });
+
   it("keeps routine end-of-list replies out", () => {
     feed(":irc.test 366 me #chan :End of /NAMES list.");
     expect(notices()).toEqual([]);
