@@ -19,7 +19,7 @@ export const Switch: React.FC<{
     }`}
   >
     <span
-      className={`absolute top-[3px] w-[18px] h-[18px] rounded-full bg-white shadow transition-[left] duration-150 ${
+      className={`absolute top-[3px] w-[18px] h-[18px] rounded-full switch-knob shadow transition-[left] duration-150 ${
         checked ? "left-[19px]" : "left-[3px]"
       }`}
     />
