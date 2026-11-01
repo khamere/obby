@@ -136,6 +136,48 @@ describe("private chat history pagination", () => {
     ).toBeNull();
   });
 
+  it("asks for an older page once for an empty chat, not on every render", () => {
+    // No oldest message means the "page arrived" compare is on null; an
+    // undefined-vs-null mismatch used to restart the request on each render.
+    useStore.setState((state) => ({
+      globalSettings: { ...state.globalSettings, keepHistory: false },
+      servers: [
+        makeServer({
+          privateChats: [
+            {
+              id: "pm1",
+              username: "mrkmrtns",
+              serverId: "s1",
+              unreadCount: 0,
+              isMentioned: false,
+              hasMoreHistory: true,
+            },
+          ],
+        }),
+      ],
+      messages: { [defaultProps.channelKey]: [] },
+    }));
+    const { container } = render(<ChannelMessageList {...defaultProps} />);
+    const area = container.querySelector(".obby-chat-area");
+    // jsdom lays nothing out; the loader skips a container with no height.
+    if (area) {
+      Object.defineProperty(area, "clientHeight", { value: 600 });
+      Object.defineProperty(area, "scrollHeight", { value: 300 });
+    }
+    for (let i = 0; i < 5; i++) {
+      // A store update with the chat still empty, as any live traffic causes.
+      act(() => {
+        useStore.setState({ messages: { [defaultProps.channelKey]: [] } });
+      });
+      act(() => {
+        if (area) fireEvent.scroll(area);
+      });
+    }
+    expect(
+      vi.mocked(ircClient.requestChathistoryBefore).mock.calls.length,
+    ).toBeLessThanOrEqual(1);
+  });
+
   it("keeps the reading position when older PM messages are prepended", () => {
     useStore.setState({
       messages: {
