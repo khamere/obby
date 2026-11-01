@@ -3487,9 +3487,12 @@ msgid "Man-in-the-middle attacks on server links are possible"
 msgstr "Útoky man-in-the-middle na serverová připojení jsou možné"
 
 #: src/components/layout/ChatHeader.tsx
+#: src/components/layout/ChatHeader.tsx
+#: src/components/layout/ChatHeader.tsx
 msgid "Manage Bots"
 msgstr "Spravovat boty"
 
+#: src/components/layout/ChatHeader.tsx
 #: src/components/layout/ChatHeader.tsx
 msgid "Manage Bots (loading {botsLoadingCount})"
 msgstr "Spravovat boty (načítání {botsLoadingCount})"

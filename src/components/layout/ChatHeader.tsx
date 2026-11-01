@@ -646,6 +646,27 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 </button>
               )}
 
+              {/* Bots panel: the overflow menu only exists on narrow screens, so
+                  wide ones get the button itself. */}
+              {selectedServerId && (
+                <button
+                  type="button"
+                  className={`hidden md:block ${
+                    botsLoadingCount > 0
+                      ? "text-blue-500 animate-pulse-bright"
+                      : "hover:text-discord-text-normal"
+                  }`}
+                  onClick={onOpenBots}
+                  title={
+                    botsLoadingCount > 0
+                      ? t`Manage Bots (loading ${botsLoadingCount})`
+                      : t`Manage Bots`
+                  }
+                  aria-label={t`Manage Bots`}
+                >
+                  <FaRobot />
+                </button>
+              )}
               {/* Media explorer — in overflow menu on native mobile, inline button elsewhere */}
               {hasMedia && !nativeMobile && (
                 <button
