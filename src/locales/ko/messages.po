@@ -4143,6 +4143,15 @@ msgstr "기본 - 표준 보호"
 msgid "Not connected"
 msgstr "연결되지 않음"
 
+#: src/components/message/MessageStatusIndicator.tsx
+msgid "Not delivered"
+msgstr "전달되지 않음"
+
+#: src/components/message/MessageStatusIndicator.tsx
+#: src/store/handlers/messages.ts
+msgid "Not delivered: {reason}"
+msgstr "전달되지 않음: {reason}"
+
 #: src/components/message/E2EEUnprotectedBadge.tsx
 #: src/components/ui/UploadProgressBar.tsx
 msgid "Not encrypted"
