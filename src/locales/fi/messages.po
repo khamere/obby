@@ -1058,6 +1058,10 @@ msgstr "tekijä {0}"
 msgid "Calls"
 msgstr "Puhelut"
 
+#: src/lib/voiceErrors.ts
+msgid "Calls need a secure connection: open Obby over https"
+msgstr "Puhelut vaativat suojatun yhteyden: avaa Obby https-yhteydellä"
+
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/settings/CallCameraField.tsx
@@ -2023,7 +2027,7 @@ msgstr "Kuvaus (valinnainen)"
 msgid "Design your own colors and share them as themes."
 msgstr "Suunnittele omat värisi ja jaa ne teemoina."
 
-#: src/components/ui/settings/useDeviceAccess.ts
+#: src/lib/mediaDevices.ts
 msgid "Device access needs a secure connection. Open Obby over https (or on localhost) to use the microphone and camera."
 msgstr "Laitteiden käyttö vaatii suojatun yhteyden. Avaa Obby https-yhteydellä (tai localhostissa) käyttääksesi mikrofonia ja kameraa."
 

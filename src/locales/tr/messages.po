@@ -1058,6 +1058,10 @@ msgstr "{0} tarafından"
 msgid "Calls"
 msgstr "Aramalar"
 
+#: src/lib/voiceErrors.ts
+msgid "Calls need a secure connection: open Obby over https"
+msgstr "Aramalar güvenli bir bağlantı gerektirir: Obby'yi https üzerinden açın"
+
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/settings/CallCameraField.tsx
@@ -2023,7 +2027,7 @@ msgstr "Açıklama (isteğe bağlı)"
 msgid "Design your own colors and share them as themes."
 msgstr "Kendi renklerini tasarla ve tema olarak paylaş."
 
-#: src/components/ui/settings/useDeviceAccess.ts
+#: src/lib/mediaDevices.ts
 msgid "Device access needs a secure connection. Open Obby over https (or on localhost) to use the microphone and camera."
 msgstr "Cihaz erişimi güvenli bir bağlantı gerektirir. Mikrofon ve kamerayı kullanmak için Obby'yi https (veya localhost) üzerinden açın."
 

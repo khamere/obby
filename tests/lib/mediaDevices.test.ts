@@ -1,6 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   audioConstraints,
+  classifyMediaError,
+  describeMediaError,
   resolveDeviceId,
   speakerSelectionSupported,
   videoConstraints,
@@ -108,5 +110,29 @@ describe("videoConstraints", () => {
     const c = videoConstraints(baseSettings);
     expect(c.facingMode).toEqual({ ideal: "user" });
     expect(c.deviceId).toBeUndefined();
+  });
+});
+
+describe("classifyMediaError without mediaDevices", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  // A page loaded over plain http has no navigator.mediaDevices at all, which
+  // every field used to report as a generic failure.
+  it("reports the missing secure context instead of a generic failure", () => {
+    vi.stubGlobal("navigator", { userAgent: "test" });
+    expect(classifyMediaError(new TypeError("no mediaDevices"))).toBe(
+      "insecure",
+    );
+    expect(describeMediaError(new TypeError("no mediaDevices"))).toContain(
+      "https",
+    );
+  });
+
+  it("keeps classifying real device errors when mediaDevices exists", () => {
+    vi.stubGlobal("navigator", { mediaDevices: { getUserMedia: () => {} } });
+    expect(classifyMediaError(new DOMException("", "NotAllowedError"))).toBe(
+      "blocked",
+    );
+    expect(classifyMediaError(new TypeError("x"))).toBe("failed");
   });
 });

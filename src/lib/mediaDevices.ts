@@ -58,11 +58,25 @@ export function resolveDeviceId(
   return undefined;
 }
 
-export type MediaErrorKind = "blocked" | "missing" | "not-front" | "failed";
+export type MediaErrorKind =
+  | "blocked"
+  | "missing"
+  | "not-front"
+  | "insecure"
+  | "failed";
+
+/** Browsers expose devices only to secure pages (https or localhost); a
+ *  page loaded over plain http has no mediaDevices at all. */
+export function deviceAccessUnavailable(): boolean {
+  return (
+    typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia
+  );
+}
 
 /** Sorts a getUserMedia or getDisplayMedia failure the same way for every
  *  caller, so a denied device reads the same wherever it happens. */
 export function classifyMediaError(err: unknown): MediaErrorKind {
+  if (deviceAccessUnavailable()) return "insecure";
   const name = err instanceof DOMException ? err.name : "";
   if (name === "NotAllowedError" || name === "SecurityError") return "blocked";
   if (name === "NotFoundError" || name === "OverconstrainedError") {
@@ -82,6 +96,8 @@ export function describeMediaError(err: unknown): string {
       return t`That device is not available right now.`;
     case "not-front":
       return t`Bring this window to the front and try again.`;
+    case "insecure":
+      return t`Device access needs a secure connection. Open Obby over https (or on localhost) to use the microphone and camera.`;
     case "failed":
       return t`Could not access the device.`;
   }

@@ -32,6 +32,10 @@ export function describeVoiceError(code: VoiceErrorCode): string {
     case "camera-not-front":
     case "screen-not-front":
       return t`Bring this window to the front and try again.`;
+    case "mic-insecure":
+    case "camera-insecure":
+    case "screen-insecure":
+      return t`Calls need a secure connection: open Obby over https`;
     case "mic-failed":
       return t`Turn the mic on to try again`;
     case "camera-failed":

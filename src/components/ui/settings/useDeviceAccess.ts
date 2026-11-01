@@ -1,8 +1,8 @@
-import { t } from "@lingui/core/macro";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   type DeviceKind,
   describeMediaError,
+  deviceAccessUnavailable,
   listDevices,
 } from "../../../lib/mediaDevices";
 
@@ -43,14 +43,10 @@ export function useDeviceAccess(kind: DeviceKind) {
   const requestAccess = useCallback(async (): Promise<MediaDeviceInfo[]> => {
     setRequesting(true);
     setPermissionError(null);
-    // Browsers only expose devices to secure pages (https or localhost), so
-    // a page loaded over plain http has no mediaDevices at all.
-    if (!navigator.mediaDevices?.getUserMedia) {
+    if (deviceAccessUnavailable()) {
       setRequested(true);
       setRequesting(false);
-      setPermissionError(
-        t`Device access needs a secure connection. Open Obby over https (or on localhost) to use the microphone and camera.`,
-      );
+      setPermissionError(describeMediaError(new TypeError("no mediaDevices")));
       return [];
     }
     let denied = false;
