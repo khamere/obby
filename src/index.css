@@ -167,6 +167,14 @@
   .status-badge {
     @apply w-[22px] h-[22px] shrink-0 rounded-full flex items-center justify-center text-[11px];
   }
+  /* The knob of a switch is the theme's brightest foreground, so it stays
+     as light as the text next to it instead of a fixed white. */
+  .switch-knob {
+    background-color: rgb(var(--obby-text-strong));
+  }
+  html[data-appearance="light"] .switch-knob {
+    background-color: rgb(var(--obby-bg-base));
+  }
 }
 
 /* A field sits beside its label once the row has room, and wraps under it on a phone. */
