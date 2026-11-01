@@ -58,7 +58,10 @@ export const ActionMessage: React.FC<ActionMessageProps> = ({
     message.tags?.bot === "";
 
   return (
-    <div className="px-4 py-1 hover:bg-discord-message-hover group relative">
+    <div
+      data-message-id={message.id}
+      className="px-4 py-1 hover:bg-discord-message-hover group relative"
+    >
       {showDate && (
         <div className="flex items-center text-xs text-discord-text-muted mb-2">
           <div className="flex-grow border-t border-discord-dark-400" />
