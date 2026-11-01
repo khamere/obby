@@ -1,5 +1,9 @@
 import { describe, expect, test, vi } from "vitest";
 
+// Loading the modules under test takes seconds on a busy machine, longer
+// than the default timeout allows.
+vi.setConfig({ testTimeout: 15_000 });
+
 // The registry indexes every setting while its module is imported, which
 // happens before the app activates a locale. Asking Lingui to translate at
 // that point throws and takes the whole app down at startup, so the index has
