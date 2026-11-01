@@ -164,7 +164,11 @@ export function sendBotCommand(
   const canPm = contexts.includes("pm");
 
   // Per spec §Invoking a command: the base64 of the compact JSON invocation
-  // rides in +draft/bot-cmd. How it is addressed depends on the context.
+  // rides in +draft/bot-cmd. How it is addressed depends on the context, and
+  // one invocation is exactly one TAGMSG: a command that lists several
+  // contexts is sent the one way that fits where the user is, never once per
+  // context (a bot that offers "public" and "pm" would otherwise run a channel
+  // invocation twice, once in the channel and once in private).
   if (channel && canPublic) {
     // public: TAGMSG to the channel. Name the target bot so that when several
     // bots in the channel share a command name, only the intended one acts.
@@ -174,6 +178,7 @@ export function sendBotCommand(
       serverId,
       `@+draft/bot-cmd=${b64} TAGMSG ${channel.name}`,
     );
+    return true;
   }
   if (channel && canPrivate) {
     // private: TAGMSG to the bot. The channel travels in the payload, since
@@ -181,16 +186,16 @@ export function sendBotCommand(
     const payload = { name: cmd.name, options, channel: channel.name };
     const b64 = base64EncodeUtf8(JSON.stringify(payload));
     ircClient.sendRaw(serverId, `@+draft/bot-cmd=${b64} TAGMSG ${bot}`);
+    return true;
   }
   if (canPm) {
     // pm: TAGMSG to the bot, no channel.
     const payload = { name: cmd.name, options };
     const b64 = base64EncodeUtf8(JSON.stringify(payload));
     ircClient.sendRaw(serverId, `@+draft/bot-cmd=${b64} TAGMSG ${bot}`);
-  } else {
-    return false;
+    return true;
   }
-  return true;
+  return false;
 }
 
 /** How long to wait before flipping a pending message to "failed". */
