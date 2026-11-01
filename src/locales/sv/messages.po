@@ -94,6 +94,12 @@ msgstr "{0} inaktiv"
 msgid "{0} network{1} — pick one to join"
 msgstr "{0} nätverk{1} — välj ett att gå med i"
 
+#. placeholder {0}: rules.rules.length
+#. placeholder {1}: rules.skipped
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "{0} rules loaded, {1} skipped"
+msgstr "{0} regler inlästa, {1} överhoppade"
+
 #. placeholder {0}: viewerMembers.length
 #: src/components/layout/VoiceChannelView.tsx
 msgid "{0} watching"
@@ -1027,6 +1033,10 @@ msgstr "Bot i den här kanalen"
 msgid "Bots"
 msgstr "Bottar"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Bridge rules"
+msgstr "Bryggregler"
+
 #: src/lib/mediaDevices.ts
 #: src/lib/voiceErrors.ts
 msgid "Bring this window to the front and try again."
@@ -1779,6 +1789,10 @@ msgstr "Den här länken kunde inte laddas."
 msgid "Could not load this link. It must point to the raw .css file."
 msgstr "Länken kunde inte laddas. Den måste peka direkt på .css-filen."
 
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Could not load this link. It must point to the raw .json file."
+msgstr "Länken kunde inte läsas in. Den måste peka på den råa .json-filen."
+
 #: src/lib/mediaUpload.ts
 msgid "Could not reach the file host. Check your connection and try again."
 msgstr "Kunde inte nå filvärden. Kontrollera anslutningen och försök igen."
@@ -2428,6 +2442,10 @@ msgstr "Ange ett kontonamn för att logga in med SASL PLAIN innan du går med i 
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Enter an http(s) link to a .css file."
 msgstr "Ange en http(s)-länk till en .css-fil."
+
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Enter an http(s) link to a .json file."
+msgstr "Ange en http(s)-länk till en .json-fil."
 
 #: src/components/ui/settings/ThemeLinkField.tsx
 msgid "Enter an http(s) link to a theme .json file."
@@ -3215,6 +3233,10 @@ msgstr "Behåll kanalen när alla har lämnat. Bara IRCops kan ställa in detta.
 msgid "Kept in this browser and applied after the linked file, so it can override it."
 msgstr "Sparas i den här webbläsaren och tillämpas efter den länkade filen, så att den kan skriva över den."
 
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Kept in this browser. A rule here replaces the linked rule for the same network and bot."
+msgstr "Sparas i den här webbläsaren. En regel här ersätter den länkade regeln för samma nätverk och bot."
+
 #: src/components/ui/PluginsScreen.tsx
 msgid "Keyword Alerts"
 msgstr "Nyckelordsaviseringar"
@@ -3323,6 +3345,10 @@ msgstr "Libera Chat"
 msgid "Line spacing"
 msgstr "Radavstånd"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Lines a tracker's shoutbox bot relays into IRC are shown as the person who wrote them, marked \"via\" the bot."
+msgstr "Rader som en trackers shoutbox-bot vidarebefordrar till IRC visas som personen som skrev dem, märkta med ”via” och boten."
+
 #: src/components/pages/TwoFactorPage.tsx
 msgid "Link"
 msgstr "Länk"
@@ -3348,6 +3374,7 @@ msgstr "Liveöversättning"
 msgid "Load"
 msgstr "Ladda"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Load from a link"
 msgstr "Ladda från en länk"
@@ -3364,6 +3391,7 @@ msgstr "Läs in äldre meddelanden och hoppa till originalet"
 msgid "Load older messages to reach the reply"
 msgstr "Ladda äldre meddelanden för att nå svaret"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Loaded and up to date."
 msgstr "Laddad och uppdaterad."
@@ -3396,6 +3424,7 @@ msgstr "Laddar WHOIS-data..."
 #: src/components/layout/SearchPane.tsx
 #: src/components/pages/EmojiPacksPage.tsx
 #: src/components/pages/TwoFactorPage.tsx
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/ThemeLinkField.tsx
 msgid "Loading…"
@@ -4192,6 +4221,7 @@ msgstr "Obby"
 msgid "Obby - Bringing IRC to the future"
 msgstr "Obby - För IRC in i framtiden"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Obby downloads this file every time it starts, so everyone using the same link gets updates. This contacts the site the link points to."
 msgstr "Obby laddar ner filen varje gång den startar, så alla som använder samma länk får uppdateringar. Detta kontaktar webbplatsen som länken pekar på."
@@ -4428,6 +4458,10 @@ msgstr "Klistra in kod med syntaxmarkering och radnummer."
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Paste CSS here or upload a .css file"
 msgstr "Klistra in CSS här eller ladda upp en .css-fil"
+
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Paste rules JSON here or upload a .json file"
+msgstr "Klistra in regel-JSON här eller ladda upp en .json-fil"
 
 #: src/components/ui/settings/UserFilehostField.tsx
 msgid "Paste your Zipline token"
@@ -4897,6 +4931,8 @@ msgstr "Versionsinformation"
 #: src/components/pages/EmojiPacksPage.tsx
 #: src/components/pages/EmojiPacksPage.tsx
 #: src/components/pages/TwoFactorPage.tsx
+#: src/components/ui/settings/BridgeRulesField.tsx
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/ChatBackgroundField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
@@ -5088,6 +5124,8 @@ msgstr "SASL PLAIN-konto"
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/ui/BouncerNetworkForm.tsx
+#: src/components/ui/settings/BridgeRulesField.tsx
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/UserFilehostField.tsx
@@ -5590,6 +5628,10 @@ msgid "Show All Events"
 msgstr "Visa alla händelser"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Show bridged users as themselves"
+msgstr "Visa bryggade användare som sig själva"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Show colours and formatting in channel topics. When off, topics are shown as plain text"
 msgstr "Visa färger och formatering i kanalämnen. När av visas ämnen som vanlig text"
 
@@ -5951,9 +5993,22 @@ msgstr "det kontot"
 msgid "That device is not available right now."
 msgstr "Den här enheten är inte tillgänglig just nu."
 
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "That file has too many rules."
+msgstr "Den filen har för många regler."
+
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "That file is not a valid rules file."
+msgstr "Den filen är inte en giltig regelfil."
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "That file is not an Obby theme."
 msgstr "Den filen är inte ett Obby-tema."
+
+#: src/components/ui/settings/BridgeRulesField.tsx
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "That file is too large."
+msgstr "Den filen är för stor."
 
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "That image is too large (2 MB at most)."
@@ -6348,6 +6403,10 @@ msgstr "Uppdateringen misslyckades. Försök igen."
 msgid "Upload .css file"
 msgstr "Ladda upp .css-fil"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Upload .json file"
+msgstr "Ladda upp .json-fil"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Upload an image or enter a URL. Use {sizeToken} in the URL for dynamic sizing."
 msgstr "Ladda upp en bild eller ange en URL. Använd {sizeToken} i URL:en för dynamisk storlek."
@@ -6493,6 +6552,7 @@ msgstr "Användare:"
 msgid "Using the last copy of {0}; the link could not be reached."
 msgstr "Senaste kopian av {0} används; länken kunde inte nås."
 
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Using the last saved copy; the link could not be reached."
 msgstr "Använder den senast sparade kopian; länken kunde inte nås."
@@ -6720,6 +6780,10 @@ msgstr "Vad du daskar med (standard är en stor forell)"
 msgid "What you're doing"
 msgstr "Vad du gör"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Which bot speaks for which network and how it wraps the name. From a shared link and/or your own JSON. Kept in this browser."
+msgstr "Vilken bot som talar för vilket nätverk och hur den omsluter namnet. Från en delad länk och/eller din egen JSON. Sparas i den här webbläsaren."
+
 #: src/components/message/WhisperMessage.tsx
 msgid "WHISPER"
 msgstr "VISKNING"
@@ -6893,6 +6957,10 @@ msgstr "Din egen CSS"
 msgid "Your own file host"
 msgstr "Din egen filvärd"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Your own rules"
+msgstr "Dina egna regler"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your own theme"
 msgstr "Ditt eget tema"
@@ -6916,6 +6984,14 @@ msgstr "Dina pronomen, visas i din profil"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your real or full name"
 msgstr "Ditt riktiga eller fullständiga namn"
+
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Your rules were removed."
+msgstr "Dina regler togs bort."
+
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Your rules were saved."
+msgstr "Dina regler sparades."
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your status message"
