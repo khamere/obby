@@ -587,17 +587,15 @@ export const MessageItem = memo((props: MessageItemProps) => {
         <Trans>Encrypted message</Trans>
       </span>
     </HoverTooltip>
+  ) : // Server text (a MOTD, numeric replies) is shown whole: folding it behind
+  // "Show more" hides exactly what the user opened Server Notices to read.
+  message.preformatted ? (
+    <div className="font-mono text-[13px] leading-snug whitespace-pre-wrap break-words">
+      {highlightedContent}
+    </div>
   ) : (
     <CollapsibleMessage
-      content={
-        message.preformatted ? (
-          <div className="font-mono text-[13px] leading-snug whitespace-pre-wrap break-words">
-            {highlightedContent}
-          </div>
-        ) : (
-          highlightedContent
-        )
-      }
+      content={highlightedContent}
       onRequestRead={() => setIsReaderOpen(true)}
     />
   );
