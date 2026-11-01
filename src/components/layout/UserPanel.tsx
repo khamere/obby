@@ -22,10 +22,12 @@ interface UserPanelProps {
   onOpenSettings: () => void;
 }
 
+// Presence keeps the classic colours in every theme, so a status reads the
+// same whatever the theme's green or yellow is used for elsewhere.
 const STATUS_DOT: Record<PresenceStatus, string> = {
-  online: "bg-discord-green",
-  away: "bg-discord-yellow",
-  offline: "bg-discord-dark-500",
+  online: "bg-green-500",
+  away: "bg-yellow-500",
+  offline: "bg-gray-500",
 };
 
 export const UserPanel: React.FC<UserPanelProps> = ({
@@ -142,7 +144,7 @@ export const UserPanel: React.FC<UserPanelProps> = ({
             )}
           </span>
           <span
-            className={`row-meta truncate ${status === "away" ? "text-discord-yellow" : ""}`}
+            className={`row-meta truncate ${status === "away" ? "text-yellow-500" : ""}`}
           >
             {statusLabel}
           </span>
