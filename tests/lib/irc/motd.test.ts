@@ -12,6 +12,7 @@ function makeCtx() {
     motdLines: new Map<string, string[]>(),
     triggerEvent,
     takeMotdRequest: () => false,
+    finishRegistration: () => {},
   } as Partial<IRCClientContext> as IRCClientContext;
   return { ctx, triggerEvent };
 }

@@ -68,6 +68,23 @@ describe("server replies in Server Notices", () => {
     ]);
   });
 
+  it("marks server text as preformatted so it is never rendered as markdown", () => {
+    feed(":irc.test 251 me :    indented like a code block");
+    const [m] = useStore.getState().messages[`${serverId}-server-notices`];
+    expect(m.preformatted).toBe(true);
+    feed(
+      ":irc.test 375 me :- irc.test Message of the day -",
+      ":irc.test 372 me :-     ascii art",
+      ":irc.test 376 me :End of /MOTD command.",
+    );
+    const motd = useStore
+      .getState()
+      .messages[`${serverId}-server-notices`].find((x) =>
+        x.content.includes("ascii art"),
+      );
+    expect(motd?.preformatted).toBe(true);
+  });
+
   it("keeps routine end-of-list replies out", () => {
     feed(":irc.test 366 me #chan :End of /NAMES list.");
     expect(notices()).toEqual([]);

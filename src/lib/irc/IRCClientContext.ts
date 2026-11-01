@@ -51,6 +51,8 @@ export interface IRCClientContext {
   motdLines: Map<string, string[]>;
   // Whether a MOTD reply answers our own request (true once per request).
   takeMotdRequest(serverId: string): boolean;
+  // The registration burst ended: ISUPPORT is known, queued MONITORs go out.
+  finishRegistration(serverId: string): void;
   activeBatches: Map<
     string,
     Map<

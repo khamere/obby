@@ -478,7 +478,7 @@ export const MessageItem = memo((props: MessageItemProps) => {
         processMarkdownInText(
           subtext,
           showExternalContent,
-          enableMarkdownRendering,
+          enableMarkdownRendering && !message.preformatted,
           key,
           linkLabels,
         ),
@@ -491,6 +491,7 @@ export const MessageItem = memo((props: MessageItemProps) => {
     messageContent,
     showExternalContent,
     enableMarkdownRendering,
+    message.preformatted,
     message.id,
     message.msgid,
     message.mentioned,
@@ -588,7 +589,15 @@ export const MessageItem = memo((props: MessageItemProps) => {
     </HoverTooltip>
   ) : (
     <CollapsibleMessage
-      content={highlightedContent}
+      content={
+        message.preformatted ? (
+          <div className="font-mono text-[13px] leading-snug whitespace-pre-wrap break-words">
+            {highlightedContent}
+          </div>
+        ) : (
+          highlightedContent
+        )
+      }
       onRequestRead={() => setIsReaderOpen(true)}
     />
   );

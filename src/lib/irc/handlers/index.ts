@@ -158,6 +158,7 @@ export const IRC_DISPATCH: Record<string, HandlerFn> = {
   // ERR_NOMOTD: soju sends one on every connect ("Use /motd ..."), so only an
   // answer to our own /motd is worth showing.
   "422": (ctx, serverId, source, parv) => {
+    ctx.finishRegistration(serverId);
     if (!ctx.takeMotdRequest(serverId)) {
       ctx.triggerEvent("MOTD_UNSOLICITED", { serverId });
       return;

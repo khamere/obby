@@ -146,6 +146,7 @@ export function handleRplEndOfMotd(
   const lines = ctx.motdLines.get(serverId);
   ctx.motdLines.delete(serverId);
   ctx.takeMotdRequest(serverId);
+  ctx.finishRegistration(serverId);
   if (lines && lines.length > 0) ctx.triggerEvent("MOTD", { serverId, lines });
 }
 

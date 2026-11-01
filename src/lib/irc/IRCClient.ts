@@ -1112,6 +1112,8 @@ export class IRCClient implements IRCClientContext {
       }
       socket.close();
     }
+    this.registered.delete(serverId);
+    this.pendingMonitor.delete(serverId);
     const server = this.servers.get(serverId);
     if (server) {
       server.isConnected = false;
@@ -2025,12 +2027,43 @@ export class IRCClient implements IRCClientContext {
   }
 
   // MONITOR commands
+  // Servers whose registration burst (ISUPPORT, MOTD) has finished, and the
+  // MONITOR targets asked for before that: whether the server supports
+  // MONITOR is only known from ISUPPORT, which arrives after the welcome.
+  private registered = new Set<string>();
+  private pendingMonitor = new Map<string, Set<string>>();
+
+  /** The registration burst ended (end of MOTD or no MOTD). */
+  finishRegistration(serverId: string): void {
+    if (this.registered.has(serverId)) return;
+    this.registered.add(serverId);
+    const pending = this.pendingMonitor.get(serverId);
+    this.pendingMonitor.delete(serverId);
+    if (pending?.size) this.monitorAdd(serverId, [...pending]);
+  }
+
+  supportsMonitor(serverId: string): boolean {
+    return this.isupportValues.get(serverId)?.has("MONITOR") ?? false;
+  }
+
   monitorAdd(serverId: string, targets: string[]): void {
+    if (targets.length === 0) return;
+    if (!this.registered.has(serverId)) {
+      const pending = this.pendingMonitor.get(serverId) ?? new Set<string>();
+      for (const target of targets) pending.add(target);
+      this.pendingMonitor.set(serverId, pending);
+      return;
+    }
+    // A server without MONITOR would only answer "Unknown command".
+    if (!this.supportsMonitor(serverId)) return;
     const targetsStr = targets.join(",");
     this.sendRaw(serverId, `MONITOR + ${targetsStr}`);
   }
 
   monitorRemove(serverId: string, targets: string[]): void {
+    const pending = this.pendingMonitor.get(serverId);
+    if (pending) for (const target of targets) pending.delete(target);
+    if (!this.supportsMonitor(serverId)) return;
     const targetsStr = targets.join(",");
     this.sendRaw(serverId, `MONITOR - ${targetsStr}`);
   }

@@ -99,6 +99,11 @@ describe("CHATHISTORY TARGETS replies", () => {
   });
 
   it("reopens an unpinned private chat for a nick target", () => {
+    // MONITOR goes out only once ISUPPORT has shown the server has it.
+    feed(
+      ":soju 005 me MONITOR=100 :are supported by this server",
+      ":soju 376 me :End of /MOTD command.",
+    );
     feed(":soju CHATHISTORY TARGETS alice 2026-10-14T18:14:42.492Z");
     vi.runOnlyPendingTimers();
     expect(pms()).toEqual([{ username: "alice", isPinned: false }]);

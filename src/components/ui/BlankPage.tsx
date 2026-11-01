@@ -51,7 +51,7 @@ const BlankPage: React.FC = () => {
           <div className="section-label px-4 pt-3">
             <Trans>Message of the day</Trans>
           </div>
-          <div className="px-4 text-sm text-left text-discord-text-normal whitespace-pre-wrap break-words">
+          <div className="px-4 font-mono text-[13px] leading-snug text-left text-discord-text-normal whitespace-pre-wrap break-words">
             <CollapsibleMessage content={mircToHtml(motd.join("\n"))} />
           </div>
         </section>
