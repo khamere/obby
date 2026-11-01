@@ -16,6 +16,7 @@ import "./index.css";
 import { RecordingControlsOverlay } from "./components/ui/RecordingControlsOverlay";
 import { RegionMarkerOverlay } from "./components/ui/RegionMarkerOverlay";
 import { RegionSelectOverlay } from "./components/ui/RegionSelectOverlay";
+import { loadBridgeRules } from "./lib/bridgeRules";
 import { applyChatLook } from "./lib/chatLook";
 import { loadCustomCss } from "./lib/customCss";
 import { probeVideoSupport } from "./lib/mediaUtils";
@@ -47,6 +48,7 @@ if (overlay) {
   void closeStaleRegionWindows();
 }
 loadCustomCss();
+loadBridgeRules();
 loadThemeLink();
 
 // Theme colours, fonts, size, spacing and density are CSS variables on

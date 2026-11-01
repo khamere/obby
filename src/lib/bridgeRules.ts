@@ -1,8 +1,10 @@
+import { useSyncExternalStore } from "react";
 import {
   type BridgeMatch,
   compileTemplate,
   matchTemplate,
 } from "./bridgeTemplates";
+import { isValidCssLink, type LinkStatus } from "./customCss";
 import { stripIrcFormatting } from "./messageFormatter";
 
 // Bridge rules say which bot relays a tracker's shoutbox into which IRC
@@ -214,4 +216,177 @@ export function applyBridgeRules(
     if (found) return { kind: "nick", displayNick: found.nick, via: rule.via };
   }
   return null;
+}
+
+// ---- store ------------------------------------------------------------------
+
+const OWN_KEY = "obby.bridgeRules";
+const LINK_KEY = "obby.bridgeRules.link";
+const LINK_CACHE_KEY = "obby.bridgeRules.linkCache";
+
+export interface BridgeRulesState {
+  own: string;
+  ownRules: ParsedBridgeRules;
+  link: string;
+  linkJson: string;
+  linkRules: ParsedBridgeRules;
+  linkStatus: LinkStatus;
+}
+
+const NO_RULES: ParsedBridgeRules = { rules: [], skipped: 0 };
+
+let state: BridgeRulesState = {
+  own: "",
+  ownRules: NO_RULES,
+  link: "",
+  linkJson: "",
+  linkRules: NO_RULES,
+  linkStatus: "none",
+};
+let compiled: CompiledRules = EMPTY_RULES;
+const listeners = new Set<() => void>();
+
+function storageGet(key: string): string {
+  try {
+    return localStorage.getItem(key) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function storageSet(key: string, value: string): void {
+  try {
+    if (value) localStorage.setItem(key, value);
+    else localStorage.removeItem(key);
+  } catch {
+    // quota or storage disabled: still applies for this session
+  }
+}
+
+// A stored copy that no longer parses (an older format) counts as no rules.
+function parseOrNone(json: string): ParsedBridgeRules {
+  if (!json) return NO_RULES;
+  try {
+    return parseBridgeRules(json);
+  } catch {
+    return NO_RULES;
+  }
+}
+
+function update(patch: Partial<BridgeRulesState>): void {
+  state = { ...state, ...patch };
+  compiled = compileBridgeRules(
+    mergeBridgeRules(state.linkRules.rules, state.ownRules.rules),
+  );
+  for (const l of listeners) l();
+}
+
+async function fetchLink(link: string): Promise<string> {
+  const res = await fetch(link, {
+    cache: "no-cache",
+    credentials: "omit",
+    referrerPolicy: "no-referrer",
+  });
+  if (!res.ok) throw new Error(`http-${res.status}`);
+  const text = await res.text();
+  if (text.length > MAX_RULES_CHARS) throw new Error("too-large");
+  // a file host's preview page instead of the raw file
+  if (/^\s*<(!doctype|html)/i.test(text)) throw new Error("not-json");
+  parseBridgeRules(text);
+  return text;
+}
+
+let refreshSeq = 0;
+async function refreshLink(): Promise<void> {
+  const link = state.link;
+  if (!link) return;
+  const seq = ++refreshSeq;
+  update({ linkStatus: state.linkJson ? "cached" : "loading" });
+  try {
+    const json = await fetchLink(link);
+    if (seq !== refreshSeq) return;
+    storageSet(LINK_CACHE_KEY, json);
+    update({ linkJson: json, linkRules: parseOrNone(json), linkStatus: "ok" });
+  } catch {
+    if (seq !== refreshSeq) return;
+    update({ linkStatus: state.linkJson ? "cached" : "error" });
+  }
+}
+
+let loaded = false;
+export function loadBridgeRules(): void {
+  if (loaded) return;
+  loaded = true;
+  const link = storageGet(LINK_KEY);
+  const own = storageGet(OWN_KEY);
+  const linkJson = link ? storageGet(LINK_CACHE_KEY) : "";
+  update({
+    own,
+    ownRules: parseOrNone(own),
+    link,
+    linkJson,
+    linkRules: parseOrNone(linkJson),
+    linkStatus: link ? "cached" : "none",
+  });
+  void refreshLink();
+}
+
+/** Saves (or, with "", removes) the user's own rules. Throws the parse errors. */
+export function saveOwnBridgeRules(input: string): void {
+  const own = input.trim();
+  const ownRules = own ? parseBridgeRules(own) : NO_RULES;
+  storageSet(OWN_KEY, own);
+  update({ own, ownRules });
+}
+
+/**
+ * Sets (or, with "", removes) the linked rules file and loads it. Resolves
+ * once the first fetch has finished; check `linkStatus` for the outcome.
+ */
+export async function setBridgeRulesLink(input: string): Promise<void> {
+  const link = input.trim();
+  if (link && !isValidCssLink(link)) throw new Error("bad-link");
+  storageSet(LINK_KEY, link);
+  storageSet(LINK_CACHE_KEY, "");
+  refreshSeq++;
+  update({
+    link,
+    linkJson: "",
+    linkRules: NO_RULES,
+    linkStatus: link ? "loading" : "none",
+  });
+  await refreshLink();
+}
+
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+export function getBridgeRulesState(): BridgeRulesState {
+  return state;
+}
+
+export function useBridgeRulesState(): BridgeRulesState {
+  return useSyncExternalStore(subscribe, getBridgeRulesState);
+}
+
+/** The merged linked-plus-own rules, compiled; what the message handler uses. */
+export function getCompiledBridgeRules(): CompiledRules {
+  return compiled;
+}
+
+// test hook
+export function resetBridgeRulesForTests(): void {
+  loaded = false;
+  refreshSeq++;
+  state = {
+    own: "",
+    ownRules: NO_RULES,
+    link: "",
+    linkJson: "",
+    linkRules: NO_RULES,
+    linkStatus: "none",
+  };
+  compiled = EMPTY_RULES;
 }
