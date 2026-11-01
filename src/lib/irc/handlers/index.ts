@@ -55,6 +55,7 @@ import {
 import { handleInvitelink } from "./invitelink";
 import {
   handleBatch,
+  handleCannotSendToChan,
   handleNotice,
   handlePrivmsg,
   handleRedact,
@@ -260,6 +261,8 @@ export const IRC_DISPATCH: Record<string, HandlerFn> = {
         handleJoinRefused(ctx, serverId, parv, code)) satisfies HandlerFn,
     ]),
   ),
+  "404": (ctx, serverId, source, parv, mtags) =>
+    handleCannotSendToChan(ctx, serverId, source, parv, mtags),
   PART: (ctx, serverId, source, parv, mtags) =>
     handlePart(ctx, serverId, source, parv, mtags),
   KICK: (ctx, serverId, source, parv, mtags) =>

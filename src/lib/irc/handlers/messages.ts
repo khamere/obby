@@ -27,6 +27,25 @@ function inheritLabelFromBatch(
   return { ...mtags, label };
 }
 
+/** ERR_CANNOTSENDTOCHAN (404): "<target> :Cannot send to channel" */
+export function handleCannotSendToChan(
+  ctx: IRCClientContext,
+  serverId: string,
+  _source: string,
+  parv: string[],
+  mtags: Record<string, string> | undefined,
+): void {
+  const target = parv[1];
+  if (!target) return;
+  const label = inheritLabelFromBatch(mtags, ctx, serverId)?.label;
+  ctx.triggerEvent("SEND_REFUSED", {
+    serverId,
+    target,
+    reason: parv.slice(2).join(" "),
+    label,
+  });
+}
+
 export function handlePrivmsg(
   ctx: IRCClientContext,
   serverId: string,

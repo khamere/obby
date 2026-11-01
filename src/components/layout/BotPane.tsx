@@ -3,6 +3,7 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import type React from "react";
 import { useMemo } from "react";
 import { FaChevronLeft, FaCircle, FaTimes } from "react-icons/fa";
+import { getVisibleBots } from "../../lib/botDirectory";
 import ircClient from "../../lib/ircClient";
 import { mircToHtml } from "../../lib/ircUtils";
 import { confirmDestructive } from "../../lib/modal/ConfirmDialog";
@@ -254,16 +255,6 @@ const BotDetail: React.FC<BotDetailProps> = ({
   );
 };
 
-// We only reach a channel bot through a channel we share with it, so we hide it once we part those channels.
-function isBotReachable(
-  bot: PushBotInfo,
-  isOper: boolean,
-  joinedChannels: Set<string>,
-): boolean {
-  if (isOper || bot.scope === "server") return true;
-  return !!bot.channels?.some((ch) => joinedChannels.has(ch.toLowerCase()));
-}
-
 export const BotPane: React.FC<{ target: BotPaneTarget }> = ({ target }) => {
   const { serverId, botNick } = target;
   const server = useStore((s) => s.servers.find((srv) => srv.id === serverId));
@@ -277,19 +268,14 @@ export const BotPane: React.FC<{ target: BotPaneTarget }> = ({ target }) => {
     (u) => u.username === currentUser?.username,
   )?.isIrcOp;
 
-  const bots: PushBotInfo[] = useMemo(() => {
-    const joinedChannels = new Set(
-      (server?.channels ?? []).map((c) => c.name.toLowerCase()),
-    );
-    return Object.values(server?.bots ?? {})
-      .filter((b) => isBotReachable(b, isOper, joinedChannels))
-      .sort((a, b) => a.nick.localeCompare(b.nick));
-  }, [server?.bots, server?.channels, isOper]);
+  const bots = useMemo(() => getVisibleBots(server, isOper), [server, isOper]);
 
-  const selected = botNick ? server?.bots?.[botNick.toLowerCase()] : undefined;
+  const selected = botNick
+    ? bots.find((bot) => bot.nick.toLowerCase() === botNick.toLowerCase())
+    : undefined;
 
   const send = (subcmd: string) => {
-    if (!isOper || !selected) return;
+    if (!isOper || selected?.kind !== "directory") return;
     ircClient.sendRaw(serverId, `PUSHBOT ${subcmd} ${selected.nick}`);
     if (subcmd === "DELETE") openBot(serverId);
   };
@@ -324,7 +310,29 @@ export const BotPane: React.FC<{ target: BotPaneTarget }> = ({ target }) => {
         )}
       </header>
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-4">
-        {selected ? (
+        {selected?.kind === "irc" ? (
+          <div className="flex flex-col gap-4">
+            <h3 className="text-discord-text-strong text-xl font-bold">
+              {selected.nick}
+            </h3>
+            <div className="text-sm text-emerald-400">
+              <Trans>Bot</Trans> · <Trans>Online</Trans>
+            </div>
+            {selected.realname && (
+              <div className="text-sm text-discord-text-muted">
+                {mircToHtml(selected.realname)}
+              </div>
+            )}
+            <dl className="text-sm">
+              <dt className="text-discord-text-muted">
+                <Trans>Channels</Trans>
+              </dt>
+              <dd className="text-discord-text-normal font-mono break-words">
+                {selected.channels.join(", ")}
+              </dd>
+            </dl>
+          </div>
+        ) : selected ? (
           <BotDetail
             bot={selected}
             isOper={isOper}

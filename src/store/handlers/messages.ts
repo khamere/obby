@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { v4 as uuidv4 } from "uuid";
 import type { StoreApi } from "zustand";
 import {
@@ -124,6 +125,50 @@ function answerCtcp(
 }
 
 export function registerMessageHandlers(store: StoreApi<AppState>): void {
+  // A refused send: the pending line it belongs to turns failed with the
+  // server's reason under it; without a pending line (no labeled-response)
+  // the reason is posted into the chat on its own, as long as we did just
+  // send a message there. A moderated channel refuses our typing notices
+  // with the same numeric, and those are nobody's business.
+  ircClient.on("SEND_REFUSED", ({ serverId, target, reason, label }) => {
+    const server = store.getState().servers.find((s) => s.id === serverId);
+    if (!server) return;
+    const lower = target.toLowerCase();
+    const bufferId =
+      server.channels.find((c) => c.name.toLowerCase() === lower)?.id ??
+      server.privateChats?.find((p) => p.username.toLowerCase() === lower)?.id;
+    if (!bufferId) return;
+    const actions = store.getState();
+    if (label) {
+      const key = `${serverId}-${bufferId}`;
+      const labelled = (actions.messages[key] ?? []).some(
+        (m) => m.pendingLabel === label,
+      );
+      if (labelled) {
+        actions.failPendingMessage(serverId, bufferId, label, reason);
+        ircClient.takeRecentSend(serverId, target);
+        return;
+      }
+    }
+    if (actions.failLatestPendingMessage(serverId, bufferId, reason)) {
+      ircClient.takeRecentSend(serverId, target);
+      return;
+    }
+    if (!ircClient.takeRecentSend(serverId, target)) return;
+    actions.addMessage({
+      id: uuidv4(),
+      type: "error",
+      content: t`Not delivered: ${reason}`,
+      timestamp: new Date(),
+      userId: "system",
+      channelId: bufferId,
+      serverId,
+      reactions: [],
+      replyMessage: null,
+      mentioned: [],
+    });
+  });
+
   ircClient.on("CHANMSG", (response) => {
     const { mtags, channelName, message, timestamp } = response;
 

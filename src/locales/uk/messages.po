@@ -1007,6 +1007,7 @@ msgstr "Блокувати команду /INVITE."
 msgid "Block the /KNOCK command."
 msgstr "Блокувати команду /KNOCK."
 
+#: src/components/layout/BotPane.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/PrivateChatRow.tsx
 #: src/lib/settings/definitions/allSettings.ts
@@ -1285,6 +1286,7 @@ msgstr "назва-каналу"
 msgid "Channel-scoped"
 msgstr "Для каналу"
 
+#: src/components/layout/BotPane.tsx
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/ProfilePane.tsx
 #: src/components/ui/HomeScreen.tsx
@@ -4172,6 +4174,15 @@ msgstr "Нормальний - стандартний захист"
 msgid "Not connected"
 msgstr "Не підключено"
 
+#: src/components/message/MessageStatusIndicator.tsx
+msgid "Not delivered"
+msgstr "Не доставлено"
+
+#: src/components/message/MessageStatusIndicator.tsx
+#: src/store/handlers/messages.ts
+msgid "Not delivered: {reason}"
+msgstr "Не доставлено: {reason}"
+
 #: src/components/message/E2EEUnprotectedBadge.tsx
 #: src/components/ui/UploadProgressBar.tsx
 msgid "Not encrypted"
@@ -4249,6 +4260,7 @@ msgstr "OK"
 msgid "on"
 msgstr "увімк"
 
+#: src/components/layout/BotPane.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/MemberList.tsx
 #: src/components/layout/MemberList.tsx

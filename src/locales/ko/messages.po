@@ -1007,6 +1007,7 @@ msgstr "/INVITE 명령 차단"
 msgid "Block the /KNOCK command."
 msgstr "/KNOCK 명령 차단"
 
+#: src/components/layout/BotPane.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/PrivateChatRow.tsx
 #: src/lib/settings/definitions/allSettings.ts
@@ -1285,6 +1286,7 @@ msgstr "채널-이름"
 msgid "Channel-scoped"
 msgstr "채널 전용"
 
+#: src/components/layout/BotPane.tsx
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/ProfilePane.tsx
 #: src/components/ui/HomeScreen.tsx
@@ -4172,6 +4174,15 @@ msgstr "기본 - 표준 보호"
 msgid "Not connected"
 msgstr "연결되지 않음"
 
+#: src/components/message/MessageStatusIndicator.tsx
+msgid "Not delivered"
+msgstr "전달되지 않음"
+
+#: src/components/message/MessageStatusIndicator.tsx
+#: src/store/handlers/messages.ts
+msgid "Not delivered: {reason}"
+msgstr "전달되지 않음: {reason}"
+
 #: src/components/message/E2EEUnprotectedBadge.tsx
 #: src/components/ui/UploadProgressBar.tsx
 msgid "Not encrypted"
@@ -4249,6 +4260,7 @@ msgstr "확인"
 msgid "on"
 msgstr "켜기"
 
+#: src/components/layout/BotPane.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/MemberList.tsx
 #: src/components/layout/MemberList.tsx
