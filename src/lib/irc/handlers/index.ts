@@ -299,6 +299,9 @@ export const IRC_DISPATCH: Record<string, HandlerFn> = {
     handleRename(ctx, serverId, source, parv, mtags),
   "353": (ctx, serverId, source, parv, mtags) =>
     handleNames(ctx, serverId, source, parv, mtags),
+  // RPL_LISTSTART is only the column header ("Channel Users Name") of the
+  // channel list we asked for; the rows and the end are what we use.
+  "321": () => {},
   "322": (ctx, serverId, source, parv, mtags) =>
     handleListChannel(ctx, serverId, source, parv, mtags),
   "323": (ctx, serverId, source, parv, mtags) =>
