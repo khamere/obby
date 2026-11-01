@@ -4577,6 +4577,10 @@ msgstr "Порт"
 msgid "Post each server's message of the day to Server Notices and its welcome page"
 msgstr "Опубликовать сообщение дня каждого сервера в Уведомлениях сервера и на его странице приветствия"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Post the replies a classic client shows in its status window to Server Notices: the welcome lines, user counts and anything else Obby has no special handling for"
+msgstr "Выводить в уведомления сервера ответы, которые классический клиент показывает в окне статуса: приветственные строки, число пользователей и всё, что Obby не обрабатывает отдельно"
+
 #: src/components/pages/pageSections.tsx
 msgid "Preferences"
 msgstr "Настройки"
@@ -4692,6 +4696,10 @@ msgstr "Приподнятая поверхность при наведении"
 #: src/components/message/BotInvocationChip.tsx
 msgid "ran"
 msgstr "выполнил"
+
+#: src/components/layout/NetworkMenu.tsx
+msgid "Raw log"
+msgstr "Необработанный журнал"
 
 #: src/components/ui/CameraCaptureModal.tsx
 msgid "Reached the maximum recording length, so the recording stopped here."
@@ -5636,6 +5644,10 @@ msgstr "Показать результаты поиска"
 #: src/components/layout/ServerList.tsx
 msgid "Show server names"
 msgstr "Показать названия серверов"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Show server replies"
+msgstr "Показывать ответы сервера"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"

@@ -109,6 +109,7 @@ export interface GlobalSettings {
   coloredNicknames: boolean;
   formatTopics: boolean;
   showMotd: boolean;
+  showServerReplies: boolean;
   awayMessage: string;
   quitMessage: string;
   callAudioInput: SavedDevice | null;

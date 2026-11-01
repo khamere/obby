@@ -4577,6 +4577,10 @@ msgstr "Port"
 msgid "Post each server's message of the day to Server Notices and its welcome page"
 msgstr "Her sunucunun günün mesajını Sunucu Bildirimleri'nde ve hoş geldin sayfasında yayınla"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Post the replies a classic client shows in its status window to Server Notices: the welcome lines, user counts and anything else Obby has no special handling for"
+msgstr "Klasik bir istemcinin durum penceresinde gösterdiği yanıtları Sunucu Bildirimlerine gönder: karşılama satırları, kullanıcı sayıları ve Obby'nin özel olarak işlemediği her şey"
+
 #: src/components/pages/pageSections.tsx
 msgid "Preferences"
 msgstr "Tercihler"
@@ -4692,6 +4696,10 @@ msgstr "Yükseltilmiş yüzey üzerine gelince"
 #: src/components/message/BotInvocationChip.tsx
 msgid "ran"
 msgstr "çalıştırdı"
+
+#: src/components/layout/NetworkMenu.tsx
+msgid "Raw log"
+msgstr "Ham günlük"
 
 #: src/components/ui/CameraCaptureModal.tsx
 msgid "Reached the maximum recording length, so the recording stopped here."
@@ -5636,6 +5644,10 @@ msgstr "Arama sonuçlarını göster"
 #: src/components/layout/ServerList.tsx
 msgid "Show server names"
 msgstr "Sunucu adlarını göster"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Show server replies"
+msgstr "Sunucu yanıtlarını göster"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"

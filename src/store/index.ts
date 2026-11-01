@@ -1410,6 +1410,7 @@ const useStore = create<AppState>((set, get) => ({
     // Markdown settings
     enableMarkdownRendering: false,
     showMotd: true,
+    showServerReplies: true,
     // Status messages
     awayMessage: "",
     quitMessage: "",

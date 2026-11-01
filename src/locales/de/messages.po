@@ -4577,6 +4577,10 @@ msgstr "Port"
 msgid "Post each server's message of the day to Server Notices and its welcome page"
 msgstr "Nachricht des Tages jedes Servers in Server-Hinweisen und seiner Willkommensseite anzeigen"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Post the replies a classic client shows in its status window to Server Notices: the welcome lines, user counts and anything else Obby has no special handling for"
+msgstr "Die Antworten, die ein klassischer Client im Statusfenster zeigt, in den Server-Hinweisen anzeigen: Begrüßungszeilen, Nutzerzahlen und alles, wofür Obby keine eigene Behandlung hat"
+
 #: src/components/pages/pageSections.tsx
 msgid "Preferences"
 msgstr "Einstellungen"
@@ -4692,6 +4696,10 @@ msgstr "Erhöhte Fläche bei Hover"
 #: src/components/message/BotInvocationChip.tsx
 msgid "ran"
 msgstr "führte aus"
+
+#: src/components/layout/NetworkMenu.tsx
+msgid "Raw log"
+msgstr "Rohprotokoll"
 
 #: src/components/ui/CameraCaptureModal.tsx
 msgid "Reached the maximum recording length, so the recording stopped here."
@@ -5636,6 +5644,10 @@ msgstr "Suchergebnisse anzeigen"
 #: src/components/layout/ServerList.tsx
 msgid "Show server names"
 msgstr "Servernamen anzeigen"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Show server replies"
+msgstr "Serverantworten anzeigen"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"

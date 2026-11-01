@@ -40,6 +40,44 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
     });
   });
 
+  // Numerics without a handler go to Server Notices, the way a classic
+  // client's status window shows them. A few that follow routine requests
+  // would only repeat themselves.
+  const QUIET_NUMERICS = new Set(["004", "221", "329", "366", "369"]);
+
+  // A bouncer answers registration with "use /motd" instead of the
+  // network's MOTD, so that line is our cue to ask for the real one, once
+  // per connection.
+  const motdAsked = new Set<string>();
+  ircClient.on("MOTD_UNSOLICITED", ({ serverId }) => {
+    const { globalSettings, servers } = store.getState();
+    if (!globalSettings.showMotd || motdAsked.has(serverId)) return;
+    if (!servers.find((s) => s.id === serverId)?.bouncerNetid) return;
+    motdAsked.add(serverId);
+    ircClient.requestMotd(serverId);
+  });
+  ircClient.on("connectionStateChange", ({ serverId, connectionState }) => {
+    if (connectionState !== "connected") motdAsked.delete(serverId);
+  });
+  ircClient.on("SERVER_REPLY", ({ serverId, source, numeric, text }) => {
+    const { globalSettings, addMessage } = store.getState();
+    if (!globalSettings.showServerReplies || QUIET_NUMERICS.has(numeric))
+      return;
+    if (!text.trim()) return;
+    addMessage({
+      id: uuidv4(),
+      type: "notice",
+      content: text,
+      timestamp: new Date(),
+      userId: source || "server",
+      channelId: "server-notices",
+      serverId,
+      reactions: [],
+      replyMessage: null,
+      mentioned: [],
+    });
+  });
+
   ircClient.on("rateLimited", ({ serverId, message }) =>
     reportServerReply(store, {
       serverId,

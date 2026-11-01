@@ -281,6 +281,14 @@ export interface EventMap {
     message: string;
   };
   MOTD: BaseIRCEvent & { lines: string[] };
+  // A numeric reply Obby has no handler for, as a classic status window shows it.
+  SERVER_REPLY: BaseIRCEvent & {
+    source: string;
+    numeric: string;
+    text: string;
+  };
+  // ERR_NOMOTD that answers nothing we asked: a bouncer's "use /motd" on connect.
+  MOTD_UNSOLICITED: BaseIRCEvent;
   RPL_YOURHOST: BaseIRCEvent & {
     serverName: string;
     version: string;
@@ -2002,8 +2010,18 @@ export class IRCClient implements IRCClientContext {
   }
 
   // Explicit /motd: the reply (including ERR_NOMOTD) is shown to the user.
+  // Servers we asked for the MOTD, so a "no MOTD" reply is shown only as an
+  // answer: bouncers like soju send one on every connect.
+  private motdRequested = new Set<string>();
+
   requestMotd(serverId: string, target?: string): void {
+    this.motdRequested.add(serverId);
     this.sendRaw(serverId, target ? `MOTD ${target}` : "MOTD");
+  }
+
+  /** True once per request: whether a MOTD reply answers our own request. */
+  takeMotdRequest(serverId: string): boolean {
+    return this.motdRequested.delete(serverId);
   }
 
   // MONITOR commands
@@ -2153,6 +2171,14 @@ export class IRCClient implements IRCClientContext {
         if (command === "BATCH") this.trackNestedDiskOnlyBatch(serverId, parv);
       } else if (handler) {
         handler(this, serverId, source, parv, mtags, trailing);
+      } else if (/^\d{3}$/.test(command) && !mtags?.batch) {
+        // parv[0] is our own nick; the rest is what the server has to say.
+        this.triggerEvent("SERVER_REPLY", {
+          serverId,
+          source,
+          numeric: command,
+          text: parv.slice(1).join(" "),
+        });
       }
       this.triggerEvent("parsedLine", {
         serverId,

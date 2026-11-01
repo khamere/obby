@@ -4577,6 +4577,10 @@ msgstr "Port"
 msgid "Post each server's message of the day to Server Notices and its welcome page"
 msgstr "Opublikuj wiadomość dnia każdego serwera w Powiadomieniach serwera i na jego stronie powitalnej"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Post the replies a classic client shows in its status window to Server Notices: the welcome lines, user counts and anything else Obby has no special handling for"
+msgstr "Publikuj w powiadomieniach serwera odpowiedzi, które klasyczny klient pokazuje w oknie stanu: wiersze powitalne, liczby użytkowników i wszystko, czego Obby nie obsługuje osobno"
+
 #: src/components/pages/pageSections.tsx
 msgid "Preferences"
 msgstr "Preferencje"
@@ -4692,6 +4696,10 @@ msgstr "Powierzchnia wypukła po najechaniu"
 #: src/components/message/BotInvocationChip.tsx
 msgid "ran"
 msgstr "uruchomił(a)"
+
+#: src/components/layout/NetworkMenu.tsx
+msgid "Raw log"
+msgstr "Surowy dziennik"
 
 #: src/components/ui/CameraCaptureModal.tsx
 msgid "Reached the maximum recording length, so the recording stopped here."
@@ -5636,6 +5644,10 @@ msgstr "Pokaż wyniki wyszukiwania"
 #: src/components/layout/ServerList.tsx
 msgid "Show server names"
 msgstr "Pokaż nazwy serwerów"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Show server replies"
+msgstr "Pokazuj odpowiedzi serwera"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"

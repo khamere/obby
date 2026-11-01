@@ -4577,6 +4577,10 @@ msgstr "포트"
 msgid "Post each server's message of the day to Server Notices and its welcome page"
 msgstr "각 서버의 오늘의 메시지를 서버 알림과 환영 페이지에 게시"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Post the replies a classic client shows in its status window to Server Notices: the welcome lines, user counts and anything else Obby has no special handling for"
+msgstr "클래식 클라이언트가 상태 창에 표시하는 응답(환영 메시지, 사용자 수, Obby가 특별히 처리하지 않는 모든 것)을 서버 알림에 게시합니다"
+
 #: src/components/pages/pageSections.tsx
 msgid "Preferences"
 msgstr "환경설정"
@@ -4692,6 +4696,10 @@ msgstr "돌출 표면 호버"
 #: src/components/message/BotInvocationChip.tsx
 msgid "ran"
 msgstr "실행함"
+
+#: src/components/layout/NetworkMenu.tsx
+msgid "Raw log"
+msgstr "원시 로그"
 
 #: src/components/ui/CameraCaptureModal.tsx
 msgid "Reached the maximum recording length, so the recording stopped here."
@@ -5636,6 +5644,10 @@ msgstr "검색 결과 보기"
 #: src/components/layout/ServerList.tsx
 msgid "Show server names"
 msgstr "서버 이름 표시"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Show server replies"
+msgstr "서버 응답 표시"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"
