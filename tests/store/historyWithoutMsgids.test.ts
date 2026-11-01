@@ -103,3 +103,38 @@ describe("history pages without msgids", () => {
     );
   });
 });
+
+describe("older pages that show nothing", () => {
+  it("keeps paging behind a page of hidden lines until the history ends", async () => {
+    const w = await boot();
+    // The newest page: only our own join, which the chat does not display.
+    w.feed(
+      ":soju BATCH +l chathistory #chan",
+      `@batch=l;time=${new Date(timeOf(100)).toISOString()} :tester!u@h JOIN #chan`,
+      ":soju BATCH -l",
+    );
+    await new Promise((r) => setTimeout(r, 50));
+    const channel = () => w.useStore.getState().servers[0].channels[0];
+
+    await w.history.loadOlderMessages(w.useStore, SERVER, "#chan", Date.now());
+    const pagesAsked = () =>
+      w.sent.filter((l) => l.startsWith("CHATHISTORY BEFORE #chan"));
+    expect(pagesAsked()).toHaveLength(1);
+
+    // The page behind "now" is that same join; the chat gets nothing to show.
+    w.feed(
+      ":soju BATCH +b chathistory #chan",
+      `@batch=b;time=${new Date(timeOf(100)).toISOString()} :tester!u@h JOIN #chan`,
+      ":soju BATCH -b",
+    );
+    await vi.waitFor(() => expect(pagesAsked()).toHaveLength(2));
+    expect(pagesAsked()[1]).toContain(
+      `timestamp=${new Date(timeOf(100)).toISOString()}`,
+    );
+
+    // Nothing is behind the join, so the placeholders can go.
+    w.feed(":soju BATCH +c chathistory #chan", ":soju BATCH -c");
+    await vi.waitFor(() => expect(channel().hasMoreHistory).toBe(false));
+    expect(w.shown()).toHaveLength(0);
+  });
+});

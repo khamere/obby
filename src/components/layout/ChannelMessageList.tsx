@@ -1052,6 +1052,7 @@ export const ChannelMessageList = forwardRef<
         {channelId && isActive && <MentionJumpBar channelKey={channelKey} />}
         <div
           ref={messagesContainerRef}
+          data-opening={opening.step}
           className="obby-chat-area flex-grow overflow-y-auto overflow-x-hidden flex flex-col bg-discord-dark-200 text-discord-text-normal relative"
           // Disable CSS scroll anchoring — it compounds with our useLayoutEffect delta correction causing double-jumps in browser.
           style={{ overflowAnchor: "none" }}
