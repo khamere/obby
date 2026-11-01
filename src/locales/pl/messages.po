@@ -4143,6 +4143,15 @@ msgstr "Normalny – standardowa ochrona"
 msgid "Not connected"
 msgstr "Brak połączenia"
 
+#: src/components/message/MessageStatusIndicator.tsx
+msgid "Not delivered"
+msgstr "Nie dostarczono"
+
+#: src/components/message/MessageStatusIndicator.tsx
+#: src/store/handlers/messages.ts
+msgid "Not delivered: {reason}"
+msgstr "Nie dostarczono: {reason}"
+
 #: src/components/message/E2EEUnprotectedBadge.tsx
 #: src/components/ui/UploadProgressBar.tsx
 msgid "Not encrypted"

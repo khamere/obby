@@ -1057,6 +1057,7 @@ export const MessageItem = memo((props: MessageItemProps) => {
               <span className="inline-flex" style={{ textDecoration: "none" }}>
                 <MessageStatusIndicator
                   status={message.status}
+                  reason={message.failReason}
                   onRetry={() =>
                     useStore.getState().resendFailedMessage(message.id)
                   }

@@ -289,6 +289,13 @@ export interface EventMap {
   };
   // ERR_NOMOTD that answers nothing we asked: a bouncer's "use /motd" on connect.
   MOTD_UNSOLICITED: BaseIRCEvent;
+  // The server refused a message of ours to a target (a moderated channel, a
+  // ban, a +R channel): `label` names the send when labeled-response is on.
+  SEND_REFUSED: BaseIRCEvent & {
+    target: string;
+    reason: string;
+    label?: string;
+  };
   RPL_YOURHOST: BaseIRCEvent & {
     serverName: string;
     version: string;
@@ -1292,9 +1299,30 @@ export class IRCClient implements IRCClientContext {
     this.tagmsgRefused.add(serverId);
   }
 
+  // When we last sent a PRIVMSG to each target, so a refusal that carries no
+  // label can be told apart from one that answers a typing notice or a
+  // reaction to the same channel.
+  private recentSends = new Map<string, Map<string, number>>();
+  private static readonly RECENT_SEND_MS = 10_000;
+
+  takeRecentSend(serverId: string, target: string): boolean {
+    const byTarget = this.recentSends.get(serverId);
+    const key = target.toLowerCase();
+    const at = byTarget?.get(key);
+    if (at === undefined) return false;
+    byTarget?.delete(key);
+    return Date.now() - at <= IRCClient.RECENT_SEND_MS;
+  }
+
   sendRaw(serverId: string, command: string): void {
     if (this.tagmsgRefused.has(serverId) && /^(?:@\S+ )?TAGMSG /i.test(command))
       return;
+    const privmsg = /^(?:@\S+ )?PRIVMSG (\S+) /i.exec(command);
+    if (privmsg) {
+      const byTarget = this.recentSends.get(serverId) ?? new Map();
+      byTarget.set(privmsg[1].toLowerCase(), Date.now());
+      this.recentSends.set(serverId, byTarget);
+    }
     const socket = this.sockets.get(serverId);
     if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(command);

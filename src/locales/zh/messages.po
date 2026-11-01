@@ -4143,6 +4143,15 @@ msgstr "普通 – 标准保护"
 msgid "Not connected"
 msgstr "未连接"
 
+#: src/components/message/MessageStatusIndicator.tsx
+msgid "Not delivered"
+msgstr "未送达"
+
+#: src/components/message/MessageStatusIndicator.tsx
+#: src/store/handlers/messages.ts
+msgid "Not delivered: {reason}"
+msgstr "未送达：{reason}"
+
 #: src/components/message/E2EEUnprotectedBadge.tsx
 #: src/components/ui/UploadProgressBar.tsx
 msgid "Not encrypted"
