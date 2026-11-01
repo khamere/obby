@@ -7,7 +7,8 @@
   /* We blur only layers that float over content and stay still while open, since a
      blurred layer repaints whenever what sits under it changes. */
   .vibrancy {
-    --vibrancy-tint: 32 34 37;
+    /* The theme's input surface, so menus follow light and custom themes. */
+    --vibrancy-tint: var(--obby-bg-input, 32 34 37);
     background-color: rgb(var(--vibrancy-tint) / var(--vibrancy-alpha, 0.72));
     background-image: linear-gradient(
       to bottom,
@@ -46,7 +47,7 @@
     display: none;
   }
   .tooltip-surface {
-    @apply surface-floating pointer-events-none px-3 py-1.5 text-sm font-normal text-white whitespace-pre-line;
+    @apply surface-floating pointer-events-none px-3 py-1.5 text-sm font-normal text-discord-text-strong whitespace-pre-line;
   }
   .surface-list {
     @apply p-1.5;
@@ -73,13 +74,13 @@
     @apply text-white;
   }
   .divider-soft {
-    @apply my-1.5 mx-1 h-px border-0 bg-white/[0.06];
+    @apply my-1.5 mx-1 h-px border-0 bg-discord-text-strong/[0.06];
   }
   .button-primary {
     @apply bg-discord-primary text-white hover:bg-discord-primary/90 disabled:opacity-50;
   }
   .chip-action {
-    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-discord-dark-300 text-discord-text-normal ring-1 ring-black/40 shadow-[0_2px_8px_rgba(0,0,0,0.35)] transition-colors duration-100 hover:bg-discord-primary hover:text-white disabled:opacity-70 disabled:hover:bg-discord-dark-300 disabled:hover:text-discord-text-normal;
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-discord-dark-300 text-discord-text-normal ring-1 ring-discord-text-strong/10 shadow-[0_2px_8px_rgba(0,0,0,0.35)] transition-colors duration-100 hover:bg-discord-primary hover:text-white disabled:opacity-70 disabled:hover:bg-discord-dark-300 disabled:hover:text-discord-text-normal;
   }
   .chip-outline {
     @apply inline-flex shrink-0 items-center gap-2 px-3 rounded-full border-2 border-discord-primary text-white font-bold text-sm transition-colors duration-100 hover:bg-discord-primary focus-visible:outline-none focus-visible:bg-discord-primary;
@@ -98,16 +99,16 @@
     @apply mx-auto mt-2 mb-1 w-9 h-1 shrink-0 rounded-full bg-discord-dark-500;
   }
   .sheet-row {
-    @apply w-full min-h-12 flex items-center gap-3 px-4 py-3 rounded-lg text-left text-sm font-medium text-white active:bg-discord-dark-400;
+    @apply w-full min-h-12 flex items-center gap-3 px-4 py-3 rounded-lg text-left text-sm font-medium text-discord-text-strong active:bg-discord-dark-400;
   }
   .sheet-action {
     @apply flex-1 h-11 rounded-lg bg-discord-dark-400 text-discord-text-normal text-sm flex items-center justify-center gap-2 active:bg-discord-dark-500;
   }
   .icon-button {
-    @apply w-7 h-7 shrink-0 rounded flex items-center justify-center text-discord-text-muted transition-colors duration-100 hover:bg-discord-dark-500/40 hover:text-white focus-visible:outline-none focus-visible:bg-discord-dark-500/40 focus-visible:text-white;
+    @apply w-7 h-7 shrink-0 rounded flex items-center justify-center text-discord-text-muted transition-colors duration-100 hover:bg-discord-dark-500/40 hover:text-discord-text-strong focus-visible:outline-none focus-visible:bg-discord-dark-500/40 focus-visible:text-discord-text-strong;
   }
   .hairline {
-    @apply h-px shrink-0 bg-white/[0.06];
+    @apply h-px shrink-0 bg-discord-text-strong/[0.06];
   }
   .code-text {
     @apply m-0 font-mono text-xs leading-relaxed whitespace-pre-wrap break-words text-discord-text-normal;
