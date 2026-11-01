@@ -4577,6 +4577,10 @@ msgstr "ポート"
 msgid "Post each server's message of the day to Server Notices and its welcome page"
 msgstr "各サーバーの本日のメッセージをサーバー通知とウェルカムページに投稿"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Post the replies a classic client shows in its status window to Server Notices: the welcome lines, user counts and anything else Obby has no special handling for"
+msgstr "従来のクライアントがステータスウィンドウに表示する応答（ウェルカム行、ユーザー数、Obby が特別に扱わないその他すべて）をサーバー通知に投稿します"
+
 #: src/components/pages/pageSections.tsx
 msgid "Preferences"
 msgstr "設定"
@@ -4692,6 +4696,10 @@ msgstr "浮き上がった面のホバー"
 #: src/components/message/BotInvocationChip.tsx
 msgid "ran"
 msgstr "が実行"
+
+#: src/components/layout/NetworkMenu.tsx
+msgid "Raw log"
+msgstr "生ログ"
 
 #: src/components/ui/CameraCaptureModal.tsx
 msgid "Reached the maximum recording length, so the recording stopped here."
@@ -5636,6 +5644,10 @@ msgstr "検索結果を表示"
 #: src/components/layout/ServerList.tsx
 msgid "Show server names"
 msgstr "サーバー名を表示"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Show server replies"
+msgstr "サーバーの応答を表示"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"

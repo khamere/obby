@@ -155,6 +155,20 @@ export const IRC_DISPATCH: Record<string, HandlerFn> = {
   "372": (ctx, serverId, source, parv) =>
     handleRplMotd(ctx, serverId, source, parv),
   "376": (ctx, serverId) => handleRplEndOfMotd(ctx, serverId),
+  // ERR_NOMOTD: soju sends one on every connect ("Use /motd ..."), so only an
+  // answer to our own /motd is worth showing.
+  "422": (ctx, serverId, source, parv) => {
+    if (!ctx.takeMotdRequest(serverId)) {
+      ctx.triggerEvent("MOTD_UNSOLICITED", { serverId });
+      return;
+    }
+    ctx.triggerEvent("SERVER_REPLY", {
+      serverId,
+      source,
+      numeric: "422",
+      text: parv.slice(1).join(" "),
+    });
+  },
   CAP: (ctx, serverId, source, parv, mtags, trailing) =>
     handleCap(ctx, serverId, source, parv, mtags, trailing),
   "381": (ctx, serverId, source, parv) =>

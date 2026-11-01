@@ -4577,6 +4577,10 @@ msgstr "Port"
 msgid "Post each server's message of the day to Server Notices and its welcome page"
 msgstr "Publier le message du jour de chaque serveur dans les avis du serveur et sa page de bienvenue"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Post the replies a classic client shows in its status window to Server Notices: the welcome lines, user counts and anything else Obby has no special handling for"
+msgstr "Publier dans les notifications du serveur les réponses qu'un client classique affiche dans sa fenêtre d'état : lignes de bienvenue, nombre d'utilisateurs et tout ce qu'Obby ne traite pas spécialement"
+
 #: src/components/pages/pageSections.tsx
 msgid "Preferences"
 msgstr "Préférences"
@@ -4692,6 +4696,10 @@ msgstr "Surface surélevée au survol"
 #: src/components/message/BotInvocationChip.tsx
 msgid "ran"
 msgstr "a exécuté"
+
+#: src/components/layout/NetworkMenu.tsx
+msgid "Raw log"
+msgstr "Journal brut"
 
 #: src/components/ui/CameraCaptureModal.tsx
 msgid "Reached the maximum recording length, so the recording stopped here."
@@ -5636,6 +5644,10 @@ msgstr "Afficher les résultats de recherche"
 #: src/components/layout/ServerList.tsx
 msgid "Show server names"
 msgstr "Afficher les noms des serveurs"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Show server replies"
+msgstr "Afficher les réponses du serveur"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"

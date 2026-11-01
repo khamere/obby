@@ -6,6 +6,7 @@ import {
   FaFolderPlus,
   FaList,
   FaPowerOff,
+  FaTerminal,
 } from "react-icons/fa";
 import useStore from "../../store";
 import Menu from "../ui/Menu";
@@ -62,6 +63,13 @@ export const NetworkMenu: React.FC<NetworkMenuProps> = ({
           icon: <FaArrowsAltV />,
           show: isTouch,
           onClick: onReorder,
+        },
+        {
+          id: "rawlog",
+          label: t`Raw log`,
+          icon: <FaTerminal />,
+          show: true,
+          onClick: () => store.openPage({ kind: "rawLog", serverId }),
         },
         {
           id: "edit",

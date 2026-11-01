@@ -4577,6 +4577,10 @@ msgstr "端口"
 msgid "Post each server's message of the day to Server Notices and its welcome page"
 msgstr "在服務器通知和歡迎頁面中發布每個服務器的每日訊息"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Post the replies a classic client shows in its status window to Server Notices: the welcome lines, user counts and anything else Obby has no special handling for"
+msgstr "將傳統用戶端在狀態視窗中顯示的回覆發布到伺服器通知：歡迎列、使用者數以及 Obby 未特別處理的其他內容"
+
 #: src/components/pages/pageSections.tsx
 msgid "Preferences"
 msgstr "偏好设置"
@@ -4692,6 +4696,10 @@ msgstr "凸起表面懸停"
 #: src/components/message/BotInvocationChip.tsx
 msgid "ran"
 msgstr "執行了"
+
+#: src/components/layout/NetworkMenu.tsx
+msgid "Raw log"
+msgstr "原始記錄"
 
 #: src/components/ui/CameraCaptureModal.tsx
 msgid "Reached the maximum recording length, so the recording stopped here."
@@ -5636,6 +5644,10 @@ msgstr "顯示搜尋結果"
 #: src/components/layout/ServerList.tsx
 msgid "Show server names"
 msgstr "顯示伺服器名稱"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Show server replies"
+msgstr "顯示伺服器回覆"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"

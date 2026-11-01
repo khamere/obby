@@ -11,6 +11,7 @@ function makeCtx() {
   const ctx = {
     motdLines: new Map<string, string[]>(),
     triggerEvent,
+    takeMotdRequest: () => false,
   } as Partial<IRCClientContext> as IRCClientContext;
   return { ctx, triggerEvent };
 }

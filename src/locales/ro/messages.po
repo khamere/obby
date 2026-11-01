@@ -4577,6 +4577,10 @@ msgstr "Port"
 msgid "Post each server's message of the day to Server Notices and its welcome page"
 msgstr "Postează mesajul zilei al fiecărui server în Notificări server și pe pagina sa de bun venit"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Post the replies a classic client shows in its status window to Server Notices: the welcome lines, user counts and anything else Obby has no special handling for"
+msgstr "Publică în notificările serverului răspunsurile pe care un client clasic le arată în fereastra de stare: liniile de bun venit, numărul de utilizatori și tot ce Obby nu tratează special"
+
 #: src/components/pages/pageSections.tsx
 msgid "Preferences"
 msgstr "Preferințe"
@@ -4692,6 +4696,10 @@ msgstr "Suprafață ridicată la trecerea cursorului"
 #: src/components/message/BotInvocationChip.tsx
 msgid "ran"
 msgstr "a executat"
+
+#: src/components/layout/NetworkMenu.tsx
+msgid "Raw log"
+msgstr "Jurnal brut"
 
 #: src/components/ui/CameraCaptureModal.tsx
 msgid "Reached the maximum recording length, so the recording stopped here."
@@ -5636,6 +5644,10 @@ msgstr "Arată rezultatele căutării"
 #: src/components/layout/ServerList.tsx
 msgid "Show server names"
 msgstr "Afișează numele serverelor"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Show server replies"
+msgstr "Afișează răspunsurile serverului"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"

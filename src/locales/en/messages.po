@@ -4576,6 +4576,10 @@ msgstr "Port"
 msgid "Post each server's message of the day to Server Notices and its welcome page"
 msgstr "Post each server's message of the day to Server Notices and its welcome page"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Post the replies a classic client shows in its status window to Server Notices: the welcome lines, user counts and anything else Obby has no special handling for"
+msgstr "Post the replies a classic client shows in its status window to Server Notices: the welcome lines, user counts and anything else Obby has no special handling for"
+
 #: src/components/pages/pageSections.tsx
 msgid "Preferences"
 msgstr "Preferences"
@@ -4691,6 +4695,10 @@ msgstr "Raised surface hover"
 #: src/components/message/BotInvocationChip.tsx
 msgid "ran"
 msgstr "ran"
+
+#: src/components/layout/NetworkMenu.tsx
+msgid "Raw log"
+msgstr "Raw log"
 
 #: src/components/ui/CameraCaptureModal.tsx
 msgid "Reached the maximum recording length, so the recording stopped here."
@@ -5635,6 +5643,10 @@ msgstr "Show search results"
 #: src/components/layout/ServerList.tsx
 msgid "Show server names"
 msgstr "Show server names"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Show server replies"
+msgstr "Show server replies"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"

@@ -4577,6 +4577,10 @@ msgstr "Poort"
 msgid "Post each server's message of the day to Server Notices and its welcome page"
 msgstr "Het bericht van de dag van elke server in Serverberichten en de welkomstpagina ervan posten"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Post the replies a classic client shows in its status window to Server Notices: the welcome lines, user counts and anything else Obby has no special handling for"
+msgstr "Plaats in de servermeldingen de antwoorden die een klassieke client in zijn statusvenster toont: welkomstregels, gebruikersaantallen en alles waar Obby geen aparte afhandeling voor heeft"
+
 #: src/components/pages/pageSections.tsx
 msgid "Preferences"
 msgstr "Voorkeuren"
@@ -4692,6 +4696,10 @@ msgstr "Verhoogd vlak bij aanwijzen"
 #: src/components/message/BotInvocationChip.tsx
 msgid "ran"
 msgstr "voerde uit"
+
+#: src/components/layout/NetworkMenu.tsx
+msgid "Raw log"
+msgstr "Ruw logboek"
 
 #: src/components/ui/CameraCaptureModal.tsx
 msgid "Reached the maximum recording length, so the recording stopped here."
@@ -5636,6 +5644,10 @@ msgstr "Zoekresultaten tonen"
 #: src/components/layout/ServerList.tsx
 msgid "Show server names"
 msgstr "Servernamen tonen"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Show server replies"
+msgstr "Serverantwoorden tonen"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"

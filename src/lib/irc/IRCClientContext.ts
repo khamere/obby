@@ -49,6 +49,8 @@ export interface IRCClientContext {
   isupportValues: Map<string, Map<string, string>>;
   /** MOTD lines received so far, between RPL_MOTDSTART and RPL_ENDOFMOTD. */
   motdLines: Map<string, string[]>;
+  // Whether a MOTD reply answers our own request (true once per request).
+  takeMotdRequest(serverId: string): boolean;
   activeBatches: Map<
     string,
     Map<
