@@ -1386,6 +1386,10 @@ msgstr "Clear all saved history?"
 msgid "Clear history"
 msgstr "Clear history"
 
+#: src/components/layout/MemberList.tsx
+msgid "Clear search"
+msgstr "Clear search"
+
 #: src/components/ui/InvitationsPanel.tsx
 msgid "Click again to confirm"
 msgstr "Click again to confirm"
@@ -3557,6 +3561,12 @@ msgstr "Members"
 msgid "Members — {0}"
 msgstr "Members — {0}"
 
+#. placeholder {0}: shownUsers?.length || 0
+#. placeholder {1}: sortedUsers?.length || 0
+#: src/components/layout/MemberList.tsx
+msgid "Members — {0} of {1}"
+msgstr "Members — {0} of {1}"
+
 #: src/components/ui/InputToolbar.tsx
 msgid "Mention someone"
 msgstr "Mention someone"
@@ -4010,6 +4020,10 @@ msgstr "No limit"
 #: src/components/ui/MediaViewerModal.tsx
 msgid "No media in this channel"
 msgstr "No media in this channel"
+
+#: src/components/layout/MemberList.tsx
+msgid "No members match"
+msgstr "No members match"
 
 #: src/components/layout/ProfilePane.tsx
 msgid "no message"
@@ -5171,6 +5185,14 @@ msgstr "Search for GIFs to get started"
 #: src/components/ui/GifSelector.tsx
 msgid "Search GIFs..."
 msgstr "Search GIFs..."
+
+#: src/components/layout/MemberList.tsx
+msgid "Search members"
+msgstr "Search members"
+
+#: src/components/layout/MemberList.tsx
+msgid "Search members…"
+msgstr "Search members…"
 
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/SearchPane.tsx

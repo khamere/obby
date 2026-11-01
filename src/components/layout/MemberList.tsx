@@ -1,7 +1,12 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FaCheckCircle, FaChevronLeft } from "react-icons/fa";
+import {
+  FaCheckCircle,
+  FaChevronLeft,
+  FaSearch,
+  FaTimes,
+} from "react-icons/fa";
 import { useShallow } from "zustand/react/shallow";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { getStatusPriority } from "../../lib/channelStatus";
@@ -17,6 +22,7 @@ import useStore from "../../store";
 import type { User } from "../../types";
 import ModerationModal, { type ModerationAction } from "../ui/ModerationModal";
 import OperatorKey from "../ui/OperatorKey";
+import { TextInput } from "../ui/TextInput";
 import UserContextMenu from "../ui/UserContextMenu";
 
 const StatusIndicator: React.FC<{ status?: string }> = ({ status }) => {
@@ -283,6 +289,16 @@ const UserItem: React.FC<{
   );
 };
 
+/** The members whose nick contains the search text, in the given order; all of them for an empty search. */
+export function filterMembers<T extends { username: string }>(
+  users: T[] | undefined,
+  searchText: string,
+): T[] | undefined {
+  const needle = searchText.trim().toLowerCase();
+  if (!needle || !users) return users;
+  return users.filter((u) => u.username.toLowerCase().includes(needle));
+}
+
 export const MemberList: React.FC = () => {
   const { t } = useLingui();
   const {
@@ -458,11 +474,20 @@ export const MemberList: React.FC = () => {
     }
     return a.username.localeCompare(b.username);
   });
+  // A search narrows the list to the nicks containing the text; it is per
+  // channel, so switching channels starts from the full list again.
+  const [searchText, setSearchText] = useState("");
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the channel change is what clears the search
+  useEffect(() => {
+    setSearchText("");
+  }, [selectedChannelId]);
+  const shownUsers = filterMembers(sortedUsers, searchText);
   // Keep an order ref so flushVisible (a stable useCallback) can find
   // each visible nick's on-screen position without going back into the
   // store. Updated synchronously during render -- read in callbacks
   // that fire after.
-  sortedOrderRef.current = sortedUsers?.map((u) => u.username) ?? [];
+  sortedOrderRef.current = shownUsers?.map((u) => u.username) ?? [];
 
   // memberlist sweep: re-arm flushVisible whenever (a) the channel
   // changes or (b) the user count changes -- in particular when it
@@ -473,7 +498,7 @@ export const MemberList: React.FC = () => {
   // biome-ignore lint/correctness/useExhaustiveDependencies: scheduleFlush identity is stable
   useEffect(() => {
     scheduleFlush();
-  }, [selectedChannelId, sortedUsers?.length]);
+  }, [selectedChannelId, shownUsers?.length]);
 
   const handleUsernameClick = (
     e: React.MouseEvent,
@@ -613,9 +638,57 @@ export const MemberList: React.FC = () => {
         </button>
       )}
       <h3 className="text-xs font-semibold text-discord-channels-default uppercase mb-2 px-2">
-        <Trans>Members — {sortedUsers?.length || 0}</Trans>
+        {searchText ? (
+          <Trans>
+            Members — {shownUsers?.length || 0} of {sortedUsers?.length || 0}
+          </Trans>
+        ) : (
+          <Trans>Members — {sortedUsers?.length || 0}</Trans>
+        )}
       </h3>
-      {sortedUsers?.map((user, idx) => (
+      <div className="relative mb-2 px-1">
+        <FaSearch
+          aria-hidden="true"
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-discord-text-muted pointer-events-none"
+        />
+        <TextInput
+          ref={searchInputRef}
+          type="text"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              e.preventDefault();
+              setSearchText("");
+              e.currentTarget.blur();
+            }
+          }}
+          placeholder={t`Search members…`}
+          aria-label={t`Search members`}
+          autoComplete="off"
+          spellCheck={false}
+          className="w-full bg-discord-dark-400 text-discord-text-normal placeholder:text-discord-text-muted text-sm rounded-md pl-7 pr-7 py-1.5 outline-none focus:ring-1 focus:ring-discord-text-link"
+        />
+        {searchText && (
+          <button
+            type="button"
+            onClick={() => {
+              setSearchText("");
+              searchInputRef.current?.focus();
+            }}
+            aria-label={t`Clear search`}
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-discord-text-muted hover:text-discord-text-strong"
+          >
+            <FaTimes className="text-xs" />
+          </button>
+        )}
+      </div>
+      {searchText && shownUsers?.length === 0 && (
+        <p className="px-2 py-1 text-sm text-discord-text-muted">
+          <Trans>No members match</Trans>
+        </p>
+      )}
+      {shownUsers?.map((user, idx) => (
         <UserItem
           key={user.id}
           user={user}
