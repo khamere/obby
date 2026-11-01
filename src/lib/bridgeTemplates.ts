@@ -38,9 +38,10 @@ export function compileTemplate(
   let pattern = "^";
   let nicks = 0;
   let texts = 0;
+  let wildcards = 0;
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i];
-    const next = tokens[i + 1]?.[0];
+    const next = Array.from(tokens[i + 1] ?? "")[0];
     const stop = next && next !== "{" ? escapeClassChar(next) : "";
     if (token === "{nick}") {
       nicks++;
@@ -50,11 +51,15 @@ export function compileTemplate(
       if (kind !== "message" || i !== tokens.length - 1) return null;
       pattern += "([\\s\\S]*)";
     } else if (token === "{_}") {
-      pattern += stop ? `[^${stop}]*` : "[\\s\\S]*";
+      // A wildcard needs a literal to stop at, and only one is allowed, so
+      // two open-ended pieces never sit next to each other.
+      wildcards++;
+      if (!stop || wildcards > 1) return null;
+      pattern += `[^${stop}]*`;
     } else if (token.length > 1 && token.startsWith("{")) {
       return null;
     } else {
-      pattern += escapeRegex(token).replace(/ /g, "\\s+");
+      pattern += escapeRegex(token.replace(/ +/g, " ")).replace(/ /g, "\\s+");
     }
   }
   if (nicks !== 1) return null;

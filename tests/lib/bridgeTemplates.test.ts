@@ -73,6 +73,28 @@ describe("compileTemplate", () => {
     ).toBeNull();
   });
 
+  it("treats a run of spaces in the template as one, so no two quantifiers sit side by side", () => {
+    const re = compileTemplate("[{nick}]   {text}", "message");
+    expect(re?.source.match(/\\s\+/g)).toHaveLength(1);
+    expect(re && matchTemplate(re, "[a] b")).toEqual({ nick: "a", text: "b" });
+  });
+
+  it("requires a literal after {_} and allows only one", () => {
+    expect(compileTemplate("{_}{nick} {text}", "message")).toBeNull();
+    expect(compileTemplate("{nick} {_}{text}", "message")).toBeNull();
+    expect(compileTemplate("[{_}] [{_}] {nick} {text}", "message")).toBeNull();
+    expect(compileTemplate("[{_}] {nick} {text}", "message")).not.toBeNull();
+  });
+
+  it("uses a whole astral character as the stop after {nick}", () => {
+    expect(m("{nick}🛰️ {text}", "neo🛰️ x🛰️ hi")).toEqual({
+      nick: "neo",
+      text: "x🛰️ hi",
+    });
+    // the nick may not run through the stop character
+    expect(m("{nick}🛰️ {text}", "a🛰️b🛰️ hi")).toBeNull();
+  });
+
   it("rejects a nick longer than 32 characters", () => {
     expect(m("[{nick}] {text}", `[${"n".repeat(33)}] hi`)).toBeNull();
   });
