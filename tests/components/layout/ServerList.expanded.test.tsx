@@ -3,6 +3,10 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { ServerList } from "../../../src/components/layout/ServerList";
 import useStore from "../../../src/store";
 
+// Loading the modules under test takes seconds on a busy machine, longer
+// than the default timeout allows.
+vi.setConfig({ testTimeout: 15_000 });
+
 vi.mock("@tauri-apps/plugin-os", () => ({
   platform: vi.fn(() => "linux"),
 }));
