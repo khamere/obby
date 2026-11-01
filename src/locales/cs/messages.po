@@ -2023,6 +2023,10 @@ msgstr "Popis (volitelné)"
 msgid "Design your own colors and share them as themes."
 msgstr "Navrhněte vlastní barvy a sdílejte je jako motivy."
 
+#: src/components/ui/settings/useDeviceAccess.ts
+msgid "Device access needs a secure connection. Open Obby over https (or on localhost) to use the microphone and camera."
+msgstr "Přístup k zařízením vyžaduje zabezpečené připojení. Otevřete Obby přes https (nebo na localhost), abyste mohli používat mikrofon a kameru."
+
 #: src/components/ui/RecordingPanel.tsx
 #: src/components/ui/settings/CallCameraField.tsx
 msgid "Device names are hidden until you allow camera access."

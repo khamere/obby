@@ -2023,6 +2023,10 @@ msgstr "Opis (opcjonalnie)"
 msgid "Design your own colors and share them as themes."
 msgstr "Zaprojektuj własne kolory i udostępnij je jako motywy."
 
+#: src/components/ui/settings/useDeviceAccess.ts
+msgid "Device access needs a secure connection. Open Obby over https (or on localhost) to use the microphone and camera."
+msgstr "Dostęp do urządzeń wymaga bezpiecznego połączenia. Otwórz Obby przez https (lub na localhost), aby używać mikrofonu i kamery."
+
 #: src/components/ui/RecordingPanel.tsx
 #: src/components/ui/settings/CallCameraField.tsx
 msgid "Device names are hidden until you allow camera access."
