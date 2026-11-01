@@ -122,7 +122,7 @@ export const AddChannelRow: React.FC<AddChannelRowProps> = ({
               if (isTouch) inputRef.current?.blur();
               setKindMenuAnchor(kindMenuAnchor ? null : e.currentTarget);
             }}
-            className="h-7 -ml-1 px-1 flex items-center gap-0.5 rounded hover:text-white hover:bg-discord-dark-300"
+            className="h-7 -ml-1 px-1 flex items-center gap-0.5 rounded hover:text-discord-text-strong hover:bg-discord-dark-300"
           >
             {prefixIcon}
             <FaCaretDown className="text-[10px] opacity-70" />

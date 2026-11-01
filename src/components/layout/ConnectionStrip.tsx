@@ -30,7 +30,7 @@ const TONES: Record<Trouble, string> = {
 
 const ICONS: Record<Trouble, React.ReactNode> = {
   lost: <FaUnlink className="text-amber-400" />,
-  retrying: <FaRedo className="text-gray-400 animate-spin" />,
+  retrying: <FaRedo className="text-discord-text-dim animate-spin" />,
   auth: <FaExclamationTriangle className="text-red-400" />,
 };
 

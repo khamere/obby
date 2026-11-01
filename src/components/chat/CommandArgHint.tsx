@@ -28,7 +28,7 @@ export const CommandArgHint: React.FC<{
   return (
     <div
       ref={ref}
-      className="flex min-w-0 items-center rounded-t-lg border-b border-white/[0.06] bg-discord-dark-100 px-3 text-xs"
+      className="flex min-w-0 items-center rounded-t-lg border-b border-discord-text-strong/[0.06] bg-discord-dark-100 px-3 text-xs"
     >
       <span
         id={COMMAND_DETAIL_ID}
@@ -39,7 +39,7 @@ export const CommandArgHint: React.FC<{
           {param.name}
         </span>
         {!param.required && (
-          <span className="mr-2 rounded border border-dashed border-white/25 px-1 text-discord-text-muted">
+          <span className="mr-2 rounded border border-dashed border-discord-text-strong/25 px-1 text-discord-text-muted">
             {t`optional`}
           </span>
         )}

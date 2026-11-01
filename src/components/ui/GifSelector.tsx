@@ -218,7 +218,7 @@ const GifSelector: React.FC<GifSelectorProps> = ({
           placeholder={t`Search GIFs...`}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-1 min-w-0 px-3 py-2 bg-discord-dark-200 border border-discord-dark-300 rounded text-white placeholder-discord-text-muted focus:outline-none focus:border-discord-primary"
+          className="flex-1 min-w-0 px-3 py-2 bg-discord-dark-200 border border-discord-dark-300 rounded text-discord-text-strong placeholder-discord-text-muted focus:outline-none focus:border-discord-primary"
         />
         <button
           type="submit"

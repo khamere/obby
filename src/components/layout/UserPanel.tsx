@@ -67,7 +67,7 @@ export const UserPanel: React.FC<UserPanelProps> = ({
 
   const avatar = (
     <span className="relative shrink-0">
-      <span className="w-8 h-8 rounded-full bg-discord-dark-100 flex items-center justify-center overflow-hidden text-white text-sm">
+      <span className="w-8 h-8 rounded-full bg-discord-dark-100 flex items-center justify-center overflow-hidden text-discord-text-strong text-sm">
         {avatarUrl && avatarUrl !== failedAvatarUrl ? (
           <img
             src={avatarUrl}
@@ -129,7 +129,7 @@ export const UserPanel: React.FC<UserPanelProps> = ({
         {avatar}
         <span className="flex-1 min-w-0 flex flex-col leading-tight">
           <span className="flex items-center gap-1.5 min-w-0">
-            <span className="truncate text-sm font-semibold text-white">
+            <span className="truncate text-sm font-semibold text-discord-text-strong">
               {name}
             </span>
             {isIrcOp && (
@@ -166,7 +166,7 @@ export const UserPanel: React.FC<UserPanelProps> = ({
           <div className="flex items-center gap-2.5">
             {avatar}
             <span className="min-w-0 flex flex-col leading-tight">
-              <span className="truncate text-sm font-semibold text-white">
+              <span className="truncate text-sm font-semibold text-discord-text-strong">
                 {name}
               </span>
               <span className="row-meta truncate">{statusLabel}</span>

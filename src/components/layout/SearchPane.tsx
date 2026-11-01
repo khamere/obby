@@ -374,7 +374,7 @@ export const SearchPane: React.FC<{ query: SearchQuery }> = ({ query }) => {
     >
       <form
         ref={setSearchBar}
-        className="h-12 shrink-0 flex items-center gap-1.5 px-2 border-b border-white/[0.06]"
+        className="h-12 shrink-0 flex items-center gap-1.5 px-2 border-b border-discord-text-strong/[0.06]"
         onSubmit={(e) => {
           e.preventDefault();
           draft.submit();
@@ -398,7 +398,7 @@ export const SearchPane: React.FC<{ query: SearchQuery }> = ({ query }) => {
           {...draft.inputProps}
           onFocus={() => setIsInputFocused(true)}
           onBlur={() => setIsInputFocused(false)}
-          className={`flex-1 min-w-0 bg-transparent px-1 text-white placeholder:text-discord-text-muted outline-none ${isLarge ? "text-base" : "text-sm"}`}
+          className={`flex-1 min-w-0 bg-transparent px-1 text-discord-text-strong placeholder:text-discord-text-muted outline-none ${isLarge ? "text-base" : "text-sm"}`}
         />
         {!isNarrowView && closeButton(<FaTimes className="w-3.5 h-3.5" />)}
       </form>

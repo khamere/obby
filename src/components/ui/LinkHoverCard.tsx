@@ -25,7 +25,7 @@ export const LinkHoverCard: React.FC<LinkHoverCardProps> = ({
       <div data-link-hover-card="" className="surface-list flex flex-col gap-1">
         <div className="flex items-center gap-2 pl-2">
           <FaLink className="text-xs text-discord-text-muted shrink-0" />
-          <span className="flex-1 min-w-0 truncate text-sm font-medium text-white">
+          <span className="flex-1 min-w-0 truncate text-sm font-medium text-discord-text-strong">
             {extractHostname(url) ?? url}
           </span>
           <CopyButton getText={() => url} label={t`Copy link`} />

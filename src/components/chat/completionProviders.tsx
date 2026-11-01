@@ -40,7 +40,7 @@ export function nickProvider(users: readonly User[]): CompletionProvider<User> {
     getKey: (user) => user.id,
     renderItem: (user) => (
       <>
-        <span className="w-6 h-6 rounded-full bg-discord-dark-400 flex items-center justify-center text-xs text-white shrink-0">
+        <span className="w-6 h-6 rounded-full bg-discord-dark-400 flex items-center justify-center text-xs text-discord-text-strong shrink-0">
           {user.username.charAt(0).toUpperCase()}
         </span>
         <span className="flex-1 min-w-0 truncate">{user.username}</span>

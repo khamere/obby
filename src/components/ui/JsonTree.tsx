@@ -87,7 +87,7 @@ const Node: React.FC<{
         type="button"
         aria-expanded={isOpen}
         onClick={() => setIsOpen(!isOpen)}
-        className="inline-flex items-center gap-0.5 -ml-3.5 hover:text-white"
+        className="inline-flex items-center gap-0.5 -ml-3.5 hover:text-discord-text-strong"
       >
         <span className="w-3.5 flex justify-center text-discord-text-muted">
           {isOpen ? <FaCaretDown /> : <FaCaretRight />}

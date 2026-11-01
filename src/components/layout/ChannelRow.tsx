@@ -236,7 +236,7 @@ export const ChannelRow: React.FC<ChannelRowProps> = ({
             <FaLock className="w-3 h-3 text-discord-yellow" />
           </span>
         ) : channel.isLoadingHistory ? (
-          <FaSpinner className="w-3 h-3 text-gray-400 animate-spin" />
+          <FaSpinner className="w-3 h-3 text-discord-text-dim animate-spin" />
         ) : (
           !isSelected && (
             <span className={isTouch ? "" : "group-hover:hidden"}>
@@ -253,7 +253,7 @@ export const ChannelRow: React.FC<ChannelRowProps> = ({
         {!leading && !isTouch && (
           <button
             type="button"
-            className={`h-6 flex items-center justify-center overflow-hidden text-discord-text-muted hover:text-white [@container(max-width:200px)]:hidden ${
+            className={`h-6 flex items-center justify-center overflow-hidden text-discord-text-muted hover:text-discord-text-strong [@container(max-width:200px)]:hidden ${
               isSelected ? "w-6" : "w-0 group-hover:w-6 focus-visible:w-6"
             }`}
             title={t`Open channel options`}

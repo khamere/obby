@@ -84,7 +84,7 @@ export function MemberPicker({
             placeholder={t`Filter members…`}
             value={filterText}
             onChange={(e) => setFilterText(e.target.value)}
-            className="w-full bg-discord-dark-400 text-white text-sm rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-discord-text-link mb-3 flex-shrink-0"
+            className="w-full bg-discord-dark-400 text-discord-text-strong text-sm rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-discord-text-link mb-3 flex-shrink-0"
           />
           <div className="flex-1 overflow-y-auto min-h-0">
             {shown.map((user, index) => (
@@ -97,7 +97,7 @@ export function MemberPicker({
                 onClick={() => onSelect(user.username)}
                 onMouseEnter={() => setSelectedIndex(index)}
               >
-                <span className="w-8 h-8 rounded-full bg-discord-dark-400 flex items-center justify-center text-sm text-white shrink-0">
+                <span className="w-8 h-8 rounded-full bg-discord-dark-400 flex items-center justify-center text-sm text-discord-text-strong shrink-0">
                   {user.username.charAt(0).toUpperCase()}
                 </span>
                 <span className="flex-1 min-w-0 truncate">{user.username}</span>

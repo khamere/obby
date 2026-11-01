@@ -114,7 +114,7 @@ export const ChangePasswordModal: React.FC<Props> = ({ serverId, onClose }) => {
       ) : (
         <>
           <ModalBody className="gap-3">
-            <p className="text-sm text-white">{info}</p>
+            <p className="text-sm text-discord-text-strong">{info}</p>
           </ModalBody>
           <ModalFooter>
             <Button onClick={onClose}>

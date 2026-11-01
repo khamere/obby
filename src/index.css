@@ -83,7 +83,7 @@
     @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-discord-dark-300 text-discord-text-normal ring-1 ring-discord-text-strong/10 shadow-[0_2px_8px_rgba(0,0,0,0.35)] transition-colors duration-100 hover:bg-discord-primary hover:text-white disabled:opacity-70 disabled:hover:bg-discord-dark-300 disabled:hover:text-discord-text-normal;
   }
   .chip-outline {
-    @apply inline-flex shrink-0 items-center gap-2 px-3 rounded-full border-2 border-discord-primary text-white font-bold text-sm transition-colors duration-100 hover:bg-discord-primary focus-visible:outline-none focus-visible:bg-discord-primary;
+    @apply inline-flex shrink-0 items-center gap-2 px-3 rounded-full border-2 border-discord-primary text-discord-text-strong font-bold text-sm transition-colors duration-100 hover:bg-discord-primary hover:text-white focus-visible:outline-none focus-visible:bg-discord-primary focus-visible:text-white;
   }
   .chip-action-active {
     @apply bg-discord-primary text-white;

@@ -37,7 +37,9 @@ const MessageReaderSheet: React.FC<MessageReaderSheetProps> = ({
       <div className="flex max-h-[80vh] flex-col">
         <div className="flex items-center gap-2 px-4 pb-2">
           <div className="flex min-w-0 flex-1 items-baseline gap-2">
-            <span className="truncate font-semibold text-white">{author}</span>
+            <span className="truncate font-semibold text-discord-text-strong">
+              {author}
+            </span>
             <span className="row-meta shrink-0">{time}</span>
           </div>
           {onReply && (

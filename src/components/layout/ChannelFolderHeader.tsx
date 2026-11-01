@@ -33,7 +33,7 @@ const FolderNameInput: React.FC<{
   };
   return (
     <TextInput
-      className="flex-1 min-w-0 h-6 px-1 rounded bg-discord-dark-400 text-xs text-white outline-none"
+      className="flex-1 min-w-0 h-6 px-1 rounded bg-discord-dark-400 text-xs text-discord-text-strong outline-none"
       aria-label={t`Folder name`}
       value={name}
       onChange={(e) => setName(e.target.value)}
@@ -100,7 +100,9 @@ export const ChannelFolderHeader: React.FC<ChannelFolderHeaderProps> = ({
         aria-expanded={!folder.collapsed}
         onClick={onToggle}
         className={`flex items-center gap-1.5 min-w-0 flex-1 h-6 text-left text-xs font-semibold hover:text-discord-text-normal ${
-          folder.collapsed && summary?.hasUnread ? "text-white" : ""
+          folder.collapsed && summary?.hasUnread
+            ? "text-discord-text-strong"
+            : ""
         }`}
       >
         <FaFolder className="flex-shrink-0 opacity-80" />
@@ -123,7 +125,7 @@ export const ChannelFolderHeader: React.FC<ChannelFolderHeaderProps> = ({
       title={t`Rename or delete folder`}
       aria-label={t`Rename or delete ${folder.name}`}
       onClick={(e) => onOpenMenu(e.currentTarget)}
-      className="w-6 h-6 flex items-center justify-center rounded opacity-0 [@media(hover:none)]:opacity-100 group-hover:opacity-100 focus-visible:opacity-100 hover:text-white hover:bg-discord-dark-500/40"
+      className="w-6 h-6 flex items-center justify-center rounded opacity-0 [@media(hover:none)]:opacity-100 group-hover:opacity-100 focus-visible:opacity-100 hover:text-discord-text-strong hover:bg-discord-dark-500/40"
     >
       <FaEllipsisH className="text-xs" />
     </button>

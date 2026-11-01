@@ -87,7 +87,7 @@ const PluginsScreen = () => {
   );
 
   return (
-    <div className="h-full flex flex-col overflow-hidden bg-discord-dark-200 text-white">
+    <div className="h-full flex flex-col overflow-hidden bg-discord-dark-200 text-discord-text-strong">
       <div className="px-4 pt-6 pb-1 flex-shrink-0 flex flex-col gap-3">
         <div className="flex items-center gap-2 flex-wrap">
           <h1 className="text-xl font-semibold">

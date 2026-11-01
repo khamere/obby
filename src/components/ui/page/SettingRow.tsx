@@ -46,7 +46,7 @@ export const SettingRow: React.FC<{
     >
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <div className="flex-[1_1_12rem] min-w-0 flex flex-col gap-0.5">
-          <span id={titleId} className="text-[15px] text-white">
+          <span id={titleId} className="text-[15px] text-discord-text-strong">
             {title}
           </span>
           {description && (
