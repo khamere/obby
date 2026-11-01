@@ -3475,10 +3475,6 @@ msgstr "プロフィール情報とメタデータを管理する"
 msgid "Manual oper"
 msgstr "手動 OPER"
 
-#: src/components/ui/MentionsInbox.tsx
-msgid "Mark all read"
-msgstr "すべて既読にする"
-
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Mark as bot - usually 'on' or empty"
 msgstr "ボットとしてマーク — 通常は「on」または空欄"
@@ -3490,6 +3486,10 @@ msgstr "既読にする"
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "Mark as verified"
 msgstr "確認済みにする"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mark every chat on every network read"
+msgstr "すべてのネットワークのすべてのチャットを既読にする"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Mark the channel as private."
@@ -4711,8 +4711,13 @@ msgid "reacted to this message"
 msgstr "このメッセージにリアクションしました"
 
 #: src/components/message/CollapsibleMessage.tsx
+#: src/components/ui/MentionsInbox.tsx
 msgid "Read all"
 msgstr "すべて読む"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Read all mentions"
+msgstr "すべてのメンションを既読にする"
 
 #: src/components/ui/PluginsScreen.tsx
 msgid "Read every message in your own language."

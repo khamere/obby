@@ -3475,10 +3475,6 @@ msgstr "管理您的个人资料信息和元数据"
 msgid "Manual oper"
 msgstr "手动 OPER"
 
-#: src/components/ui/MentionsInbox.tsx
-msgid "Mark all read"
-msgstr "全部标为已读"
-
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Mark as bot - usually 'on' or empty"
 msgstr "标记为机器人——通常为 'on' 或空"
@@ -3490,6 +3486,10 @@ msgstr "标记为已读"
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "Mark as verified"
 msgstr "标记为已验证"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mark every chat on every network read"
+msgstr "将所有网络的所有聊天标为已读"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Mark the channel as private."
@@ -4711,8 +4711,13 @@ msgid "reacted to this message"
 msgstr "对此消息做出了回应"
 
 #: src/components/message/CollapsibleMessage.tsx
+#: src/components/ui/MentionsInbox.tsx
 msgid "Read all"
 msgstr "阅读全部"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Read all mentions"
+msgstr "已读全部提及"
 
 #: src/components/ui/PluginsScreen.tsx
 msgid "Read every message in your own language."

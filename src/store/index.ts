@@ -55,7 +55,7 @@ import {
   verifyOtrSession as otrVerify,
   trustOtrChangedKey,
 } from "./handlers/otr";
-import { markChatRead } from "./handlers/readMarker";
+import { markAllChatsRead, markChatRead } from "./handlers/readMarker";
 import * as tictactoeActions from "./handlers/tictactoeActions";
 import { rememberRequestedNick } from "./handlers/users";
 import {
@@ -1064,6 +1064,8 @@ export interface AppState {
   jumpToMention: (entry: MentionEntry) => void;
   dismissMentions: (channelKey: string) => void;
   markAllMentionsSeen: () => void;
+  // Marks every chat on every server read, as the "Read all" button does.
+  markAllRead: () => void;
   setTopicModalRequest: (serverId: string, channelId: string) => void;
   clearTopicModalRequest: () => void;
   toggleDarkMode: () => void;
@@ -2599,6 +2601,10 @@ const useStore = create<AppState>((set, get) => ({
 
   markChannelAsRead: (serverId, channelId) => {
     markChatRead(useStore, serverId, channelId);
+  },
+
+  markAllRead: () => {
+    markAllChatsRead(useStore);
   },
 
   reorderChannels: (serverId, channelIds) => {

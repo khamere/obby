@@ -95,7 +95,7 @@ describe("MentionsInbox", () => {
   it("marks everything read", () => {
     render(<MentionsInbox />);
     fireEvent.click(screen.getByLabelText("Mentions"));
-    fireEvent.click(screen.getByText("Mark all read"));
+    fireEvent.click(screen.getByText("Read all mentions"));
     expect(useStore.getState().mentionLog.every((m) => m.seen)).toBe(true);
     expect(screen.getByLabelText("Mentions")).toHaveTextContent("");
   });

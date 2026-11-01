@@ -3475,10 +3475,6 @@ msgstr "프로필 정보 및 메타데이터 관리"
 msgid "Manual oper"
 msgstr "수동 OPER"
 
-#: src/components/ui/MentionsInbox.tsx
-msgid "Mark all read"
-msgstr "모두 읽음으로 표시"
-
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Mark as bot - usually 'on' or empty"
 msgstr "봇으로 표시 - 보통 'on' 또는 비워두기"
@@ -3490,6 +3486,10 @@ msgstr "읽음으로 표시"
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "Mark as verified"
 msgstr "확인됨으로 표시"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mark every chat on every network read"
+msgstr "모든 네트워크의 모든 채팅을 읽음으로 표시"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Mark the channel as private."
@@ -4711,8 +4711,13 @@ msgid "reacted to this message"
 msgstr "이 메시지에 반응했습니다"
 
 #: src/components/message/CollapsibleMessage.tsx
+#: src/components/ui/MentionsInbox.tsx
 msgid "Read all"
 msgstr "모두 읽기"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Read all mentions"
+msgstr "모든 멘션 읽음"
 
 #: src/components/ui/PluginsScreen.tsx
 msgid "Read every message in your own language."
