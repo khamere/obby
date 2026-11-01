@@ -22,6 +22,7 @@ import { stripIrcFormatting } from "./messageFormatter";
 
 export const MAX_RULES_CHARS = 1_000_000;
 export const MAX_RULES = 500;
+export const MAX_LABEL_CHARS = 32;
 
 export interface BridgeRule {
   host: string;
@@ -46,13 +47,18 @@ function validRule(raw: unknown): BridgeRule | null {
   const r = raw as Record<string, unknown>;
   if (typeof r.host !== "string" || !r.host.trim()) return null;
   if (r.channels !== undefined && !isStringArray(r.channels)) return null;
-  if (r.label !== undefined && typeof r.label !== "string") return null;
+  // The marker is mandatory, so a label that would render as nothing is refused.
+  if (r.label !== undefined) {
+    if (typeof r.label !== "string") return null;
+    const label = r.label.trim();
+    if (!label || label.length > MAX_LABEL_CHARS) return null;
+  }
   const hasBot = r.bot !== undefined || r.formats !== undefined;
   const hasNick = r.nickFormat !== undefined;
   if (hasBot === hasNick) return null;
   const rule: BridgeRule = { host: r.host };
   if (r.channels) rule.channels = r.channels as string[];
-  if (typeof r.label === "string") rule.label = r.label;
+  if (typeof r.label === "string") rule.label = r.label.trim();
   if (typeof r.note === "string") rule.note = r.note;
   if (hasBot) {
     if (typeof r.bot !== "string" || !r.bot.trim()) return null;

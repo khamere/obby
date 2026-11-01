@@ -1,4 +1,4 @@
-import { useLingui } from "@lingui/react/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import type React from "react";
 import { FaHdd } from "react-icons/fa";
 import { getColorStyle } from "../../lib/ircUtils";
@@ -46,6 +46,7 @@ export const MessageHeader: React.FC<MessageHeaderProps> = ({
 }) => {
   const { t } = useLingui();
   const username = userId;
+  const via = bridgedVia;
   const isSystem = userId === "system";
 
   const formatTime = (date: Date) => {
@@ -88,7 +89,7 @@ export const MessageHeader: React.FC<MessageHeaderProps> = ({
           className={`ml-2 text-xs text-${theme}-text-muted`}
           data-bridged-via={bridgedVia}
         >
-          via {bridgedVia}
+          <Trans>via {via}</Trans>
         </span>
       )}
       {isSavedLocally && (

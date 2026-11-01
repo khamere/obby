@@ -981,8 +981,11 @@ export const MessageItem = memo((props: MessageItemProps) => {
               bridgedVia={message.bridgedVia}
               displayNick={message.displayNick}
               originalLine={
-                message.bridgedOriginal ??
-                (message.displayNick ? message.userId : undefined)
+                message.bridgedOriginal
+                  ? stripIrcFormatting(message.bridgedOriginal)
+                  : message.displayNick
+                    ? message.userId
+                    : undefined
               }
             />
           )}
