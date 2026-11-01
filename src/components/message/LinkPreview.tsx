@@ -9,7 +9,6 @@ import {
 } from "../../lib/ircUtils";
 import { extractHostname, mediaLevelToSettings } from "../../lib/mediaUtils";
 import { stripIrcFormatting } from "../../lib/messageFormatter";
-import { openExternalUrl } from "../../lib/openUrl";
 import useStore from "../../store";
 import ExternalLinkWarningModal from "../ui/ExternalLinkWarningModal";
 
@@ -63,12 +62,8 @@ export const LinkPreview: React.FC<LinkPreviewProps> = ({
     }
   };
 
-  const handleConfirmOpen = async () => {
-    if (firstUrl) {
-      await openExternalUrl(firstUrl);
-    }
-    setShowWarningModal(false);
-  };
+  // The dialog opens the link itself.
+  const handleConfirmOpen = () => setShowWarningModal(false);
 
   const handleCancelOpen = () => {
     setShowWarningModal(false);

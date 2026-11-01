@@ -5,6 +5,7 @@ import { useSyncExternalStore } from "react";
 import { FaExclamationTriangle } from "react-icons/fa";
 import BaseModal from "./BaseModal";
 import { Button, ModalBody, ModalFooter } from "./components";
+import { buttonClassName } from "./components/Button";
 
 type ConfirmVariant = "primary" | "danger";
 
@@ -15,6 +16,10 @@ interface ConfirmDialogProps {
   children: ReactNode;
   confirmLabel: ReactNode;
   confirmVariant?: ConfirmVariant;
+  // With a link, the confirm control is a real anchor that opens it in a
+  // new tab: browsers never popup-block a click on a link, unlike
+  // window.open from a handler.
+  confirmHref?: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -27,6 +32,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   children,
   confirmLabel,
   confirmVariant = "primary",
+  confirmHref,
   onConfirm,
   onCancel,
 }) => (
@@ -46,9 +52,21 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       <Button variant="secondary" onClick={onCancel}>
         <Trans>Cancel</Trans>
       </Button>
-      <Button variant={confirmVariant} onClick={onConfirm}>
-        {confirmLabel}
-      </Button>
+      {confirmHref ? (
+        <a
+          href={confirmHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={onConfirm}
+          className={buttonClassName(confirmVariant)}
+        >
+          {confirmLabel}
+        </a>
+      ) : (
+        <Button variant={confirmVariant} onClick={onConfirm}>
+          {confirmLabel}
+        </Button>
+      )}
     </ModalFooter>
   </BaseModal>
 );
