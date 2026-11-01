@@ -67,7 +67,7 @@ export const MessageReply: React.FC<MessageReplyProps> = ({
   onClose,
 }) => {
   const { t } = useLingui();
-  const replyUsername = replyMessage.userId;
+  const replyUsername = replyMessage.displayNick ?? replyMessage.userId;
   const replyColor = useNickColor(replyUsername);
 
   const mediaVisibilityLevel = useStore(

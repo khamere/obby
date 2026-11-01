@@ -241,7 +241,9 @@ export const MessageItem = memo((props: MessageItemProps) => {
   };
 
   const ircCurrentUser = ircClient.getCurrentUser(message.serverId);
-  const isCurrentUser = ircCurrentUser?.username === message.userId;
+  // A line relayed by a bridge is never ours, even when it carries our nick.
+  const isCurrentUser =
+    !message.bridgedVia && ircCurrentUser?.username === message.userId;
 
   // Get the user key using reactive selector
   const userKey = useStore(
@@ -355,16 +357,17 @@ export const MessageItem = memo((props: MessageItemProps) => {
   const avatarUrl = messageUser?.metadata?.avatar?.value;
   const displayName = messageUser?.metadata?.["display-name"]?.value;
   const userColor = useNickColor(
-    message.userId,
+    message.displayNick ?? message.userId,
     messageUser?.metadata?.color?.value,
   );
   const userStatus = messageUser?.metadata?.status?.value;
   const userPronouns = messageUser?.metadata?.pronouns?.value;
   const isSystem = message.type === "system";
   const isBot =
-    messageUser?.isBot ||
-    messageUser?.metadata?.bot?.value === "true" ||
-    message.tags?.bot === "";
+    !message.bridgedVia &&
+    (messageUser?.isBot ||
+      messageUser?.metadata?.bot?.value === "true" ||
+      message.tags?.bot === "");
   const isVerified = isUserVerified(message.userId, message.tags);
   const isIrcOp = messageUser?.isIrcOp || false;
   const isUnprotected = isUnprotectedMessage(message);
@@ -422,7 +425,11 @@ export const MessageItem = memo((props: MessageItemProps) => {
   // Author + time + raw markdown source, surfaced as data attributes so the
   // chat copy handler (chatMarkdownCopy) can rebuild a markdown transcript that
   // preserves authorship and markdown the rendered DOM would otherwise strip.
-  const copyAuthor = formatCopyAuthor(displayName, message.userId, isSystem);
+  const copyAuthor = formatCopyAuthor(
+    displayName,
+    message.displayNick ?? message.userId,
+    isSystem,
+  );
   const copyTime = useMemo(
     () =>
       new Intl.DateTimeFormat("en-US", {
@@ -911,6 +918,7 @@ export const MessageItem = memo((props: MessageItemProps) => {
       data-md-time={copyTime}
       data-md-source={messageContent}
       data-header={showHeader ? "true" : "false"}
+      data-bridged={message.bridgedVia ? "true" : undefined}
       className={`obby-message-row px-4 hover:bg-discord-message-hover group relative transition-colors duration-150 ${
         showHeader ? "mt-4" : "py-0.5"
       }${isAimedAtUs ? " message-aimed-at-us" : ""}${
@@ -969,6 +977,12 @@ export const MessageItem = memo((props: MessageItemProps) => {
               isIrcOp={isIrcOp}
               unprotected={isUnprotected}
               isSavedLocally={message.tags?.[LOCAL_HISTORY_TAG] !== undefined}
+              bridgedVia={message.bridgedVia}
+              displayNick={message.displayNick}
+              originalLine={
+                message.bridgedOriginal ??
+                (message.displayNick ? message.userId : undefined)
+              }
             />
           )}
 
