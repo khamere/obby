@@ -4143,6 +4143,15 @@ msgstr "Normal – standardskydd"
 msgid "Not connected"
 msgstr "Inte ansluten"
 
+#: src/components/message/MessageStatusIndicator.tsx
+msgid "Not delivered"
+msgstr "Inte levererat"
+
+#: src/components/message/MessageStatusIndicator.tsx
+#: src/store/handlers/messages.ts
+msgid "Not delivered: {reason}"
+msgstr "Inte levererat: {reason}"
+
 #: src/components/message/E2EEUnprotectedBadge.tsx
 #: src/components/ui/UploadProgressBar.tsx
 msgid "Not encrypted"
