@@ -78,7 +78,7 @@ export const BotInvocationChip: React.FC<Props> = ({
       {opts.map(([name, value]) => (
         <span key={name} className="inline-flex min-w-0 items-baseline gap-1">
           <span className="font-semibold text-discord-text-normal">{name}</span>
-          <span className="break-words rounded bg-white/[0.06] px-1 text-discord-text-normal">
+          <span className="break-words rounded bg-discord-text-strong/[0.06] px-1 text-discord-text-normal">
             {value}
           </span>
         </span>

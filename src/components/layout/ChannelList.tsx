@@ -495,7 +495,7 @@ export const ChannelList: React.FC = () => {
           }`}
         >
           <span className="flex flex-col min-w-0 flex-1">
-            <span className="font-bold text-white truncate">
+            <span className="font-bold text-discord-text-strong truncate">
               {selectedServer?.networkName || selectedServer?.name || "Home"}
             </span>
             {(upstreamSubtitle ||
@@ -574,7 +574,7 @@ export const ChannelList: React.FC = () => {
             {isReordering ? (
               <div className="flex items-center gap-2 mb-2 px-1">
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold text-white">
+                  <div className="text-sm font-semibold text-discord-text-strong">
                     <Trans>Reorder list</Trans>
                   </div>
                   <div className="text-xs">

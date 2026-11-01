@@ -128,12 +128,12 @@ const DetailRow: React.FC<{
     setTimeout(() => setCopied(false), 1200);
   };
   return (
-    <div className="flex gap-3 px-4 py-2.5 border-t border-white/[0.06] first:border-t-0">
+    <div className="flex gap-3 px-4 py-2.5 border-t border-discord-text-strong/[0.06] first:border-t-0">
       <dt className="w-24 shrink-0 text-[13px] text-discord-text-muted pt-0.5">
         {label}
       </dt>
       <dd
-        className={`flex-1 min-w-0 flex items-start gap-2 text-sm text-white ${mono ? "font-mono break-all" : "[overflow-wrap:anywhere]"}`}
+        className={`flex-1 min-w-0 flex items-start gap-2 text-sm text-discord-text-strong ${mono ? "font-mono break-all" : "[overflow-wrap:anywhere]"}`}
       >
         <span className="flex-1 min-w-0">{value}</span>
         {copy && (
@@ -520,7 +520,7 @@ const ProfilePane: React.FC<{ target: ProfilePaneTarget }> = ({
         onCancel={() => setPendingUrl(null)}
       />
 
-      <header className="h-12 shrink-0 flex items-center gap-1.5 px-2 border-b border-white/[0.06]">
+      <header className="h-12 shrink-0 flex items-center gap-1.5 px-2 border-b border-discord-text-strong/[0.06]">
         {isNarrowView && (
           <button
             type="button"
@@ -532,7 +532,7 @@ const ProfilePane: React.FC<{ target: ProfilePaneTarget }> = ({
             <FaChevronLeft className="w-3.5 h-3.5" />
           </button>
         )}
-        <h2 className="flex-1 min-w-0 truncate px-1 text-[15px] font-semibold text-white">
+        <h2 className="flex-1 min-w-0 truncate px-1 text-[15px] font-semibold text-discord-text-strong">
           <Trans>Profile</Trans>
         </h2>
         {!isNarrowView && (
@@ -572,7 +572,7 @@ const ProfilePane: React.FC<{ target: ProfilePaneTarget }> = ({
             </div>
           </div>
 
-          <h3 className="mt-1 text-xl font-bold text-white flex items-center gap-2 flex-wrap justify-center">
+          <h3 className="mt-1 text-xl font-bold text-discord-text-strong flex items-center gap-2 flex-wrap justify-center">
             <span style={nameColor ? { color: nameColor } : undefined}>
               {displayName}
             </span>
@@ -610,7 +610,7 @@ const ProfilePane: React.FC<{ target: ProfilePaneTarget }> = ({
             {presenceText}
           </div>
           {botDescription && (
-            <div className="mt-1 flex items-center gap-2 text-sm text-white">
+            <div className="mt-1 flex items-center gap-2 text-sm text-discord-text-strong">
               <FaRobot className="text-cyan-400 shrink-0" size={14} />
               {botDescription}
             </div>
@@ -638,7 +638,7 @@ const ProfilePane: React.FC<{ target: ProfilePaneTarget }> = ({
               ref={moreRef}
               type="button"
               onClick={() => setMenuOpen((open) => !open)}
-              className="h-10 w-10 rounded-lg bg-discord-dark-100 text-white flex items-center justify-center hover:bg-discord-dark-400 transition-colors"
+              className="h-10 w-10 rounded-lg bg-discord-dark-100 text-discord-text-strong flex items-center justify-center hover:bg-discord-dark-400 transition-colors"
               title={t`More actions`}
               aria-label={t`More actions`}
               aria-haspopup="menu"
@@ -771,7 +771,7 @@ const ProfilePane: React.FC<{ target: ProfilePaneTarget }> = ({
                       </span>
                     )}
                     <ChannelKindGlyph name={channel} />
-                    <span className="text-white font-mono">
+                    <span className="text-discord-text-strong font-mono">
                       {channel.replace(/^[#^$]/, "")}
                     </span>
                     {isSecret && (
@@ -862,7 +862,7 @@ const ProfilePane: React.FC<{ target: ProfilePaneTarget }> = ({
                       boxShadow: isActive ? `inset 0 -2px 0 ${accent}` : "none",
                     }}
                   >
-                    <div className="text-xs font-semibold text-white flex items-center gap-1.5">
+                    <div className="text-xs font-semibold text-discord-text-strong flex items-center gap-1.5">
                       {s.countryCode ? (
                         <span className="font-mono">{s.countryCode}</span>
                       ) : (

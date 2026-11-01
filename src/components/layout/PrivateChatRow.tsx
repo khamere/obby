@@ -332,7 +332,7 @@ export const PrivateChatRow: React.FC<PrivateChatRowProps> = ({
         {!leading && !isTouch && (
           <button
             type="button"
-            className={`h-6 flex items-center justify-center overflow-hidden text-discord-text-muted hover:text-white ${
+            className={`h-6 flex items-center justify-center overflow-hidden text-discord-text-muted hover:text-discord-text-strong ${
               isSelected ? "w-6" : "w-0 group-hover:w-6 focus-visible:w-6"
             }`}
             title={t`Open chat options`}

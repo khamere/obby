@@ -252,7 +252,7 @@ const EmojiPacksPage: React.FC<PageProps<"emojiPacks">> = ({ page }) => {
                   className="w-6 h-6 object-contain shrink-0"
                   loading="lazy"
                 />
-                <span className="text-xs text-white truncate flex-1">
+                <span className="text-xs text-discord-text-strong truncate flex-1">
                   :{entry.shortcode}:
                 </span>
                 <button

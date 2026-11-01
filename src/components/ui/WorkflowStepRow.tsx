@@ -136,7 +136,7 @@ export const WorkflowStepRow: React.FC<WorkflowStepRowProps> = ({
         </span>
         <span
           className={`text-sm font-medium truncate shrink-0 max-w-[45%] ${
-            isReasoning ? "text-discord-text-muted" : "text-white"
+            isReasoning ? "text-discord-text-muted" : "text-discord-text-strong"
           }`}
         >
           {name}

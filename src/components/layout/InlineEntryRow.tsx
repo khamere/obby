@@ -72,7 +72,7 @@ export const InlineEntryRow: React.FC<InlineEntryRowProps> = ({
       {isOpen ? (
         <div
           ref={frameRef}
-          className={`${rowFrameClass} border-transparent bg-discord-dark-400 text-white`}
+          className={`${rowFrameClass} border-transparent bg-discord-dark-400 text-discord-text-strong`}
         >
           <span className="min-w-6 flex-shrink-0 flex items-center justify-center text-discord-channels-default">
             {openIcon ?? icon}

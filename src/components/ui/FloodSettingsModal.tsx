@@ -402,7 +402,7 @@ const FloodSettingsModal: React.FC<FloodSettingsModalProps> = ({
                               type: e.target.value as FloodRule["type"],
                             })
                           }
-                          className="w-full px-2 py-1 bg-discord-dark-400 border border-discord-dark-300 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-discord-primary"
+                          className="w-full px-2 py-1 bg-discord-dark-400 border border-discord-dark-300 rounded text-discord-text-strong text-sm focus:outline-none focus:ring-1 focus:ring-discord-primary"
                         >
                           <option value="c">
                             CTCP ({getTypeDescription("c")})
@@ -439,7 +439,7 @@ const FloodSettingsModal: React.FC<FloodSettingsModalProps> = ({
                               action: e.target.value,
                             })
                           }
-                          className="w-full px-2 py-1 bg-discord-dark-400 border border-discord-dark-300 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-discord-primary"
+                          className="w-full px-2 py-1 bg-discord-dark-400 border border-discord-dark-300 rounded text-discord-text-strong text-sm focus:outline-none focus:ring-1 focus:ring-discord-primary"
                         >
                           <option value={getDefaultAction(rule.type)}>
                             {getDefaultAction(rule.type)} (default)
@@ -473,7 +473,7 @@ const FloodSettingsModal: React.FC<FloodSettingsModalProps> = ({
                           }
                           placeholder={t`Permanent`}
                           min="1"
-                          className="w-full px-2 py-1 bg-discord-dark-400 border border-discord-dark-300 rounded text-white text-sm placeholder-discord-text-muted focus:outline-none focus:ring-1 focus:ring-discord-primary"
+                          className="w-full px-2 py-1 bg-discord-dark-400 border border-discord-dark-300 rounded text-discord-text-strong text-sm placeholder-discord-text-muted focus:outline-none focus:ring-1 focus:ring-discord-primary"
                         />
                       </div>
                     </div>

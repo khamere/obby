@@ -437,7 +437,7 @@ const TwoFactorPage: React.FC<PageProps<"twoFactor">> = ({ page }) => {
             onSubmit={onSubmitTotp}
             className="px-4 py-3.5 flex flex-col gap-3"
           >
-            <p className="text-sm text-white">
+            <p className="text-sm text-discord-text-strong">
               <Trans>
                 Scan this QR code with your authenticator app, then confirm with
                 the 6-digit code it shows.

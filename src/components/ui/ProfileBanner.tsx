@@ -63,7 +63,7 @@ export const ProfileBanner: React.FC<{
         </div>
         <div className="flex-[1_1_12rem] min-w-0 pb-1">
           <div
-            className="text-xl font-bold text-white truncate"
+            className="text-xl font-bold text-discord-text-strong truncate"
             style={nameColor ? { color: nameColor } : undefined}
           >
             {name}

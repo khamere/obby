@@ -252,7 +252,7 @@ export const PageShell: React.FC<PageShellProps> = ({
       {leading}
       <h1
         tabIndex={-1}
-        className="flex-1 min-w-0 truncate px-1 text-[15px] font-semibold text-white outline-none"
+        className="flex-1 min-w-0 truncate px-1 text-[15px] font-semibold text-discord-text-strong outline-none"
       >
         {heading}
       </h1>
@@ -286,7 +286,7 @@ export const PageShell: React.FC<PageShellProps> = ({
                   </span>
                 )}
                 <span className="flex-1 min-w-0 flex flex-col">
-                  <span className="text-[15px] text-white">
+                  <span className="text-[15px] text-discord-text-strong">
                     {section.label}
                   </span>
                   {section.description && (
@@ -350,7 +350,9 @@ export const PageShell: React.FC<PageShellProps> = ({
           <FaChevronLeft className="w-3 h-3" />
           <span className="truncate max-w-[180px]">{backLabel}</span>
         </button>
-        <h2 className="px-2 text-xl font-semibold text-white">{title}</h2>
+        <h2 className="px-2 text-xl font-semibold text-discord-text-strong">
+          {title}
+        </h2>
         {navExtra}
         <div className="flex flex-col gap-1">
           {sections?.map((section) => (
@@ -362,7 +364,7 @@ export const PageShell: React.FC<PageShellProps> = ({
               className={`h-9 flex items-center gap-2.5 px-2.5 rounded-md text-left text-sm shadow-sm transition-colors ${
                 section.id === activeSection
                   ? "bg-black text-white font-medium"
-                  : "bg-discord-dark-400/50 text-discord-text-muted hover:text-white hover:bg-discord-dark-400/80"
+                  : "bg-discord-dark-400/50 text-discord-text-muted hover:text-discord-text-strong hover:bg-discord-dark-400/80"
               }`}
             >
               {section.icon && (

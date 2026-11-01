@@ -70,16 +70,16 @@ export const WorkflowLine: React.FC<WorkflowLineProps> = ({
           <FaSpinner className="animate-spin text-blue-400" />
         )}
       </span>
-      <span className="shrink-0 text-white">
+      <span className="shrink-0 text-discord-text-strong">
         {workflow.name ?? t`Workflow`}
       </span>
       {!isFinished && latestName && (
-        <span className="truncate text-blue-400 group-hover:text-white">
+        <span className="truncate text-blue-400 group-hover:text-discord-text-strong">
           {latestName}
         </span>
       )}
       {stepCount > 0 && (
-        <span className="row-meta shrink-0 group-hover:text-white">
+        <span className="row-meta shrink-0 group-hover:text-discord-text-strong">
           {plural(stepCount, { one: "# step", other: "# steps" })}
           {isFinished &&
             ` · ${formatDuration(workflow.updatedAt - workflow.startedAt)}`}

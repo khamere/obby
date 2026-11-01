@@ -1309,7 +1309,7 @@ const ChannelSettingsPage: React.FC<PageProps<"channelSettings">> = ({
                       />
                     ) : (
                       <>
-                        <div className="text-sm text-white break-all">
+                        <div className="text-sm text-discord-text-strong break-all">
                           {mode.mask}
                         </div>
                         <div className="text-xs text-discord-text-muted">

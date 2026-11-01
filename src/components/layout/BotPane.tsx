@@ -77,7 +77,9 @@ const BotDetail: React.FC<BotDetailProps> = ({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-baseline gap-2 flex-wrap">
-        <h3 className="text-white text-xl font-bold">{bot.nick}</h3>
+        <h3 className="text-discord-text-strong text-xl font-bold">
+          {bot.nick}
+        </h3>
         <span
           className={`px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${SCOPE_BADGE[bot.scope].cls}`}
         >
@@ -294,7 +296,7 @@ export const BotPane: React.FC<{ target: BotPaneTarget }> = ({ target }) => {
 
   return (
     <div className="flex flex-col h-full min-h-0 overflow-x-hidden bg-discord-dark-100">
-      <header className="h-12 shrink-0 flex items-center gap-1.5 px-2 border-b border-white/[0.06]">
+      <header className="h-12 shrink-0 flex items-center gap-1.5 px-2 border-b border-discord-text-strong/[0.06]">
         {(isNarrowView || selected) && (
           <button
             type="button"
@@ -306,7 +308,7 @@ export const BotPane: React.FC<{ target: BotPaneTarget }> = ({ target }) => {
             <FaChevronLeft className="w-3.5 h-3.5" />
           </button>
         )}
-        <h2 className="flex-1 min-w-0 truncate px-1 text-[15px] font-semibold text-white">
+        <h2 className="flex-1 min-w-0 truncate px-1 text-[15px] font-semibold text-discord-text-strong">
           <Trans>Bots</Trans>
         </h2>
         {!isNarrowView && (

@@ -100,7 +100,7 @@ const ChannelRow: React.FC<ChannelRowProps> = ({
       <ChannelAvatar src={avatarSrc} channel={channel.channel} />
       <span className="flex-1 min-w-0 flex flex-col">
         <span className="flex items-baseline gap-2 min-w-0">
-          <span className="truncate text-[15px] text-white">
+          <span className="truncate text-[15px] text-discord-text-strong">
             {displayName || channel.channel.replace(/^[#^$]/, "")}
           </span>
           {displayName && (

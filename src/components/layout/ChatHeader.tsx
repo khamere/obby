@@ -77,7 +77,7 @@ const HeaderSearchButton: React.FC<{ scope: SearchScope }> = ({ scope }) => {
     return (
       <button
         type="button"
-        className="w-11 h-11 shrink-0 flex items-center justify-center text-white"
+        className="w-11 h-11 shrink-0 flex items-center justify-center text-discord-text-strong"
         onClick={open}
         aria-label={label}
         title={label}
@@ -746,7 +746,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 />
               </span>
               <span className="flex flex-col min-w-0">
-                <span className="block font-bold text-white truncate">
+                <span className="block font-bold text-discord-text-strong truncate">
                   {(() => {
                     const userMetadata = getUserMetadata(
                       selectedPrivateChat.username,
