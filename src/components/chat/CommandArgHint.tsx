@@ -1,6 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
 import type React from "react";
-import { useIsTouchInput } from "../../hooks/useIsTouchInput";
 import type { CommandArgError } from "../../lib/commandInvocation";
 import type { BotCommandOption } from "../../types";
 import { CloseButton } from "../ui/CloseButton";
@@ -15,7 +14,6 @@ export const CommandArgHint: React.FC<{
   ref?: React.Ref<HTMLDivElement>;
 }> = ({ param, fallback, error, onCancel, ref }) => {
   const { t } = useLingui();
-  const isTouch = useIsTouchInput();
   const errorText = (e: CommandArgError) => {
     if (e.kind === "required") return t`Fill in ${e.name}`;
     if (e.kind === "int") return t`Enter a whole number for ${e.name}`;
@@ -49,7 +47,7 @@ export const CommandArgHint: React.FC<{
           {detail}
         </span>
       </span>
-      {isTouch && <CloseButton label={t`Cancel command`} onClick={onCancel} />}
+      <CloseButton label={t`Cancel command`} onClick={onCancel} />
     </div>
   );
 };
