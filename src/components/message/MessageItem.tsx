@@ -429,6 +429,7 @@ export const MessageItem = memo((props: MessageItemProps) => {
     displayName,
     message.displayNick ?? message.userId,
     isSystem,
+    message.bridgedVia,
   );
   const copyTime = useMemo(
     () =>
