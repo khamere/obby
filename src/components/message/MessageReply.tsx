@@ -129,6 +129,14 @@ export const MessageReply: React.FC<MessageReplyProps> = ({
           >
             {replyUsername}
           </span>
+          {replyMessage.bridgedVia && (
+            <span
+              className={`text-[10px] text-${theme}-text-muted flex-shrink-0`}
+              data-bridged-via={replyMessage.bridgedVia}
+            >
+              via {replyMessage.bridgedVia}
+            </span>
+          )}
         </div>
         {plainContent && (
           <div

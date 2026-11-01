@@ -17,18 +17,21 @@ export interface MessageCopyData {
 /**
  * Author label for a copied message. Includes the underlying nick alongside a
  * display name (e.g. "Brazil ⇨ Germany (mattf)") so the transcript stays
- * attributable even when display names are decorative or collide.
+ * attributable even when display names are decorative or collide, and names
+ * the bridge a relayed line came through so the copy never claims a bare nick.
  */
 export function formatCopyAuthor(
   displayName: string | undefined | null,
   username: string,
   isSystem = false,
+  via?: string,
 ): string {
   if (isSystem) return "System";
-  if (displayName && displayName !== username) {
-    return `${displayName} (${username})`;
-  }
-  return displayName || username;
+  const author =
+    displayName && displayName !== username
+      ? `${displayName} (${username})`
+      : displayName || username;
+  return via ? `${author} (via ${via})` : author;
 }
 
 /** Normalizes a raw message body for copying (unwraps CTCP ACTION, trims). */
