@@ -91,6 +91,10 @@ const pendingRequests = new Map<string, PendingRequest[]>();
 // and an older channel page fetched for the disk would never show. Those
 // servers get their older pages shown straight from the reply instead.
 const historyWithoutMsgids = new Set<string>();
+// Consecutive older pages that put nothing on screen (joins, typing notices),
+// per conversation, so we keep paging back without looping forever.
+const hiddenPagesInARow = new Map<string, number>();
+const MAX_HIDDEN_PAGES_IN_A_ROW = 10;
 // The gap a BEFORE request is about to fill. We attach it when the line
 // actually leaves, so a request the socket dropped never claims a reply.
 let nextGapFill: GapFill | undefined;
@@ -399,6 +403,29 @@ async function saveHistoryPage(
         settleGap(store, serverId, target, gap, pagesLeft);
     }
     request.fill.onSettled?.(true, page);
+  } else if (request?.kind === "before" && !request.fill) {
+    // A shown page with only lines the chat does not display (our own join
+    // from the bouncer's log, say) leaves the oldest message where it was
+    // and the "more above" placeholders in place, so we ask for the page
+    // behind it until something shows or the history ends.
+    const conversation = findConversation(store, serverId, target);
+    const shownOldest = conversation
+      ? store.getState().messages[conversation.key]?.[0]
+      : undefined;
+    const isHidden =
+      page.size > 0 &&
+      page.oldest !== undefined &&
+      (!shownOldest || messageTime(shownOldest) > page.oldest);
+    const hiddenKey = conversationKey(serverId, target);
+    const hidden = isHidden ? (hiddenPagesInARow.get(hiddenKey) ?? 0) + 1 : 0;
+    hiddenPagesInARow.set(hiddenKey, hidden);
+    if (
+      isHidden &&
+      hidden <= MAX_HIDDEN_PAGES_IN_A_ROW &&
+      page.oldest !== undefined &&
+      requestPageBefore(serverId, target, page.oldest, undefined, false)
+    )
+      return;
   }
   await refreshHasMore(store, serverId, target, page.size > 0);
 }
