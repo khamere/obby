@@ -974,7 +974,15 @@ export interface AppState {
     serverId: string,
     bufferId: string,
     label: string,
+    reason?: string,
   ) => void;
+  // Marks the newest pending message in a buffer failed, for a refusal the
+  // server did not label. Returns false when nothing was pending.
+  failLatestPendingMessage: (
+    serverId: string,
+    bufferId: string,
+    reason: string,
+  ) => boolean;
   // Re-send a message previously flipped to "failed" after the
   // labeled-response timeout. Issues a fresh label, sets the message
   // back to "pending", and arms a new timeout.
@@ -2226,7 +2234,7 @@ const useStore = create<AppState>((set, get) => ({
     return matched;
   },
 
-  failPendingMessage: (serverId, bufferId, label) => {
+  failPendingMessage: (serverId, bufferId, label, reason) => {
     const channelKey = `${serverId}-${bufferId}`;
     set((state) => {
       const list = state.messages[channelKey];
@@ -2235,7 +2243,11 @@ const useStore = create<AppState>((set, get) => ({
       const next = list.map((msg) => {
         if (msg.pendingLabel !== label) return msg;
         touched = true;
-        return { ...msg, status: "failed" as const };
+        return {
+          ...msg,
+          status: "failed" as const,
+          failReason: reason ?? msg.failReason,
+        };
       });
       if (!touched) return state;
       return {
@@ -2245,6 +2257,24 @@ const useStore = create<AppState>((set, get) => ({
         },
       };
     });
+  },
+
+  failLatestPendingMessage: (serverId, bufferId, reason) => {
+    const channelKey = `${serverId}-${bufferId}`;
+    const list = get().messages[channelKey] ?? [];
+    const latest = [...list].reverse().find((m) => m.status === "pending");
+    if (!latest) return false;
+    set((state) => ({
+      messages: {
+        ...state.messages,
+        [channelKey]: (state.messages[channelKey] ?? []).map((m) =>
+          m.id === latest.id
+            ? { ...m, status: "failed" as const, failReason: reason }
+            : m,
+        ),
+      },
+    }));
+    return true;
   },
 
   resendFailedMessage: (messageId) => {

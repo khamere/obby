@@ -472,6 +472,9 @@ export interface Message {
   // - "failed": no echo / FAIL arrived in the timeout window
   // undefined => normal received message (no pending lifecycle).
   status?: "pending" | "failed";
+  // The server's own words for refusing a "failed" message (ERR_CANNOTSENDTOCHAN
+  // and friends), shown under the line so the user knows why it never arrived.
+  failReason?: string;
 }
 
 // Alias for backwards compatibility
