@@ -63,6 +63,9 @@ export function sanitizeCss(input: string): string {
         (match, _q: string, target: string) =>
           /^data:/i.test(target.trim()) ? match : "none",
       )
+      // a url( that never closes is still a <url-token> at end of input
+      // (CSS Syntax §4.3.6), so the browser would fetch it
+      .replace(/url\([^)]*$/i, "none")
       // functions that accept a bare string as a URL: image-set("x"),
       // image("x"), src("x"). Only the call is matched, not the `src:`
       // descriptor in @font-face.

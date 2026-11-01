@@ -2,11 +2,11 @@ import { t } from "@lingui/core/macro";
 import { v4 as uuidv4 } from "uuid";
 import type { StoreApi } from "zustand";
 import ircClient from "../../lib/ircClient";
-import { isChannelTarget } from "../../lib/ircUtils";
 import type { Message } from "../../types";
-import { resolveUserMetadata } from "../helpers";
+import { isHistoryEvent, resolveUserMetadata } from "../helpers";
 import type { AppState } from "../index";
 import * as storage from "../localStorage";
+import { bufferChathistoryMessage } from "./batches";
 
 function applyUserModeDelta(prev: string, delta: string): string {
   const currentModes = new Set(
@@ -31,7 +31,7 @@ function applyUserModeDelta(prev: string, delta: string): string {
 export function registerChannelHandlers(store: StoreApi<AppState>): void {
   ircClient.on("MODE", ({ serverId, sender, target, modestring, modeargs }) => {
     // Channel modes are handled via RPL_CHANNELMODEIS (324); only handle user modes here
-    if (!isChannelTarget(target)) {
+    if (!ircClient.isChannel(serverId, target)) {
       store.setState((state) => {
         const currentUser = state.currentUser;
         if (
@@ -229,16 +229,9 @@ export function registerChannelHandlers(store: StoreApi<AppState>): void {
   });
 
   // Topic handlers
-  ircClient.on("TOPIC", ({ serverId, channelName, topic, sender, mtags }) => {
-    // A TOPIC replayed from chathistory (draft/event-playback) describes the
-    // past: show it at its own time, but don't overwrite the live topic.
-    const batch = mtags?.batch
-      ? store.getState().activeBatches[serverId]?.[mtags.batch]
-      : undefined;
-    const historic = batch?.type === "chathistory";
-    const timestamp = mtags?.time ? new Date(mtags.time) : new Date();
-
-    if (!historic) {
+  ircClient.on("TOPIC", ({ serverId, mtags, channelName, topic, sender }) => {
+    const historical = isHistoryEvent(store.getState(), serverId, mtags);
+    if (!historical)
       store.setState((state) => {
         const updatedServers = state.servers.map((server) => {
           if (server.id === serverId) {
@@ -254,7 +247,6 @@ export function registerChannelHandlers(store: StoreApi<AppState>): void {
         });
         return { servers: updatedServers };
       });
-    }
 
     // Add a system message showing the topic change
     const server = store.getState().servers.find((s) => s.id === serverId);
@@ -263,21 +255,31 @@ export function registerChannelHandlers(store: StoreApi<AppState>): void {
     );
     if (channel) {
       const topicMessage: Message = {
-        // Deterministic, so the same change replayed on a later reconnect
-        // is dropped by addMessage instead of shown again.
-        id: `topic-${channel.id}-${timestamp.getTime()}-${sender}`,
+        id: `topic-${mtags?.msgid ?? Date.now()}`,
+        msgid: mtags?.msgid,
         channelId: channel.id,
         userId: sender,
         content: t`changed the topic to: ${topic}`,
-        timestamp,
+        timestamp: mtags?.time ? new Date(mtags.time) : new Date(),
         serverId: serverId,
         reactions: [],
         type: "system",
         replyMessage: null,
         mentioned: [],
-        fromHistory: historic || undefined,
+        fromHistory: historical || undefined,
       };
-      store.getState().addMessage(topicMessage);
+
+      if (historical && mtags?.batch) {
+        bufferChathistoryMessage(serverId, mtags.batch, topicMessage);
+        return;
+      }
+      const key = `${serverId}-${channel.id}`;
+      store.setState((state) => ({
+        messages: {
+          ...state.messages,
+          [key]: [...(state.messages[key] || []), topicMessage],
+        },
+      }));
     }
   });
 

@@ -98,11 +98,17 @@ describe("CHATHISTORY TARGETS replies", () => {
     ircClient.nicks.delete(serverId);
   });
 
-  it("reopens an unpinned private chat for a nick target and fetches its history", () => {
+  it("reopens an unpinned private chat for a nick target", () => {
+    // MONITOR goes out only once ISUPPORT has shown the server has it.
+    feed(
+      ":soju 005 me MONITOR=100 :are supported by this server",
+      ":soju 376 me :End of /MOTD command.",
+    );
     feed(":soju CHATHISTORY TARGETS alice 2026-10-14T18:14:42.492Z");
     vi.runOnlyPendingTimers();
     expect(pms()).toEqual([{ username: "alice", isPinned: false }]);
-    expect(sent()).toContain("CHATHISTORY LATEST alice * 50");
+    // Its history is loaded when the chat is opened on screen.
+    expect(sent()).toContain("MONITOR + alice");
   });
 
   it("ignores channel targets and our own nick", () => {

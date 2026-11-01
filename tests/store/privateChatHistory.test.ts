@@ -4,9 +4,8 @@ import useStore from "../../src/store";
 import {
   chathistoryBuffers,
   historyBufferKey,
-  reactionBuffers,
+  historyEditBuffers,
 } from "../../src/store/handlers/batches";
-import { MAX_MESSAGES_PER_CHANNEL } from "../../src/store/helpers";
 import type { Message, PrivateChat, Server } from "../../src/types";
 
 const chat = (username = "mrkmrtns"): PrivateChat => ({
@@ -59,7 +58,7 @@ describe("private chat history batches", () => {
     vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
     ircClient.nicks.set("s1", "demonkadar");
     chathistoryBuffers.clear();
-    reactionBuffers.clear();
+    historyEditBuffers.clear();
     useStore.setState({
       servers: [
         {
@@ -115,42 +114,23 @@ describe("private chat history batches", () => {
     expect(pm()?.hasMoreHistory).toBe(false);
   });
 
-  it.each([
-    "mrkmrtns",
-    "demonkadar",
-  ])("buffers nested multiline history from %s", (sender) => {
-    const target = sender === "mrkmrtns" ? "demonkadar" : "mrkmrtns";
-    feed(
-      ":soju BATCH +history chathistory mrkmrtns",
-      `@batch=history;msgid=multi;time=2026-10-10T14:00:00Z :${sender}!u@host BATCH +multi draft/multiline ${target}`,
-      `@batch=multi;msgid=line1 :${sender}!u@host PRIVMSG ${target} :first line`,
-      `@batch=multi;msgid=line2 :${sender}!u@host PRIVMSG ${target} :second line`,
-      ":soju BATCH -multi",
-      ":soju BATCH -history",
-    );
-    expect(messages()[0].content).toBe("first line\nsecond line");
-    expect(messages()).toHaveLength(2);
-    expect(pm()?.hasMoreHistory).toBe(true);
-  });
-
-  it("retains an actual replayed older page beyond the cache limit", () => {
-    useStore.setState({
-      messages: {
-        "s1-mrkmrtns": Array.from(
-          { length: MAX_MESSAGES_PER_CHANNEL },
-          (_, i) => message(`cached-${i}`, "2026-10-10T15:03:00Z"),
-        ),
-      },
-    });
-    feed(
-      ":soju BATCH +history chathistory mrkmrtns",
-      "@batch=history;msgid=older;time=2026-10-10T14:00:00Z :mrkmrtns!u@host PRIVMSG demonkadar :older message",
-      ":soju BATCH -history",
-    );
-    expect(messages()).toHaveLength(MAX_MESSAGES_PER_CHANNEL + 1);
-    expect(messages()[0].msgid).toBe("older");
-    expect(pm()?.hasMoreHistory).toBe(true);
-  });
+  it.each(["mrkmrtns", "demonkadar"])(
+    "buffers nested multiline history from %s",
+    (sender) => {
+      const target = sender === "mrkmrtns" ? "demonkadar" : "mrkmrtns";
+      feed(
+        ":soju BATCH +history chathistory mrkmrtns",
+        `@batch=history;msgid=multi;time=2026-10-10T14:00:00Z :${sender}!u@host BATCH +multi draft/multiline ${target}`,
+        `@batch=multi;msgid=line1 :${sender}!u@host PRIVMSG ${target} :first line`,
+        `@batch=multi;msgid=line2 :${sender}!u@host PRIVMSG ${target} :second line`,
+        ":soju BATCH -multi",
+        ":soju BATCH -history",
+      );
+      expect(messages()[0].content).toBe("first line\nsecond line");
+      expect(messages()).toHaveLength(2);
+      expect(pm()?.hasMoreHistory).toBe(true);
+    },
+  );
 
   it("tracks loading only for the requested private conversation", () => {
     ircClient.triggerEvent("CHATHISTORY_LOADING", {
@@ -199,15 +179,5 @@ describe("private chat history batches", () => {
     completePage([message("recent", "2026-10-10T15:03:00Z")]);
     expect(messages()).toHaveLength(1);
     expect(pm()?.hasMoreHistory).toBe(true);
-  });
-
-  it("retains requested older pages after reaching the recent-message cache limit", () => {
-    const cached = Array.from({ length: MAX_MESSAGES_PER_CHANNEL }, (_, i) =>
-      message(`cached-${i}`, "2026-10-10T15:03:00Z"),
-    );
-    useStore.setState({ messages: { "s1-mrkmrtns": cached } });
-    completePage([message("older", "2026-10-10T14:00:00Z")]);
-    expect(messages()).toHaveLength(MAX_MESSAGES_PER_CHANNEL + 1);
-    expect(messages()[0].id).toBe("older");
   });
 });

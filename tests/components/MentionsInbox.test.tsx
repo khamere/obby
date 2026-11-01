@@ -85,17 +85,17 @@ describe("MentionsInbox", () => {
     const state = useStore.getState();
     expect(state.ui.selectedServerId).toBe("s2");
     expect(state.ui.perServerSelections.s2?.selectedChannelId).toBe("c2");
-    expect(state.ui.jumpRequest).toEqual({
-      channelKey: "s2-c2",
-      target: "act",
-    });
+    const loaded = Object.values(state.messages)
+      .flat()
+      .find((m) => m.msgid === "act");
+    expect(state.ui.messageJump?.messageId).toBe(loaded?.id);
     expect(state.mentionLog.find((m) => m.msgid === "act")?.seen).toBe(true);
   });
 
   it("marks everything read", () => {
     render(<MentionsInbox />);
     fireEvent.click(screen.getByLabelText("Mentions"));
-    fireEvent.click(screen.getByText("Mark all read"));
+    fireEvent.click(screen.getByText("Read all mentions"));
     expect(useStore.getState().mentionLog.every((m) => m.seen)).toBe(true);
     expect(screen.getByLabelText("Mentions")).toHaveTextContent("");
   });

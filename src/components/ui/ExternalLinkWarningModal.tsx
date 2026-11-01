@@ -1,18 +1,17 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type React from "react";
 import { useState } from "react";
-import {
-  FaCheck,
-  FaCopy,
-  FaExclamationTriangle,
-  FaExternalLinkAlt,
-} from "react-icons/fa";
-import BaseModal from "../../lib/modal/BaseModal";
-import { Button, ModalBody, ModalFooter } from "../../lib/modal/components";
+import { FaCheck, FaCopy, FaExternalLinkAlt } from "react-icons/fa";
+import { ConfirmDialog } from "../../lib/modal/ConfirmDialog";
+import { openExternalUrl } from "../../lib/openUrl";
+import { isTauri } from "../../lib/platformUtils";
 
 interface ExternalLinkWarningModalProps {
   isOpen: boolean;
   url: string;
+  // Called once the link is opened; the dialog opens it itself. On the web
+  // the confirm control is a real link, so a popup blocker cannot stop it;
+  // the apps hand the URL to the system browser.
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -35,67 +34,71 @@ const ExternalLinkWarningModal: React.FC<ExternalLinkWarningModalProps> = ({
 
   // Truncate very long URLs for display
   const displayUrl = url.length > 80 ? `${url.substring(0, 80)}...` : url;
+  const inApp = isTauri();
+  // Only web links become an anchor or go to the system browser; anything
+  // else (javascript:, data:, custom schemes) is closed without opening.
+  const webUrl = (() => {
+    try {
+      const parsed = new URL(url);
+      return parsed.protocol === "http:" || parsed.protocol === "https:"
+        ? parsed.href
+        : undefined;
+    } catch {
+      return undefined;
+    }
+  })();
+  const handleConfirm = () => {
+    if (inApp && webUrl) void openExternalUrl(webUrl);
+    onConfirm();
+  };
 
   return (
-    <BaseModal
+    <ConfirmDialog
       isOpen={isOpen}
-      onClose={onCancel}
-      title={
-        <div className="flex items-center gap-3">
-          <FaExclamationTriangle className="text-yellow-500 text-xl flex-shrink-0" />
-          <span>
-            <Trans>External Link Warning</Trans>
-          </span>
-        </div>
-      }
-      maxWidth="md"
-    >
-      <ModalBody>
-        <div className="space-y-4">
-          <p className="text-discord-text-normal">
-            <Trans>You are about to open an external link:</Trans>
-          </p>
-
-          <div className="bg-discord-dark-400 rounded p-3 break-all flex items-center gap-2">
-            <code className="text-sm text-discord-text-link flex-1">
-              {displayUrl}
-            </code>
-            <button
-              type="button"
-              aria-label={copied ? t`Copied` : t`Copy URL`}
-              onClick={handleCopy}
-              className="shrink-0 p-1.5 rounded text-discord-text-muted hover:text-discord-text-normal hover:bg-discord-dark-300 transition-colors"
-            >
-              {copied ? <FaCheck className="text-green-400" /> : <FaCopy />}
-            </button>
-          </div>
-
-          <div className="bg-yellow-500 bg-opacity-10 border border-yellow-500 border-opacity-30 rounded p-3">
-            <p className="text-sm text-yellow-200">
-              <Trans>
-                <strong>⚠️ Be careful!</strong> Only open links from trusted
-                sources. Malicious links can compromise your security or
-                privacy.
-              </Trans>
-            </p>
-          </div>
-
-          <p className="text-sm text-discord-text-normal">
-            <Trans>Do you want to open this link in a new tab?</Trans>
-          </p>
-        </div>
-      </ModalBody>
-
-      <ModalFooter>
-        <Button variant="secondary" onClick={onCancel}>
-          <Trans>Cancel</Trans>
-        </Button>
-        <Button variant="primary" onClick={onConfirm}>
-          <FaExternalLinkAlt className="inline mr-2 text-sm" />
+      title={<Trans>External Link Warning</Trans>}
+      confirmLabel={
+        <>
+          <FaExternalLinkAlt className="inline text-sm" />
           <Trans>Open Link</Trans>
-        </Button>
-      </ModalFooter>
-    </BaseModal>
+        </>
+      }
+      confirmHref={inApp ? undefined : webUrl}
+      onConfirm={handleConfirm}
+      onCancel={onCancel}
+    >
+      <div className="space-y-4">
+        <p className="text-discord-text-normal">
+          <Trans>You are about to open an external link:</Trans>
+        </p>
+
+        <div className="bg-discord-dark-400 rounded p-3 break-all flex items-center gap-2">
+          <code className="text-sm text-discord-text-link flex-1">
+            {displayUrl}
+          </code>
+          <button
+            type="button"
+            aria-label={copied ? t`Copied` : t`Copy URL`}
+            onClick={handleCopy}
+            className="shrink-0 p-1.5 rounded text-discord-text-muted hover:text-discord-text-normal hover:bg-discord-dark-300 transition-colors"
+          >
+            {copied ? <FaCheck className="text-green-400" /> : <FaCopy />}
+          </button>
+        </div>
+
+        <div className="bg-yellow-500 bg-opacity-10 border border-yellow-500 border-opacity-30 rounded p-3">
+          <p className="text-sm text-yellow-200">
+            <Trans>
+              <strong>⚠️ Be careful!</strong> Only open links from trusted
+              sources. Malicious links can compromise your security or privacy.
+            </Trans>
+          </p>
+        </div>
+
+        <p className="text-sm text-discord-text-normal">
+          <Trans>Do you want to open this link in a new tab?</Trans>
+        </p>
+      </div>
+    </ConfirmDialog>
   );
 };
 

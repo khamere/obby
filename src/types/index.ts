@@ -16,6 +16,8 @@ export interface User {
   metadata?: Record<string, { value: string | undefined; visibility: string }>;
 }
 
+export type WebPushFailure = "failed" | "timed-out";
+
 export type ConnectionState =
   | "disconnected"
   | "connecting"
@@ -84,11 +86,23 @@ export interface Server {
   privateChats: PrivateChat[];
   icon?: string;
   isConnected: boolean;
+  // The server welcomed us (001), so it accepts commands that need registration.
+  isRegistered?: boolean;
+  // Why this browser could not subscribe to the server's web push.
+  webPushFailure?: WebPushFailure;
   connectionState?: ConnectionState;
+  // The server refused our SASL credentials on this connection.
+  saslFailed?: boolean;
   isAway?: boolean; // Whether we are marked as away on this server
+  // The message of the day from the latest connection.
+  motd?: string[];
   awayMessage?: string; // Our away message on this server
   users: User[];
   capabilities?: string[];
+  // The account this connection is logged in to.
+  account?: string;
+  // The server answered MARKREAD with FAIL on this connection.
+  readMarkerRefused?: boolean;
   // Per-cap value strings as advertised in CAP LS (e.g.
   // "draft/account-2fa" -> "totp,webauthn,oauth", "sasl" ->
   // "PLAIN,EXTERNAL"). CAP ACK only echoes names so the value list
@@ -126,6 +140,10 @@ export interface Server {
   namedModes?: NamedModes;
   // draft/EMOJI ISUPPORT: URL to the network-wide pack document.
   emojiPackUrl?: string;
+  // VAPID= ISUPPORT: the key browsers subscribe to web push with.
+  vapidKey?: string;
+  // The push endpoint the Android app registered with this server.
+  pushEndpoint?: string;
   // draft/persistence state (populated from PERSISTENCE STATUS replies).
   // `preference` is what the user has explicitly set on this account
   // (ON/OFF) or DEFAULT meaning "follow the server-wide default".
@@ -176,10 +194,6 @@ export interface PushBotInfo {
 
 export interface BotCommandOption {
   name: string;
-  /** Drives the form-element used when the slash-command param modal
-   * renders this option.  Bot authors send the schema; the client
-   * picks the right control.  All types resolve to a string|number|
-   * boolean value on the wire. */
   type?:
     | "string"
     | "int"
@@ -332,6 +346,7 @@ export interface Channel {
   // user has marked as read in this channel (mirrored across all of
   // the user's connected sessions).  null = no marker on file yet.
   readMarker?: string | null;
+  needsKey?: boolean;
 }
 
 export interface PrivateChat {
@@ -436,6 +451,9 @@ export interface Message {
   motdLines?: string[];
   // True when the message was replayed from chathistory (not a live event)
   fromHistory?: boolean;
+  // Server text (MOTD, numeric replies): shown as is, in a monospace block,
+  // never as markdown, so ASCII art and indented lines survive.
+  preformatted?: boolean;
   // labeled-response: when the user sends a message with the
   // labeled-response cap acked, we insert a local placeholder
   // immediately and wait for the server's echo to match it back.

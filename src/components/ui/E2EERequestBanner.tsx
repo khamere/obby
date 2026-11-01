@@ -75,7 +75,7 @@ export const E2EERequestBanner: React.FC<{
         </div>
         <button
           type="button"
-          className="rounded bg-discord-primary px-3 py-1 text-xs font-medium text-white hover:bg-discord-primary-hover"
+          className="rounded button-primary px-3 py-1 text-xs font-medium"
           onClick={() => acceptE2EEOffer(serverId, nick)}
         >
           <Trans>Accept</Trans>
@@ -122,7 +122,7 @@ export const E2EERequestBanner: React.FC<{
         </div>
         <button
           type="button"
-          className="rounded bg-discord-primary px-3 py-1 text-xs font-medium text-white hover:bg-discord-primary-hover"
+          className="rounded button-primary px-3 py-1 text-xs font-medium"
           onClick={() => openE2EEVerify(serverId, nick)}
         >
           <Trans>Verify…</Trans>
@@ -144,9 +144,9 @@ export const E2EERequestBanner: React.FC<{
         <FaExclamationTriangle className="flex-shrink-0 text-discord-red" />
         <div className="min-w-0 flex-1 text-sm text-discord-text-normal">
           <Trans>
-            {nick}'s encryption key changed. That happens on a new device, and
-            it is also what an attacker looks like. Compare the new fingerprint
-            with {nick} somewhere other than this chat, then accept it.
+            {nick}'s encryption key changed. This happens when {nick} uses a new
+            device, and also when an attacker intercepts the chat. Compare the
+            new fingerprint with {nick} outside this chat, then accept it.
           </Trans>
         </div>
         {/* Reviewing is the primary action. Ending encryption and handshaking
@@ -189,7 +189,7 @@ export const E2EERequestBanner: React.FC<{
           // encryption, so the banner reporting it has to carry that control.
           <button
             type="button"
-            className="rounded bg-discord-primary px-3 py-1 text-xs font-medium text-white hover:bg-discord-primary-hover"
+            className="rounded button-primary px-3 py-1 text-xs font-medium"
             onClick={() => resetE2EESession(serverId, nick)}
           >
             <Trans>End encryption</Trans>
