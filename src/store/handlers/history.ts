@@ -86,6 +86,11 @@ type PendingRequest =
 
 const recorders = new Map<string, HistoryRecorder>();
 const pendingRequests = new Map<string, PendingRequest[]>();
+// Servers whose history pages carry no msgids (soju's file store). The
+// recorder cannot match such lines back by msgid, so it saves none of them,
+// and an older channel page fetched for the disk would never show. Those
+// servers get their older pages shown straight from the reply instead.
+const historyWithoutMsgids = new Set<string>();
 // The gap a BEFORE request is about to fill. We attach it when the line
 // actually leaves, so a request the socket dropped never claims a reply.
 let nextGapFill: GapFill | undefined;
@@ -338,6 +343,10 @@ async function saveHistoryPage(
     .get(conversationKey(serverId, target))
     ?.shift();
   const inserted = rows.length ? await saveRows(store, rows) : [];
+  if (page.size > 0) {
+    if (page.msgids.length === 0) historyWithoutMsgids.add(key);
+    else historyWithoutMsgids.delete(key);
+  }
   for (const msgid of redacts) await deleteMessage(key, target, msgid);
   if (page.oldest !== undefined && page.newest !== undefined)
     await deleteMessagesMissingFromPage(
@@ -1059,6 +1068,13 @@ function diskFirstFill(
       void (async () => {
         if (isSaved && (await replayOlderDiskPage(store, serverId, target)))
           return;
+        // The page had lines but none we could save, so the server does not
+        // send msgids: ask for the same page again, this time to be shown.
+        if (page && page.size > 0 && historyWithoutMsgids.has(serverId)) {
+          if (!requestPageBefore(serverId, target, oldestTime, gap && { gap }))
+            setLoading(serverId, target, false);
+          return;
+        }
         // A page of lines we never show, like typing notices, can have history behind it.
         if (isSaved && page?.oldest !== undefined && page.oldest < oldestTime) {
           await loadOlderMessages(store, serverId, target, page.oldest);
@@ -1117,7 +1133,8 @@ export async function loadOlderMessages(
         serverId,
         target,
         plan.before,
-        ircClient.isChannel(serverId, target)
+        ircClient.isChannel(serverId, target) &&
+          !historyWithoutMsgids.has(serverId)
           ? diskFirstFill(store, serverId, target, before, plan.gap)
           : plan.gap && { gap: plan.gap },
       );
