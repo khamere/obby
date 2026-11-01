@@ -76,8 +76,10 @@ export function deviceAccessUnavailable(): boolean {
 /** Sorts a getUserMedia or getDisplayMedia failure the same way for every
  *  caller, so a denied device reads the same wherever it happens. */
 export function classifyMediaError(err: unknown): MediaErrorKind {
-  if (deviceAccessUnavailable()) return "insecure";
   const name = err instanceof DOMException ? err.name : "";
+  // A DOMException came from mediaDevices, so it existed; anything else with
+  // no mediaDevices at all means the page is not a secure context.
+  if (!name && deviceAccessUnavailable()) return "insecure";
   if (name === "NotAllowedError" || name === "SecurityError") return "blocked";
   if (name === "NotFoundError" || name === "OverconstrainedError") {
     return "missing";
