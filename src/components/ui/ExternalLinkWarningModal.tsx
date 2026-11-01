@@ -35,8 +35,20 @@ const ExternalLinkWarningModal: React.FC<ExternalLinkWarningModalProps> = ({
   // Truncate very long URLs for display
   const displayUrl = url.length > 80 ? `${url.substring(0, 80)}...` : url;
   const inApp = isTauri();
+  // Only web links become an anchor or go to the system browser; anything
+  // else (javascript:, data:, custom schemes) is closed without opening.
+  const webUrl = (() => {
+    try {
+      const parsed = new URL(url);
+      return parsed.protocol === "http:" || parsed.protocol === "https:"
+        ? parsed.href
+        : undefined;
+    } catch {
+      return undefined;
+    }
+  })();
   const handleConfirm = () => {
-    if (inApp) void openExternalUrl(url);
+    if (inApp && webUrl) void openExternalUrl(webUrl);
     onConfirm();
   };
 
@@ -50,7 +62,7 @@ const ExternalLinkWarningModal: React.FC<ExternalLinkWarningModalProps> = ({
           <Trans>Open Link</Trans>
         </>
       }
-      confirmHref={inApp ? undefined : url}
+      confirmHref={inApp ? undefined : webUrl}
       onConfirm={handleConfirm}
       onCancel={onCancel}
     >

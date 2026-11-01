@@ -25,4 +25,19 @@ describe("ExternalLinkWarningModal", () => {
     expect(open).not.toHaveBeenCalled();
     open.mockRestore();
   });
+
+  it("never turns a non-web URL into a link", () => {
+    const onConfirm = vi.fn();
+    render(
+      <ExternalLinkWarningModal
+        isOpen
+        url="javascript:alert(1)"
+        onConfirm={onConfirm}
+        onCancel={() => {}}
+      />,
+    );
+    expect(screen.queryByRole("link", { name: /open link/i })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /open link/i }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
 });
