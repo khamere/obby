@@ -180,6 +180,41 @@ export const ChannelMessageList = forwardRef<
     // ResizeObserver. When scrollTop is corrected after a prepend, we update this so the RO's
     // "was at bottom" check is not fooled by the adjusted scrollTop vs its stale prevSH.
     const resizeObserverPrevSHRef = useRef(0);
+    // The row at the top of the view and where it sits, so a preview that
+    // grows or shrinks above the reader leaves what they are reading where it
+    // is. Native scroll anchoring is off on the list (it fought the prepend
+    // correction), so the list keeps its own.
+    const viewAnchorRef = useRef<{ id: string; top: number } | null>(null);
+    const captureViewAnchor = (container: HTMLElement) => {
+      const box = container.getBoundingClientRect();
+      // The first row that starts inside the view, found by bisection since
+      // rows sit in order. A row cut by the top edge may itself be what
+      // changes size, and its own top is no place to hold on to.
+      const rows = container.querySelectorAll<HTMLElement>("[data-message-id]");
+      let lo = 0;
+      let hi = rows.length;
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (rows[mid].getBoundingClientRect().top >= box.top - 1) hi = mid;
+        else lo = mid + 1;
+      }
+      const row = rows[lo] as HTMLElement | undefined;
+      const id = row?.getAttribute("data-message-id");
+      viewAnchorRef.current =
+        row && id
+          ? { id, top: row.getBoundingClientRect().top - box.top }
+          : null;
+    };
+    const keepViewAnchor = (container: HTMLElement): boolean => {
+      const anchor = viewAnchorRef.current;
+      const row = anchor && findMessageRow(container, anchor.id);
+      if (!row) return false;
+      const top =
+        row.getBoundingClientRect().top - container.getBoundingClientRect().top;
+      if (Math.abs(top - anchor.top) > 1)
+        container.scrollTop += top - anchor.top;
+      return true;
+    };
 
     const channelMessages = useStore(
       useCallback(
@@ -238,8 +273,10 @@ export const ChannelMessageList = forwardRef<
       const container = messagesContainerRef.current;
       if (!container) return;
       const onScroll = () => {
-        if (container.clientHeight > 0)
+        if (container.clientHeight > 0) {
           lastScrollTopRef.current = container.scrollTop;
+          captureViewAnchor(container);
+        }
       };
       container.addEventListener("scroll", onScroll, { passive: true });
       return () => container.removeEventListener("scroll", onScroll);
@@ -825,10 +862,12 @@ export const ChannelMessageList = forwardRef<
           keepHeldRowInPlace();
         } else if (wasAtPrevBottom && !isDetachedRef.current) {
           followNewMessages();
-        } else if (widthChanged && prevSH > 0) {
+        } else if (!keepViewAnchor(container) && widthChanged && prevSH > 0) {
           const ratio = container.scrollTop / prevSH;
           container.scrollTop = Math.round(ratio * container.scrollHeight);
         }
+        // Whatever moved, the next change is measured from where the view is now.
+        captureViewAnchor(container);
       });
       observer.observe(inner);
       return () => observer.disconnect();
