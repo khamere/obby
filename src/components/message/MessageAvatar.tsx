@@ -79,7 +79,7 @@ export const MessageAvatar: React.FC<MessageAvatarProps> = ({
             role="img"
             aria-label={isAway ? t`Away` : t`Online`}
             title={isAway ? t`Away` : t`Online`}
-            className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-discord-dark-600 ${isAway ? "bg-discord-yellow" : "bg-discord-green"}`}
+            className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-discord-dark-600 ${isAway ? "bg-yellow-500" : "bg-green-500"}`}
           />
         )}
         {userStatus && (
