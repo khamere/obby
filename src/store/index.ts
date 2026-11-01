@@ -3640,16 +3640,10 @@ const useStore = create<AppState>((set, get) => ({
         (m) => m.messageId === entry.messageId,
       ),
     }));
-    // The log keeps the internal id while the message is loaded and its
-    // msgid for after it has been paged out and loaded again.
-    const loaded = Object.values(get().messages)
-      .flat()
-      .find(
-        (m) =>
-          m.id === entry.messageId ||
-          (!!entry.msgid && m.msgid === entry.msgid),
-      );
-    if (loaded) get().revealMessage(loaded.id);
+    // Loaded, saved, or fetched from the server around it; the module
+    // reports a failure to the user itself. Loaded lazily: it imports the
+    // store, and a static import here would make a cycle.
+    void import("../lib/jumpToMention").then((m) => m.jumpToMention(entry));
   },
 
   dismissMentions: (channelKey) => {

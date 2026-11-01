@@ -97,7 +97,7 @@ describe("mention log", () => {
     expect(log().map((m) => m.msgid)).toEqual(["a"]);
   });
 
-  it("jumps to a mention and marks it seen", () => {
+  it("jumps to a mention and marks it seen", async () => {
     feed(
       "@msgid=a :bob!u@h PRIVMSG #two :me first",
       "@msgid=b :bob!u@h PRIVMSG #two :me second",
@@ -106,7 +106,10 @@ describe("mention log", () => {
     const loaded = Object.values(useStore.getState().messages)
       .flat()
       .find((m) => m.msgid === "a");
-    expect(useStore.getState().ui.messageJump?.messageId).toBe(loaded?.id);
+    // The jump module loads lazily, so the reveal lands a tick later.
+    await vi.waitFor(() =>
+      expect(useStore.getState().ui.messageJump?.messageId).toBe(loaded?.id),
+    );
     expect(unseenMentions(log(), "s1-c2").map((m) => m.msgid)).toEqual(["b"]);
 
     useStore.getState().dismissMentions("s1-c2");
