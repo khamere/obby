@@ -9,11 +9,14 @@ const SPINNER_DELAY_MS = 500;
 
 interface MessageStatusIndicatorProps {
   status: "pending" | "failed";
+  // The server's words for the refusal, when it gave any.
+  reason?: string;
   onRetry?: () => void;
 }
 
 export function MessageStatusIndicator({
   status,
+  reason,
   onRetry,
 }: MessageStatusIndicatorProps) {
   const { t } = useLingui();
@@ -42,14 +45,17 @@ export function MessageStatusIndicator({
   }
 
   return (
-    <button
-      type="button"
-      onClick={onRetry}
-      className="ml-2 inline-flex items-center text-discord-text-muted hover:text-discord-red cursor-pointer bg-transparent border-none p-0 align-middle"
-      aria-label={t`Retry sending`}
-      title={t`Retry sending`}
-    >
-      <RefreshIcon className="h-3.5 w-3.5" />
-    </button>
+    <span className="ml-2 inline-flex items-center gap-1.5 align-middle text-xs text-discord-red">
+      <span>{reason ? t`Not delivered: ${reason}` : t`Not delivered`}</span>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="inline-flex items-center text-discord-text-muted hover:text-discord-red cursor-pointer bg-transparent border-none p-0 align-middle"
+        aria-label={t`Retry sending`}
+        title={t`Retry sending`}
+      >
+        <RefreshIcon className="h-3.5 w-3.5" />
+      </button>
+    </span>
   );
 }
