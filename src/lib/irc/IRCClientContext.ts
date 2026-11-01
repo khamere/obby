@@ -53,6 +53,8 @@ export interface IRCClientContext {
   takeMotdRequest(serverId: string): boolean;
   // The registration burst ended: ISUPPORT is known, queued MONITORs go out.
   finishRegistration(serverId: string): void;
+  // The server answered TAGMSG with "Unknown command"; no more go out.
+  noteTagmsgRefused(serverId: string): void;
   activeBatches: Map<
     string,
     Map<

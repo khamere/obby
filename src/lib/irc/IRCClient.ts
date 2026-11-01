@@ -1114,6 +1114,7 @@ export class IRCClient implements IRCClientContext {
     }
     this.registered.delete(serverId);
     this.pendingMonitor.delete(serverId);
+    this.tagmsgRefused.delete(serverId);
     const server = this.servers.get(serverId);
     if (server) {
       server.isConnected = false;
@@ -1282,7 +1283,18 @@ export class IRCClient implements IRCClientContext {
     return this.sockets.get(serverId)?.readyState === WebSocket.OPEN;
   }
 
+  // Servers that answered TAGMSG with "Unknown command": a network without
+  // message-tags behind a bouncer that forwards everything. Typing notices
+  // and reactions would only draw that error again, so they stop going out.
+  private tagmsgRefused = new Set<string>();
+
+  noteTagmsgRefused(serverId: string): void {
+    this.tagmsgRefused.add(serverId);
+  }
+
   sendRaw(serverId: string, command: string): void {
+    if (this.tagmsgRefused.has(serverId) && /^(?:@\S+ )?TAGMSG /i.test(command))
+      return;
     const socket = this.sockets.get(serverId);
     if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(command);

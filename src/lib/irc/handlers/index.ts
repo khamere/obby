@@ -138,6 +138,17 @@ export type HandlerFn = (
   trailing: string,
 ) => void;
 
+const AUTOMATIC_COMMANDS = new Set([
+  "TAGMSG",
+  "MONITOR",
+  "MARKREAD",
+  "CHATHISTORY",
+  "METADATA",
+  "SETNAME",
+  "BATCH",
+  "BOUNCER",
+]);
+
 export const IRC_DISPATCH: Record<string, HandlerFn> = {
   PING: (ctx, serverId, source, parv, mtags, trailing) =>
     handlePing(ctx, serverId, source, parv),
@@ -155,6 +166,20 @@ export const IRC_DISPATCH: Record<string, HandlerFn> = {
   "372": (ctx, serverId, source, parv) =>
     handleRplMotd(ctx, serverId, source, parv),
   "376": (ctx, serverId) => handleRplEndOfMotd(ctx, serverId),
+  // ERR_UNKNOWNCOMMAND: only a command the user could have typed is worth a
+  // line; the ones Obby sends on its own (typing notices, presence, history,
+  // metadata) just mean the network lacks that extension.
+  "421": (ctx, serverId, source, parv) => {
+    const verb = (parv[1] ?? "").toUpperCase();
+    if (verb === "TAGMSG") ctx.noteTagmsgRefused(serverId);
+    if (AUTOMATIC_COMMANDS.has(verb)) return;
+    ctx.triggerEvent("SERVER_REPLY", {
+      serverId,
+      source,
+      numeric: "421",
+      text: parv.slice(1).join(" "),
+    });
+  },
   // ERR_NOMOTD: soju sends one on every connect ("Use /motd ..."), so only an
   // answer to our own /motd is worth showing.
   "422": (ctx, serverId, source, parv) => {
