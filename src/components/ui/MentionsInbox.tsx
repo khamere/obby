@@ -35,6 +35,15 @@ export const MentionsInbox: React.FC = () => {
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   const entries = useMemo(() => [...mentionLog].reverse(), [mentionLog]);
+  const hasUnread = useMemo(
+    () =>
+      servers.some((s) =>
+        [...s.channels, ...(s.privateChats ?? [])].some(
+          (c) => c.unreadCount > 0 || c.isMentioned,
+        ),
+      ),
+    [servers],
+  );
   const unseen = useMemo(
     () => mentionLog.filter((m) => !m.seen).length,
     [mentionLog],
@@ -78,14 +87,33 @@ export const MentionsInbox: React.FC = () => {
         width={360}
         title={<Trans>Mentions</Trans>}
         titleAdornment={
-          unseen > 0 ? (
-            <button
-              type="button"
-              className="text-xs text-discord-text-link hover:underline"
-              onClick={() => useStore.getState().markAllMentionsSeen()}
-            >
-              <Trans>Mark all read</Trans>
-            </button>
+          unseen > 0 || hasUnread ? (
+            <span className="flex items-center gap-2 text-xs">
+              {unseen > 0 && (
+                <button
+                  type="button"
+                  className="text-discord-text-link hover:underline"
+                  onClick={() => useStore.getState().markAllMentionsSeen()}
+                >
+                  <Trans>Read all mentions</Trans>
+                </button>
+              )}
+              {unseen > 0 && hasUnread && (
+                <span className="text-discord-text-muted" aria-hidden="true">
+                  ·
+                </span>
+              )}
+              {hasUnread && (
+                <button
+                  type="button"
+                  className="text-discord-text-link hover:underline"
+                  onClick={() => useStore.getState().markAllRead()}
+                  title={t`Mark every chat on every network read`}
+                >
+                  <Trans>Read all</Trans>
+                </button>
+              )}
+            </span>
           ) : null
         }
         bodyClassName="max-h-[60vh]"

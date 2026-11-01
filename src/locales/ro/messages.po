@@ -3475,10 +3475,6 @@ msgstr "Gestionează informațiile profilului și metadatele"
 msgid "Manual oper"
 msgstr "OPER manual"
 
-#: src/components/ui/MentionsInbox.tsx
-msgid "Mark all read"
-msgstr "Marchează tot ca citit"
-
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Mark as bot - usually 'on' or empty"
 msgstr "Marcați ca bot, de obicei 'on' sau gol"
@@ -3490,6 +3486,10 @@ msgstr "Marchează ca citit"
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "Mark as verified"
 msgstr "Marchează ca verificat"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mark every chat on every network read"
+msgstr "Marchează toate conversațiile din toate rețelele ca citite"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Mark the channel as private."
@@ -4711,8 +4711,13 @@ msgid "reacted to this message"
 msgstr "a reacționat la acest mesaj"
 
 #: src/components/message/CollapsibleMessage.tsx
+#: src/components/ui/MentionsInbox.tsx
 msgid "Read all"
 msgstr "Citește tot"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Read all mentions"
+msgstr "Citește toate mențiunile"
 
 #: src/components/ui/PluginsScreen.tsx
 msgid "Read every message in your own language."

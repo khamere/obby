@@ -108,6 +108,34 @@ afterEach(() => {
 });
 
 describe("read markers", () => {
+  it("marks every chat with unread lines read from the Read all button", async () => {
+    const { useStore, markreadSet, channel } = await boot({ selected: false });
+    useStore.setState((state) => ({
+      servers: state.servers.map((s) => ({
+        ...s,
+        channels: [
+          ...s.channels,
+          {
+            ...s.channels[0],
+            id: "chan-2",
+            name: "#quiet",
+            unreadCount: 0,
+            mentionCount: 0,
+            isMentioned: false,
+          },
+        ],
+      })),
+    }));
+    useStore.getState().markAllRead();
+    expect(markreadSet).toHaveBeenCalledTimes(1);
+    expect(markreadSet).toHaveBeenCalledWith(
+      SERVER,
+      "#chan",
+      new Date(BASE + 3000).toISOString(),
+    );
+    expect(channel()).toMatchObject({ unreadCount: 0, isMentioned: false });
+  });
+
   it("puts the new messages line above the first message from someone else after the marker", async () => {
     const { helpers } = await boot({ selected: false });
     const messages = [message(1), message(2, "tester"), message(3)];

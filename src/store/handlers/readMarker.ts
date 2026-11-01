@@ -105,6 +105,16 @@ export function markChatRead(
   if (tracks) ircClient.markreadSet(serverId, targetOf(chat), marker);
 }
 
+// Every chat with unread lines, on every server: the "Read all" button.
+export function markAllChatsRead(store: StoreApi<AppState>): void {
+  for (const server of store.getState().servers) {
+    for (const chat of [...server.channels, ...(server.privateChats ?? [])]) {
+      if (chat.unreadCount > 0 || chat.isMentioned)
+        markChatRead(store, server.id, chat.id);
+    }
+  }
+}
+
 function viewedChat(state: AppState) {
   const serverId = state.ui.selectedServerId;
   if (!serverId) return undefined;

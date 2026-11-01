@@ -3475,10 +3475,6 @@ msgstr "Hallinnoi profiilitietojasi ja metatietoja"
 msgid "Manual oper"
 msgstr "Manuaalinen operaattori"
 
-#: src/components/ui/MentionsInbox.tsx
-msgid "Mark all read"
-msgstr "Merkitse kaikki luetuiksi"
-
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Mark as bot - usually 'on' or empty"
 msgstr "Merkitse botiksi – yleensä 'on' tai tyhjä"
@@ -3490,6 +3486,10 @@ msgstr "Merkitse luetuksi"
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "Mark as verified"
 msgstr "Merkitse vahvistetuksi"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mark every chat on every network read"
+msgstr "Merkitse kaikkien verkkojen kaikki keskustelut luetuiksi"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Mark the channel as private."
@@ -4711,8 +4711,13 @@ msgid "reacted to this message"
 msgstr "reagoi tähän viestiin"
 
 #: src/components/message/CollapsibleMessage.tsx
+#: src/components/ui/MentionsInbox.tsx
 msgid "Read all"
 msgstr "Lue kaikki"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Read all mentions"
+msgstr "Lue kaikki maininnat"
 
 #: src/components/ui/PluginsScreen.tsx
 msgid "Read every message in your own language."

@@ -3475,10 +3475,6 @@ msgstr "Управление информацией профиля и метад
 msgid "Manual oper"
 msgstr "Ручной OPER"
 
-#: src/components/ui/MentionsInbox.tsx
-msgid "Mark all read"
-msgstr "Отметить всё как прочитанное"
-
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Mark as bot - usually 'on' or empty"
 msgstr "Пометить как бота — обычно «on» или пусто"
@@ -3490,6 +3486,10 @@ msgstr "Отметить как прочитанное"
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "Mark as verified"
 msgstr "Отметить как проверенный"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mark every chat on every network read"
+msgstr "Отметить все чаты во всех сетях прочитанными"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Mark the channel as private."
@@ -4711,8 +4711,13 @@ msgid "reacted to this message"
 msgstr "отреагировал на это сообщение"
 
 #: src/components/message/CollapsibleMessage.tsx
+#: src/components/ui/MentionsInbox.tsx
 msgid "Read all"
 msgstr "Прочитать всё"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Read all mentions"
+msgstr "Прочитать все упоминания"
 
 #: src/components/ui/PluginsScreen.tsx
 msgid "Read every message in your own language."

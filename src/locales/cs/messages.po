@@ -3475,10 +3475,6 @@ msgstr "Spravujte informace profilu a metadata"
 msgid "Manual oper"
 msgstr "Ruční OPER"
 
-#: src/components/ui/MentionsInbox.tsx
-msgid "Mark all read"
-msgstr "Označit vše jako přečtené"
-
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Mark as bot - usually 'on' or empty"
 msgstr "Označit jako bot - obvykle 'on' nebo prázdné"
@@ -3490,6 +3486,10 @@ msgstr "Označit jako přečtené"
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "Mark as verified"
 msgstr "Označit jako ověřené"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mark every chat on every network read"
+msgstr "Označit všechny chaty ve všech sítích jako přečtené"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Mark the channel as private."
@@ -4711,8 +4711,13 @@ msgid "reacted to this message"
 msgstr "reagoval na tuto zprávu"
 
 #: src/components/message/CollapsibleMessage.tsx
+#: src/components/ui/MentionsInbox.tsx
 msgid "Read all"
 msgstr "Přečíst vše"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Read all mentions"
+msgstr "Přečíst všechny zmínky"
 
 #: src/components/ui/PluginsScreen.tsx
 msgid "Read every message in your own language."

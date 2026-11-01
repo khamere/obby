@@ -3475,10 +3475,6 @@ msgstr "Profil bilgilerinizi ve meta verilerinizi yönetin"
 msgid "Manual oper"
 msgstr "Manuel OPER"
 
-#: src/components/ui/MentionsInbox.tsx
-msgid "Mark all read"
-msgstr "Tümünü okundu işaretle"
-
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Mark as bot - usually 'on' or empty"
 msgstr "Bot olarak işaretle - genellikle 'on' veya boş"
@@ -3490,6 +3486,10 @@ msgstr "Okundu olarak işaretle"
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "Mark as verified"
 msgstr "Doğrulanmış olarak işaretle"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mark every chat on every network read"
+msgstr "Tüm ağlardaki tüm sohbetleri okundu olarak işaretle"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Mark the channel as private."
@@ -4711,8 +4711,13 @@ msgid "reacted to this message"
 msgstr "bu mesaja tepki verdi"
 
 #: src/components/message/CollapsibleMessage.tsx
+#: src/components/ui/MentionsInbox.tsx
 msgid "Read all"
 msgstr "Hepsini oku"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Read all mentions"
+msgstr "Tüm bahsetmeleri oku"
 
 #: src/components/ui/PluginsScreen.tsx
 msgid "Read every message in your own language."

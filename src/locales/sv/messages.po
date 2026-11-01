@@ -3475,10 +3475,6 @@ msgstr "Hantera din profilinformation och metadata"
 msgid "Manual oper"
 msgstr "Manuell OPER"
 
-#: src/components/ui/MentionsInbox.tsx
-msgid "Mark all read"
-msgstr "Markera alla som lästa"
-
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Mark as bot - usually 'on' or empty"
 msgstr "Markera som bot – vanligtvis 'on' eller tomt"
@@ -3490,6 +3486,10 @@ msgstr "Markera som läst"
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "Mark as verified"
 msgstr "Markera som verifierad"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Mark every chat on every network read"
+msgstr "Markera alla chattar i alla nätverk som lästa"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Mark the channel as private."
@@ -4711,8 +4711,13 @@ msgid "reacted to this message"
 msgstr "reagerade på det här meddelandet"
 
 #: src/components/message/CollapsibleMessage.tsx
+#: src/components/ui/MentionsInbox.tsx
 msgid "Read all"
 msgstr "Läs allt"
+
+#: src/components/ui/MentionsInbox.tsx
+msgid "Read all mentions"
+msgstr "Läs alla omnämnanden"
 
 #: src/components/ui/PluginsScreen.tsx
 msgid "Read every message in your own language."
