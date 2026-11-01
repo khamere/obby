@@ -1058,6 +1058,10 @@ msgstr "av {0}"
 msgid "Calls"
 msgstr "Samtal"
 
+#: src/lib/voiceErrors.ts
+msgid "Calls need a secure connection: open Obby over https"
+msgstr "Samtal kräver en säker anslutning: öppna Obby via https"
+
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/settings/CallCameraField.tsx
@@ -2023,7 +2027,7 @@ msgstr "Beskrivning (valfritt)"
 msgid "Design your own colors and share them as themes."
 msgstr "Designa egna färger och dela dem som teman."
 
-#: src/components/ui/settings/useDeviceAccess.ts
+#: src/lib/mediaDevices.ts
 msgid "Device access needs a secure connection. Open Obby over https (or on localhost) to use the microphone and camera."
 msgstr "Åtkomst till enheter kräver en säker anslutning. Öppna Obby via https (eller på localhost) för att använda mikrofon och kamera."
 

@@ -1058,6 +1058,10 @@ msgstr "od {0}"
 msgid "Calls"
 msgstr "Hovory"
 
+#: src/lib/voiceErrors.ts
+msgid "Calls need a secure connection: open Obby over https"
+msgstr "Hovory vyžadují zabezpečené připojení: otevřete Obby přes https"
+
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/settings/CallCameraField.tsx
@@ -2023,7 +2027,7 @@ msgstr "Popis (volitelné)"
 msgid "Design your own colors and share them as themes."
 msgstr "Navrhněte vlastní barvy a sdílejte je jako motivy."
 
-#: src/components/ui/settings/useDeviceAccess.ts
+#: src/lib/mediaDevices.ts
 msgid "Device access needs a secure connection. Open Obby over https (or on localhost) to use the microphone and camera."
 msgstr "Přístup k zařízením vyžaduje zabezpečené připojení. Otevřete Obby přes https (nebo na localhost), abyste mohli používat mikrofon a kameru."
 

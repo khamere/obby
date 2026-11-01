@@ -1058,6 +1058,10 @@ msgstr "автор: {0}"
 msgid "Calls"
 msgstr "Дзвінки"
 
+#: src/lib/voiceErrors.ts
+msgid "Calls need a secure connection: open Obby over https"
+msgstr "Для дзвінків потрібне захищене з'єднання: відкрийте Obby через https"
+
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/settings/CallCameraField.tsx
@@ -2023,7 +2027,7 @@ msgstr "Опис (необов'язково)"
 msgid "Design your own colors and share them as themes."
 msgstr "Створюйте власні кольори та діліться ними як темами."
 
-#: src/components/ui/settings/useDeviceAccess.ts
+#: src/lib/mediaDevices.ts
 msgid "Device access needs a secure connection. Open Obby over https (or on localhost) to use the microphone and camera."
 msgstr "Для доступу до пристроїв потрібне захищене з'єднання. Відкрийте Obby через https (або на localhost), щоб користуватися мікрофоном і камерою."
 

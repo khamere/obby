@@ -1058,6 +1058,10 @@ msgstr "作者: {0}"
 msgid "Calls"
 msgstr "通話"
 
+#: src/lib/voiceErrors.ts
+msgid "Calls need a secure connection: open Obby over https"
+msgstr "通話には安全な接続が必要です。Obby を https で開いてください"
+
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/settings/CallCameraField.tsx
@@ -2023,7 +2027,7 @@ msgstr "説明 (任意)"
 msgid "Design your own colors and share them as themes."
 msgstr "自分だけの配色を作ってテーマとして共有しましょう。"
 
-#: src/components/ui/settings/useDeviceAccess.ts
+#: src/lib/mediaDevices.ts
 msgid "Device access needs a secure connection. Open Obby over https (or on localhost) to use the microphone and camera."
 msgstr "デバイスへのアクセスには安全な接続が必要です。マイクとカメラを使うには、Obby を https（または localhost）で開いてください。"
 
