@@ -451,6 +451,9 @@ export interface Message {
   motdLines?: string[];
   // True when the message was replayed from chathistory (not a live event)
   fromHistory?: boolean;
+  // Server text (MOTD, numeric replies): shown as is, in a monospace block,
+  // never as markdown, so ASCII art and indented lines survive.
+  preformatted?: boolean;
   // labeled-response: when the user sends a message with the
   // labeled-response cap acked, we insert a local placeholder
   // immediately and wait for the server's echo to match it back.

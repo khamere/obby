@@ -37,6 +37,7 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
       reactions: [],
       replyMessage: null,
       mentioned: [],
+      preformatted: true,
     });
   });
 
@@ -75,6 +76,7 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
       reactions: [],
       replyMessage: null,
       mentioned: [],
+      preformatted: true,
     });
   });
 
