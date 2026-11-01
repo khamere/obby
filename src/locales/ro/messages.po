@@ -94,6 +94,12 @@ msgstr "{0} inactiv"
 msgid "{0} network{1} — pick one to join"
 msgstr "{0} rețea{1} — alege una pentru a te conecta"
 
+#. placeholder {0}: rules.rules.length
+#. placeholder {1}: rules.skipped
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "{0} rules loaded, {1} skipped"
+msgstr "{0} reguli încărcate, {1} omise"
+
 #. placeholder {0}: viewerMembers.length
 #: src/components/layout/VoiceChannelView.tsx
 msgid "{0} watching"
@@ -1028,6 +1034,10 @@ msgstr "Bot în acest canal"
 msgid "Bots"
 msgstr "Boți"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Bridge rules"
+msgstr "Reguli de punte"
+
 #: src/lib/mediaDevices.ts
 #: src/lib/voiceErrors.ts
 msgid "Bring this window to the front and try again."
@@ -1781,6 +1791,10 @@ msgstr "Nu s-a putut încărca acest link."
 msgid "Could not load this link. It must point to the raw .css file."
 msgstr "Acest link nu a putut fi încărcat. Trebuie să ducă direct la fișierul .css."
 
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Could not load this link. It must point to the raw .json file."
+msgstr "Acest link nu a putut fi încărcat. Trebuie să indice direct fișierul .json."
+
 #: src/lib/mediaUpload.ts
 msgid "Could not reach the file host. Check your connection and try again."
 msgstr "Nu s-a putut contacta gazda de fișiere. Verifică conexiunea și încearcă din nou."
@@ -2430,6 +2444,10 @@ msgstr "Introdu un nume de cont pentru a te autentifica cu SASL PLAIN înainte d
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Enter an http(s) link to a .css file."
 msgstr "Introdu un link http(s) către un fișier .css."
+
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Enter an http(s) link to a .json file."
+msgstr "Introdu un link http(s) către un fișier .json."
 
 #: src/components/ui/settings/ThemeLinkField.tsx
 msgid "Enter an http(s) link to a theme .json file."
@@ -3217,6 +3235,10 @@ msgstr "Păstrează canalul după ce pleacă toată lumea. Doar IRCops pot seta 
 msgid "Kept in this browser and applied after the linked file, so it can override it."
 msgstr "Salvat în acest browser și aplicat după fișierul din link, ca să-l poată suprascrie."
 
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Kept in this browser. A rule here replaces the linked rule for the same network and bot."
+msgstr "Păstrat în acest browser. O regulă de aici înlocuiește regula legată pentru aceeași rețea și același bot."
+
 #: src/components/ui/PluginsScreen.tsx
 msgid "Keyword Alerts"
 msgstr "Alerte pentru cuvinte cheie"
@@ -3325,6 +3347,10 @@ msgstr "Libera Chat"
 msgid "Line spacing"
 msgstr "Spațiere între rânduri"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Lines a tracker's shoutbox bot relays into IRC are shown as the person who wrote them, marked \"via\" the bot."
+msgstr "Liniile pe care botul shoutbox-ului unui tracker le retransmite pe IRC sunt afișate ca persoana care le-a scris, marcate cu „via” și botul."
+
 #: src/components/pages/TwoFactorPage.tsx
 msgid "Link"
 msgstr "Legătură"
@@ -3350,6 +3376,7 @@ msgstr "Traducere live"
 msgid "Load"
 msgstr "Încarcă"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Load from a link"
 msgstr "Încarcă dintr-un link"
@@ -3366,6 +3393,7 @@ msgstr "Încarcă mesajele mai vechi și sari la original"
 msgid "Load older messages to reach the reply"
 msgstr "Încărcați mesaje mai vechi pentru a ajunge la răspuns"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Loaded and up to date."
 msgstr "Încărcat și actualizat."
@@ -3398,6 +3426,7 @@ msgstr "Se încarcă datele WHOIS..."
 #: src/components/layout/SearchPane.tsx
 #: src/components/pages/EmojiPacksPage.tsx
 #: src/components/pages/TwoFactorPage.tsx
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/ThemeLinkField.tsx
 msgid "Loading…"
@@ -4203,6 +4232,7 @@ msgstr "Obby"
 msgid "Obby - Bringing IRC to the future"
 msgstr "Obby - Aducând IRC în viitor"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Obby downloads this file every time it starts, so everyone using the same link gets updates. This contacts the site the link points to."
 msgstr "Obby descarcă acest fișier la fiecare pornire, așa că toți cei care folosesc același link primesc actualizările. Aceasta contactează site-ul către care duce linkul."
@@ -4440,6 +4470,10 @@ msgstr "Lipește cod cu evidențiere de sintaxă și numere de linie."
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Paste CSS here or upload a .css file"
 msgstr "Lipește CSS aici sau încarcă un fișier .css"
+
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Paste rules JSON here or upload a .json file"
+msgstr "Lipește aici JSON-ul cu reguli sau încarcă un fișier .json"
 
 #: src/components/ui/settings/UserFilehostField.tsx
 msgid "Paste your Zipline token"
@@ -4909,6 +4943,8 @@ msgstr "Note de lansare"
 #: src/components/pages/EmojiPacksPage.tsx
 #: src/components/pages/EmojiPacksPage.tsx
 #: src/components/pages/TwoFactorPage.tsx
+#: src/components/ui/settings/BridgeRulesField.tsx
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/ChatBackgroundField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
@@ -5100,6 +5136,8 @@ msgstr "Cont SASL PLAIN"
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/ui/BouncerNetworkForm.tsx
+#: src/components/ui/settings/BridgeRulesField.tsx
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/UserFilehostField.tsx
@@ -5602,6 +5640,10 @@ msgid "Show All Events"
 msgstr "Afișați toate evenimentele"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Show bridged users as themselves"
+msgstr "Afișează utilizatorii prin punte ca ei înșiși"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Show colours and formatting in channel topics. When off, topics are shown as plain text"
 msgstr "Afișează culorile și formatarea în subiectele canalelor. Când este dezactivat, subiectele sunt afișate ca text simplu"
 
@@ -5963,9 +6005,22 @@ msgstr "acest cont"
 msgid "That device is not available right now."
 msgstr "Acest dispozitiv nu este disponibil momentan."
 
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "That file has too many rules."
+msgstr "Acel fișier are prea multe reguli."
+
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "That file is not a valid rules file."
+msgstr "Acel fișier nu este un fișier de reguli valid."
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "That file is not an Obby theme."
 msgstr "Acel fișier nu este o temă Obby."
+
+#: src/components/ui/settings/BridgeRulesField.tsx
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "That file is too large."
+msgstr "Acel fișier este prea mare."
 
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "That image is too large (2 MB at most)."
@@ -6360,6 +6415,10 @@ msgstr "Actualizarea a eșuat. Încearcă din nou."
 msgid "Upload .css file"
 msgstr "Încarcă fișier .css"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Upload .json file"
+msgstr "Încarcă fișier .json"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Upload an image or enter a URL. Use {sizeToken} in the URL for dynamic sizing."
 msgstr "Încărcați o imagine sau introduceți un URL. Folosiți {sizeToken} în URL pentru dimensionare dinamică."
@@ -6505,6 +6564,7 @@ msgstr "Utilizatori:"
 msgid "Using the last copy of {0}; the link could not be reached."
 msgstr "Se folosește ultima copie a temei {0}; linkul nu a putut fi accesat."
 
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Using the last saved copy; the link could not be reached."
 msgstr "Se folosește ultima copie salvată; linkul nu a putut fi accesat."
@@ -6563,6 +6623,12 @@ msgstr "Foarte relaxat"
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Very Strict"
 msgstr "Foarte strict"
+
+#: src/components/message/MessageHeader.tsx
+#: src/components/message/MessageReply.tsx
+#: src/lib/chatMarkdownCopy.ts
+msgid "via {via}"
+msgstr "prin {via}"
 
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/CameraCaptureModal.tsx
@@ -6731,6 +6797,10 @@ msgstr "Cu ce să-l plesnești (implicit, un păstrăv mare)"
 #: src/lib/clientCommands.ts
 msgid "What you're doing"
 msgstr "Ce faci"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Which bot speaks for which network and how it wraps the name. From a shared link and/or your own JSON. Kept in this browser."
+msgstr "Ce bot vorbește pentru ce rețea și cum încadrează numele. Dintr-un link partajat și/sau propriul JSON. Păstrat în acest browser."
 
 #: src/components/message/WhisperMessage.tsx
 msgid "WHISPER"
@@ -6905,6 +6975,10 @@ msgstr "CSS-ul tău"
 msgid "Your own file host"
 msgstr "Propria ta gazdă de fișiere"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Your own rules"
+msgstr "Regulile tale"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your own theme"
 msgstr "Tema ta"
@@ -6928,6 +7002,14 @@ msgstr "Pronumele dvs., afișate în profil"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your real or full name"
 msgstr "Numele dvs. real sau complet"
+
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Your rules were removed."
+msgstr "Regulile tale au fost eliminate."
+
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Your rules were saved."
+msgstr "Regulile tale au fost salvate."
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your status message"

@@ -1,4 +1,4 @@
-import type { BouncerNetwork, Server } from "../types";
+import type { BouncerNetwork, BouncerState, Server } from "../types";
 
 function hostname(address: string): string {
   try {
@@ -22,4 +22,27 @@ export function networkHost(server: Server, network?: BouncerNetwork): string {
   return hostname(
     server.bouncerNetid ? network?.attributes.host || "" : server.host,
   );
+}
+
+/**
+ * The upstream IRC host of a server in the store, resolving a bouncer-bound
+ * connection through its bouncer network, or "" when unknown.
+ */
+export function upstreamHostForServer(
+  state: {
+    servers: Pick<
+      Server,
+      "id" | "host" | "bouncerServerId" | "bouncerNetid" | "isBouncerControl"
+    >[];
+    bouncers: Record<string, Pick<BouncerState, "networks">>;
+  },
+  serverId: string,
+): string {
+  const server = state.servers.find((s) => s.id === serverId);
+  if (!server) return "";
+  const network =
+    server.bouncerServerId && server.bouncerNetid
+      ? state.bouncers[server.bouncerServerId]?.networks[server.bouncerNetid]
+      : undefined;
+  return networkHost(server as Server, network);
 }

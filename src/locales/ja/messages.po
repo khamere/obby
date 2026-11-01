@@ -94,6 +94,12 @@ msgstr "{0} アイドル"
 msgid "{0} network{1} — pick one to join"
 msgstr "{0} 件のネットワーク{1} — 参加するものを1つ選んでください"
 
+#. placeholder {0}: rules.rules.length
+#. placeholder {1}: rules.skipped
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "{0} rules loaded, {1} skipped"
+msgstr "{0} 件のルールを読み込み、{1} 件をスキップしました"
+
 #. placeholder {0}: viewerMembers.length
 #: src/components/layout/VoiceChannelView.tsx
 msgid "{0} watching"
@@ -1028,6 +1034,10 @@ msgstr "このチャンネルのボット"
 msgid "Bots"
 msgstr "ボット"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Bridge rules"
+msgstr "ブリッジルール"
+
 #: src/lib/mediaDevices.ts
 #: src/lib/voiceErrors.ts
 msgid "Bring this window to the front and try again."
@@ -1781,6 +1791,10 @@ msgstr "このリンクを読み込めませんでした。"
 msgid "Could not load this link. It must point to the raw .css file."
 msgstr "このリンクを読み込めませんでした。.css ファイル本体を指す必要があります。"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Could not load this link. It must point to the raw .json file."
+msgstr "このリンクを読み込めませんでした。生の .json ファイルを指している必要があります。"
+
 #: src/lib/mediaUpload.ts
 msgid "Could not reach the file host. Check your connection and try again."
 msgstr "ファイルホストに接続できませんでした。接続を確認して、もう一度お試しください。"
@@ -2430,6 +2444,10 @@ msgstr "チャンネルに参加する前に SASL PLAIN でログインするア
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Enter an http(s) link to a .css file."
 msgstr ".css ファイルへの http(s) リンクを入力してください。"
+
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Enter an http(s) link to a .json file."
+msgstr ".json ファイルへの http(s) リンクを入力してください。"
 
 #: src/components/ui/settings/ThemeLinkField.tsx
 msgid "Enter an http(s) link to a theme .json file."
@@ -3217,6 +3235,10 @@ msgstr "全員が退出した後もチャンネルを保持します。IRCop の
 msgid "Kept in this browser and applied after the linked file, so it can override it."
 msgstr "このブラウザーに保存され、リンク先のファイルの後に適用されるため、それを上書きできます。"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Kept in this browser. A rule here replaces the linked rule for the same network and bot."
+msgstr "このブラウザーに保存されます。ここでのルールは、同じネットワークとボットのリンク済みルールを置き換えます。"
+
 #: src/components/ui/PluginsScreen.tsx
 msgid "Keyword Alerts"
 msgstr "キーワード通知"
@@ -3325,6 +3347,10 @@ msgstr "Libera Chat"
 msgid "Line spacing"
 msgstr "行間"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Lines a tracker's shoutbox bot relays into IRC are shown as the person who wrote them, marked \"via\" the bot."
+msgstr "トラッカーのシャウトボックスのボットが IRC に中継した行を、書いた本人として表示し、ボット名を「via」で示します。"
+
 #: src/components/pages/TwoFactorPage.tsx
 msgid "Link"
 msgstr "リンク"
@@ -3350,6 +3376,7 @@ msgstr "ライブ翻訳"
 msgid "Load"
 msgstr "読み込む"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Load from a link"
 msgstr "リンクから読み込む"
@@ -3366,6 +3393,7 @@ msgstr "古いメッセージを読み込んで元のメッセージへ移動"
 msgid "Load older messages to reach the reply"
 msgstr "返信に到達するために古いメッセージを読み込む"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Loaded and up to date."
 msgstr "読み込み済みで最新です。"
@@ -3398,6 +3426,7 @@ msgstr "WHOISデータを読み込み中..."
 #: src/components/layout/SearchPane.tsx
 #: src/components/pages/EmojiPacksPage.tsx
 #: src/components/pages/TwoFactorPage.tsx
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/ThemeLinkField.tsx
 msgid "Loading…"
@@ -4203,6 +4232,7 @@ msgstr "Obby"
 msgid "Obby - Bringing IRC to the future"
 msgstr "Obby — IRCを未来へ"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Obby downloads this file every time it starts, so everyone using the same link gets updates. This contacts the site the link points to."
 msgstr "Obby は起動するたびにこのファイルをダウンロードするため、同じリンクを使う全員が更新を受け取れます。リンク先のサイトに接続します。"
@@ -4440,6 +4470,10 @@ msgstr "構文ハイライトと行番号付きでコードを貼り付けまし
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Paste CSS here or upload a .css file"
 msgstr "ここに CSS を貼り付けるか .css ファイルをアップロード"
+
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Paste rules JSON here or upload a .json file"
+msgstr "ここにルールの JSON を貼り付けるか .json ファイルをアップロード"
 
 #: src/components/ui/settings/UserFilehostField.tsx
 msgid "Paste your Zipline token"
@@ -4909,6 +4943,8 @@ msgstr "リリースノート"
 #: src/components/pages/EmojiPacksPage.tsx
 #: src/components/pages/EmojiPacksPage.tsx
 #: src/components/pages/TwoFactorPage.tsx
+#: src/components/ui/settings/BridgeRulesField.tsx
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/ChatBackgroundField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
@@ -5100,6 +5136,8 @@ msgstr "SASL PLAIN のアカウント"
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/ui/BouncerNetworkForm.tsx
+#: src/components/ui/settings/BridgeRulesField.tsx
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/UserFilehostField.tsx
@@ -5602,6 +5640,10 @@ msgid "Show All Events"
 msgstr "すべてのイベントを表示"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Show bridged users as themselves"
+msgstr "ブリッジされたユーザーを本人として表示"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Show colours and formatting in channel topics. When off, topics are shown as plain text"
 msgstr "チャンネルトピックの色や書式を表示します。オフの場合、トピックはプレーンテキストで表示されます"
 
@@ -5963,9 +6005,22 @@ msgstr "そのアカウント"
 msgid "That device is not available right now."
 msgstr "このデバイスは現在利用できません。"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "That file has too many rules."
+msgstr "そのファイルにはルールが多すぎます。"
+
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "That file is not a valid rules file."
+msgstr "そのファイルは有効なルールファイルではありません。"
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "That file is not an Obby theme."
 msgstr "そのファイルは Obby のテーマではありません。"
+
+#: src/components/ui/settings/BridgeRulesField.tsx
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "That file is too large."
+msgstr "そのファイルは大きすぎます。"
 
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "That image is too large (2 MB at most)."
@@ -6360,6 +6415,10 @@ msgstr "アップデートに失敗しました。もう一度お試しくださ
 msgid "Upload .css file"
 msgstr ".css ファイルをアップロード"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Upload .json file"
+msgstr ".json ファイルをアップロード"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Upload an image or enter a URL. Use {sizeToken} in the URL for dynamic sizing."
 msgstr "画像をアップロードするか URL を入力してください。サイズを動的に指定するには URL に {sizeToken} を使います。"
@@ -6505,6 +6564,7 @@ msgstr "ユーザー："
 msgid "Using the last copy of {0}; the link could not be reached."
 msgstr "{0} の最後のコピーを使用しています。リンクに接続できませんでした。"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Using the last saved copy; the link could not be reached."
 msgstr "最後に保存したコピーを使用しています。リンクに接続できませんでした。"
@@ -6563,6 +6623,12 @@ msgstr "とても緩め"
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Very Strict"
 msgstr "とても厳格"
+
+#: src/components/message/MessageHeader.tsx
+#: src/components/message/MessageReply.tsx
+#: src/lib/chatMarkdownCopy.ts
+msgid "via {via}"
+msgstr "{via} 経由"
 
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/CameraCaptureModal.tsx
@@ -6731,6 +6797,10 @@ msgstr "叩くもの（既定は大きなマス）"
 #: src/lib/clientCommands.ts
 msgid "What you're doing"
 msgstr "あなたの行動"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Which bot speaks for which network and how it wraps the name. From a shared link and/or your own JSON. Kept in this browser."
+msgstr "どのボットがどのネットワークを代弁し、名前をどう囲むか。共有リンクや自分の JSON から。このブラウザーに保存されます。"
 
 #: src/components/message/WhisperMessage.tsx
 msgid "WHISPER"
@@ -6905,6 +6975,10 @@ msgstr "自分の CSS"
 msgid "Your own file host"
 msgstr "自分のファイルホスト"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Your own rules"
+msgstr "自分のルール"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your own theme"
 msgstr "自分のテーマ"
@@ -6928,6 +7002,14 @@ msgstr "プロフィールに表示される代名詞"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your real or full name"
 msgstr "本名またはフルネーム"
+
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Your rules were removed."
+msgstr "ルールを削除しました。"
+
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Your rules were saved."
+msgstr "ルールを保存しました。"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your status message"

@@ -2,6 +2,10 @@ import { t } from "@lingui/core/macro";
 import { v4 as uuidv4 } from "uuid";
 import type { StoreApi } from "zustand";
 import {
+  applyBridgeRules,
+  getCompiledBridgeRules,
+} from "../../lib/bridgeRules";
+import {
   E2EE_UNDECRYPTABLE_TAG,
   E2EE_UNPROTECTED_TAG,
 } from "../../lib/e2ee/messageFlags";
@@ -10,6 +14,7 @@ import { isLocalReplay } from "../../lib/history/historyLines";
 import { isUserIgnored } from "../../lib/ignoreUtils";
 import ircClient from "../../lib/ircClient";
 import { isSilenced } from "../../lib/mutes";
+import { upstreamHostForServer } from "../../lib/networkHost";
 import {
   playNotificationSound,
   shouldPlayNotificationSound,
@@ -195,17 +200,27 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
       }
     }
 
-    // Check if sender is ignored
+    // A shoutbox bridge speaks for someone else: file the line under that
+    // person, so colour, grouping, mentions and search all see them.
     const globalSettings = store.getState().globalSettings;
-    if (
-      isUserIgnored(
-        response.sender,
-        undefined,
-        undefined,
-        globalSettings.ignoreList,
-      )
-    ) {
-      // User is ignored, skip processing this message
+    const bridged = globalSettings.bridgedUsers
+      ? applyBridgeRules(
+          getCompiledBridgeRules(),
+          upstreamHostForServer(store.getState(), response.serverId),
+          channelName,
+          response.sender,
+          message,
+        )
+      : null;
+    const shownSender =
+      bridged?.kind === "bot" ? bridged.nick : response.sender;
+    const shownText = bridged?.kind === "bot" ? bridged.text : message;
+
+    // Ignoring the bridge silences everything it relays; ignoring the
+    // person silences only them.
+    const ignored = (nick: string) =>
+      isUserIgnored(nick, undefined, undefined, globalSettings.ignoreList);
+    if (ignored(response.sender) || ignored(shownSender)) {
       return;
     }
 
@@ -244,33 +259,51 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
         ) {
           store.getState().metadataList(response.serverId, response.sender);
         }
+        // Our own words relayed from the site's shoutbox are not a ping either.
+        const isOwnWords =
+          isOwnMessage ||
+          shownSender.toLowerCase() ===
+            currentServerUser?.username?.toLowerCase();
         const isReplyToMe =
-          !isOwnMessage &&
+          !isOwnWords &&
           !!replyMessage &&
           replyMessage.userId.toLowerCase() ===
             currentServerUser?.username?.toLowerCase();
         const hasMention =
           isReplyToMe ||
-          (!isOwnMessage &&
+          (!isOwnWords &&
             checkForMention(
-              message,
+              shownText,
               currentServerUser,
               currentState.globalSettings,
             ));
-        const mentions = !isOwnMessage
+        const mentions = !isOwnWords
           ? extractMentions(
-              message,
+              shownText,
               currentServerUser,
               currentState.globalSettings,
             )
           : [];
 
-        const newMessage = {
+        // The bot mode belongs to the bridge, not to the person it relays.
+        const { bot: _bridgeBot, ...tagsWithoutBot } = mtags ?? {};
+        const bridgedFields: Partial<Message> =
+          bridged?.kind === "bot"
+            ? {
+                bridgedVia: bridged.via,
+                bridgedOriginal: message,
+                tags: mtags ? tagsWithoutBot : undefined,
+              }
+            : bridged?.kind === "nick"
+              ? { bridgedVia: bridged.via, displayNick: bridged.displayNick }
+              : {};
+
+        const newMessage: Message = {
           id: uuidv4(),
           msgid: mtags?.msgid,
-          content: message,
+          content: shownText,
           timestamp,
-          userId: response.sender,
+          userId: shownSender,
           channelId: channel.id,
           serverId: server.id,
           type: "message" as const,
@@ -278,6 +311,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           replyMessage: replyMessage,
           mentioned: mentions,
           tags: mtags,
+          ...bridgedFields,
         };
 
         // labeled-response: if this is the echo of a message we just
@@ -325,14 +359,14 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           return;
         }
 
-        if (!isOwnMessage && !isHistoricalMessage && hasMention)
+        if (!isOwnWords && !isHistoricalMessage && hasMention)
           notifyChatMessage(
             store,
             {
               serverId: server.id,
               target: channelName,
-              sender: response.sender,
-              text: message,
+              sender: shownSender,
+              text: shownText,
               isPrivate: false,
               time: new Date(timestamp).getTime(),
               msgid: mtags?.msgid,

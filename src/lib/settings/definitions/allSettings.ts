@@ -1,5 +1,6 @@
 import { msg } from "@lingui/core/macro";
 import { AccentColorField } from "../../../components/ui/settings/AccentColorField";
+import { BridgeRulesField } from "../../../components/ui/settings/BridgeRulesField";
 import { CallCameraField } from "../../../components/ui/settings/CallCameraField";
 import { CallMicrophoneField } from "../../../components/ui/settings/CallMicrophoneField";
 import { CallSpeakerField } from "../../../components/ui/settings/CallSpeakerField";
@@ -757,6 +758,32 @@ const preferenceSettings: SettingDefinition[] = [
     searchKeywords: ["css", "custom", "style", "theme", "stylesheet", "logo"],
     priority: 12,
     customComponent: CustomCssField,
+  },
+  {
+    id: "preferences.bridgedUsers",
+    key: "bridgedUsers",
+    category: "preferences",
+    subcategory: "Bridged users",
+    title: msg`Show bridged users as themselves`,
+    description: msg`Lines a tracker's shoutbox bot relays into IRC are shown as the person who wrote them, marked "via" the bot.`,
+    type: "toggle",
+    defaultValue: true,
+    searchKeywords: ["bridge", "shoutbox", "bot", "chatbox"],
+    priority: 13,
+  },
+  {
+    id: "preferences.bridgeRules",
+    key: "bridgeRules",
+    category: "preferences",
+    subcategory: "Bridged users",
+    title: msg`Bridge rules`,
+    description: msg`Which bot speaks for which network and how it wraps the name. From a shared link and/or your own JSON. Kept in this browser.`,
+    type: "custom",
+    // Display-only: the rules live in lib/bridgeRules, not in settings.
+    defaultValue: "",
+    searchKeywords: ["bridge", "shoutbox", "bot", "chatbox", "rules"],
+    priority: 14,
+    customComponent: BridgeRulesField,
   },
   {
     id: "preferences.userFilehost",

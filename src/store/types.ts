@@ -102,6 +102,7 @@ export interface GlobalSettings {
   accountPassword: string;
   enableMultilineInput: boolean;
   stripImageMetadata: boolean;
+  bridgedUsers: boolean;
   multilineOnShiftEnter: boolean;
   autoFallbackToSingleLine: boolean;
   mediaVisibilityLevel: MediaVisibilityLevel;

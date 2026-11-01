@@ -20,7 +20,9 @@ export function isWhisper(message: Message): boolean {
 // usual author and time-gap breaks, a change of kind (a notice after a message),
 // and a change in encryption protection also
 // breaks the group so an unencrypted run is always its own distinct block.
-// Every whisper sits in its own bubble, so each one shows its sender.
+// Every whisper sits in its own bubble, so each one shows its sender. A line
+// relayed by a shoutbox bridge never shares a header with a line from the IRC
+// user of the same name, so the "via" marker heads every relayed run.
 export function shouldShowMessageHeader(
   previous: Message | undefined,
   message: Message,
@@ -30,6 +32,7 @@ export function shouldShowMessageHeader(
     previous?.type !== message.type ||
     (message.type !== "message" && message.type !== "notice") ||
     previous.userId !== message.userId ||
+    previous.bridgedVia !== message.bridgedVia ||
     isUnprotectedMessage(previous) !== isUnprotectedMessage(message) ||
     new Date(message.timestamp).getTime() -
       new Date(previous.timestamp).getTime() >

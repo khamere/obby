@@ -94,6 +94,12 @@ msgstr "闲置 {0}"
 msgid "{0} network{1} — pick one to join"
 msgstr "{0} 个网络{1} — 选择一个加入"
 
+#. placeholder {0}: rules.rules.length
+#. placeholder {1}: rules.skipped
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "{0} rules loaded, {1} skipped"
+msgstr "已加载 {0} 条规则，跳过 {1} 条"
+
 #. placeholder {0}: viewerMembers.length
 #: src/components/layout/VoiceChannelView.tsx
 msgid "{0} watching"
@@ -1028,6 +1034,10 @@ msgstr "此频道中的机器人"
 msgid "Bots"
 msgstr "机器人"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Bridge rules"
+msgstr "桥接规则"
+
 #: src/lib/mediaDevices.ts
 #: src/lib/voiceErrors.ts
 msgid "Bring this window to the front and try again."
@@ -1781,6 +1791,10 @@ msgstr "无法加载此链接。"
 msgid "Could not load this link. It must point to the raw .css file."
 msgstr "无法加载此链接。它必须指向原始 .css 文件。"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Could not load this link. It must point to the raw .json file."
+msgstr "无法加载此链接。它必须指向原始 .json 文件。"
+
 #: src/lib/mediaUpload.ts
 msgid "Could not reach the file host. Check your connection and try again."
 msgstr "无法连接文件主机。请检查网络连接后重试。"
@@ -2430,6 +2444,10 @@ msgstr "输入账户名，以便在加入频道前通过 SASL PLAIN 登录。留
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Enter an http(s) link to a .css file."
 msgstr "请输入指向 .css 文件的 http(s) 链接。"
+
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Enter an http(s) link to a .json file."
+msgstr "请输入指向 .json 文件的 http(s) 链接。"
 
 #: src/components/ui/settings/ThemeLinkField.tsx
 msgid "Enter an http(s) link to a theme .json file."
@@ -3217,6 +3235,10 @@ msgstr "所有人离开后保留频道。只有 IRCop 可以设置。"
 msgid "Kept in this browser and applied after the linked file, so it can override it."
 msgstr "保存在此浏览器中，并在链接文件之后应用，因此可以覆盖它。"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Kept in this browser. A rule here replaces the linked rule for the same network and bot."
+msgstr "保存在此浏览器中。此处的规则会替换同一网络和机器人的链接规则。"
+
 #: src/components/ui/PluginsScreen.tsx
 msgid "Keyword Alerts"
 msgstr "关键词提醒"
@@ -3325,6 +3347,10 @@ msgstr "Libera Chat"
 msgid "Line spacing"
 msgstr "行距"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Lines a tracker's shoutbox bot relays into IRC are shown as the person who wrote them, marked \"via\" the bot."
+msgstr "Tracker 留言板机器人转发到 IRC 的消息会显示为撰写者本人，并以“via”标注机器人。"
+
 #: src/components/pages/TwoFactorPage.tsx
 msgid "Link"
 msgstr "链接"
@@ -3350,6 +3376,7 @@ msgstr "实时翻译"
 msgid "Load"
 msgstr "加载"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Load from a link"
 msgstr "从链接加载"
@@ -3366,6 +3393,7 @@ msgstr "加载更早的消息并跳转到原消息"
 msgid "Load older messages to reach the reply"
 msgstr "加载较旧的消息以到达回复"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Loaded and up to date."
 msgstr "已加载，且为最新。"
@@ -3398,6 +3426,7 @@ msgstr "正在加载 WHOIS 数据..."
 #: src/components/layout/SearchPane.tsx
 #: src/components/pages/EmojiPacksPage.tsx
 #: src/components/pages/TwoFactorPage.tsx
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/ThemeLinkField.tsx
 msgid "Loading…"
@@ -4203,6 +4232,7 @@ msgstr "Obby"
 msgid "Obby - Bringing IRC to the future"
 msgstr "Obby - 将 IRC 带入未来"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Obby downloads this file every time it starts, so everyone using the same link gets updates. This contacts the site the link points to."
 msgstr "Obby 每次启动都会下载此文件，因此使用同一链接的每个人都会收到更新。这会访问链接所指向的网站。"
@@ -4440,6 +4470,10 @@ msgstr "粘贴带语法高亮和行号的代码。"
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Paste CSS here or upload a .css file"
 msgstr "在此粘贴 CSS 或上传 .css 文件"
+
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Paste rules JSON here or upload a .json file"
+msgstr "在此粘贴规则 JSON 或上传 .json 文件"
 
 #: src/components/ui/settings/UserFilehostField.tsx
 msgid "Paste your Zipline token"
@@ -4909,6 +4943,8 @@ msgstr "更新说明"
 #: src/components/pages/EmojiPacksPage.tsx
 #: src/components/pages/EmojiPacksPage.tsx
 #: src/components/pages/TwoFactorPage.tsx
+#: src/components/ui/settings/BridgeRulesField.tsx
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/ChatBackgroundField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
@@ -5100,6 +5136,8 @@ msgstr "SASL PLAIN 账户"
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/ui/BouncerNetworkForm.tsx
+#: src/components/ui/settings/BridgeRulesField.tsx
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 #: src/components/ui/settings/UserFilehostField.tsx
@@ -5602,6 +5640,10 @@ msgid "Show All Events"
 msgstr "显示所有事件"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Show bridged users as themselves"
+msgstr "将桥接用户显示为本人"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Show colours and formatting in channel topics. When off, topics are shown as plain text"
 msgstr "在频道主题中显示颜色和格式。关闭后，主题将以纯文本显示"
 
@@ -5963,9 +6005,22 @@ msgstr "该账户"
 msgid "That device is not available right now."
 msgstr "该设备当前不可用。"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "That file has too many rules."
+msgstr "该文件包含的规则过多。"
+
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "That file is not a valid rules file."
+msgstr "该文件不是有效的规则文件。"
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "That file is not an Obby theme."
 msgstr "该文件不是 Obby 主题。"
+
+#: src/components/ui/settings/BridgeRulesField.tsx
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "That file is too large."
+msgstr "该文件过大。"
 
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "That image is too large (2 MB at most)."
@@ -6360,6 +6415,10 @@ msgstr "更新失败，请重试。"
 msgid "Upload .css file"
 msgstr "上传 .css 文件"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Upload .json file"
+msgstr "上传 .json 文件"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Upload an image or enter a URL. Use {sizeToken} in the URL for dynamic sizing."
 msgstr "上传图片或输入 URL。在 URL 中使用 {sizeToken} 可动态调整尺寸。"
@@ -6505,6 +6564,7 @@ msgstr "用户："
 msgid "Using the last copy of {0}; the link could not be reached."
 msgstr "正在使用 {0} 的最后副本；无法访问该链接。"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Using the last saved copy; the link could not be reached."
 msgstr "正在使用最后保存的副本；无法访问该链接。"
@@ -6563,6 +6623,12 @@ msgstr "非常宽松"
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Very Strict"
 msgstr "非常严格"
+
+#: src/components/message/MessageHeader.tsx
+#: src/components/message/MessageReply.tsx
+#: src/lib/chatMarkdownCopy.ts
+msgid "via {via}"
+msgstr "经由 {via}"
 
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/CameraCaptureModal.tsx
@@ -6731,6 +6797,10 @@ msgstr "用什么拍打（默认是一条大鳟鱼）"
 #: src/lib/clientCommands.ts
 msgid "What you're doing"
 msgstr "您正在做什么"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Which bot speaks for which network and how it wraps the name. From a shared link and/or your own JSON. Kept in this browser."
+msgstr "哪个机器人代表哪个网络发言，以及它如何包裹名称。来自共享链接和/或你自己的 JSON。保存在此浏览器中。"
 
 #: src/components/message/WhisperMessage.tsx
 msgid "WHISPER"
@@ -6905,6 +6975,10 @@ msgstr "你自己的 CSS"
 msgid "Your own file host"
 msgstr "你自己的文件主机"
 
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Your own rules"
+msgstr "你自己的规则"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your own theme"
 msgstr "你自己的主题"
@@ -6928,6 +7002,14 @@ msgstr "您的代词，显示在个人资料中"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your real or full name"
 msgstr "您的真实姓名或全名"
+
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Your rules were removed."
+msgstr "已移除你的规则。"
+
+#: src/components/ui/settings/BridgeRulesField.tsx
+msgid "Your rules were saved."
+msgstr "已保存你的规则。"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your status message"
