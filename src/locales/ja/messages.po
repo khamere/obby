@@ -1001,6 +1001,7 @@ msgstr "/INVITE コマンドをブロック"
 msgid "Block the /KNOCK command."
 msgstr "/KNOCK コマンドをブロック"
 
+#: src/components/layout/BotPane.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/PrivateChatRow.tsx
 #: src/lib/settings/definitions/allSettings.ts
@@ -1275,6 +1276,7 @@ msgstr "チャンネル名"
 msgid "Channel-scoped"
 msgstr "チャンネル限定"
 
+#: src/components/layout/BotPane.tsx
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/ProfilePane.tsx
 #: src/components/ui/HomeScreen.tsx
@@ -4219,6 +4221,7 @@ msgstr "OK"
 msgid "on"
 msgstr "オン"
 
+#: src/components/layout/BotPane.tsx
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/MemberList.tsx
 #: src/components/layout/MemberList.tsx
