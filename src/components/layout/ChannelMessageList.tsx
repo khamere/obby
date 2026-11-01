@@ -160,7 +160,9 @@ export const ChannelMessageList = forwardRef<
     const oldestAtFetchRef = useRef<string | null>(null);
     // We remember the oldest row when an older page added nothing, so we ask
     // the server for each older page once.
-    const emptyOlderPageAtRef = useRef<string | null>(null);
+    // The oldest message id (null for an empty chat) at which the server last
+    // sent an empty older page; undefined until that happens.
+    const emptyOlderPageAtRef = useRef<string | null | undefined>(undefined);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const messagesInnerRef = useRef<HTMLDivElement>(null);
@@ -688,7 +690,7 @@ export const ChannelMessageList = forwardRef<
           // delta correction for scroll position is handled by useLayoutEffect([displayedMessages])
           isFetchingMoreRef.current = false;
           setIsFetchingMore(false);
-          if (channelMessages[0]?.id === oldestAtFetchRef.current)
+          if ((channelMessages[0]?.id ?? null) === oldestAtFetchRef.current)
             emptyOlderPageAtRef.current = oldestAtFetchRef.current;
         } else if (
           !isDetachedRef.current &&
@@ -880,7 +882,9 @@ export const ChannelMessageList = forwardRef<
         return true;
       }
       if (!serverHasMore || !historyTarget) return false;
-      if (oldest && emptyOlderPageAtRef.current === oldest.id) return false;
+      // An empty chat has no oldest message, so the compare is on null: the
+      // undefined-vs-null mismatch here used to ask again on every render.
+      if ((oldest?.id ?? null) === emptyOlderPageAtRef.current) return false;
       isFetchingMoreRef.current = true;
       oldestAtFetchRef.current = oldest?.id ?? null;
       setIsFetchingMore(true);
@@ -908,7 +912,7 @@ export const ChannelMessageList = forwardRef<
 
     useEffect(() => {
       if (!isFetchingMoreRef.current) return;
-      if (channelMessages[0]?.id === oldestAtFetchRef.current) return;
+      if ((channelMessages[0]?.id ?? null) === oldestAtFetchRef.current) return;
       oldestAtFetchRef.current = null;
       isFetchingMoreRef.current = false;
       setIsFetchingMore(false);
