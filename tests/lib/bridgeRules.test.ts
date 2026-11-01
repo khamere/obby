@@ -1,9 +1,15 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   applyBridgeRules,
   compileBridgeRules,
+  getBridgeRulesState,
+  getCompiledBridgeRules,
+  loadBridgeRules,
   mergeBridgeRules,
   parseBridgeRules,
+  resetBridgeRulesForTests,
+  saveOwnBridgeRules,
+  setBridgeRulesLink,
 } from "../../src/lib/bridgeRules";
 
 const file = (rules: unknown[]) => JSON.stringify({ version: 1, rules });
@@ -147,5 +153,113 @@ describe("applyBridgeRules", () => {
         "o/",
       ),
     ).toBeNull();
+  });
+});
+
+describe("bridge rules store", () => {
+  const LINK = "https://files.example/raw/bridges.json";
+  let backing: Map<string, string>;
+  let remote: { status: number; body: string };
+  let fetchMock: ReturnType<typeof vi.fn>;
+  const alderMatches = () =>
+    applyBridgeRules(
+      getCompiledBridgeRules(),
+      "irc.alder.example",
+      "#g",
+      "Bot",
+      "[a] b",
+    )?.kind;
+
+  beforeEach(() => {
+    resetBridgeRulesForTests();
+    backing = new Map();
+    remote = { status: 200, body: file([ALDER]) };
+    vi.mocked(localStorage.getItem).mockImplementation(
+      (k) => backing.get(k) ?? null,
+    );
+    vi.mocked(localStorage.setItem).mockImplementation((k, v) => {
+      backing.set(k, v);
+    });
+    vi.mocked(localStorage.removeItem).mockImplementation((k) => {
+      backing.delete(k);
+    });
+    fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      expect(url).toBe(LINK);
+      expect(init).toMatchObject({
+        credentials: "omit",
+        referrerPolicy: "no-referrer",
+        cache: "no-cache",
+      });
+      return new Response(remote.body, { status: remote.status });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+  });
+  afterEach(() => {
+    resetBridgeRulesForTests();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("starts empty and fetches nothing", () => {
+    loadBridgeRules();
+    expect(getBridgeRulesState().linkStatus).toBe("none");
+    expect(alderMatches()).toBeUndefined();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("fetches a link, applies it, caches it, and own rules win", async () => {
+    await setBridgeRulesLink(LINK);
+    expect(getBridgeRulesState().linkStatus).toBe("ok");
+    expect(getBridgeRulesState().linkRules).toEqual({
+      rules: [ALDER],
+      skipped: 0,
+    });
+    expect(alderMatches()).toBe("bot");
+    expect(backing.get("obby.bridgeRules.linkCache")).toBe(file([ALDER]));
+
+    saveOwnBridgeRules(file([{ ...ALDER, formats: ["<{nick}> {text}"] }]));
+    expect(alderMatches()).toBeUndefined();
+    expect(getBridgeRulesState().ownRules.rules).toHaveLength(1);
+
+    resetBridgeRulesForTests();
+    loadBridgeRules();
+    expect(getBridgeRulesState().ownRules.rules).toHaveLength(1);
+    expect(getBridgeRulesState().linkStatus).toBe("cached");
+  });
+
+  it("keeps the cached copy when the host is down", async () => {
+    await setBridgeRulesLink(LINK);
+    remote.status = 503;
+    resetBridgeRulesForTests();
+    loadBridgeRules();
+    expect(alderMatches()).toBe("bot");
+    await vi.waitFor(() =>
+      expect(getBridgeRulesState().linkStatus).toBe("cached"),
+    );
+    expect(alderMatches()).toBe("bot");
+  });
+
+  it("reports an error for a preview page or a bad file and loads nothing from it", async () => {
+    remote.body = "<!doctype html><html>preview</html>";
+    await setBridgeRulesLink(LINK);
+    expect(getBridgeRulesState().linkStatus).toBe("error");
+    expect(alderMatches()).toBeUndefined();
+    remote.body = JSON.stringify({ version: 2, rules: [] });
+    await setBridgeRulesLink(`${LINK}`);
+    expect(getBridgeRulesState().linkStatus).toBe("error");
+  });
+
+  it("removing the link clears the cache and the rules", async () => {
+    await setBridgeRulesLink(LINK);
+    await setBridgeRulesLink("");
+    expect(getBridgeRulesState().linkStatus).toBe("none");
+    expect(backing.has("obby.bridgeRules.linkCache")).toBe(false);
+    expect(alderMatches()).toBeUndefined();
+  });
+
+  it("rejects a bad link and bad own JSON", async () => {
+    await expect(setBridgeRulesLink("ftp://x")).rejects.toThrow("bad-link");
+    expect(() => saveOwnBridgeRules("{nope")).toThrow("bad-json");
+    expect(getBridgeRulesState().own).toBe("");
   });
 });
