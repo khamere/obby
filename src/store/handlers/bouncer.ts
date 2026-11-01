@@ -132,16 +132,17 @@ export function registerBouncerHandlers(store: StoreApi<AppState>): void {
       if (attributes.state === "connected" || (!deleted && attributes.state)) {
         autoBindConnectedNetworks(store, serverId);
       }
-      // Drop the bound child when soju reports state=disconnected (or
-      // the network deleted), and clear the auto-bind memory for it
-      // so a subsequent state=connected (e.g. after a CHANGENETWORK
-      // that forces an upstream reconnect) re-binds instead of
-      // skipping because the Set still thinks the bind was attempted.
-      const dropLocalChild =
-        deleted || (!deleted && attributes.state === "disconnected");
-      if (dropLocalChild) {
-        const childId = generateDeterministicId(serverId, netid);
+      // A network the bouncer lost upstream (state=disconnected) keeps its
+      // child here: soju holds our bound connection and rejoins everything
+      // when the network is back, and dropping the child would lose its
+      // buffers and throw the user onto the bouncer's network list, in the
+      // middle of typing. We only forget the auto-bind memory, so a bind is
+      // tried again if the child is ever gone when it reconnects. A network
+      // the bouncer deleted takes its child with it.
+      const childId = generateDeterministicId(serverId, netid);
+      if (deleted || attributes.state === "disconnected")
         autoBindAttempted.delete(childId);
+      if (deleted) {
         const live = store.getState().servers.find((s) => s.id === childId);
         if (live) store.getState().deleteServer(childId);
       }

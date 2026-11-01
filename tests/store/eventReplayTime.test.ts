@@ -137,9 +137,16 @@ describe("TOPIC replayed from chathistory", () => {
         channels: srv.channels.map((c) => ({ ...c, topic: "current topic" })),
       })),
     }));
-    const replay = { batch: "hist1", time: HIST_TIME };
+    // Replayed TOPICs carry a msgid and are held until the batch ends; the
+    // next reconnect replays the same one in a new batch.
+    const replay = { batch: "hist1", time: HIST_TIME, msgid: "topic-1" };
+    const batches = useStore.getState().activeBatches;
     topic(replay);
+    expect(lines("system")).toHaveLength(0);
+    ircClient.triggerEvent("BATCH_END", { serverId, batchId: "hist1" });
+    useStore.setState({ activeBatches: batches });
     topic(replay);
+    ircClient.triggerEvent("BATCH_END", { serverId, batchId: "hist1" });
 
     const topics = lines("system");
     expect(topics).toHaveLength(1);

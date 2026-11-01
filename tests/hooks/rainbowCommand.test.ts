@@ -264,7 +264,14 @@ describe("/rainbow", () => {
   });
   it("preserves multiline batch text and spaces", () => {
     useStore.setState({
-      servers: [{ id: "s1", capabilities: ["draft/multiline"] } as Server],
+      servers: [
+        {
+          id: "s1",
+          capabilities: ["draft/multiline"],
+          channels: [],
+          privateChats: [],
+        } as unknown as Server,
+      ],
     });
     vi.spyOn(ircClient, "sendMultiline").mockImplementation(() => {});
     const text = `Hello  there\n${"🌈 ".repeat(200)}`;

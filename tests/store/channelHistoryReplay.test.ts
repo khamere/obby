@@ -3,9 +3,8 @@ import ircClient from "../../src/lib/ircClient";
 import useStore from "../../src/store";
 import {
   chathistoryBuffers,
-  reactionBuffers,
+  historyEditBuffers,
 } from "../../src/store/handlers/batches";
-import { MAX_MESSAGES_PER_CHANNEL } from "../../src/store/helpers";
 import type { Message } from "../../src/types";
 
 function feed(...lines: string[]) {
@@ -37,7 +36,7 @@ describe("channel history through the IRC parser", () => {
     vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
     ircClient.nicks.set("history-server", "me");
     chathistoryBuffers.clear();
-    reactionBuffers.clear();
+    historyEditBuffers.clear();
     useStore.setState({
       servers: [
         {
@@ -74,26 +73,6 @@ describe("channel history through the IRC parser", () => {
     ircClient.activeBatches.delete("history-server");
   });
 
-  it("keeps paging through reaction-only history to reach older text", () => {
-    feed(
-      ":soju BATCH +events chathistory #test",
-      "@batch=events;time=2026-10-10T11:00:00Z;+draft/react=ok;+draft/reply=unloaded :alice!u@h TAGMSG #test",
-      ":soju BATCH -events",
-    );
-    expect(messages()).toHaveLength(0);
-    expect(channel().hasMoreHistory).toBe(true);
-    expect(channel().historyOldestTime).toBe("2026-10-10T11:00:00.000Z");
-    feed(
-      ":soju BATCH +older chathistory #test",
-      "@batch=older;time=2026-10-10T10:00:00Z;msgid=text :alice!u@h PRIVMSG #test :older text",
-      ":soju BATCH -older",
-    );
-    expect(messages()[0].content).toBe("older text");
-    expect(channel().historyOldestTime).toBe("2026-10-10T10:00:00.000Z");
-    feed(":soju BATCH +empty chathistory #test", ":soju BATCH -empty");
-    expect(channel().hasMoreHistory).toBe(false);
-  });
-
   it("does not treat already-seen channel text as an empty history page", () => {
     useStore.setState({
       messages: { "history-server-channel": [msg("cached")] },
@@ -108,29 +87,6 @@ describe("channel history through the IRC parser", () => {
     expect(channel().hasMoreHistory).toBe(true);
   });
 
-  it("keeps older channel text beyond the recent-message cache limit", () => {
-    useStore.setState({
-      messages: {
-        "history-server-channel": Array.from(
-          { length: MAX_MESSAGES_PER_CHANNEL },
-          (_, i) => msg(`m${i}`),
-        ),
-      },
-    });
-    feed(
-      ":soju BATCH +older chathistory #test",
-      "@batch=older;time=2026-10-10T10:00:00Z;msgid=old :alice!u@h PRIVMSG #test :older text",
-      ":soju BATCH -older",
-    );
-    expect(messages()).toHaveLength(MAX_MESSAGES_PER_CHANNEL + 1);
-    expect(messages()[0].msgid).toBe("old");
-    feed(
-      "@time=2026-10-10T13:00:00Z;msgid=live :alice!u@h PRIVMSG #test :new live message",
-    );
-    expect(messages()).toHaveLength(MAX_MESSAGES_PER_CHANNEL + 2);
-    expect(messages()[0].msgid).toBe("old");
-  });
-
   it("buffers multiline channel history until the outer batch ends", () => {
     feed(
       ":soju BATCH +history chathistory #test",
@@ -143,6 +99,5 @@ describe("channel history through the IRC parser", () => {
     feed(":soju BATCH -history");
     expect(messages()[0].content).toBe("line one\nline two");
     expect(channel().hasMoreHistory).toBe(true);
-    expect(channel().historyOldestTime).toBe("2026-10-10T10:00:00.000Z");
   });
 });

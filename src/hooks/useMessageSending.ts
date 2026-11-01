@@ -4,8 +4,11 @@
  */
 import { useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
+import { useShallow } from "zustand/react/shallow";
 import { base64EncodeUtf8 } from "../lib/base64";
+import { botPriority } from "../lib/botPriority";
 import { slapAction } from "../lib/clientCommands";
+import { coerceOptionValue } from "../lib/commandInvocation";
 import ircClient from "../lib/ircClient";
 import {
   makeLabel,
@@ -17,6 +20,7 @@ import {
   formatMessageForIrc,
 } from "../lib/messageFormatter";
 import { splitLongMessage } from "../lib/messageProtocol";
+import { showOwnPrivateMessage } from "../lib/ownPrivateMessage";
 import { PRIVILEGED_COMMANDS } from "../lib/privilegedCommands";
 import { rainbowText, splitRainbowMessage } from "../lib/rainbow";
 import useStore, { serverSupportsMultiline } from "../store";
@@ -33,10 +37,12 @@ import type { BotCommand, Channel, Message, PrivateChat, User } from "../types";
  *
  *   1) explicit `/cmd@botnick` where botnick is a +B user in the
  *      current channel or is the current DM peer (and is +B)
- *   2) otherwise scan +B users in the current channel
+ *   2) otherwise scan +B users in the current channel, ranked by
+ *      botPriority
  *   3) DM target if the peer is +B
  * Privileged names listed in PRIVILEGED_COMMANDS are refused
- * outright.
+ * outright, and a bare name the server lists in its cmdslist runs
+ * on the server.
  */
 function tryDispatchBotCommand(
   serverId: string,
@@ -59,6 +65,7 @@ function tryDispatchBotCommand(
 
   const server = useStore.getState().servers.find((s) => s.id === serverId);
   if (!server?.botCommands) return false;
+  if (!target && server.cmdsAvailable?.includes(lowerCmd)) return false;
   const bots = server.botCommands;
 
   const isKnownBotNick = (nick: string): boolean => {
@@ -106,7 +113,12 @@ function tryDispatchBotCommand(
     }
   }
   if (!matches.length) return false;
-  const { bot, cmd } = matches[0];
+  const { bot, cmd } = matches.reduce((best, match) =>
+    botPriority(server.bots?.[match.bot.toLowerCase()]) <
+    botPriority(server.bots?.[best.bot.toLowerCase()])
+      ? match
+      : best,
+  );
 
   // Naive arg parsing: map positional args onto declared options in
   // order, leftovers concatenated onto the last string-typed option.
@@ -116,22 +128,14 @@ function tryDispatchBotCommand(
     const o = opts[i];
     const isLast = i === opts.length - 1;
     const raw = isLast ? args.slice(i).join(" ") : args[i];
-    if (o.type === "int") options[o.name] = Number.parseInt(raw, 10);
-    else if (o.type === "bool")
-      options[o.name] = raw === "true" || raw === "1" || raw === "yes";
-    else options[o.name] = raw;
+    const value = coerceOptionValue(o.type, raw);
+    if (value !== undefined) options[o.name] = value;
   }
 
   sendBotCommand(serverId, channel, bot, cmd, options);
   return true;
 }
 
-/**
- * Wire-level send for a pre-resolved bot command with structured
- * options (no freeform-arg parsing).  Used both by the freeform-text
- * path above and by the param modal, which collects values directly
- * via form controls.
- */
 // Where a command may be invoked. Prefer the spec `contexts`; fall back to the
 // legacy obby.world/bot-info `visibility`/`scopes` pair so a private command is
 // NEVER routed publicly just because the directory hasn't sent `contexts` yet.
@@ -152,7 +156,8 @@ export function sendBotCommand(
   bot: string,
   cmd: BotCommand,
   options: Record<string, string | number | boolean>,
-): void {
+): boolean {
+  if (!ircClient.isSocketOpen(serverId)) return false;
   const contexts = resolveContexts(cmd);
   const canPublic = contexts.includes("public");
   const canPrivate = contexts.includes("private");
@@ -169,18 +174,23 @@ export function sendBotCommand(
       serverId,
       `@+draft/bot-cmd=${b64} TAGMSG ${channel.name}`,
     );
-  } else if (channel && canPrivate) {
+  }
+  if (channel && canPrivate) {
     // private: TAGMSG to the bot. The channel travels in the payload, since
     // +draft/channel-context is not valid on TAGMSG.
     const payload = { name: cmd.name, options, channel: channel.name };
     const b64 = base64EncodeUtf8(JSON.stringify(payload));
     ircClient.sendRaw(serverId, `@+draft/bot-cmd=${b64} TAGMSG ${bot}`);
-  } else if (canPm) {
+  }
+  if (canPm) {
     // pm: TAGMSG to the bot, no channel.
     const payload = { name: cmd.name, options };
     const b64 = base64EncodeUtf8(JSON.stringify(payload));
     ircClient.sendRaw(serverId, `@+draft/bot-cmd=${b64} TAGMSG ${bot}`);
+  } else {
+    return false;
   }
+  return true;
 }
 
 /** How long to wait before flipping a pending message to "failed". */
@@ -288,7 +298,13 @@ export function useMessageSending({
   selectedFormatting,
   localReplyTo,
 }: UseMessageSendingOptions): UseMessageSendingReturn {
-  const { globalSettings, setAway, clearAway } = useStore();
+  const { globalSettings, setAway, clearAway } = useStore(
+    useShallow((state) => ({
+      globalSettings: state.globalSettings,
+      setAway: state.setAway,
+      clearAway: state.clearAway,
+    })),
+  );
 
   /**
    * Handle IRC commands like /join, /part, /nick, etc.
@@ -301,14 +317,14 @@ export function useMessageSending({
       const [commandName, ...args] = command.split(" ");
 
       if (commandName === "nick") {
-        ircClient.sendRaw(selectedServerId, `NICK ${args[0]}`);
+        if (args[0]) useStore.getState().changeNick(selectedServerId, args[0]);
       } else if (commandName === "join") {
-        if (args[0]) {
-          ircClient.joinChannel(selectedServerId, args[0]);
-          ircClient.triggerEvent("JOIN", {
-            serverId: selectedServerId,
-            username: currentUser?.username || "",
-            channelName: args[0],
+        const [channels, keyList] = args.filter(Boolean);
+        if (channels) {
+          const keys = keyList?.split(",") ?? [];
+          channels.split(",").forEach((name, i) => {
+            if (name)
+              useStore.getState().joinChannel(selectedServerId, name, keys[i]);
           });
         } else {
           console.error("No channel specified for /join command");
@@ -377,27 +393,14 @@ export function useMessageSending({
             `${localReplyTo?.msgid ? `@+reply=${localReplyTo.msgid};+draft/reply=${localReplyTo.msgid} ` : ""}PRIVMSG ${target} :\u0001ACTION ${actionMessage}\u0001`,
           );
         }
-        // Non-echo fallback: servers without echo-message won't reflect our
-        // ACTION back, so add it locally the same way regular DMs are handled.
-        if (
-          selectedPrivateChat &&
-          currentUser &&
-          !ircClient.hasCapability(selectedServerId, "echo-message")
-        ) {
-          const { addMessage } = useStore.getState();
-          const outgoingMessage: Message = {
-            id: uuidv4(),
-            content: `\u0001ACTION ${actionMessage}\u0001`,
-            timestamp: new Date(),
-            userId: currentUser.username || currentUser.id,
-            channelId: selectedPrivateChat.id,
-            serverId: selectedServerId,
-            type: "message" as const,
-            reactions: [],
-            replyMessage: localReplyTo,
-            mentioned: [],
-          };
-          addMessage(outgoingMessage);
+        if (selectedPrivateChat && currentUser) {
+          showOwnPrivateMessage(
+            selectedServerId,
+            selectedPrivateChat,
+            currentUser,
+            `\u0001ACTION ${actionMessage}\u0001`,
+            localReplyTo,
+          );
         }
       } else if (commandName === "away") {
         const message = args.join(" ");
@@ -706,6 +709,12 @@ export function useMessageSending({
         selectedChannel?.name ?? selectedPrivateChat?.username ?? "";
       if (!target) return;
 
+      if (
+        useStore.getState().servers.find((s) => s.id === selectedServerId)
+          ?.isAway
+      )
+        clearAway(selectedServerId);
+
       // Route PMs through E2EE before any plaintext send path.
       if (selectedPrivateChat) {
         const routed = routeOutgoingPM(
@@ -739,27 +748,14 @@ export function useMessageSending({
         sendRegularMessage(cleanedText, target, rainbow);
       }
 
-      // Only needed for servers that won't echo our outgoing DM back.
-      if (
-        selectedPrivateChat &&
-        currentUser &&
-        !ircClient.hasCapability(selectedServerId, "echo-message")
-      ) {
-        const outgoingMessage: Message = {
-          id: uuidv4(),
-          content: cleanedText,
-          timestamp: new Date(),
-          userId: currentUser.username || currentUser.id,
-          channelId: selectedPrivateChat.id,
-          serverId: selectedServerId,
-          type: "message" as const,
-          reactions: [],
-          replyMessage: localReplyTo,
-          mentioned: [],
-        };
-
-        const { addMessage } = useStore.getState();
-        addMessage(outgoingMessage);
+      if (selectedPrivateChat && currentUser) {
+        showOwnPrivateMessage(
+          selectedServerId,
+          selectedPrivateChat,
+          currentUser,
+          cleanedText,
+          localReplyTo,
+        );
       }
     },
     [
@@ -770,6 +766,7 @@ export function useMessageSending({
       selectedPrivateChat,
       currentUser,
       localReplyTo,
+      clearAway,
       handleCommand,
       sendMultilineMessage,
       sendMultilineFallback,

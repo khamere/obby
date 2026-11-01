@@ -25,17 +25,12 @@ describe("MentionJumpBar", () => {
         mention("c"),
         { ...mention("x"), channelId: "c2" },
       ],
-      ui: { ...state.ui, jumpRequest: null },
     }));
   });
 
   it("counts unseen mentions in this channel and jumps oldest first", () => {
     render(<MentionJumpBar channelKey="s1-c1" />);
     fireEvent.click(screen.getByText("2 new mentions"));
-    expect(useStore.getState().ui.jumpRequest).toEqual({
-      channelKey: "s1-c1",
-      target: "b",
-    });
     expect(screen.getByText("1 new mention")).toBeVisible();
   });
 

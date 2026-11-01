@@ -5,43 +5,45 @@ import {
   E2EE_UNPROTECTED_TAG,
 } from "../../lib/e2ee/messageFlags";
 import { e2eeSessionKey, expectsProtection } from "../../lib/e2ee/session";
+import { isLocalReplay } from "../../lib/history/historyLines";
 import { isUserIgnored } from "../../lib/ignoreUtils";
 import ircClient from "../../lib/ircClient";
-import { isChannelTarget } from "../../lib/ircUtils";
 import { isSilenced } from "../../lib/mutes";
 import {
   playNotificationSound,
   shouldPlayNotificationSound,
 } from "../../lib/notificationSounds";
-import {
-  checkForMention,
-  extractMentions,
-  showMentionNotification,
-} from "../../lib/notifications";
+import { checkForMention, extractMentions } from "../../lib/notifications";
 import type { Channel, Message, PrivateChat, User } from "../../types";
 import {
+  compareMessageOrder,
   generateDeterministicId,
-  getCurrentSelection,
+  getViewedSelection,
+  isHistoryEvent,
+  redactedMessage,
   resolveReplyMessage,
   serverSupportsMetadata,
+  updateMessageByMsgid,
+  withoutReaction,
+  withReaction,
 } from "../helpers";
 import { type AppState, rememberMsgId, rememberMsgIds } from "../index";
-import { bufferChathistoryMessage, bufferChathistoryReaction } from "./batches";
+import { bufferChathistoryMessage, bufferHistoryEdit } from "./batches";
+import { notifyChatMessage } from "./chatNotifications";
 import { handleInboundObby } from "./e2ee";
 import { confirmEncryptedEcho } from "./e2eeConversation";
 import { handleInboundOtr } from "./otr";
-import { notePrivateMessageArrived } from "./privateChatArrival";
+import { laterActivity, notePrivateMessageArrived } from "./privateChatArrival";
 
-function historyBatchId(
-  store: StoreApi<AppState>,
-  serverId: string,
-  tags: Record<string, string> | undefined,
-): string | undefined {
-  const id = tags?.batch;
-  return id &&
-    store.getState().activeBatches[serverId]?.[id]?.type === "chathistory"
-    ? id
-    : undefined;
+function isAlreadyProcessed(
+  state: AppState,
+  mtags: Record<string, string> | undefined,
+  msgids = mtags?.msgid ? [mtags.msgid] : [],
+): boolean {
+  return (
+    !isLocalReplay(mtags) &&
+    msgids.some((id) => state.processedMessageIds.has(id))
+  );
 }
 
 // A mention in the open channel of a visible window has been seen as it
@@ -94,15 +96,39 @@ export function markPrivateChatPeerOnline(
   }));
 }
 
+// A CTCP request (VERSION, PING, TIME): not a conversation, just a question
+// a bot or another client asks. ACTION is a normal message.
+function ctcpRequest(message: string): { name: string; arg: string } | null {
+  if (!message.startsWith("\u0001")) return null;
+  const body = message.split("\u0001").join("");
+  const [name, ...rest] = body.split(" ");
+  if (!name || name.toUpperCase() === "ACTION") return null;
+  return { name: name.toUpperCase(), arg: rest.join(" ") };
+}
+
+function answerCtcp(
+  serverId: string,
+  sender: string,
+  request: { name: string; arg: string },
+): void {
+  const reply = (body: string) =>
+    ircClient.sendRaw(serverId, `NOTICE ${sender} :\u0001${body}\u0001`);
+  if (request.name === "VERSION") reply(`VERSION Obby v${ircClient.version}`);
+  else if (request.name === "PING") reply(`PING ${request.arg}`);
+  else if (request.name === "TIME") reply(`TIME ${new Date().toUTCString()}`);
+}
+
 export function registerMessageHandlers(store: StoreApi<AppState>): void {
   ircClient.on("CHANMSG", (response) => {
     const { mtags, channelName, message, timestamp } = response;
-    const historyBatch = historyBatchId(store, response.serverId, mtags);
 
     // Check for duplicate messages based on msgid
-    if (!historyBatch && mtags?.msgid) {
+    if (
+      !isHistoryEvent(store.getState(), response.serverId, mtags) &&
+      mtags?.msgid
+    ) {
       const currentState = store.getState();
-      if (currentState.processedMessageIds.has(mtags.msgid)) {
+      if (isAlreadyProcessed(currentState, mtags)) {
         return;
       }
 
@@ -166,7 +192,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
         // Lazy-fetch the sender's metadata the first time they speak in
         // this session. metadataList() is idempotent + cached so the
         // cost is one METADATA LIST per unique speaker.
-        if (!isOwnMessage && response.sender) {
+        if (
+          !isOwnMessage &&
+          response.sender &&
+          !isHistoryEvent(currentState, response.serverId, mtags)
+        ) {
           store.getState().metadataList(response.serverId, response.sender);
         }
         const isReplyToMe =
@@ -235,75 +265,35 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
 
         // Update channel unread count and mention flag if not the active channel
         const isActiveChannel =
-          getCurrentSelection(currentState).selectedChannelId === channel.id &&
+          getViewedSelection(currentState).selectedChannelId === channel.id &&
           currentState.ui.selectedServerId === server.id;
 
         // Don't count unread/mentions for historical messages (batch tag indicates chathistory playback)
-        const isHistoricalMessage = mtags?.batch !== undefined;
+        const isHistoricalMessage = isHistoryEvent(
+          store.getState(),
+          response.serverId,
+          mtags,
+        );
 
         if (isHistoricalMessage && mtags?.batch) {
-          const batchId = mtags.batch;
-          const batch =
-            store.getState().activeBatches[response.serverId]?.[batchId];
-          if (batch?.type === "chathistory") {
-            bufferChathistoryMessage(response.serverId, batchId, newMessage);
-            return;
-          }
+          bufferChathistoryMessage(response.serverId, mtags.batch, newMessage);
+          return;
         }
 
-        if (
-          !isActiveChannel &&
-          response.sender !== currentServerUser?.username &&
-          !isHistoricalMessage
-        ) {
-          // A mention still notifies in a muted channel, not in a muted server.
-          const notifyMention =
-            hasMention && !isSilenced(server.id, channel.id, true);
-          store.setState((state) => {
-            const updatedServers = state.servers.map((s) => {
-              if (s.id === server.id) {
-                const updatedChannels = s.channels.map((ch) => {
-                  if (ch.id === channel.id) {
-                    return {
-                      ...ch,
-                      unreadCount: ch.unreadCount + 1,
-                      mentionCount:
-                        (ch.mentionCount ?? 0) + (notifyMention ? 1 : 0),
-                      isMentioned: notifyMention || ch.isMentioned,
-                    };
-                  }
-                  return ch;
-                });
-                return { ...s, channels: updatedChannels };
-              }
-              return s;
-            });
-            return { servers: updatedServers };
-          });
-
-          // Show browser notification for mentions
-          if (
-            notifyMention &&
-            currentState.globalSettings.enableNotifications
-          ) {
-            showMentionNotification(
-              server.id,
-              channelName,
-              response.sender,
-              message,
-              (serverId, msg) => {
-                // Fallback: Add a NOTE standard reply notification
-                store.getState().addGlobalNotification({
-                  type: "note",
-                  command: "MENTION",
-                  code: "HIGHLIGHT",
-                  message: msg,
-                  serverId,
-                });
-              },
-            );
-          }
-        }
+        if (!isOwnMessage && !isHistoricalMessage && hasMention)
+          notifyChatMessage(
+            store,
+            {
+              serverId: server.id,
+              target: channelName,
+              sender: response.sender,
+              text: message,
+              isPrivate: false,
+              time: new Date(timestamp).getTime(),
+              msgid: mtags?.msgid,
+            },
+            isActiveChannel,
+          );
 
         // If message has bot tag, mark user as bot (skip for historical — live messages will set this)
         if (!isHistoricalMessage && mtags?.bot !== undefined) {
@@ -360,19 +350,8 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
             return state;
           }
 
-          // Add message and sort chronologically
           const updatedMessages = [...currentMessages, newMessage].sort(
-            (a, b) => {
-              const timeA =
-                a.timestamp instanceof Date
-                  ? a.timestamp.getTime()
-                  : new Date(a.timestamp).getTime();
-              const timeB =
-                b.timestamp instanceof Date
-                  ? b.timestamp.getTime()
-                  : new Date(b.timestamp).getTime();
-              return timeA - timeB;
-            },
+            compareMessageOrder,
           );
 
           // Remove typing user
@@ -442,23 +421,21 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
       messageIds,
       timestamp,
     } = response;
-
-    const historyBatch = historyBatchId(store, response.serverId, mtags);
+    const replayed = isHistoryEvent(store.getState(), response.serverId, mtags);
+    const addOrBuffer = (message: Message) => {
+      if (replayed && mtags?.batch)
+        bufferChathistoryMessage(response.serverId, mtags.batch, message);
+      else store.getState().addMessage(message);
+    };
 
     // History is deduplicated at batch end so cached pages still count as nonempty.
     const currentState = store.getState();
-    if (!historyBatch && messageIds && messageIds.length > 0) {
-      const hasDuplicate = messageIds.some((id) =>
-        currentState.processedMessageIds.has(id),
-      );
+    if (messageIds && messageIds.length > 0) {
+      const hasDuplicate = isAlreadyProcessed(currentState, mtags, messageIds);
       if (hasDuplicate) {
         return;
       }
-    } else if (
-      !historyBatch &&
-      mtags?.msgid &&
-      currentState.processedMessageIds.has(mtags.msgid)
-    ) {
+    } else if (mtags?.msgid && isAlreadyProcessed(currentState, mtags)) {
       return;
     }
 
@@ -536,8 +513,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           tags: mtags,
         };
 
-        // If message has bot tag, mark user as bot
-        if (mtags?.bot !== undefined) {
+        if (!replayed && mtags?.bot !== undefined) {
           store.setState((state) => {
             const updatedServers = state.servers.map((s) => {
               if (s.id === server.id) {
@@ -561,8 +537,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           });
         }
 
-        if (historyBatch) {
-          bufferChathistoryMessage(response.serverId, historyBatch, newMessage);
+        if (
+          isHistoryEvent(store.getState(), response.serverId, mtags) &&
+          mtags?.batch
+        ) {
+          bufferChathistoryMessage(response.serverId, mtags.batch, newMessage);
           return;
         }
 
@@ -582,89 +561,37 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           }));
         }
 
-        store.getState().addMessage(newMessage);
-
-        // Don't count unread/mentions for historical messages (batch tag indicates chathistory playback)
-        const isHistoricalMessage = mtags?.batch !== undefined;
+        addOrBuffer(newMessage);
+        if (replayed) return;
         const isActiveChannel =
-          getCurrentSelection(multilineCurrentState).selectedChannelId ===
+          getViewedSelection(multilineCurrentState).selectedChannelId ===
             channel.id &&
           multilineCurrentState.ui.selectedServerId === server.id;
 
-        if (
-          hasMention &&
-          !isOwnMessage &&
-          !isHistoricalMessage &&
-          !isSilenced(server.id, channel.id, true)
-        ) {
-          recordChannelMention(
+        if (!isOwnMessage && hasMention)
+          notifyChatMessage(
             store,
-            newMessage,
-            channelName ?? channel.name,
+            {
+              serverId: server.id,
+              target: channel.name,
+              sender,
+              text: message,
+              isPrivate: false,
+              time: new Date(timestamp).getTime(),
+              msgid: newMessage.msgid,
+            },
             isActiveChannel,
           );
-        }
 
-        if (!isActiveChannel && !isOwnMessage && !isHistoricalMessage) {
-          // A mention still notifies in a muted channel, not in a muted server.
-          const notifyMention =
-            hasMention && !isSilenced(server.id, channel.id, true);
-          store.setState((state) => {
-            const updatedServers = state.servers.map((s) => {
-              if (s.id === server.id) {
-                const updatedChannels = s.channels.map((ch) => {
-                  if (ch.id === channel.id) {
-                    return {
-                      ...ch,
-                      unreadCount: ch.unreadCount + 1,
-                      mentionCount:
-                        (ch.mentionCount ?? 0) + (notifyMention ? 1 : 0),
-                      isMentioned: notifyMention || ch.isMentioned,
-                    };
-                  }
-                  return ch;
-                });
-                return { ...s, channels: updatedChannels };
-              }
-              return s;
-            });
-            return { servers: updatedServers };
-          });
-
-          if (
-            notifyMention &&
-            multilineCurrentState.globalSettings.enableNotifications
-          ) {
-            showMentionNotification(
-              server.id,
-              channelName ?? "",
-              sender,
-              message,
-              (serverId, msg) => {
-                store.getState().addGlobalNotification({
-                  type: "note",
-                  command: "MENTION",
-                  code: "HIGHLIGHT",
-                  message: msg,
-                  serverId,
-                });
-              },
-            );
-          }
-        }
-
-        if (!isHistoricalMessage) {
-          const state = store.getState();
-          const serverCurrentUser = ircClient.getCurrentUser(response.serverId);
-          if (
-            shouldPlayNotificationSound(
-              newMessage,
-              serverCurrentUser,
-              state.globalSettings,
-            )
-          ) {
-            playNotificationSound(state.globalSettings);
-          }
+        const soundState = store.getState();
+        if (
+          shouldPlayNotificationSound(
+            newMessage,
+            multilineCurrentUser,
+            soundState.globalSettings,
+          )
+        ) {
+          playNotificationSound(soundState.globalSettings);
         }
 
         // Remove any typing users from the state
@@ -746,10 +673,13 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
                 : mtags?.msgid
                   ? [mtags.msgid]
                   : [];
-            if (historyBatch) {
+            if (
+              isHistoryEvent(store.getState(), response.serverId, mtags) &&
+              mtags?.batch
+            ) {
               bufferChathistoryMessage(
                 response.serverId,
-                historyBatch,
+                mtags.batch,
                 newMessage,
               );
               return;
@@ -762,7 +692,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
                 ]),
               }));
             }
-            store.getState().addMessage(newMessage);
+            addOrBuffer(newMessage);
           }
           return;
         }
@@ -778,7 +708,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
             serverId: server.id,
             unreadCount: 0,
             isMentioned: false,
-            lastActivity: new Date(),
+            lastActivity: timestamp,
             isPinned: false,
             order: undefined,
             isOnline: undefined,
@@ -822,8 +752,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
             : mtags?.msgid
               ? [mtags.msgid]
               : [];
-        if (historyBatch) {
-          bufferChathistoryMessage(response.serverId, historyBatch, newMessage);
+        if (
+          isHistoryEvent(store.getState(), response.serverId, mtags) &&
+          mtags?.batch
+        ) {
+          bufferChathistoryMessage(response.serverId, mtags.batch, newMessage);
           return;
         }
         if (idsToTrack.length > 0) {
@@ -835,11 +768,8 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           }));
         }
 
-        store.getState().addMessage(newMessage);
-
-        const isHistoricalMessage = mtags?.batch !== undefined;
-        if (!isHistoricalMessage) {
-          markPrivateChatPeerOnline(store, server.id, sender);
+        addOrBuffer(newMessage);
+        if (!replayed) {
           const state = store.getState();
           const serverCurrentUser = ircClient.getCurrentUser(response.serverId);
           if (
@@ -859,12 +789,17 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
   // Handle private messages (USERMSG)
   ircClient.on("USERMSG", (response) => {
     const { mtags, sender, target, message, timestamp } = response;
-    const historyBatch = historyBatchId(store, response.serverId, mtags);
+    const replayed = isHistoryEvent(store.getState(), response.serverId, mtags);
+    const addOrBuffer = (newMessage: Message) => {
+      if (replayed && mtags?.batch)
+        bufferChathistoryMessage(response.serverId, mtags.batch, newMessage);
+      else store.getState().addMessage(newMessage);
+    };
 
     // History is deduplicated at batch end so cached pages still count as nonempty.
-    if (!historyBatch && mtags?.msgid) {
+    if (!replayed && mtags?.msgid) {
       const currentState = store.getState();
-      if (currentState.processedMessageIds.has(mtags.msgid)) {
+      if (isAlreadyProcessed(currentState, mtags)) {
         return;
       }
     }
@@ -873,6 +808,29 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
     const server = store
       .getState()
       .servers.find((s) => s.id === response.serverId);
+
+    // A CTCP request to us is answered and noted in Server Notices; it would
+    // otherwise open a private chat showing "VERSION" from a bot every time
+    // the network checks clients.
+    const ctcp = ctcpRequest(message);
+    if (ctcp) {
+      if (replayed || !server) return;
+      answerCtcp(server.id, sender, ctcp);
+      store.getState().addMessage({
+        id: uuidv4(),
+        type: "notice",
+        content: `CTCP ${ctcp.name}${ctcp.arg ? ` ${ctcp.arg}` : ""} request from ${sender}`,
+        timestamp: new Date(timestamp),
+        userId: sender,
+        channelId: "server-notices",
+        serverId: server.id,
+        reactions: [],
+        replyMessage: null,
+        mentioned: [],
+        preformatted: true,
+      });
+      return;
+    }
 
     // A plaintext PM arriving while an encrypted session is active: the row is
     // rendered but flagged. obbyircd is multi-client, so this is often just the
@@ -887,22 +845,22 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
       const ourNick = ircClient
         .getCurrentUser(response.serverId)
         ?.username?.toLowerCase();
-      if (sender && !sender.includes(".") && sender.toLowerCase() !== ourNick) {
+      if (
+        !replayed &&
+        sender &&
+        !sender.includes(".") &&
+        sender.toLowerCase() !== ourNick
+      ) {
         store.getState().metadataList(response.serverId, sender);
       }
 
       // Both E2EE schemes ride in the PRIVMSG body; divert them before the body
-      // renders as gibberish. Our own echoes and CHATHISTORY replays (mtags.batch)
+      // renders as gibberish. Our own echoes and replayed history
       // are swallowed without driving a live session — replayed ciphertext can't
       // decrypt and a replayed handshake would spawn a spurious session. Obby
       // passes the msgid so the decrypted row keeps the real IRC message identity.
       const isSelfEcho = sender.toLowerCase() === ourNick;
-      // A labelled echo of our own send arrives inside a batch too, and it is
-      // the live confirmation of a row that already exists, not history.
-      const isReplay =
-        mtags?.batch !== undefined &&
-        !(isSelfEcho && mtags.label !== undefined);
-      const skipE2EE = isSelfEcho || isReplay;
+      const skipE2EE = isSelfEcho || replayed;
       const consumedByE2EE =
         handleInboundObby(
           response.serverId,
@@ -918,7 +876,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
         // Our own replayed sends count: the local plaintext echo died with the
         // page, so dropping them too would replay the thread as one-sided. Only
         // a live self-echo is dropped, since that row was already injected.
-        if (isReplay) {
+        if (replayed) {
           undecryptableReplay = true;
         } else {
           // Our own carrier comes back named: the row was rendered from the
@@ -953,23 +911,6 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
         };
 
         store.getState().addMessage(newMessage);
-
-        // Play notification sound if appropriate (but not for historical messages)
-        const isHistoricalMessage = mtags?.batch !== undefined;
-        if (!isHistoricalMessage) {
-          const state = store.getState();
-          const serverCurrentUser = ircClient.getCurrentUser(response.serverId);
-          if (
-            shouldPlayNotificationSound(
-              newMessage,
-              serverCurrentUser,
-              state.globalSettings,
-            )
-          ) {
-            playNotificationSound(state.globalSettings);
-          }
-        }
-
         return; // Don't process as a regular PM
       }
 
@@ -993,7 +934,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
 
       unprotectedUnderLock =
         !channelContext &&
-        mtags?.batch === undefined &&
+        !replayed &&
         sender.toLowerCase() !== ourNick &&
         expectsProtection(
           store.getState().e2eeSessions[e2eeSessionKey(server.id, sender)],
@@ -1043,7 +984,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
 
           // Play notification sound if appropriate (only if it's not from ourselves and not historical)
           const currentUser = ircClient.getCurrentUser(response.serverId);
-          const isHistoricalMessage = mtags?.batch !== undefined;
+          const isHistoricalMessage = isHistoryEvent(
+            store.getState(),
+            response.serverId,
+            mtags,
+          );
 
           if (currentUser?.username !== sender && !isHistoricalMessage) {
             const state = store.getState();
@@ -1118,15 +1063,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
             mentioned: [],
             tags: mtags,
           };
-          if (historyBatch) {
-            bufferChathistoryMessage(
-              response.serverId,
-              historyBatch,
-              newMessage,
-            );
-            return;
-          }
-          store.getState().addMessage(newMessage);
+          addOrBuffer(newMessage);
         }
       }
       return;
@@ -1180,13 +1117,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
               : mtags,
         };
 
-        if (historyBatch) {
-          bufferChathistoryMessage(response.serverId, historyBatch, newMessage);
-          return;
-        }
-
-        // If message has bot tag, mark user as bot
-        if (mtags?.bot !== undefined) {
+        if (!replayed && mtags?.bot !== undefined) {
           store.setState((state) => {
             const updatedServers = state.servers.map((s) => {
               if (s.id === server.id) {
@@ -1239,19 +1170,18 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           }));
         }
 
-        store.getState().addMessage(newMessage);
-
-        // Remove any typing users from the state
-        store.setState((state) => {
-          const key = `${server.id}-${privateChat.id}`;
-          const currentUsers = state.typingUsers[key] || [];
-          return {
-            typingUsers: {
-              ...state.typingUsers,
-              [key]: currentUsers.filter((u) => u.username !== sender),
-            },
-          };
-        });
+        addOrBuffer(newMessage);
+        if (!replayed)
+          store.setState((state) => {
+            const key = `${server.id}-${privateChat.id}`;
+            const currentUsers = state.typingUsers[key] || [];
+            return {
+              typingUsers: {
+                ...state.typingUsers,
+                [key]: currentUsers.filter((u) => u.username !== sender),
+              },
+            };
+          });
 
         notePrivateMessageArrived(store, {
           serverId: response.serverId,
@@ -1259,7 +1189,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           sender,
           message: newMessage,
           body: message,
-          isHistorical: mtags?.batch !== undefined,
+          isHistorical: replayed,
         });
       }
     }
@@ -1271,7 +1201,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
     // Check for duplicate messages based on msgid
     if (mtags?.msgid) {
       const currentState = store.getState();
-      if (currentState.processedMessageIds.has(mtags.msgid)) {
+      if (isAlreadyProcessed(currentState, mtags)) {
         console.log(
           `Skipping duplicate CHANNNOTICE with msgid: ${mtags.msgid}`,
         );
@@ -1395,24 +1325,6 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
     }
 
     store.getState().addMessage(newMessage);
-
-    // Play notification sound if appropriate (but not for historical messages)
-    // Don't count unread/mentions for historical messages (batch tag indicates chathistory playback)
-    const isHistoricalMessage = mtags?.batch !== undefined;
-
-    if (!isHistoricalMessage) {
-      const state = store.getState();
-      const serverCurrentUser = ircClient.getCurrentUser(response.serverId);
-      if (
-        shouldPlayNotificationSound(
-          newMessage,
-          serverCurrentUser,
-          state.globalSettings,
-        )
-      ) {
-        playNotificationSound(state.globalSettings);
-      }
-    }
   });
 
   ircClient.on("USERNOTICE", (response) => {
@@ -1421,7 +1333,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
     // Check for duplicate messages based on msgid
     if (mtags?.msgid) {
       const currentState = store.getState();
-      if (currentState.processedMessageIds.has(mtags.msgid)) {
+      if (isAlreadyProcessed(currentState, mtags)) {
         return;
       }
     }
@@ -1549,25 +1461,6 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
       }
 
       store.getState().addMessage(newMessage);
-
-      // Play notification sound if appropriate (but not for historical messages)
-      // Don't count unread/mentions for historical messages (batch tag indicates chathistory playback)
-      const isHistoricalMessage = mtags?.batch !== undefined;
-
-      if (!isHistoricalMessage) {
-        const state = store.getState();
-        const serverCurrentUser = ircClient.getCurrentUser(response.serverId);
-        if (
-          shouldPlayNotificationSound(
-            newMessage,
-            serverCurrentUser,
-            state.globalSettings,
-          )
-        ) {
-          playNotificationSound(state.globalSettings);
-        }
-      }
-
       return; // Don't process as a user notice
     }
 
@@ -1619,7 +1512,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
       store.getState().addMessage(newMessage);
 
       // Update private chat's last activity and unread count
-      const isHistoricalMessage = mtags?.batch !== undefined;
+      const isHistoricalMessage = isHistoryEvent(
+        store.getState(),
+        response.serverId,
+        mtags,
+      );
 
       // Play notification sound if appropriate (but not for historical messages)
       if (!isHistoricalMessage) {
@@ -1642,19 +1539,9 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
             const updatedPrivateChats =
               s.privateChats?.map((pc) => {
                 if (pc.id === privateChat.id) {
-                  const isActive =
-                    getCurrentSelection(state).selectedPrivateChatId === pc.id;
-                  const reset = isActive || isHistoricalMessage;
                   return {
                     ...pc,
-                    lastActivity: new Date(),
-                    unreadCount: reset ? 0 : pc.unreadCount + 1,
-                    mentionCount: reset ? 0 : (pc.mentionCount ?? 0) + 1,
-                    // All PMs are considered mentions (except historical
-                    // ones, muted DMs/servers and the DM being read).
-                    isMentioned:
-                      !reset &&
-                      !isSilenced(response.serverId, privateChat.id, true),
+                    lastActivity: laterActivity(pc, newMessage),
                   };
                 }
                 return pc;
@@ -1670,6 +1557,8 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
 
   // CTCPs lol
   ircClient.on("CHANMSG", (response) => {
+    if (isHistoryEvent(store.getState(), response.serverId, response.mtags))
+      return;
     const { channelName, message, timestamp } = response;
 
     // Find the server and channel
@@ -1679,26 +1568,8 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
 
     if (!server) return;
 
-    const parv = message.split(" ");
-    if (parv[0] === "\u0001VERSION\u0001") {
-      ircClient.sendRaw(
-        server.id,
-        `NOTICE ${response.sender} :\u0001VERSION Obby v${ircClient.version}\u0001`,
-      );
-    }
-    if (parv[0] === "\u0001PING") {
-      ircClient.sendRaw(
-        server.id,
-        `NOTICE ${response.sender} :\u0001PING ${parv[1]}\u0001`,
-      );
-    }
-    if (parv[0] === "\u0001TIME\u0001") {
-      const date = new Date();
-      ircClient.sendRaw(
-        server.id,
-        `NOTICE ${response.sender} :\u0001TIME ${date.toUTCString()}\u0001`,
-      );
-    }
+    const request = ctcpRequest(message);
+    if (request) answerCtcp(server.id, response.sender, request);
   });
 
   // TAGMSG typing
@@ -1720,7 +1591,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
     // Check if the sender is not the current user for this specific server
     // we don't care about showing our own typing status
     const currentUser = ircClient.getCurrentUser(response.serverId);
-    if (sender !== currentUser?.username && mtags && mtags["+typing"]) {
+    if (
+      sender !== currentUser?.username &&
+      mtags?.["+typing"] &&
+      !isHistoryEvent(store.getState(), response.serverId, mtags)
+    ) {
       const isActive = mtags["+typing"] === "active";
       const server = store
         .getState()
@@ -1731,9 +1606,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
       let key: string;
       let user: User;
 
-      const isChannel = isChannelTarget(channelName);
+      const isChannel = ircClient.isChannel(response.serverId, channelName);
       if (isChannel) {
-        const channel = server.channels.find((c) => c.name === channelName);
+        const channel = server.channels.find(
+          (c) => c.name.toLowerCase() === channelName.toLowerCase(),
+        );
         if (!channel) return;
 
         const foundUser = channel.users.find(
@@ -1843,19 +1720,14 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
     const reactTargetId = mtags?.["+reply"] ?? mtags?.["+draft/reply"];
     if (mtags?.["+draft/react"] && reactTargetId) {
       // Chathistory batch: target message is in chathistoryBuffers, not the store yet.
-      if (mtags.batch) {
-        const batchId = mtags.batch;
-        const batch =
-          store.getState().activeBatches[response.serverId]?.[batchId];
-        if (batch?.type === "chathistory") {
-          bufferChathistoryReaction(response.serverId, batchId, {
-            emoji: mtags["+draft/react"],
-            userId: sender,
-            targetMsgId: reactTargetId,
-            isUnreact: false,
-          });
-          return;
-        }
+      if (isHistoryEvent(store.getState(), response.serverId, mtags)) {
+        bufferHistoryEdit(response.serverId, mtags.batch as string, {
+          kind: "react",
+          emoji: mtags["+draft/react"],
+          userId: sender,
+          targetMsgId: reactTargetId,
+        });
+        return;
       }
 
       const emoji = mtags["+draft/react"];
@@ -1867,9 +1739,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
       if (!server) return;
 
       let channel: Channel | PrivateChat | undefined;
-      const isChannel = isChannelTarget(channelName);
+      const isChannel = ircClient.isChannel(response.serverId, channelName);
       if (isChannel) {
-        channel = server.channels.find((c) => c.name === channelName);
+        channel = server.channels.find(
+          (c) => c.name.toLowerCase() === channelName.toLowerCase(),
+        );
       } else {
         // channelName may be our own nick (incoming reaction echo), so also try sender
         channel = server.privateChats?.find(
@@ -1881,71 +1755,30 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
 
       if (!channel) return;
 
-      // Find the message to add reaction to
+      // An existing reaction is the echo of our optimistic update or a repeat from history.
       const channelKey = `${server.id}-${channel.id}`;
-      const messages = store.getState().messages[channelKey] || [];
-      const messageIndex = messages.findIndex(
-        (m) => m.msgid === replyMessageId,
+      store.setState((state) =>
+        updateMessageByMsgid(state, channelKey, replyMessageId, (message) =>
+          withReaction(message, emoji, sender),
+        ),
       );
-      if (messageIndex === -1) return;
-
-      const message = messages[messageIndex];
-      const existingReactionIndex = message.reactions.findIndex(
-        (r) => r.emoji === emoji && r.userId === sender,
-      );
-
-      // Skip self-reactions that already exist — they're an echo of our optimistic update.
-      // If the reaction doesn't exist yet (another session / history playback), add it.
-      const currentUserForReaction = ircClient.getCurrentUser(
-        response.serverId,
-      );
-      if (
-        sender === currentUserForReaction?.username &&
-        existingReactionIndex !== -1
-      ) {
-        return;
-      }
-
-      if (existingReactionIndex === -1) {
-        store.setState((state) => {
-          const updatedMessages = [...messages];
-          updatedMessages[messageIndex] = {
-            ...message,
-            reactions: [...message.reactions, { emoji, userId: sender }],
-          };
-          const key = `${server.id}-${channel.id}`;
-          return {
-            messages: {
-              ...state.messages,
-              [key]: updatedMessages,
-            },
-          };
-        });
-      }
     }
 
     // Handle unreacts
     const unreactTargetId = mtags?.["+reply"] ?? mtags?.["+draft/reply"];
     if (mtags?.["+draft/unreact"] && unreactTargetId) {
-      if (mtags.batch) {
-        const batchId = mtags.batch;
-        const batch =
-          store.getState().activeBatches[response.serverId]?.[batchId];
-        if (batch?.type === "chathistory") {
-          bufferChathistoryReaction(response.serverId, batchId, {
-            emoji: mtags["+draft/unreact"],
-            userId: sender,
-            targetMsgId: unreactTargetId,
-            isUnreact: true,
-          });
-          return;
-        }
+      if (isHistoryEvent(store.getState(), response.serverId, mtags)) {
+        bufferHistoryEdit(response.serverId, mtags.batch as string, {
+          kind: "unreact",
+          emoji: mtags["+draft/unreact"],
+          userId: sender,
+          targetMsgId: unreactTargetId,
+        });
+        return;
       }
 
       const emoji = mtags["+draft/unreact"];
       const replyMessageId = unreactTargetId;
-      // No self-skip needed: if the reaction was already removed optimistically,
-      // existingReactionIndex will be -1 and the guard below is a no-op.
 
       const server = store
         .getState()
@@ -1953,9 +1786,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
       if (!server) return;
 
       let channel: Channel | PrivateChat | undefined;
-      const isChannel = isChannelTarget(channelName);
+      const isChannel = ircClient.isChannel(response.serverId, channelName);
       if (isChannel) {
-        channel = server.channels.find((c) => c.name === channelName);
+        channel = server.channels.find(
+          (c) => c.name.toLowerCase() === channelName.toLowerCase(),
+        );
       } else {
         // channelName may be our own nick (incoming unreact echo), so also try sender
         channel = server.privateChats?.find(
@@ -1967,39 +1802,12 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
 
       if (!channel) return;
 
-      // Find the message to remove reaction from
       const channelKey = `${server.id}-${channel.id}`;
-      const messages = store.getState().messages[channelKey] || [];
-      const messageIndex = messages.findIndex(
-        (m) => m.msgid === replyMessageId,
+      store.setState((state) =>
+        updateMessageByMsgid(state, channelKey, replyMessageId, (message) =>
+          withoutReaction(message, emoji, sender),
+        ),
       );
-      if (messageIndex === -1) return;
-
-      const message = messages[messageIndex];
-      const existingReactionIndex = message.reactions.findIndex(
-        (r) => r.emoji === emoji && r.userId === sender,
-      );
-
-      // Only remove if the reaction exists
-      if (existingReactionIndex !== -1) {
-        store.setState((state) => {
-          const updatedMessages = [...messages];
-          updatedMessages[messageIndex] = {
-            ...message,
-            reactions: message.reactions.filter(
-              (_, i) => i !== existingReactionIndex,
-            ),
-          };
-
-          const key = `${server.id}-${channel.id}`;
-          return {
-            messages: {
-              ...state.messages,
-              [key]: updatedMessages,
-            },
-          };
-        });
-      }
     }
 
     // Handle link previews
@@ -2018,9 +1826,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
       if (!server) return;
 
       let channel: Channel | PrivateChat | undefined;
-      const isChannel = isChannelTarget(channelName);
+      const isChannel = ircClient.isChannel(response.serverId, channelName);
       if (isChannel) {
-        channel = server.channels.find((c) => c.name === channelName);
+        channel = server.channels.find(
+          (c) => c.name.toLowerCase() === channelName.toLowerCase(),
+        );
       } else {
         // Private chat
         channel = server.privateChats?.find(
@@ -2030,15 +1840,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
 
       if (!channel) return;
 
-      // Find the message to add link preview to
       const channelKey = `${server.id}-${channel.id}`;
-      const messages = store.getState().messages[channelKey] || [];
-      const messageIndex = messages.findIndex(
-        (m) => m.msgid === replyMessageId,
-      );
-      if (messageIndex === -1) return;
-
-      const message = messages[messageIndex];
 
       // Helper function to unescape IRC tag values
       const unescapeTagValue = (
@@ -2054,9 +1856,8 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           .replace(/\\\\/g, "\\");
       };
 
-      store.setState((state) => {
-        const updatedMessages = [...messages];
-        updatedMessages[messageIndex] = {
+      store.setState((state) =>
+        updateMessageByMsgid(state, channelKey, replyMessageId, (message) => ({
           ...message,
           linkPreviewTitle: unescapeTagValue(
             mtags["obsidianirc/link-preview-title"],
@@ -2067,75 +1868,39 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           linkPreviewMeta: unescapeTagValue(
             mtags["obsidianirc/link-preview-meta"],
           ),
-        };
-
-        const key = `${server.id}-${channel.id}`;
-        return {
-          messages: {
-            ...state.messages,
-            [key]: updatedMessages,
-          },
-        };
-      });
+        })),
+      );
     }
   });
 
-  ircClient.on("REDACT", ({ serverId, target, msgid, sender }) => {
+  ircClient.on("REDACT", ({ serverId, mtags, target, msgid, sender }) => {
+    if (isHistoryEvent(store.getState(), serverId, mtags) && mtags?.batch) {
+      bufferHistoryEdit(serverId, mtags.batch, {
+        kind: "redact",
+        sender,
+        targetMsgId: msgid,
+      });
+      return;
+    }
     store.setState((state) => {
       const server = state.servers.find((s) => s.id === serverId);
       if (!server) return {};
-
-      let channel: Channel | PrivateChat | undefined;
-      const isChannel = isChannelTarget(target);
-      if (isChannel) {
-        channel = server.channels.find((c) => c.name === target);
-      } else {
-        // Private chat
-        channel = server.privateChats?.find(
-          (pc) => pc.username.toLowerCase() === target.toLowerCase(),
-        );
-      }
-
+      const lowered = target.toLowerCase();
+      const channel: Channel | PrivateChat | undefined = ircClient.isChannel(
+        serverId,
+        target,
+      )
+        ? server.channels.find((c) => c.name.toLowerCase() === lowered)
+        : server.privateChats?.find(
+            (pc) => pc.username.toLowerCase() === lowered,
+          );
       if (!channel) return {};
-
-      // Find and replace the message with a system message
-      const channelKey = `${server.id}-${channel.id}`;
-      const messages = state.messages[channelKey] || [];
-      const messageIndex = messages.findIndex((m) => m.msgid === msgid);
-      if (messageIndex === -1) return {};
-
-      const updatedMessages = [...messages];
-      const originalMessage = updatedMessages[messageIndex];
-
-      // Determine if the sender deleted their own message
-      const isSender = originalMessage.userId === sender;
-      const deletionMessage = isSender
-        ? "This message has been deleted by the sender"
-        : "This message has been deleted by a member of staff";
-
-      // Replace the entire message with a system message
-      updatedMessages[messageIndex] = {
-        id: originalMessage.id,
-        msgid: originalMessage.msgid,
-        content: deletionMessage,
-        timestamp: originalMessage.timestamp,
-        userId: "system",
-        channelId: originalMessage.channelId,
-        serverId: originalMessage.serverId,
-        type: "system",
-        reactions: [],
-        replyMessage: null,
-        mentioned: [],
-        tags: originalMessage.tags,
-      };
-
-      const key = `${server.id}-${channel.id}`;
-      return {
-        messages: {
-          ...state.messages,
-          [key]: updatedMessages,
-        },
-      };
+      return updateMessageByMsgid(
+        state,
+        `${server.id}-${channel.id}`,
+        msgid,
+        (original) => redactedMessage(original, sender),
+      );
     });
   });
 
@@ -2174,12 +1939,16 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
               }
               return channel;
             });
-            const privateChats = server.privateChats?.map((chat) =>
-              chat.username.toLowerCase() === channelName.toLowerCase()
-                ? { ...chat, isLoadingHistory: isLoading }
-                : chat,
+            const updatedPrivateChats = server.privateChats?.map((pc) =>
+              pc.username.toLowerCase() === channelName.toLowerCase()
+                ? { ...pc, isLoadingHistory: isLoading }
+                : pc,
             );
-            return { ...server, channels: updatedChannels, privateChats };
+            return {
+              ...server,
+              channels: updatedChannels,
+              privateChats: updatedPrivateChats,
+            };
           }
           return server;
         });
