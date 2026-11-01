@@ -1,7 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { deviceErrorCode } from "../../src/lib/voiceErrors";
 
 describe("deviceErrorCode", () => {
+  // jsdom has no mediaDevices; a browser that produced these errors does.
+  beforeEach(() =>
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      mediaDevices: { getUserMedia: () => {} },
+    }),
+  );
+  afterEach(() => vi.unstubAllGlobals());
+
   it("reports a denied permission as blocked", () => {
     expect(
       deviceErrorCode("mic", new DOMException("denied", "NotAllowedError")),
