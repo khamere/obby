@@ -10,7 +10,6 @@ import {
   useState,
 } from "react";
 import { compactUrl, makeUrlRegex } from "../../lib/ircUtils";
-import { openExternalUrl } from "../../lib/openUrl";
 import ExternalLinkWarningModal from "./ExternalLinkWarningModal";
 
 interface EnhancedLinkWrapperProps {
@@ -62,12 +61,8 @@ export const EnhancedLinkWrapper: React.FC<EnhancedLinkWrapperProps> = ({
     }
   }, [onIrcLinkClick]);
 
-  const handleConfirmOpen = async () => {
-    if (pendingUrl) {
-      await openExternalUrl(pendingUrl);
-    }
-    setPendingUrl(null);
-  };
+  // The dialog opens the link itself.
+  const handleConfirmOpen = () => setPendingUrl(null);
 
   const handleCancelOpen = () => {
     setPendingUrl(null);

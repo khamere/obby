@@ -29,7 +29,6 @@ import { createIgnorePattern, isUserIgnored } from "../../lib/ignoreUtils";
 import ircClient from "../../lib/ircClient";
 import { mircToHtml, serverFilehosts } from "../../lib/ircUtils";
 import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
-import { openExternalUrl } from "../../lib/openUrl";
 import { formatRelativeTime } from "../../lib/relativeTime";
 import useStore from "../../store";
 import { findServerUser } from "../../store/helpers";
@@ -496,10 +495,8 @@ const ProfilePane: React.FC<{ target: ProfilePaneTarget }> = ({
     },
   ];
 
-  const confirmOpenUrl = async () => {
-    if (pendingUrl) await openExternalUrl(pendingUrl);
-    setPendingUrl(null);
-  };
+  // The dialog opens the link itself.
+  const confirmOpenUrl = () => setPendingUrl(null);
 
   const avatarUrl = avatar?.includes("{size}")
     ? avatar.replace("{size}", "96")

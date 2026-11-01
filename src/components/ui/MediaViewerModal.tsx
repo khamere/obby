@@ -60,7 +60,6 @@ import {
   encryptedDescriptor,
   kindMediaType,
 } from "../../lib/messageAttachments";
-import { openExternalUrl } from "../../lib/openUrl";
 import { TILE_URL_TEMPLATE } from "../../lib/osmTiles";
 import { PDF_OPTIONS } from "../../lib/pdfOptions";
 import { isTauri } from "../../lib/platformUtils";
@@ -1240,10 +1239,8 @@ export function MediaViewerModal({
     ],
   );
 
-  const handleConfirmOpen = async () => {
-    await openExternalUrl(currentUrl);
-    setShowWarning(false);
-  };
+  // The dialog opens the link itself.
+  const handleConfirmOpen = () => setShowWarning(false);
 
   const handleDownload = async () => {
     setIsDownloading(true);

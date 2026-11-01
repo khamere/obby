@@ -1,6 +1,5 @@
 import type React from "react";
 import { useEffect, useState } from "react";
-import { openExternalUrl } from "../../lib/openUrl";
 import ExternalLinkWarningModal from "./ExternalLinkWarningModal";
 import { EXTERNAL_LINK } from "./LinkHoverLayer";
 
@@ -29,10 +28,7 @@ export const ExternalLinkGuard: React.FC = () => {
     <ExternalLinkWarningModal
       isOpen={pendingUrl !== null}
       url={pendingUrl ?? ""}
-      onConfirm={() => {
-        if (pendingUrl) void openExternalUrl(pendingUrl);
-        setPendingUrl(null);
-      }}
+      onConfirm={() => setPendingUrl(null)}
       onCancel={() => setPendingUrl(null)}
     />
   );

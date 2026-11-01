@@ -3,10 +3,15 @@ import type React from "react";
 import { useState } from "react";
 import { FaCheck, FaCopy, FaExternalLinkAlt } from "react-icons/fa";
 import { ConfirmDialog } from "../../lib/modal/ConfirmDialog";
+import { openExternalUrl } from "../../lib/openUrl";
+import { isTauri } from "../../lib/platformUtils";
 
 interface ExternalLinkWarningModalProps {
   isOpen: boolean;
   url: string;
+  // Called once the link is opened; the dialog opens it itself. On the web
+  // the confirm control is a real link, so a popup blocker cannot stop it;
+  // the apps hand the URL to the system browser.
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -29,6 +34,11 @@ const ExternalLinkWarningModal: React.FC<ExternalLinkWarningModalProps> = ({
 
   // Truncate very long URLs for display
   const displayUrl = url.length > 80 ? `${url.substring(0, 80)}...` : url;
+  const inApp = isTauri();
+  const handleConfirm = () => {
+    if (inApp) void openExternalUrl(url);
+    onConfirm();
+  };
 
   return (
     <ConfirmDialog
@@ -40,7 +50,8 @@ const ExternalLinkWarningModal: React.FC<ExternalLinkWarningModalProps> = ({
           <Trans>Open Link</Trans>
         </>
       }
-      onConfirm={onConfirm}
+      confirmHref={inApp ? undefined : url}
+      onConfirm={handleConfirm}
       onCancel={onCancel}
     >
       <div className="space-y-4">
