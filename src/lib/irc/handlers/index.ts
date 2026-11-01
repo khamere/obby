@@ -330,6 +330,17 @@ export const IRC_DISPATCH: Record<string, HandlerFn> = {
     handleWhoisChannels(ctx, serverId, source, parv, mtags),
   "320": (ctx, serverId, source, parv, mtags) =>
     handleWhoisSpecial(ctx, serverId, source, parv, mtags),
+  // Free-text WHOIS lines ("is a registered nick", "is an IRC Operator",
+  // "is available for help", "is actually using host") belong to the
+  // profile like 320, so none of them reach the server log.
+  "307": (ctx, serverId, source, parv, mtags) =>
+    handleWhoisSpecial(ctx, serverId, source, parv, mtags),
+  "310": (ctx, serverId, source, parv, mtags) =>
+    handleWhoisSpecial(ctx, serverId, source, parv, mtags),
+  "313": (ctx, serverId, source, parv, mtags) =>
+    handleWhoisSpecial(ctx, serverId, source, parv, mtags),
+  "338": (ctx, serverId, source, parv, mtags) =>
+    handleWhoisSpecial(ctx, serverId, source, parv, mtags),
   "276": (ctx, serverId, source, parv, mtags) =>
     handleWhoisCertfp(ctx, serverId, source, parv, mtags),
   "378": (ctx, serverId, source, parv, mtags) =>
