@@ -438,6 +438,13 @@ export interface Message {
   server2?: string;
   // Invite fields
   inviteChannel?: string; // The channel being invited to
+  // A line a shoutbox bridge relayed: `bridgedVia` is the bot it came from,
+  // or the rule label for a web user on IRC under a wrapped nick; the person
+  // is `userId`. `bridgedOriginal` keeps the bot's raw line for the hover.
+  bridgedVia?: string;
+  bridgedOriginal?: string;
+  // The unwrapped name of a web user whose real IRC nick stays in `userId`.
+  displayNick?: string;
   inviteTarget?: string; // Who is being invited
   // Link preview fields
   linkPreviewUrl?: string;

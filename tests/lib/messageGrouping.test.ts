@@ -22,6 +22,24 @@ const unprotected = (extra: Partial<Message> = {}) =>
   msg({ tags: { "e2ee-unprotected": "1" }, ...extra });
 
 describe("shouldShowMessageHeader", () => {
+  it("never groups a bridged person with an IRC user of the same nick, and groups a bridged run", () => {
+    expect(shouldShowMessageHeader(msg(), msg({ bridgedVia: "Bot" }))).toBe(
+      true,
+    );
+    expect(shouldShowMessageHeader(msg({ bridgedVia: "Bot" }), msg())).toBe(
+      true,
+    );
+    expect(
+      shouldShowMessageHeader(
+        msg({ bridgedVia: "Bot" }),
+        msg({
+          bridgedVia: "Bot",
+          timestamp: new Date("2026-01-01T12:01:00.000Z"),
+        }),
+      ),
+    ).toBe(false);
+  });
+
   it("gives every whisper its own header, even in a run from one sender", () => {
     const whisper = { tags: { "+draft/channel-context": "#qa" } };
     expect(shouldShowMessageHeader(msg(whisper), msg(whisper))).toBe(true);
