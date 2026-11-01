@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 /**
  * Markdown serialization for copying chat selections.
  *
@@ -31,7 +32,7 @@ export function formatCopyAuthor(
     displayName && displayName !== username
       ? `${displayName} (${username})`
       : displayName || username;
-  return via ? `${author} (via ${via})` : author;
+  return via ? `${author} (${t`via ${via}`})` : author;
 }
 
 /** Normalizes a raw message body for copying (unwraps CTCP ACTION, trims). */

@@ -41,6 +41,19 @@ describe("parseBridgeRules", () => {
     expect(out.skipped).toBe(3);
   });
 
+  it("skips a nick rule whose label would hide the marker, and trims a good one", () => {
+    const out = parseBridgeRules(
+      file([
+        { ...IHD, label: "" },
+        { ...IHD, label: "   " },
+        { ...IHD, label: "x".repeat(33) },
+        { ...IHD, label: "  site  " },
+      ]),
+    );
+    expect(out.skipped).toBe(3);
+    expect(out.rules).toEqual([{ ...IHD, label: "site" }]);
+  });
+
   it("rejects the whole file when it is not usable", () => {
     expect(() => parseBridgeRules("<!doctype html>")).toThrow("bad-json");
     expect(() =>

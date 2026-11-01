@@ -6612,6 +6612,12 @@ msgstr "Mycket avslappnat"
 msgid "Very Strict"
 msgstr "Mycket strikt"
 
+#: src/components/message/MessageHeader.tsx
+#: src/components/message/MessageReply.tsx
+#: src/lib/chatMarkdownCopy.ts
+msgid "via {via}"
+msgstr "via {via}"
+
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/MediaCommentsSidebar.tsx

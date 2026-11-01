@@ -1,4 +1,4 @@
-import { useLingui } from "@lingui/react/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import type React from "react";
 import {
   FaFileAlt,
@@ -68,6 +68,7 @@ export const MessageReply: React.FC<MessageReplyProps> = ({
 }) => {
   const { t } = useLingui();
   const replyUsername = replyMessage.displayNick ?? replyMessage.userId;
+  const via = replyMessage.bridgedVia;
   const replyColor = useNickColor(replyUsername);
 
   const mediaVisibilityLevel = useStore(
@@ -134,7 +135,7 @@ export const MessageReply: React.FC<MessageReplyProps> = ({
               className={`text-[10px] text-${theme}-text-muted flex-shrink-0`}
               data-bridged-via={replyMessage.bridgedVia}
             >
-              via {replyMessage.bridgedVia}
+              <Trans>via {via}</Trans>
             </span>
           )}
         </div>

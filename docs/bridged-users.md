@@ -98,7 +98,8 @@ Put the `.json` file somewhere with a stable link and share the link:
   wrapped nick such as `(Jeditwo)`. The bare name is shown with the real nick
   on hover; the message text is untouched. Mutually exclusive with `bot`.
 - `label`: the word shown in the marker for `nickFormat` rules ("via web").
-  Default `web`.
+  Default `web`; 1 to 32 characters, and a rule with an empty label is
+  skipped, since the marker is never optional.
 - `note`: free text, ignored by Obby.
 
 Templates are literal text with placeholders:
