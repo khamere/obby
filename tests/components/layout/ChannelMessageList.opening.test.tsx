@@ -353,6 +353,33 @@ describe("ChannelMessageList late history", () => {
     expect(loadOlderMessages).toHaveBeenCalled();
   });
 
+  it("keeps the row at the top of the view in place when a preview above it grows", () => {
+    const { container } = render(<ChannelMessageList {...props} />);
+    const list = container.firstElementChild as HTMLElement;
+    setGeometry(list, 100, 3000);
+    list.getBoundingClientRect = () =>
+      ({ top: 0, bottom: 600, left: 0, width: 800, height: 600 }) as DOMRect;
+    // Rows 100px apart; a preview in row 0 grows by 50px and pushes the rest.
+    let growth = 0;
+    const rows = Array.from(
+      list.querySelectorAll<HTMLElement>("[data-message-id]"),
+    );
+    rows.forEach((row, i) => {
+      row.getBoundingClientRect = () => {
+        const top = i * 100 + (i >= 1 ? growth : 0) - list.scrollTop;
+        return { top, bottom: top + 100 } as DOMRect;
+      };
+    });
+    latestObserver()([], {} as ResizeObserver);
+    fireEvent.scroll(list);
+
+    growth = 50;
+    setGeometry(list, 100, 3050);
+    latestObserver()([], {} as ResizeObserver);
+
+    expect(list.scrollTop).toBe(150);
+  });
+
   it("follows the end of a list that shrank", () => {
     const { container } = render(<ChannelMessageList {...props} />);
     const list = container.firstElementChild as HTMLElement;
