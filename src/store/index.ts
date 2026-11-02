@@ -4467,6 +4467,9 @@ const useStore = create<AppState>((set, get) => ({
         connectionState: "connecting",
         bouncerServerId,
         bouncerNetid: netid,
+        // A bound network is the bouncer's account speaking, so the read
+        // markers it keeps are ours to send there.
+        account: parent.account,
       };
       return { servers: [...state.servers, seed] };
     });
