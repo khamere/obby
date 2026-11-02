@@ -380,6 +380,24 @@ describe("ChannelMessageList late history", () => {
     expect(list.scrollTop).toBe(150);
   });
 
+  it("starts a short channel at the top once all history is loaded", () => {
+    useStore.setState((state) => ({
+      servers: [
+        {
+          ...server(false),
+          privateChats: [
+            { ...server(false).privateChats[0], hasMoreHistory: false },
+          ],
+        },
+      ],
+      ui: { ...state.ui, isChatAwayFromPresent: false },
+    }));
+    const { container } = render(<ChannelMessageList {...props} />);
+    const list = container.firstElementChild as HTMLElement;
+    const inner = list.querySelector(".flex-grow") as HTMLElement;
+    expect(inner.firstElementChild?.textContent).toContain("read-0");
+  });
+
   it("follows the end of a list that shrank", () => {
     const { container } = render(<ChannelMessageList {...props} />);
     const list = container.firstElementChild as HTMLElement;
