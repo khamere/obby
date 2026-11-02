@@ -764,6 +764,10 @@ msgstr "Pyydä palvelimen ylläpitäjää ilmoittamaan taustajärjestelmän URL-
 msgid "ASN"
 msgstr "ASN"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "At least {PASSWORD_MIN_LENGTH} characters"
+msgstr "Vähintään {PASSWORD_MIN_LENGTH} merkkiä"
+
 #: src/components/layout/ChatArea.tsx
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/RecordingPanel.tsx
@@ -920,6 +924,22 @@ msgstr "Tausta"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Background opacity"
 msgstr "Taustan läpinäkyvyys"
+
+#: src/components/pages/SettingsPage.tsx
+msgid "Backup"
+msgstr "Varmuuskopio"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Backup and restore"
+msgstr "Varmuuskopiointi ja palautus"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Backup password"
+msgstr "Varmuuskopion salasana"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Backup saved. Keep the password: it cannot be recovered."
+msgstr "Varmuuskopio tallennettu. Säilytä salasana: sitä ei voi palauttaa."
 
 #: src/components/ui/ModerationModal.tsx
 msgid "Ban {username} by hostmask (prevents them from rejoining from the same IP/host)"
@@ -1105,6 +1125,7 @@ msgstr "Viimeistä 2FA-tunnistetta ei voi poistaa"
 #: src/components/ui/ModerationModal.tsx
 #: src/components/ui/RegionSelectOverlay.tsx
 #: src/components/ui/RemoveServerConfirmModal.tsx
+#: src/components/ui/settings/BackupField.tsx
 #: src/components/ui/settings/HistoryUsageField.tsx
 #: src/components/ui/TotpStepUpModal.tsx
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
@@ -1341,6 +1362,10 @@ msgstr "Valitse turvallinen salasana"
 #: src/lib/mediaUpload.ts
 msgid "Choose a smaller file. This one is too large for the file host."
 msgstr "Valitse pienempi tiedosto. Tämä on liian suuri tiedostopalvelimelle."
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Choose backup file"
+msgstr "Valitse varmuuskopiotiedosto"
 
 #: src/components/ui/settings/SettingRenderer.tsx
 msgid "Choose file"
@@ -2192,6 +2217,10 @@ msgstr "Valmis"
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Download"
 msgstr "Lataa"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Download backup"
+msgstr "Lataa varmuuskopio"
 
 #: src/components/ui/UpdateModal.tsx
 msgid "Downloading…"
@@ -4449,6 +4478,10 @@ msgstr "Sivut"
 msgid "Password"
 msgstr "Salasana"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Password of that backup"
+msgstr "Kyseisen varmuuskopion salasana"
+
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Password reset complete"
 msgstr "Salasanan palautus valmis"
@@ -5030,9 +5063,21 @@ msgstr "Näytä Markdown-muotoilu viesteissä"
 msgid "Reorder list"
 msgstr "Järjestä lista"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Repeat password"
+msgstr "Toista salasana"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Replace and reload"
+msgstr "Korvaa ja lataa uudelleen"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Replace bad words with <censored>"
 msgstr "Korvaa kielletyt sanat tekstillä <censored>"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Replace everything on this device?"
+msgstr "Korvataanko kaikki tällä laitteella?"
 
 #: src/components/layout/SearchPane.tsx
 msgid "Replies"
@@ -5069,6 +5114,18 @@ msgstr "Palauta nykyiseen teemaan"
 #: src/components/ui/settings/WebPushFailureLine.tsx
 msgid "Restart your browser to get notifications while Obby is closed"
 msgstr "Käynnistä selain uudelleen, jotta saat ilmoituksia Obbyn ollessa suljettuna"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Restore"
+msgstr "Palauta"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Restore a backup"
+msgstr "Palauta varmuuskopio"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Restoring replaces everything Obby keeps in this browser with the backup, then reloads."
+msgstr "Palautus korvaa kaiken, mitä Obby säilyttää tässä selaimessa, varmuuskopiolla ja lataa sitten sivun uudelleen."
 
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/CameraCaptureModal.tsx
@@ -5147,6 +5204,10 @@ msgstr "SASL PLAIN -tili"
 #: src/components/ui/TopicModal.tsx
 msgid "Save"
 msgstr "Tallenna"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Save everything Obby keeps in this browser to a password-protected file, or put a saved file back."
+msgstr "Tallenna kaikki, mitä Obby säilyttää tässä selaimessa, salasanalla suojattuun tiedostoon, tai palauta tallennettu tiedosto."
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Save failed: {msg}"
@@ -6016,6 +6077,10 @@ msgstr "Tiedostossa on liikaa sääntöjä."
 msgid "That file is not a valid rules file."
 msgstr "Tiedosto ei ole kelvollinen sääntötiedosto."
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "That file is not an Obby backup."
+msgstr "Tuo tiedosto ei ole Obbyn varmuuskopio."
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "That file is not an Obby theme."
 msgstr "Tiedosto ei ole Obby-teema."
@@ -6045,6 +6110,10 @@ msgstr "Puhelupalvelin hylkäsi pyynnön. Yritä hetken kuluttua uudelleen."
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
 msgstr "Yhteydessä palvelimeen <0>{serverName}</0> on seuraavia tietoturvaongelmia:"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "The file holds your servers with their passwords, upload tokens, encryption keys, settings and layout, locked with the password you choose here. Chat history is not included."
+msgstr "Tiedosto sisältää palvelimesi salasanoineen, lähetystunnisteet, salausavaimet, asetukset ja asettelun, lukittuna tässä valitsemallasi salasanalla. Keskusteluhistoriaa ei sisällytetä."
+
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "The file host can read these files, and anyone with the link can open them. Switch to Obby encryption to send files encrypted."
 msgstr "Tiedostopalvelin voi lukea nämä tiedostot, ja jokainen linkin haltija voi avata ne. Vaihda Obby-salaukseen lähettääksesi tiedostot salattuina."
@@ -6072,6 +6141,10 @@ msgstr "Verkko jakautui ja yhdistyi uudelleen. ✅"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "The palette used when Colored Nicknames is on"
 msgstr "Paletti, jota käytetään, kun värilliset nimimerkit ovat käytössä"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "The passwords do not match."
+msgstr "Salasanat eivät täsmää."
 
 #: src/components/ui/CameraCaptureModal.tsx
 msgid "The photo you just took"
@@ -6104,6 +6177,10 @@ msgstr "Teeman nimi"
 #: src/components/ui/PluginsScreen.tsx
 msgid "Theme Studio"
 msgstr "Teemastudio"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "This backup was made by a newer Obby. Update first."
+msgstr "Tämä varmuuskopio on tehty uudemmalla Obbylla. Päivitä ensin."
 
 #: src/components/ui/RecordingPanel.tsx
 msgid "This browser cannot record audio."
@@ -6483,6 +6560,10 @@ msgstr "Käytä suojattua websocket-porttia."
 msgid "Use a server with IRCv3 METADATA to set your avatar, display name, and status."
 msgstr "Käytä IRCv3 METADATA -tukea palvelinta asettaaksesi profiilikuvan, näyttönimen ja tilan."
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Use at least {PASSWORD_MIN_LENGTH} characters."
+msgstr "Käytä vähintään {PASSWORD_MIN_LENGTH} merkkiä."
+
 #: src/components/pages/ServerSettingsPage.tsx
 msgid "Use only Latin characters in the password"
 msgstr "Käytä salasanassa vain latinalaisia merkkejä"
@@ -6856,6 +6937,10 @@ msgstr "Toimii Zipline v3:n ja v4:n kanssa. Kopioi tunnus Ziplinen käyttäjäas
 msgid "Wrong key, try again"
 msgstr "Väärä avain, yritä uudelleen"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Wrong password, or the file was changed since it was saved."
+msgstr "Väärä salasana, tai tiedostoa on muutettu tallentamisen jälkeen."
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Yellow"
 msgstr "Keltainen"
@@ -6935,6 +7020,10 @@ msgstr "CSS:si poistettiin."
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Your CSS was saved."
 msgstr "CSS:si tallennettiin."
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Your current servers, settings and keys in this browser are replaced by the backup. Obby reloads afterwards."
+msgstr "Nykyiset palvelimesi, asetuksesi ja avaimesi tässä selaimessa korvataan varmuuskopiolla. Obby latautuu sen jälkeen uudelleen."
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your default nickname for all servers"

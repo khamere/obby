@@ -764,6 +764,10 @@ msgstr "Požádejte správce serveru, aby zveřejnil URL backendu (draft/authtok
 msgid "ASN"
 msgstr "ASN"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "At least {PASSWORD_MIN_LENGTH} characters"
+msgstr "Alespoň {PASSWORD_MIN_LENGTH} znaků"
+
 #: src/components/layout/ChatArea.tsx
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/RecordingPanel.tsx
@@ -920,6 +924,22 @@ msgstr "Na pozadí"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Background opacity"
 msgstr "Průhlednost pozadí"
+
+#: src/components/pages/SettingsPage.tsx
+msgid "Backup"
+msgstr "Záloha"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Backup and restore"
+msgstr "Záloha a obnovení"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Backup password"
+msgstr "Heslo zálohy"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Backup saved. Keep the password: it cannot be recovered."
+msgstr "Záloha uložena. Heslo si uschovejte: nelze je obnovit."
 
 #: src/components/ui/ModerationModal.tsx
 msgid "Ban {username} by hostmask (prevents them from rejoining from the same IP/host)"
@@ -1105,6 +1125,7 @@ msgstr "Nelze odebrat poslední údaj 2FA"
 #: src/components/ui/ModerationModal.tsx
 #: src/components/ui/RegionSelectOverlay.tsx
 #: src/components/ui/RemoveServerConfirmModal.tsx
+#: src/components/ui/settings/BackupField.tsx
 #: src/components/ui/settings/HistoryUsageField.tsx
 #: src/components/ui/TotpStepUpModal.tsx
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
@@ -1341,6 +1362,10 @@ msgstr "Zvolte bezpečné heslo"
 #: src/lib/mediaUpload.ts
 msgid "Choose a smaller file. This one is too large for the file host."
 msgstr "Vyberte menší soubor. Tento je pro úložiště souborů příliš velký."
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Choose backup file"
+msgstr "Vybrat soubor zálohy"
 
 #: src/components/ui/settings/SettingRenderer.tsx
 msgid "Choose file"
@@ -2192,6 +2217,10 @@ msgstr "Hotovo"
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Download"
 msgstr "Stáhnout"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Download backup"
+msgstr "Stáhnout zálohu"
 
 #: src/components/ui/UpdateModal.tsx
 msgid "Downloading…"
@@ -4449,6 +4478,10 @@ msgstr "Stránky"
 msgid "Password"
 msgstr "Heslo"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Password of that backup"
+msgstr "Heslo této zálohy"
+
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Password reset complete"
 msgstr "Obnovení hesla dokončeno"
@@ -5030,9 +5063,21 @@ msgstr "Zobrazovat Markdown formátování ve zprávách"
 msgid "Reorder list"
 msgstr "Přeuspořádat seznam"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Repeat password"
+msgstr "Zopakujte heslo"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Replace and reload"
+msgstr "Nahradit a znovu načíst"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Replace bad words with <censored>"
 msgstr "Nahradit sprostá slova za <censored>"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Replace everything on this device?"
+msgstr "Nahradit vše na tomto zařízení?"
 
 #: src/components/layout/SearchPane.tsx
 msgid "Replies"
@@ -5069,6 +5114,18 @@ msgstr "Obnovit podle aktuálního motivu"
 #: src/components/ui/settings/WebPushFailureLine.tsx
 msgid "Restart your browser to get notifications while Obby is closed"
 msgstr "Restartujte prohlížeč, abyste dostávali oznámení i při zavřeném Obby"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Restore"
+msgstr "Obnovit"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Restore a backup"
+msgstr "Obnovit zálohu"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Restoring replaces everything Obby keeps in this browser with the backup, then reloads."
+msgstr "Obnovení nahradí vše, co Obby v tomto prohlížeči uchovává, zálohou a poté stránku znovu načte."
 
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/CameraCaptureModal.tsx
@@ -5147,6 +5204,10 @@ msgstr "Účet SASL PLAIN"
 #: src/components/ui/TopicModal.tsx
 msgid "Save"
 msgstr "Uložit"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Save everything Obby keeps in this browser to a password-protected file, or put a saved file back."
+msgstr "Uložte vše, co Obby v tomto prohlížeči uchovává, do souboru chráněného heslem, nebo uložený soubor vraťte zpět."
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Save failed: {msg}"
@@ -6016,6 +6077,10 @@ msgstr "Tento soubor má příliš mnoho pravidel."
 msgid "That file is not a valid rules file."
 msgstr "Tento soubor není platný soubor s pravidly."
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "That file is not an Obby backup."
+msgstr "Tento soubor není záloha Obby."
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "That file is not an Obby theme."
 msgstr "Tento soubor není motiv Obby."
@@ -6045,6 +6110,10 @@ msgstr "Server hovorů žádost odmítl. Zkuste to za chvíli znovu."
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
 msgstr "Připojení k <0>{serverName}</0> má následující bezpečnostní problémy:"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "The file holds your servers with their passwords, upload tokens, encryption keys, settings and layout, locked with the password you choose here. Chat history is not included."
+msgstr "Soubor obsahuje vaše servery s hesly, tokeny pro nahrávání, šifrovací klíče, nastavení a rozložení, zamčené heslem, které zde zvolíte. Historie chatu není zahrnuta."
+
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "The file host can read these files, and anyone with the link can open them. Switch to Obby encryption to send files encrypted."
 msgstr "Hostitel souborů tyto soubory může číst a otevřít je může kdokoli s odkazem. Přepněte na šifrování Obby, aby se soubory odesílaly šifrovaně."
@@ -6072,6 +6141,10 @@ msgstr "Síť se rozdělila a znovu připojila. ✅"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "The palette used when Colored Nicknames is on"
 msgstr "Paleta použitá při zapnutých barevných přezdívkách"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "The passwords do not match."
+msgstr "Hesla se neshodují."
 
 #: src/components/ui/CameraCaptureModal.tsx
 msgid "The photo you just took"
@@ -6104,6 +6177,10 @@ msgstr "Název motivu"
 #: src/components/ui/PluginsScreen.tsx
 msgid "Theme Studio"
 msgstr "Studio motivů"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "This backup was made by a newer Obby. Update first."
+msgstr "Tuto zálohu vytvořila novější verze Obby. Nejprve aktualizujte."
 
 #: src/components/ui/RecordingPanel.tsx
 msgid "This browser cannot record audio."
@@ -6483,6 +6560,10 @@ msgstr "Použijte port zabezpečeného websocketu."
 msgid "Use a server with IRCv3 METADATA to set your avatar, display name, and status."
 msgstr "Použijte server s IRCv3 METADATA pro nastavení avataru, zobrazovaného jména a stavu."
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Use at least {PASSWORD_MIN_LENGTH} characters."
+msgstr "Použijte alespoň {PASSWORD_MIN_LENGTH} znaků."
+
 #: src/components/pages/ServerSettingsPage.tsx
 msgid "Use only Latin characters in the password"
 msgstr "V hesle použijte jen latinková písmena"
@@ -6856,6 +6937,10 @@ msgstr "Funguje se Zipline v3 a v4. Token zkopírujte v uživatelském nastaven�
 msgid "Wrong key, try again"
 msgstr "Špatný klíč, zkuste to znovu"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Wrong password, or the file was changed since it was saved."
+msgstr "Špatné heslo, nebo byl soubor od uložení změněn."
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Yellow"
 msgstr "Žlutá"
@@ -6935,6 +7020,10 @@ msgstr "Vaše CSS bylo odebráno."
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Your CSS was saved."
 msgstr "Vaše CSS bylo uloženo."
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Your current servers, settings and keys in this browser are replaced by the backup. Obby reloads afterwards."
+msgstr "Vaše současné servery, nastavení a klíče v tomto prohlížeči budou nahrazeny zálohou. Obby se poté znovu načte."
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your default nickname for all servers"

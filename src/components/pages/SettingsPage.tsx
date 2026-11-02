@@ -90,6 +90,7 @@ const subcategoryLabel = (name: string): string => {
     Input: t`Input`,
     Privacy: t`Privacy`,
     History: t`History`,
+    Backup: t`Backup`,
     Devices: t`Devices`,
     "Audio Processing": t`Audio Processing`,
   };
