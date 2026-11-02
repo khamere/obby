@@ -1,6 +1,10 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ircClient from "../../src/lib/ircClient";
 import useStore from "../../src/store";
+import {
+  queryBotCommands,
+  queryUncachedBotsInChannel,
+} from "../../src/store/handlers/pushbot";
 
 function setupServer() {
   useStore.setState({
@@ -43,6 +47,94 @@ function encodeBotCmds(commands: unknown): string {
   const json = JSON.stringify({ commands });
   return Buffer.from(json, "utf8").toString("base64");
 }
+
+describe("bot discovery requests", () => {
+  let now = Date.now();
+  beforeEach(() => {
+    setupServer();
+    now += 600_000;
+    vi.spyOn(Date, "now").mockImplementation(() => now);
+    vi.spyOn(ircClient, "isSocketOpen").mockReturnValue(true);
+    vi.spyOn(ircClient, "hasCapability").mockReturnValue(true);
+    vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  it("does not probe ordinary users or new JOINs", () => {
+    ircClient.triggerEvent("JOIN", {
+      serverId: "srv-1",
+      username: "Visitor",
+      channelName: "#bots",
+    });
+    queryBotCommands("srv-1", "Visitor");
+    expect(
+      vi
+        .mocked(ircClient.sendRaw)
+        .mock.calls.filter(([, line]) => line.includes("bot-cmds-query")),
+    ).toEqual([]);
+  });
+
+  it("queries a confirmed +B bot after WHO but does not repeatedly probe silent bots", () => {
+    ircClient.triggerEvent("WHO_END", { serverId: "srv-1", mask: "#bots" });
+    queryUncachedBotsInChannel("srv-1", "#bots");
+    queryBotCommands("srv-1", "WEATHER", true);
+    expect(ircClient.sendRaw).toHaveBeenCalledTimes(1);
+    expect(ircClient.sendRaw).toHaveBeenCalledWith(
+      "srv-1",
+      "@+draft/bot-cmds-query TAGMSG Weather",
+    );
+    now += 300_000;
+    queryBotCommands("srv-1", "Weather", true);
+    expect(ircClient.sendRaw).toHaveBeenCalledTimes(2);
+  });
+
+  it("waits for message-tags and an open connection", () => {
+    vi.mocked(ircClient.hasCapability).mockReturnValue(false);
+    queryBotCommands("srv-1", "Weather");
+    vi.mocked(ircClient.hasCapability).mockReturnValue(true);
+    vi.mocked(ircClient.isSocketOpen).mockReturnValue(false);
+    queryBotCommands("srv-1", "Weather");
+    expect(ircClient.sendRaw).not.toHaveBeenCalled();
+  });
+
+  it("keeps cached commands until explicitly refreshed and scopes attempts per network", () => {
+    useStore.setState((state) => ({
+      servers: state.servers.map((server) => ({
+        ...server,
+        botCommands: { weather: [{ name: "forecast" }] },
+      })),
+    }));
+    queryBotCommands("srv-1", "Weather");
+    expect(ircClient.sendRaw).not.toHaveBeenCalled();
+    queryBotCommands("srv-1", "Weather", true);
+    useStore.setState((state) => ({
+      servers: [...state.servers, { ...state.servers[0], id: "srv-2" }],
+    }));
+    queryBotCommands("srv-2", "Weather", true);
+    expect(ircClient.sendRaw).toHaveBeenCalledTimes(2);
+  });
+
+  it("discovers a shared-channel user when WHOIS confirms its bot flag", () => {
+    useStore.setState((state) => ({
+      servers: state.servers.map((server) => ({
+        ...server,
+        channels: server.channels.map((channel) => ({
+          ...channel,
+          users: channel.users.map((user) => ({ ...user, isBot: false })),
+        })),
+      })),
+    }));
+    queryBotCommands("srv-1", "Weather");
+    expect(ircClient.sendRaw).not.toHaveBeenCalled();
+    ircClient.triggerEvent("WHOIS_BOT", {
+      serverId: "srv-1",
+      nick: "me",
+      target: "Weather",
+      message: "is a bot",
+    });
+    expect(ircClient.sendRaw).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe("pushbot store handler", () => {
   beforeEach(() => {
