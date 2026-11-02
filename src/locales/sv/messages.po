@@ -764,6 +764,10 @@ msgstr "Be serveradministratören att annonsera en backend-URL (draft/authtoken 
 msgid "ASN"
 msgstr "ASN"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "At least {PASSWORD_MIN_LENGTH} characters"
+msgstr "Minst {PASSWORD_MIN_LENGTH} tecken"
+
 #: src/components/layout/ChatArea.tsx
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/RecordingPanel.tsx
@@ -920,6 +924,22 @@ msgstr "Bakgrund"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Background opacity"
 msgstr "Bakgrundens opacitet"
+
+#: src/components/pages/SettingsPage.tsx
+msgid "Backup"
+msgstr "Säkerhetskopia"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Backup and restore"
+msgstr "Säkerhetskopiering och återställning"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Backup password"
+msgstr "Lösenord för säkerhetskopian"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Backup saved. Keep the password: it cannot be recovered."
+msgstr "Säkerhetskopian sparad. Spara lösenordet: det kan inte återskapas."
 
 #: src/components/ui/ModerationModal.tsx
 msgid "Ban {username} by hostmask (prevents them from rejoining from the same IP/host)"
@@ -1105,6 +1125,7 @@ msgstr "Det går inte att ta bort din sista 2FA-uppgift"
 #: src/components/ui/ModerationModal.tsx
 #: src/components/ui/RegionSelectOverlay.tsx
 #: src/components/ui/RemoveServerConfirmModal.tsx
+#: src/components/ui/settings/BackupField.tsx
 #: src/components/ui/settings/HistoryUsageField.tsx
 #: src/components/ui/TotpStepUpModal.tsx
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
@@ -1341,6 +1362,10 @@ msgstr "Välj ett säkert lösenord"
 #: src/lib/mediaUpload.ts
 msgid "Choose a smaller file. This one is too large for the file host."
 msgstr "Välj en mindre fil. Den här är för stor för filvärden."
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Choose backup file"
+msgstr "Välj säkerhetskopia"
 
 #: src/components/ui/settings/SettingRenderer.tsx
 msgid "Choose file"
@@ -2192,6 +2217,10 @@ msgstr "Klar"
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Download"
 msgstr "Ladda ned"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Download backup"
+msgstr "Ladda ner säkerhetskopia"
 
 #: src/components/ui/UpdateModal.tsx
 msgid "Downloading…"
@@ -4449,6 +4478,10 @@ msgstr "Sidor"
 msgid "Password"
 msgstr "Lösenord"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Password of that backup"
+msgstr "Lösenordet för den säkerhetskopian"
+
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Password reset complete"
 msgstr "Lösenordsåterställningen är klar"
@@ -5030,9 +5063,21 @@ msgstr "Rendera markdown-formatering i meddelanden"
 msgid "Reorder list"
 msgstr "Ordna om listan"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Repeat password"
+msgstr "Upprepa lösenordet"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Replace and reload"
+msgstr "Ersätt och ladda om"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Replace bad words with <censored>"
 msgstr "Ersätt fula ord med <censored>"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Replace everything on this device?"
+msgstr "Ersätta allt på den här enheten?"
 
 #: src/components/layout/SearchPane.tsx
 msgid "Replies"
@@ -5069,6 +5114,18 @@ msgstr "Återställ till nuvarande tema"
 #: src/components/ui/settings/WebPushFailureLine.tsx
 msgid "Restart your browser to get notifications while Obby is closed"
 msgstr "Starta om webbläsaren för att få aviseringar när Obby är stängt"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Restore"
+msgstr "Återställ"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Restore a backup"
+msgstr "Återställ en säkerhetskopia"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Restoring replaces everything Obby keeps in this browser with the backup, then reloads."
+msgstr "Återställning ersätter allt Obby sparar i den här webbläsaren med säkerhetskopian och laddar sedan om."
 
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/CameraCaptureModal.tsx
@@ -5147,6 +5204,10 @@ msgstr "SASL PLAIN-konto"
 #: src/components/ui/TopicModal.tsx
 msgid "Save"
 msgstr "Spara"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Save everything Obby keeps in this browser to a password-protected file, or put a saved file back."
+msgstr "Spara allt Obby sparar i den här webbläsaren till en lösenordsskyddad fil, eller lägg tillbaka en sparad fil."
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Save failed: {msg}"
@@ -6016,6 +6077,10 @@ msgstr "Den filen har för många regler."
 msgid "That file is not a valid rules file."
 msgstr "Den filen är inte en giltig regelfil."
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "That file is not an Obby backup."
+msgstr "Den filen är inte en Obby-säkerhetskopia."
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "That file is not an Obby theme."
 msgstr "Den filen är inte ett Obby-tema."
@@ -6045,6 +6110,10 @@ msgstr "Samtalsservern avvisade begäran. Försök igen om en stund."
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
 msgstr "Anslutningen till <0>{serverName}</0> har följande säkerhetsproblem:"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "The file holds your servers with their passwords, upload tokens, encryption keys, settings and layout, locked with the password you choose here. Chat history is not included."
+msgstr "Filen innehåller dina servrar med lösenord, uppladdningstoken, krypteringsnycklar, inställningar och layout, låst med lösenordet du väljer här. Chatthistoriken ingår inte."
+
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "The file host can read these files, and anyone with the link can open them. Switch to Obby encryption to send files encrypted."
 msgstr "Filservern kan läsa de här filerna, och alla med länken kan öppna dem. Byt till Obby-kryptering för att skicka filer krypterade."
@@ -6072,6 +6141,10 @@ msgstr "Nätverket splittrades och återanslöts. ✅"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "The palette used when Colored Nicknames is on"
 msgstr "Paletten som används när färgade smeknamn är på"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "The passwords do not match."
+msgstr "Lösenorden stämmer inte överens."
 
 #: src/components/ui/CameraCaptureModal.tsx
 msgid "The photo you just took"
@@ -6104,6 +6177,10 @@ msgstr "Temanamn"
 #: src/components/ui/PluginsScreen.tsx
 msgid "Theme Studio"
 msgstr "Temastudio"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "This backup was made by a newer Obby. Update first."
+msgstr "Den här säkerhetskopian gjordes med en nyare Obby. Uppdatera först."
 
 #: src/components/ui/RecordingPanel.tsx
 msgid "This browser cannot record audio."
@@ -6483,6 +6560,10 @@ msgstr "Använd en säker websocket-port."
 msgid "Use a server with IRCv3 METADATA to set your avatar, display name, and status."
 msgstr "Använd en server med IRCv3 METADATA för att ange din avatar, ditt visningsnamn och din status."
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Use at least {PASSWORD_MIN_LENGTH} characters."
+msgstr "Använd minst {PASSWORD_MIN_LENGTH} tecken."
+
 #: src/components/pages/ServerSettingsPage.tsx
 msgid "Use only Latin characters in the password"
 msgstr "Använd bara latinska tecken i lösenordet"
@@ -6856,6 +6937,10 @@ msgstr "Fungerar med Zipline v3 och v4. Kopiera token från dina användarinstä
 msgid "Wrong key, try again"
 msgstr "Fel nyckel, försök igen"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Wrong password, or the file was changed since it was saved."
+msgstr "Fel lösenord, eller så har filen ändrats sedan den sparades."
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Yellow"
 msgstr "Gul"
@@ -6935,6 +7020,10 @@ msgstr "Din CSS togs bort."
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Your CSS was saved."
 msgstr "Din CSS sparades."
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Your current servers, settings and keys in this browser are replaced by the backup. Obby reloads afterwards."
+msgstr "Dina nuvarande servrar, inställningar och nycklar i den här webbläsaren ersätts av säkerhetskopian. Obby laddar om efteråt."
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your default nickname for all servers"

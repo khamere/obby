@@ -1,5 +1,6 @@
 import { msg } from "@lingui/core/macro";
 import { AccentColorField } from "../../../components/ui/settings/AccentColorField";
+import { BackupField } from "../../../components/ui/settings/BackupField";
 import { BridgeRulesField } from "../../../components/ui/settings/BridgeRulesField";
 import { CallCameraField } from "../../../components/ui/settings/CallCameraField";
 import { CallMicrophoneField } from "../../../components/ui/settings/CallMicrophoneField";
@@ -884,6 +885,27 @@ const preferenceSettings: SettingDefinition[] = [
     searchKeywords: ["history", "clear", "delete", "storage", "disk"],
     priority: 14,
     customComponent: HistoryUsageField,
+  },
+  {
+    id: "preferences.backup",
+    key: "backup",
+    category: "preferences",
+    subcategory: "Backup",
+    title: msg`Backup and restore`,
+    description: msg`Save everything Obby keeps in this browser to a password-protected file, or put a saved file back.`,
+    type: "custom",
+    defaultValue: null,
+    searchKeywords: [
+      "backup",
+      "restore",
+      "export",
+      "import",
+      "transfer",
+      "migrate",
+      "password",
+    ],
+    priority: 15,
+    customComponent: BackupField,
   },
 ];
 
