@@ -764,6 +764,10 @@ msgstr "Cereți administratorului serverului să anunțe un URL de backend (draf
 msgid "ASN"
 msgstr "ASN"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "At least {PASSWORD_MIN_LENGTH} characters"
+msgstr "Cel puțin {PASSWORD_MIN_LENGTH} caractere"
+
 #: src/components/layout/ChatArea.tsx
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/RecordingPanel.tsx
@@ -920,6 +924,22 @@ msgstr "Fundal"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Background opacity"
 msgstr "Opacitate fundal"
+
+#: src/components/pages/SettingsPage.tsx
+msgid "Backup"
+msgstr "Copie de rezervă"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Backup and restore"
+msgstr "Copie de rezervă și restaurare"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Backup password"
+msgstr "Parola copiei de rezervă"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Backup saved. Keep the password: it cannot be recovered."
+msgstr "Copie salvată. Păstrează parola: nu poate fi recuperată."
 
 #: src/components/ui/ModerationModal.tsx
 msgid "Ban {username} by hostmask (prevents them from rejoining from the same IP/host)"
@@ -1105,6 +1125,7 @@ msgstr "Nu poți elimina ultima credențială 2FA"
 #: src/components/ui/ModerationModal.tsx
 #: src/components/ui/RegionSelectOverlay.tsx
 #: src/components/ui/RemoveServerConfirmModal.tsx
+#: src/components/ui/settings/BackupField.tsx
 #: src/components/ui/settings/HistoryUsageField.tsx
 #: src/components/ui/TotpStepUpModal.tsx
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
@@ -1341,6 +1362,10 @@ msgstr "Alege o parolă sigură"
 #: src/lib/mediaUpload.ts
 msgid "Choose a smaller file. This one is too large for the file host."
 msgstr "Alege un fișier mai mic. Acesta este prea mare pentru gazda de fișiere."
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Choose backup file"
+msgstr "Alege fișierul copiei"
 
 #: src/components/ui/settings/SettingRenderer.tsx
 msgid "Choose file"
@@ -2192,6 +2217,10 @@ msgstr "Gata"
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Download"
 msgstr "Descarcă"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Download backup"
+msgstr "Descarcă copia de rezervă"
 
 #: src/components/ui/UpdateModal.tsx
 msgid "Downloading…"
@@ -4449,6 +4478,10 @@ msgstr "Pagini"
 msgid "Password"
 msgstr "Parolă"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Password of that backup"
+msgstr "Parola acelei copii"
+
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Password reset complete"
 msgstr "Resetarea parolei s-a încheiat"
@@ -5030,9 +5063,21 @@ msgstr "Afișați formatarea Markdown în mesaje"
 msgid "Reorder list"
 msgstr "Reordonează lista"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Repeat password"
+msgstr "Repetă parola"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Replace and reload"
+msgstr "Înlocuiește și reîncarcă"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Replace bad words with <censored>"
 msgstr "Înlocuiește cuvintele urâte cu <censored>"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Replace everything on this device?"
+msgstr "Înlocuiești totul pe acest dispozitiv?"
 
 #: src/components/layout/SearchPane.tsx
 msgid "Replies"
@@ -5069,6 +5114,18 @@ msgstr "Resetează la tema curentă"
 #: src/components/ui/settings/WebPushFailureLine.tsx
 msgid "Restart your browser to get notifications while Obby is closed"
 msgstr "Repornește browserul pentru a primi notificări când Obby este închis"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Restore"
+msgstr "Restaurează"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Restore a backup"
+msgstr "Restaurează o copie"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Restoring replaces everything Obby keeps in this browser with the backup, then reloads."
+msgstr "Restaurarea înlocuiește tot ce păstrează Obby în acest browser cu copia, apoi reîncarcă."
 
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/CameraCaptureModal.tsx
@@ -5147,6 +5204,10 @@ msgstr "Cont SASL PLAIN"
 #: src/components/ui/TopicModal.tsx
 msgid "Save"
 msgstr "Salvează"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Save everything Obby keeps in this browser to a password-protected file, or put a saved file back."
+msgstr "Salvează tot ce păstrează Obby în acest browser într-un fișier protejat cu parolă sau pune la loc un fișier salvat."
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Save failed: {msg}"
@@ -6016,6 +6077,10 @@ msgstr "Acel fișier are prea multe reguli."
 msgid "That file is not a valid rules file."
 msgstr "Acel fișier nu este un fișier de reguli valid."
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "That file is not an Obby backup."
+msgstr "Acel fișier nu este o copie de rezervă Obby."
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "That file is not an Obby theme."
 msgstr "Acel fișier nu este o temă Obby."
@@ -6045,6 +6110,10 @@ msgstr "Serverul de apeluri a refuzat cererea. Încearcă din nou într-un momen
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
 msgstr "Conexiunea la <0>{serverName}</0> prezintă următoarele probleme de securitate:"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "The file holds your servers with their passwords, upload tokens, encryption keys, settings and layout, locked with the password you choose here. Chat history is not included."
+msgstr "Fișierul conține serverele tale cu parolele lor, tokenurile de încărcare, cheile de criptare, setările și aspectul, protejate cu parola aleasă aici. Istoricul conversațiilor nu este inclus."
+
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "The file host can read these files, and anyone with the link can open them. Switch to Obby encryption to send files encrypted."
 msgstr "Gazda de fișiere poate citi aceste fișiere, iar oricine are linkul le poate deschide. Treci la criptarea Obby pentru a trimite fișiere criptate."
@@ -6072,6 +6141,10 @@ msgstr "Rețeaua s-a împărțit și s-a reconectat. ✅"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "The palette used when Colored Nicknames is on"
 msgstr "Paleta folosită când pseudonimele colorate sunt activate"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "The passwords do not match."
+msgstr "Parolele nu se potrivesc."
 
 #: src/components/ui/CameraCaptureModal.tsx
 msgid "The photo you just took"
@@ -6104,6 +6177,10 @@ msgstr "Nume temă"
 #: src/components/ui/PluginsScreen.tsx
 msgid "Theme Studio"
 msgstr "Studio de teme"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "This backup was made by a newer Obby. Update first."
+msgstr "Această copie a fost făcută cu un Obby mai nou. Actualizează mai întâi."
 
 #: src/components/ui/RecordingPanel.tsx
 msgid "This browser cannot record audio."
@@ -6483,6 +6560,10 @@ msgstr "Folosiți un port websocket securizat."
 msgid "Use a server with IRCv3 METADATA to set your avatar, display name, and status."
 msgstr "Folosiți un server cu IRCv3 METADATA pentru a seta avatarul, numele afișat și starea."
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Use at least {PASSWORD_MIN_LENGTH} characters."
+msgstr "Folosește cel puțin {PASSWORD_MIN_LENGTH} caractere."
+
 #: src/components/pages/ServerSettingsPage.tsx
 msgid "Use only Latin characters in the password"
 msgstr "Folosește doar caractere latine în parolă"
@@ -6856,6 +6937,10 @@ msgstr "Funcționează cu Zipline v3 și v4. Copiază tokenul din setările de u
 msgid "Wrong key, try again"
 msgstr "Cheie greșită, încearcă din nou"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Wrong password, or the file was changed since it was saved."
+msgstr "Parolă greșită sau fișierul a fost modificat de când a fost salvat."
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Yellow"
 msgstr "Galben"
@@ -6935,6 +7020,10 @@ msgstr "CSS-ul tău a fost eliminat."
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Your CSS was saved."
 msgstr "CSS-ul tău a fost salvat."
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Your current servers, settings and keys in this browser are replaced by the backup. Obby reloads afterwards."
+msgstr "Serverele, setările și cheile tale actuale din acest browser sunt înlocuite de copie. Obby se reîncarcă apoi."
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your default nickname for all servers"

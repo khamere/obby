@@ -764,6 +764,10 @@ msgstr "請伺服器管理員公告後端 URL（draft/authtoken 或 obby.world/F
 msgid "ASN"
 msgstr "ASN"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "At least {PASSWORD_MIN_LENGTH} characters"
+msgstr "至少 {PASSWORD_MIN_LENGTH} 個字元"
+
 #: src/components/layout/ChatArea.tsx
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/RecordingPanel.tsx
@@ -920,6 +924,22 @@ msgstr "背景"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Background opacity"
 msgstr "背景不透明度"
+
+#: src/components/pages/SettingsPage.tsx
+msgid "Backup"
+msgstr "備份"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Backup and restore"
+msgstr "備份與還原"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Backup password"
+msgstr "備份密碼"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Backup saved. Keep the password: it cannot be recovered."
+msgstr "備份已儲存。請妥善保管密碼：無法找回。"
 
 #: src/components/ui/ModerationModal.tsx
 msgid "Ban {username} by hostmask (prevents them from rejoining from the same IP/host)"
@@ -1105,6 +1125,7 @@ msgstr "無法移除你的最後一個 2FA 憑證"
 #: src/components/ui/ModerationModal.tsx
 #: src/components/ui/RegionSelectOverlay.tsx
 #: src/components/ui/RemoveServerConfirmModal.tsx
+#: src/components/ui/settings/BackupField.tsx
 #: src/components/ui/settings/HistoryUsageField.tsx
 #: src/components/ui/TotpStepUpModal.tsx
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
@@ -1341,6 +1362,10 @@ msgstr "选择一个安全密码"
 #: src/lib/mediaUpload.ts
 msgid "Choose a smaller file. This one is too large for the file host."
 msgstr "請選擇較小的檔案。這個檔案對檔案主機來說太大。"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Choose backup file"
+msgstr "選擇備份檔案"
 
 #: src/components/ui/settings/SettingRenderer.tsx
 msgid "Choose file"
@@ -2192,6 +2217,10 @@ msgstr "完成"
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Download"
 msgstr "下载"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Download backup"
+msgstr "下載備份"
 
 #: src/components/ui/UpdateModal.tsx
 msgid "Downloading…"
@@ -4449,6 +4478,10 @@ msgstr "頁面"
 msgid "Password"
 msgstr "密码"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Password of that backup"
+msgstr "該備份的密碼"
+
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Password reset complete"
 msgstr "密碼重設完成"
@@ -5030,9 +5063,21 @@ msgstr "在訊息中渲染 Markdown 格式"
 msgid "Reorder list"
 msgstr "重新排序清單"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Repeat password"
+msgstr "重複密碼"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Replace and reload"
+msgstr "取代並重新載入"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Replace bad words with <censored>"
 msgstr "將髒話替換為 <censored>"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Replace everything on this device?"
+msgstr "取代此裝置上的全部內容？"
 
 #: src/components/layout/SearchPane.tsx
 msgid "Replies"
@@ -5069,6 +5114,18 @@ msgstr "重設為目前主題"
 #: src/components/ui/settings/WebPushFailureLine.tsx
 msgid "Restart your browser to get notifications while Obby is closed"
 msgstr "重新啟動瀏覽器，以便在 Obby 關閉時接收通知"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Restore"
+msgstr "還原"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Restore a backup"
+msgstr "還原備份"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Restoring replaces everything Obby keeps in this browser with the backup, then reloads."
+msgstr "還原會用備份取代 Obby 在此瀏覽器中保存的全部內容，然後重新載入。"
 
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/CameraCaptureModal.tsx
@@ -5147,6 +5204,10 @@ msgstr "SASL PLAIN 帳號"
 #: src/components/ui/TopicModal.tsx
 msgid "Save"
 msgstr "保存"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Save everything Obby keeps in this browser to a password-protected file, or put a saved file back."
+msgstr "把 Obby 在此瀏覽器中保存的全部內容存成受密碼保護的檔案，或把儲存的檔案放回。"
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Save failed: {msg}"
@@ -6016,6 +6077,10 @@ msgstr "該檔案包含的規則過多。"
 msgid "That file is not a valid rules file."
 msgstr "該檔案不是有效的規則檔案。"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "That file is not an Obby backup."
+msgstr "該檔案不是 Obby 備份。"
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "That file is not an Obby theme."
 msgstr "該檔案不是 Obby 主題。"
@@ -6045,6 +6110,10 @@ msgstr "通話伺服器拒絕了請求。請稍後重試。"
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
 msgstr "与 <0>{serverName}</0> 的连接存在以下安全问题："
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "The file holds your servers with their passwords, upload tokens, encryption keys, settings and layout, locked with the password you choose here. Chat history is not included."
+msgstr "檔案包含你的伺服器及其密碼、上傳權杖、加密金鑰、設定和版面，並以你在此選擇的密碼上鎖。不包含聊天紀錄。"
+
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "The file host can read these files, and anyone with the link can open them. Switch to Obby encryption to send files encrypted."
 msgstr "檔案主機可以讀取這些檔案，任何擁有連結的人都可以開啟。請切換到 Obby 加密以加密傳送檔案。"
@@ -6072,6 +6141,10 @@ msgstr "網路已分裂並重新連接。✅"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "The palette used when Colored Nicknames is on"
 msgstr "啟用彩色暱稱時使用的調色盤"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "The passwords do not match."
+msgstr "兩次密碼不一致。"
 
 #: src/components/ui/CameraCaptureModal.tsx
 msgid "The photo you just took"
@@ -6104,6 +6177,10 @@ msgstr "主題名稱"
 #: src/components/ui/PluginsScreen.tsx
 msgid "Theme Studio"
 msgstr "主題工作室"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "This backup was made by a newer Obby. Update first."
+msgstr "此備份由較新的 Obby 建立。請先更新。"
 
 #: src/components/ui/RecordingPanel.tsx
 msgid "This browser cannot record audio."
@@ -6483,6 +6560,10 @@ msgstr "使用安全的 WebSocket 連接埠。"
 msgid "Use a server with IRCv3 METADATA to set your avatar, display name, and status."
 msgstr "使用支援 IRCv3 METADATA 的伺服器設定大頭貼、顯示名稱與狀態。"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Use at least {PASSWORD_MIN_LENGTH} characters."
+msgstr "請至少使用 {PASSWORD_MIN_LENGTH} 個字元。"
+
 #: src/components/pages/ServerSettingsPage.tsx
 msgid "Use only Latin characters in the password"
 msgstr "密碼中只能使用拉丁字元"
@@ -6856,6 +6937,10 @@ msgstr "支援 Zipline v3 和 v4。請從 Zipline 使用者設定複製權杖。
 msgid "Wrong key, try again"
 msgstr "金鑰錯誤，請再試一次"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Wrong password, or the file was changed since it was saved."
+msgstr "密碼錯誤，或檔案在儲存後被更動。"
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Yellow"
 msgstr "黃色"
@@ -6935,6 +7020,10 @@ msgstr "你的 CSS 已移除。"
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Your CSS was saved."
 msgstr "你的 CSS 已儲存。"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Your current servers, settings and keys in this browser are replaced by the backup. Obby reloads afterwards."
+msgstr "此瀏覽器中目前的伺服器、設定和金鑰將被備份取代。隨後 Obby 會重新載入。"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your default nickname for all servers"

@@ -764,6 +764,10 @@ msgstr "팩을 관리하려면 서버 관리자에게 백엔드 URL(draft/authto
 msgid "ASN"
 msgstr "ASN"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "At least {PASSWORD_MIN_LENGTH} characters"
+msgstr "최소 {PASSWORD_MIN_LENGTH}자"
+
 #: src/components/layout/ChatArea.tsx
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/RecordingPanel.tsx
@@ -920,6 +924,22 @@ msgstr "백그라운드"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Background opacity"
 msgstr "배경 불투명도"
+
+#: src/components/pages/SettingsPage.tsx
+msgid "Backup"
+msgstr "백업"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Backup and restore"
+msgstr "백업 및 복원"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Backup password"
+msgstr "백업 비밀번호"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Backup saved. Keep the password: it cannot be recovered."
+msgstr "백업을 저장했습니다. 비밀번호를 꼭 보관하세요. 복구할 수 없습니다."
 
 #: src/components/ui/ModerationModal.tsx
 msgid "Ban {username} by hostmask (prevents them from rejoining from the same IP/host)"
@@ -1105,6 +1125,7 @@ msgstr "마지막 2FA 인증 수단은 삭제할 수 없습니다"
 #: src/components/ui/ModerationModal.tsx
 #: src/components/ui/RegionSelectOverlay.tsx
 #: src/components/ui/RemoveServerConfirmModal.tsx
+#: src/components/ui/settings/BackupField.tsx
 #: src/components/ui/settings/HistoryUsageField.tsx
 #: src/components/ui/TotpStepUpModal.tsx
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
@@ -1341,6 +1362,10 @@ msgstr "안전한 비밀번호를 선택하세요"
 #: src/lib/mediaUpload.ts
 msgid "Choose a smaller file. This one is too large for the file host."
 msgstr "더 작은 파일을 선택하세요. 이 파일은 파일 호스트에 비해 너무 큽니다."
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Choose backup file"
+msgstr "백업 파일 선택"
 
 #: src/components/ui/settings/SettingRenderer.tsx
 msgid "Choose file"
@@ -2192,6 +2217,10 @@ msgstr "완료"
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Download"
 msgstr "다운로드"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Download backup"
+msgstr "백업 다운로드"
 
 #: src/components/ui/UpdateModal.tsx
 msgid "Downloading…"
@@ -4449,6 +4478,10 @@ msgstr "페이지"
 msgid "Password"
 msgstr "비밀번호"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Password of that backup"
+msgstr "해당 백업의 비밀번호"
+
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Password reset complete"
 msgstr "비밀번호 재설정 완료"
@@ -5030,9 +5063,21 @@ msgstr "메시지에서 마크다운 서식 렌더링"
 msgid "Reorder list"
 msgstr "목록 순서 바꾸기"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Repeat password"
+msgstr "비밀번호 다시 입력"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Replace and reload"
+msgstr "교체 후 새로 고침"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Replace bad words with <censored>"
 msgstr "나쁜 단어를 <censored>(으)로 바꾸기"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Replace everything on this device?"
+msgstr "이 기기의 모든 내용을 교체할까요?"
 
 #: src/components/layout/SearchPane.tsx
 msgid "Replies"
@@ -5069,6 +5114,18 @@ msgstr "현재 테마로 재설정"
 #: src/components/ui/settings/WebPushFailureLine.tsx
 msgid "Restart your browser to get notifications while Obby is closed"
 msgstr "Obby가 닫혀 있을 때도 알림을 받으려면 브라우저를 다시 시작하세요"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Restore"
+msgstr "복원"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Restore a backup"
+msgstr "백업 복원"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Restoring replaces everything Obby keeps in this browser with the backup, then reloads."
+msgstr "복원하면 Obby가 이 브라우저에 보관한 모든 내용이 백업으로 교체된 뒤 새로 고침됩니다."
 
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/CameraCaptureModal.tsx
@@ -5147,6 +5204,10 @@ msgstr "SASL PLAIN 계정"
 #: src/components/ui/TopicModal.tsx
 msgid "Save"
 msgstr "저장"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Save everything Obby keeps in this browser to a password-protected file, or put a saved file back."
+msgstr "Obby가 이 브라우저에 보관한 모든 내용을 비밀번호로 보호된 파일로 저장하거나, 저장한 파일을 되돌립니다."
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Save failed: {msg}"
@@ -6016,6 +6077,10 @@ msgstr "해당 파일에 규칙이 너무 많습니다."
 msgid "That file is not a valid rules file."
 msgstr "해당 파일은 올바른 규칙 파일이 아닙니다."
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "That file is not an Obby backup."
+msgstr "이 파일은 Obby 백업이 아닙니다."
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "That file is not an Obby theme."
 msgstr "해당 파일은 Obby 테마가 아닙니다."
@@ -6045,6 +6110,10 @@ msgstr "통화 서버가 요청을 거부했습니다. 잠시 후 다시 시도�
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
 msgstr "<0>{serverName}</0>에 대한 연결에 다음과 같은 보안 문제가 있습니다:"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "The file holds your servers with their passwords, upload tokens, encryption keys, settings and layout, locked with the password you choose here. Chat history is not included."
+msgstr "이 파일에는 서버와 비밀번호, 업로드 토큰, 암호화 키, 설정과 배치가 들어 있으며 여기서 고른 비밀번호로 잠깁니다. 채팅 기록은 포함되지 않습니다."
+
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "The file host can read these files, and anyone with the link can open them. Switch to Obby encryption to send files encrypted."
 msgstr "파일 호스트가 이 파일을 읽을 수 있고, 링크가 있는 사람은 누구나 열 수 있습니다. 파일을 암호화하여 보내려면 Obby 암호화로 전환하세요."
@@ -6072,6 +6141,10 @@ msgstr "네트워크가 분리되었다가 재연결되었습니다. ✅"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "The palette used when Colored Nicknames is on"
 msgstr "색상 닉네임이 켜져 있을 때 사용하는 팔레트"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "The passwords do not match."
+msgstr "비밀번호가 일치하지 않습니다."
 
 #: src/components/ui/CameraCaptureModal.tsx
 msgid "The photo you just took"
@@ -6104,6 +6177,10 @@ msgstr "테마 이름"
 #: src/components/ui/PluginsScreen.tsx
 msgid "Theme Studio"
 msgstr "테마 스튜디오"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "This backup was made by a newer Obby. Update first."
+msgstr "이 백업은 더 새로운 Obby에서 만들어졌습니다. 먼저 업데이트하세요."
 
 #: src/components/ui/RecordingPanel.tsx
 msgid "This browser cannot record audio."
@@ -6483,6 +6560,10 @@ msgstr "보안 웹소켓 포트를 사용하세요."
 msgid "Use a server with IRCv3 METADATA to set your avatar, display name, and status."
 msgstr "아바타, 표시 이름, 상태를 설정하려면 IRCv3 METADATA를 지원하는 서버를 사용하세요."
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Use at least {PASSWORD_MIN_LENGTH} characters."
+msgstr "최소 {PASSWORD_MIN_LENGTH}자를 사용하세요."
+
 #: src/components/pages/ServerSettingsPage.tsx
 msgid "Use only Latin characters in the password"
 msgstr "비밀번호에는 라틴 문자만 사용하세요"
@@ -6856,6 +6937,10 @@ msgstr "Zipline v3 및 v4에서 작동합니다. 토큰은 Zipline 사용자 설
 msgid "Wrong key, try again"
 msgstr "잘못된 키입니다. 다시 시도하세요"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Wrong password, or the file was changed since it was saved."
+msgstr "비밀번호가 틀렸거나 저장 후 파일이 변경되었습니다."
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Yellow"
 msgstr "노랑"
@@ -6935,6 +7020,10 @@ msgstr "CSS를 제거했습니다."
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Your CSS was saved."
 msgstr "CSS를 저장했습니다."
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Your current servers, settings and keys in this browser are replaced by the backup. Obby reloads afterwards."
+msgstr "이 브라우저의 현재 서버, 설정, 키가 백업으로 교체됩니다. 그 뒤 Obby가 새로 고침됩니다."
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your default nickname for all servers"
