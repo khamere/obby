@@ -269,6 +269,7 @@ export const ChannelMessageList = forwardRef<
     // before running cleanup effects, collapsing scrollTop/scrollHeight/clientHeight to 0.
     const lastScrollTopRef = useRef(initialScrollState?.scrollTop ?? 0);
 
+    // biome-ignore lint/correctness/useExhaustiveDependencies: captureViewAnchor only reads refs, so the listener we attach once never goes stale
     useEffect(() => {
       const container = messagesContainerRef.current;
       if (!container) return;
