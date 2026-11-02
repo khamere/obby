@@ -1,13 +1,14 @@
 import { t } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import type React from "react";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { FaChevronLeft, FaCircle, FaTimes } from "react-icons/fa";
 import { getVisibleBots } from "../../lib/botDirectory";
 import ircClient from "../../lib/ircClient";
 import { mircToHtml } from "../../lib/ircUtils";
 import { confirmDestructive } from "../../lib/modal/ConfirmDialog";
 import useStore from "../../store";
+import { queryBotCommands } from "../../store/handlers/pushbot";
 import type { BotPane as BotPaneTarget } from "../../store/types";
 import type { BotCommand, PushBotInfo } from "../../types";
 import LoadingSpinner from "../ui/LoadingSpinner";
@@ -273,6 +274,10 @@ export const BotPane: React.FC<{ target: BotPaneTarget }> = ({ target }) => {
   const selected = botNick
     ? bots.find((bot) => bot.nick.toLowerCase() === botNick.toLowerCase())
     : undefined;
+  const selectedNick = selected?.nick;
+  useEffect(() => {
+    if (selectedNick) queryBotCommands(serverId, selectedNick, true);
+  }, [serverId, selectedNick]);
 
   const send = (subcmd: string) => {
     if (!isOper || selected?.kind !== "directory") return;
