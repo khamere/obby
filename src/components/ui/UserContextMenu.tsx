@@ -17,6 +17,7 @@ import {
 import { canModerate } from "../../lib/channelStatus";
 import { createIgnorePattern, isUserIgnored } from "../../lib/ignoreUtils";
 import useStore from "../../store";
+import { queryBotCommands } from "../../store/handlers/pushbot";
 import type { BotCommand } from "../../types";
 import Menu, { type MenuItem } from "./Menu";
 import type { ModerationAction } from "./ModerationModal";
@@ -78,6 +79,9 @@ export const UserContextMenu: React.FC<UserContextMenuProps> = ({
   const website = user?.metadata?.url?.value || user?.metadata?.website?.value;
   const status = user?.metadata?.status?.value;
   const isBot = !!user?.isBot || user?.metadata?.bot?.value === "true";
+  useEffect(() => {
+    if (isOpen && isBot) queryBotCommands(serverId, username, true);
+  }, [isOpen, isBot, serverId, username]);
   const isOwnUser = username === currentUsername;
   const isIgnored = isUserIgnored(username, undefined, undefined, ignoreList);
   const isModerator = canModerate(currentUserStatus) && !isOwnUser;

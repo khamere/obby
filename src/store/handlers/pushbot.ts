@@ -6,7 +6,7 @@
  *  - subscribes to +draft/bot-cmds-changed and clears the cached
  *    schema for that bot so the next slash invocation re-queries
  *  - exposes a tiny `queryBotCommands(serverId, botNick)` helper
- *    used by ChatArea on JOIN to seed the cache for any +B users
+ *    used after bot identification and when opening bot controls
  *    we now share a channel with
  */
 import type { StoreApi } from "zustand";
@@ -132,24 +132,9 @@ function commitBotCmds(
 }
 
 export function registerPushBotHandlers(store: StoreApi<AppState>): void {
-  // When WHO completes for a channel, pre-fetch slash-command schemas
-  // for any +B users we now share a channel with so the autocomplete
-  // cache is warm by the time the user types '/'.
-  // When a bot joins a channel we're in, query its commands so the
-  // slash picker / bots modal stays current without waiting for the
-  // user to type '/'.  We don't yet know if the joiner is +B at this
-  // moment -- WHO hasn't run -- so query unconditionally and let the
-  // bot's own discovery-noop semantics (regular users don't reply)
-  // sort it out.  Skip ourselves.
-  ircClient.on("JOIN", ({ serverId, username, channelName, batchTag }) => {
-    if (batchTag) return;
-    const state = store.getState();
-    const server = state.servers.find((s) => s.id === serverId);
-    if (!server) return;
-    const myNick = ircClient.getCurrentUser(serverId)?.username;
-    if (myNick && username.toLowerCase() === myNick.toLowerCase()) return;
-    if (server.botCommands?.[username.toLowerCase()]) return;
-    queryBotCommands(serverId, username);
+  // JOIN alone is not bot evidence. Wait for server-provided WHO/WHOIS flags.
+  ircClient.on("WHOIS_BOT", ({ serverId, target }) => {
+    queryBotCommands(serverId, target);
   });
 
   ircClient.on("WHO_END", ({ serverId, mask }) => {
@@ -321,7 +306,39 @@ export function registerPushBotHandlers(store: StoreApi<AppState>): void {
 }
 
 /** Send a +draft/bot-cmds-query TAGMSG to <botNick> (the tag is valueless). */
-export function queryBotCommands(serverId: string, botNick: string): void {
+const discoveryAttempts = new Map<string, number>();
+const DISCOVERY_RETRY_MS = 5 * 60 * 1000;
+
+export function queryBotCommands(
+  serverId: string,
+  botNick: string,
+  refresh = false,
+): void {
+  const server = useStore.getState().servers.find((s) => s.id === serverId);
+  const nick = botNick.toLowerCase();
+  if (
+    !server ||
+    !ircClient.isSocketOpen(serverId) ||
+    !ircClient.hasCapability(serverId, "message-tags")
+  )
+    return;
+  const knownBot =
+    server.bots?.[nick]?.online === true ||
+    server.channels.some((channel) =>
+      channel.users.some(
+        (user) => user.username.toLowerCase() === nick && user.isBot === true,
+      ),
+    );
+  if (!knownBot || (!refresh && server.botCommands?.[nick] !== undefined))
+    return;
+  const now = Date.now();
+  for (const [key, until] of discoveryAttempts) {
+    if (until <= now) discoveryAttempts.delete(key);
+  }
+  const key = JSON.stringify([serverId, nick]);
+  if (discoveryAttempts.has(key) || discoveryAttempts.size >= 1000) return;
+  // Record attempts, not just successful replies: ignored/rejected probes count too.
+  discoveryAttempts.set(key, now + DISCOVERY_RETRY_MS);
   ircClient.sendRaw(serverId, `@+draft/bot-cmds-query TAGMSG ${botNick}`);
 }
 
