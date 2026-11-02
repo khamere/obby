@@ -1122,11 +1122,7 @@ export const ChannelMessageList = forwardRef<
             <MessageSkeletons isFilling />
           ) : (
             <div ref={messagesInnerRef} className="flex-grow flex flex-col">
-              {hasMoreMessages ? (
-                <MessageSkeletons isFilling />
-              ) : (
-                <div className="grow" />
-              )}
+              {hasMoreMessages && <MessageSkeletons isFilling />}
               {eventGroups.map((group) => {
                 if (group.type === "eventGroup") {
                   const firstId = group.messages[0]?.id || "";
