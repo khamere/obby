@@ -764,6 +764,10 @@ msgstr "パックを管理するには、サーバー管理者にバックエン
 msgid "ASN"
 msgstr "ASN"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "At least {PASSWORD_MIN_LENGTH} characters"
+msgstr "{PASSWORD_MIN_LENGTH}文字以上"
+
 #: src/components/layout/ChatArea.tsx
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/RecordingPanel.tsx
@@ -920,6 +924,22 @@ msgstr "バックグラウンド"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Background opacity"
 msgstr "背景の不透明度"
+
+#: src/components/pages/SettingsPage.tsx
+msgid "Backup"
+msgstr "バックアップ"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Backup and restore"
+msgstr "バックアップと復元"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Backup password"
+msgstr "バックアップのパスワード"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Backup saved. Keep the password: it cannot be recovered."
+msgstr "バックアップを保存しました。パスワードは必ず保管してください。復元はできません。"
 
 #: src/components/ui/ModerationModal.tsx
 msgid "Ban {username} by hostmask (prevents them from rejoining from the same IP/host)"
@@ -1105,6 +1125,7 @@ msgstr "最後の 2FA 認証情報は削除できません"
 #: src/components/ui/ModerationModal.tsx
 #: src/components/ui/RegionSelectOverlay.tsx
 #: src/components/ui/RemoveServerConfirmModal.tsx
+#: src/components/ui/settings/BackupField.tsx
 #: src/components/ui/settings/HistoryUsageField.tsx
 #: src/components/ui/TotpStepUpModal.tsx
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
@@ -1341,6 +1362,10 @@ msgstr "安全なパスワードを選択してください"
 #: src/lib/mediaUpload.ts
 msgid "Choose a smaller file. This one is too large for the file host."
 msgstr "より小さいファイルを選択してください。このファイルはファイルホストには大きすぎます。"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Choose backup file"
+msgstr "バックアップファイルを選択"
 
 #: src/components/ui/settings/SettingRenderer.tsx
 msgid "Choose file"
@@ -2192,6 +2217,10 @@ msgstr "完了"
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Download"
 msgstr "ダウンロード"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Download backup"
+msgstr "バックアップをダウンロード"
 
 #: src/components/ui/UpdateModal.tsx
 msgid "Downloading…"
@@ -4449,6 +4478,10 @@ msgstr "ページ"
 msgid "Password"
 msgstr "パスワード"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Password of that backup"
+msgstr "そのバックアップのパスワード"
+
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Password reset complete"
 msgstr "パスワードのリセットが完了しました"
@@ -5030,9 +5063,21 @@ msgstr "メッセージ内のMarkdown書式を表示する"
 msgid "Reorder list"
 msgstr "リストを並べ替え"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Repeat password"
+msgstr "パスワードを再入力"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Replace and reload"
+msgstr "置き換えて再読み込み"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Replace bad words with <censored>"
 msgstr "不適切な単語を <censored> に置き換える"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Replace everything on this device?"
+msgstr "このデバイスのすべてを置き換えますか？"
 
 #: src/components/layout/SearchPane.tsx
 msgid "Replies"
@@ -5069,6 +5114,18 @@ msgstr "現在のテーマにリセット"
 #: src/components/ui/settings/WebPushFailureLine.tsx
 msgid "Restart your browser to get notifications while Obby is closed"
 msgstr "Obby を閉じているときも通知を受け取るには、ブラウザを再起動してください"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Restore"
+msgstr "復元"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Restore a backup"
+msgstr "バックアップを復元"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Restoring replaces everything Obby keeps in this browser with the backup, then reloads."
+msgstr "復元すると、Obby がこのブラウザーに保存しているすべてがバックアップで置き換えられ、その後再読み込みされます。"
 
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/CameraCaptureModal.tsx
@@ -5147,6 +5204,10 @@ msgstr "SASL PLAIN のアカウント"
 #: src/components/ui/TopicModal.tsx
 msgid "Save"
 msgstr "保存"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Save everything Obby keeps in this browser to a password-protected file, or put a saved file back."
+msgstr "Obby がこのブラウザーに保存しているすべてをパスワード保護されたファイルに保存するか、保存したファイルを戻します。"
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Save failed: {msg}"
@@ -6016,6 +6077,10 @@ msgstr "そのファイルにはルールが多すぎます。"
 msgid "That file is not a valid rules file."
 msgstr "そのファイルは有効なルールファイルではありません。"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "That file is not an Obby backup."
+msgstr "このファイルは Obby のバックアップではありません。"
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "That file is not an Obby theme."
 msgstr "そのファイルは Obby のテーマではありません。"
@@ -6045,6 +6110,10 @@ msgstr "通話サーバーがリクエストを拒否しました。しばらく
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
 msgstr "<0>{serverName}</0> への接続には次のセキュリティ上の懸念事項があります："
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "The file holds your servers with their passwords, upload tokens, encryption keys, settings and layout, locked with the password you choose here. Chat history is not included."
+msgstr "このファイルには、サーバーとそのパスワード、アップロードトークン、暗号鍵、設定、レイアウトが含まれ、ここで選んだパスワードで保護されます。チャット履歴は含まれません。"
+
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "The file host can read these files, and anyone with the link can open them. Switch to Obby encryption to send files encrypted."
 msgstr "ファイルホストはこれらのファイルを読み取れ、リンクを知っている人は誰でも開けます。ファイルを暗号化して送信するには、Obby 暗号化に切り替えてください。"
@@ -6072,6 +6141,10 @@ msgstr "ネットワークが分割され、再接続されました。✅"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "The palette used when Colored Nicknames is on"
 msgstr "「ニックネームに色を付ける」がオンのときに使うパレット"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "The passwords do not match."
+msgstr "パスワードが一致しません。"
 
 #: src/components/ui/CameraCaptureModal.tsx
 msgid "The photo you just took"
@@ -6104,6 +6177,10 @@ msgstr "テーマ名"
 #: src/components/ui/PluginsScreen.tsx
 msgid "Theme Studio"
 msgstr "テーマスタジオ"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "This backup was made by a newer Obby. Update first."
+msgstr "このバックアップは新しい Obby で作成されました。先に更新してください。"
 
 #: src/components/ui/RecordingPanel.tsx
 msgid "This browser cannot record audio."
@@ -6483,6 +6560,10 @@ msgstr "安全な WebSocket ポートを使用してください。"
 msgid "Use a server with IRCv3 METADATA to set your avatar, display name, and status."
 msgstr "アバター、表示名、ステータスを設定するには、IRCv3 METADATA に対応したサーバーを使用してください。"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Use at least {PASSWORD_MIN_LENGTH} characters."
+msgstr "{PASSWORD_MIN_LENGTH}文字以上にしてください。"
+
 #: src/components/pages/ServerSettingsPage.tsx
 msgid "Use only Latin characters in the password"
 msgstr "パスワードにはラテン文字のみを使用してください"
@@ -6856,6 +6937,10 @@ msgstr "Zipline v3 と v4 で動作します。トークンは Zipline のユー
 msgid "Wrong key, try again"
 msgstr "キーが違います。もう一度お試しください"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Wrong password, or the file was changed since it was saved."
+msgstr "パスワードが違うか、保存後にファイルが変更されています。"
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Yellow"
 msgstr "黄"
@@ -6935,6 +7020,10 @@ msgstr "CSS を削除しました。"
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Your CSS was saved."
 msgstr "CSS を保存しました。"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Your current servers, settings and keys in this browser are replaced by the backup. Obby reloads afterwards."
+msgstr "このブラウザーの現在のサーバー、設定、鍵はバックアップで置き換えられます。その後 Obby は再読み込みされます。"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your default nickname for all servers"

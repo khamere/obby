@@ -764,6 +764,10 @@ msgstr "Попросіть адміністратора сервера огол�
 msgid "ASN"
 msgstr "ASN"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "At least {PASSWORD_MIN_LENGTH} characters"
+msgstr "Щонайменше {PASSWORD_MIN_LENGTH} символів"
+
 #: src/components/layout/ChatArea.tsx
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/RecordingPanel.tsx
@@ -920,6 +924,22 @@ msgstr "Фон"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Background opacity"
 msgstr "Непрозорість тла"
+
+#: src/components/pages/SettingsPage.tsx
+msgid "Backup"
+msgstr "Резервна копія"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Backup and restore"
+msgstr "Резервне копіювання та відновлення"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Backup password"
+msgstr "Пароль резервної копії"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Backup saved. Keep the password: it cannot be recovered."
+msgstr "Копію збережено. Збережіть пароль: відновити його неможливо."
 
 #: src/components/ui/ModerationModal.tsx
 msgid "Ban {username} by hostmask (prevents them from rejoining from the same IP/host)"
@@ -1105,6 +1125,7 @@ msgstr "Не можна видалити останні облікові дан�
 #: src/components/ui/ModerationModal.tsx
 #: src/components/ui/RegionSelectOverlay.tsx
 #: src/components/ui/RemoveServerConfirmModal.tsx
+#: src/components/ui/settings/BackupField.tsx
 #: src/components/ui/settings/HistoryUsageField.tsx
 #: src/components/ui/TotpStepUpModal.tsx
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
@@ -1341,6 +1362,10 @@ msgstr "Виберіть надійний пароль"
 #: src/lib/mediaUpload.ts
 msgid "Choose a smaller file. This one is too large for the file host."
 msgstr "Виберіть менший файл. Цей завеликий для файлосховища."
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Choose backup file"
+msgstr "Вибрати файл копії"
 
 #: src/components/ui/settings/SettingRenderer.tsx
 msgid "Choose file"
@@ -2192,6 +2217,10 @@ msgstr "Готово"
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Download"
 msgstr "Завантажити"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Download backup"
+msgstr "Завантажити резервну копію"
 
 #: src/components/ui/UpdateModal.tsx
 msgid "Downloading…"
@@ -4449,6 +4478,10 @@ msgstr "Сторінки"
 msgid "Password"
 msgstr "Пароль"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Password of that backup"
+msgstr "Пароль цієї копії"
+
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Password reset complete"
 msgstr "Пароль скинуто"
@@ -5030,9 +5063,21 @@ msgstr "Відображати Markdown-форматування у повідо
 msgid "Reorder list"
 msgstr "Змінити порядок списку"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Repeat password"
+msgstr "Повторіть пароль"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Replace and reload"
+msgstr "Замінити й перезавантажити"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Replace bad words with <censored>"
 msgstr "Замінювати лайливі слова на <censored>"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Replace everything on this device?"
+msgstr "Замінити все на цьому пристрої?"
 
 #: src/components/layout/SearchPane.tsx
 msgid "Replies"
@@ -5069,6 +5114,18 @@ msgstr "Скинути до поточної теми"
 #: src/components/ui/settings/WebPushFailureLine.tsx
 msgid "Restart your browser to get notifications while Obby is closed"
 msgstr "Перезапустіть браузер, щоб отримувати сповіщення, коли Obby закрито"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Restore"
+msgstr "Відновити"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Restore a backup"
+msgstr "Відновити копію"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Restoring replaces everything Obby keeps in this browser with the backup, then reloads."
+msgstr "Відновлення замінює все, що Obby зберігає в цьому браузері, вмістом копії, після чого сторінка перезавантажується."
 
 #: src/components/ui/CameraCaptureModal.tsx
 #: src/components/ui/CameraCaptureModal.tsx
@@ -5147,6 +5204,10 @@ msgstr "Обліковий запис SASL PLAIN"
 #: src/components/ui/TopicModal.tsx
 msgid "Save"
 msgstr "Зберегти"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Save everything Obby keeps in this browser to a password-protected file, or put a saved file back."
+msgstr "Збережіть усе, що Obby зберігає в цьому браузері, у захищений паролем файл або поверніть збережений файл."
 
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Save failed: {msg}"
@@ -6016,6 +6077,10 @@ msgstr "У цьому файлі забагато правил."
 msgid "That file is not a valid rules file."
 msgstr "Цей файл не є коректним файлом правил."
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "That file is not an Obby backup."
+msgstr "Цей файл не є резервною копією Obby."
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "That file is not an Obby theme."
 msgstr "Цей файл не є темою Obby."
@@ -6045,6 +6110,10 @@ msgstr "Сервер дзвінків відхилив запит. Спробу�
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
 msgstr "З'єднання з <0>{serverName}</0> має такі проблеми безпеки:"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "The file holds your servers with their passwords, upload tokens, encryption keys, settings and layout, locked with the password you choose here. Chat history is not included."
+msgstr "Файл містить ваші сервери з паролями, токени завантаження, ключі шифрування, налаштування та розкладку, захищені вибраним тут паролем. Історія чатів не включена."
+
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "The file host can read these files, and anyone with the link can open them. Switch to Obby encryption to send files encrypted."
 msgstr "Хост файлів може прочитати ці файли, а будь-хто з посиланням може їх відкрити. Перейдіть на шифрування Obby, щоб надсилати файли зашифрованими."
@@ -6072,6 +6141,10 @@ msgstr "Мережа розділилась і возз'єдналась. ✅"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "The palette used when Colored Nicknames is on"
 msgstr "Палітра, що використовується, коли ввімкнено кольорові ніки"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "The passwords do not match."
+msgstr "Паролі не збігаються."
 
 #: src/components/ui/CameraCaptureModal.tsx
 msgid "The photo you just took"
@@ -6104,6 +6177,10 @@ msgstr "Назва теми"
 #: src/components/ui/PluginsScreen.tsx
 msgid "Theme Studio"
 msgstr "Студія тем"
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "This backup was made by a newer Obby. Update first."
+msgstr "Цю копію зроблено новішою версією Obby. Спочатку оновіться."
 
 #: src/components/ui/RecordingPanel.tsx
 msgid "This browser cannot record audio."
@@ -6483,6 +6560,10 @@ msgstr "Використовувати безпечний порт WebSocket."
 msgid "Use a server with IRCv3 METADATA to set your avatar, display name, and status."
 msgstr "Використовуйте сервер із підтримкою IRCv3 METADATA, щоб встановити аватар, відображуване ім'я та статус."
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Use at least {PASSWORD_MIN_LENGTH} characters."
+msgstr "Використовуйте щонайменше {PASSWORD_MIN_LENGTH} символів."
+
 #: src/components/pages/ServerSettingsPage.tsx
 msgid "Use only Latin characters in the password"
 msgstr "Використовуйте в паролі лише латинські символи"
@@ -6856,6 +6937,10 @@ msgstr "Працює з Zipline v3 і v4. Скопіюйте токен у на�
 msgid "Wrong key, try again"
 msgstr "Неправильний ключ, спробуйте ще раз"
 
+#: src/components/ui/settings/BackupField.tsx
+msgid "Wrong password, or the file was changed since it was saved."
+msgstr "Неправильний пароль, або файл змінено після збереження."
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Yellow"
 msgstr "Жовтий"
@@ -6935,6 +7020,10 @@ msgstr "Ваш CSS видалено."
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Your CSS was saved."
 msgstr "Ваш CSS збережено."
+
+#: src/components/ui/settings/BackupField.tsx
+msgid "Your current servers, settings and keys in this browser are replaced by the backup. Obby reloads afterwards."
+msgstr "Ваші поточні сервери, налаштування та ключі в цьому браузері буде замінено копією. Потім Obby перезавантажиться."
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your default nickname for all servers"
