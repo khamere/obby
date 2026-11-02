@@ -120,10 +120,15 @@ function clearSession(serverId: string) {
 }
 
 export function registerAuthHandlers(store: StoreApi<AppState>): void {
+  // The networks bound through a bouncer log in as the bouncer's account,
+  // which the bouncer answers with no 900 of their own, so they take the
+  // control connection's.
   const setAccount = (serverId: string, account: string | undefined) =>
     store.setState((state) => ({
       servers: state.servers.map((server) =>
-        server.id === serverId ? { ...server, account } : server,
+        server.id === serverId || server.bouncerServerId === serverId
+          ? { ...server, account }
+          : server,
       ),
     }));
   ircClient.on("LOGGED_IN", ({ serverId, account }) =>
