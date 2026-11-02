@@ -93,7 +93,7 @@ const UpdateModal: React.FC = () => {
               </p>
               <div className="w-full h-1.5 rounded bg-discord-dark-500 overflow-hidden">
                 <div
-                  className="h-full bg-discord-blue transition-[width] duration-150"
+                  className="h-full bg-discord-primary transition-[width] duration-150"
                   style={{ width: `${percent ?? 10}%` }}
                 />
               </div>
