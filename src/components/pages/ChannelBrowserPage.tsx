@@ -38,7 +38,7 @@ function channelTypeMeta(name: string): {
     case "^":
       return { Icon: FaVolumeUp, color: "text-discord-green" };
     case "$":
-      return { Icon: FaDesktop, color: "text-discord-blue" };
+      return { Icon: FaDesktop, color: "text-discord-primary" };
     default:
       return { Icon: FaHashtag, color: "text-discord-text-muted" };
   }
