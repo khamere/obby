@@ -4,8 +4,12 @@ The `community-fixes` branch is where every fix lands. Releases are cut from
 `community-fixes-release`, which only ever moves forward to a commit of
 `community-fixes` that has been running for a while without complaints.
 
-A release is a tag `cf-v<version>` on `community-fixes-release`, where
-`<version>` is the version in `package.json`. Pushing that tag runs
+A release is a tag `v<version>-cf<n>` on `community-fixes-release`, where
+`<version>` is the upstream version in `package.json` and `<n>` counts the
+community releases on top of it: `v0.4.0-cf1`, then `v0.4.0-cf2`, and
+`v0.4.1-cf1` once upstream ships 0.4.1 and it is merged. The app reports that
+same string, `0.4.0-cf1`, in Settings and in its CTCP VERSION reply. Pushing
+the tag runs
 [`publish-community.yaml`](../.github/workflows/publish-community.yaml), which
 builds and attaches to a GitHub release:
 
@@ -14,35 +18,42 @@ builds and attaches to a GitHub release:
 - macOS: `.dmg` for Apple silicon and Intel, unsigned (right-click, Open)
 - Android: signed `.apk` and `.aab`
 - Web: `Obby-<version>-web.zip` with the built `dist/`
-- Docker: `ghcr.io/<owner>/obby:<version>` and `:latest` for amd64 and arm64
+- Docker: `ghcr.io/<owner>/obby:<version>-cf<n>` and `:latest` for amd64 and
+  arm64
 
 Upstream's `publish.yaml` is left as is, so merges from upstream stay clean.
-iOS and Google Play are not built: both need accounts the fork does not have.
+The tag also matches its `v*.*.*` trigger, so that workflow has to stay
+disabled on this repository (see below). iOS and Google Play are not built:
+both need accounts the fork does not have.
 
 ## Cutting a release
 
-1. Bump `version` in `package.json` on `community-fixes` through a pull request
-   (`chore(release): 0.4.1`). Keep to plain `major.minor.patch`; the Android
-   version code is derived from it.
+1. `version` in `package.json` stays upstream's; it changes only when a new
+   upstream version is merged. Pick the next free `cf` number for it.
 2. Fast-forward the release branch and tag it:
 
    ```sh
    git fetch origin
    git checkout community-fixes-release
    git merge --ff-only origin/community-fixes
-   git tag cf-v0.4.1
-   git push origin community-fixes-release cf-v0.4.1
+   git tag v0.4.0-cf1
+   git push origin community-fixes-release v0.4.0-cf1
    ```
 
 3. Watch the run under Actions. The release appears on the Releases page as
-   `Obby cf-v0.4.1` with generated notes since the previous `cf-v` release.
+   `Obby 0.4.0-cf1` with generated notes since the previous community release.
 
-If the tag does not match `cf-v` plus the `package.json` version, the run stops
-in its first job before building anything.
+If the tag is not `v` plus the `package.json` version plus `-cf<n>`, the run
+stops in its first job before building anything. The Android version code is
+`major * 1000000 + minor * 10000 + patch * 100 + n`, so it rises with every
+release and every upstream bump.
 
 ## One-time setup
 
-- Actions must be enabled for the repository (forks start with them off).
+- Actions must be enabled for the repository (forks start with them off), and
+  upstream's "Tauri Build and Publish" workflow disabled from its menu in the
+  Actions tab: it would otherwise run on every sync of `main` and on every
+  community tag.
 - Android signing needs three repository secrets. Make a keystore once and keep
   it; a later release signed with a different key cannot update an installed
   app:

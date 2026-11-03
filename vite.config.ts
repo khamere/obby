@@ -181,6 +181,8 @@ export default defineConfig(({ mode }) => {
     define: {
       '__APP_VERSION__': JSON.stringify(process.env.npm_package_version),
       '__APP_COMMIT__': JSON.stringify(appCommit()),
+      // Community builds carry a label after the upstream version, "cf1".
+      '__APP_RELEASE__': JSON.stringify(process.env.OBBY_RELEASE ?? ""),
       '__APP_NAME__': JSON.stringify(process.env.npm_package_name),
       '__APP_DESCRIPTION__': JSON.stringify(process.env.npm_package_description),
       '__BUILD_CONFIG__': buildDeploymentConfig(),
