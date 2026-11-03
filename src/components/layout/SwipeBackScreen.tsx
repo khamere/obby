@@ -1,5 +1,6 @@
 import type React from "react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import { isGestureClaimed } from "../../lib/gestures";
 
 const SLIDE_MS = 220;
 const SLIDE = `transform ${SLIDE_MS}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
@@ -62,7 +63,7 @@ export const SwipeBackScreen: React.FC<{
       startY: touch.clientY,
       startTime: e.timeStamp,
       isHorizontal: null,
-      isIgnored: !!(e.target as Element).closest?.("[data-no-gesture]"),
+      isIgnored: isGestureClaimed(e.target),
     };
   };
 
