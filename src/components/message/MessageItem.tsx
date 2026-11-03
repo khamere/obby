@@ -597,8 +597,10 @@ export const MessageItem = memo((props: MessageItemProps) => {
     </HoverTooltip>
   ) : // Server text (a MOTD, numeric replies) is shown whole: folding it behind
   // "Show more" hides exactly what the user opened Server Notices to read.
+  // On a phone the lines are kept whole and scroll sideways, since ASCII art
+  // and aligned tables fall apart when wrapped at forty columns.
   message.preformatted ? (
-    <div className="font-mono text-[13px] leading-snug whitespace-pre-wrap break-words">
+    <div className="max-w-full overflow-x-auto whitespace-pre font-mono text-xs leading-snug sm:whitespace-pre-wrap sm:break-words sm:text-[13px]">
       {highlightedContent}
     </div>
   ) : (
