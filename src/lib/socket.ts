@@ -2,6 +2,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { isTauri } from "./platformUtils";
 
 export interface ISocket {
   onopen: (() => void) | null;
@@ -177,9 +178,12 @@ export class WebSocketWrapper implements ISocket {
   }
 }
 
+// In the native apps every connection goes through the Rust side: a phone
+// suspends the web view, and a socket held by it, as soon as the app leaves
+// the screen, while a socket in the app process stays open.
 export function createSocket(url: string): ISocket {
   if (url.startsWith("wss://")) {
-    return new WebSocketWrapper(url);
+    return isTauri() ? new TCPSocket(url) : new WebSocketWrapper(url);
   }
   if (url.startsWith("irc://") || url.startsWith("ircs://")) {
     return new TCPSocket(url);
