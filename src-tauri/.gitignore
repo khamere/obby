@@ -6,4 +6,3 @@ plugins/*/target/
 # carrying absolute paths from whoever last built it.
 plugins/*/android/build/
 /gen/schemas
-/.cargo/config.toml
