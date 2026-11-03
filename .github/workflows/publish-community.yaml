@@ -1,6 +1,6 @@
 # Releases of the community-fixes line. Runs only for a tag named
-# v<version>-cf<n>, where <version> is the version in package.json and <n>
-# counts the community releases on top of it, and publishes to this
+# v<version>-cf<a>.<b>.<c>, where <version> is the version in package.json
+# and a.b.c is the community release on top of it, and publishes to this
 # repository's releases and container registry. Upstream's publish.yaml stays
 # untouched so merges from upstream apply cleanly. The tag also matches
 # upstream's v*.*.* trigger, so that workflow must stay disabled here.
@@ -33,24 +33,25 @@ jobs:
         id: package-version
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          N="${GITHUB_REF_NAME#v${VERSION}-cf}"
-          if [ "$GITHUB_REF_NAME" = "$N" ] || ! [[ "$N" =~ ^[1-9][0-9]*$ ]]; then
-            echo "Tag $GITHUB_REF_NAME must be v${VERSION}-cf<n> for package.json version $VERSION"
+          CF="${GITHUB_REF_NAME#v${VERSION}-cf}"
+          if [ "$GITHUB_REF_NAME" = "$CF" ] || ! [[ "$CF" =~ ^(0|[1-9][0-9]?)\.(0|[1-9])\.(0|[1-9])$ ]]; then
+            echo "Tag $GITHUB_REF_NAME must be v${VERSION}-cf<a>.<b>.<c> for package.json version $VERSION (a up to 99, b and c up to 9)"
             exit 1
           fi
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
-          # Android needs a rising integer; upstream's own scheme leaves no
-          # room for a community counter, so we spread the parts out.
+          IFS='.' read -r A B C <<< "$CF"
+          # Android needs one rising integer below 2.1 billion; upstream's own
+          # scheme leaves no room for a community part, so we spread it out.
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "release=cf$N" >> "$GITHUB_OUTPUT"
-          echo "label=$VERSION-cf$N" >> "$GITHUB_OUTPUT"
-          echo "version_code=$((MAJOR * 1000000 + MINOR * 10000 + PATCH * 100 + N))" >> "$GITHUB_OUTPUT"
+          echo "release=cf$CF" >> "$GITHUB_OUTPUT"
+          echo "label=$VERSION-cf$CF" >> "$GITHUB_OUTPUT"
+          echo "version_code=$((MAJOR * 100000000 + MINOR * 1000000 + PATCH * 10000 + A * 100 + B * 10 + C))" >> "$GITHUB_OUTPUT"
 
       - name: Generate release notes since the previous community release
         id: release-notes
         run: |
           PREV_TAG=$(gh api "repos/$GITHUB_REPOSITORY/releases" \
-            --jq "[.[] | select(.draft == false and .tag_name != \"$GITHUB_REF_NAME\" and (.tag_name | test(\"-cf[0-9]+$\")))] | .[0].tag_name // empty")
+            --jq "[.[] | select(.draft == false and .tag_name != \"$GITHUB_REF_NAME\" and (.tag_name | test(\"-cf[0-9]+\\\\.[0-9]+\\\\.[0-9]+$\")))] | .[0].tag_name // empty")
           if [ -n "$PREV_TAG" ]; then
             NOTES=$(gh api "repos/$GITHUB_REPOSITORY/releases/generate-notes" \
               -X POST \
@@ -355,7 +356,7 @@ jobs:
             ./Obby-${{ needs.collect-version.outputs.label }}-web.zip
 
   # The same image the Dockerfile builds locally, published as
-  # ghcr.io/<owner>/obby:<version>-cf<n> and :latest.
+  # ghcr.io/<owner>/obby:<version>-cf<a>.<b>.<c> and :latest.
   publish-docker:
     runs-on: ubuntu-latest
     needs: collect-version
