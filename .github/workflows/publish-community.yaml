@@ -1,4 +1,5 @@
-# Releases of the community-fixes line. Runs only for a tag named
+# Releases of the community-fixes line. Every release is created as a draft
+# and published by hand from the Releases page. Runs only for a tag named
 # v<version>-cf<a>.<b>.<c>, where <version> is the version in package.json
 # and a.b.c is the community release on top of it, and publishes to this
 # repository's releases and container registry. Upstream's publish.yaml stays
@@ -140,7 +141,7 @@ jobs:
           tagName: ${{ needs.collect-version.outputs.tag_name }}
           releaseName: ${{ needs.collect-version.outputs.name }}
           releaseBody: ${{ needs.collect-version.outputs.release_body }}
-          releaseDraft: false
+          releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }} --config community-updater.json
 
@@ -169,6 +170,7 @@ jobs:
         if: matrix.platform == 'ubuntu-22.04'
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
+          draft: true
           tag_name: ${{ needs.collect-version.outputs.tag_name }}
           files: |
             ./src-tauri/target/release/bundle/appimage/*.zsync
@@ -222,6 +224,7 @@ jobs:
       - name: Publish
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
+          draft: true
           body: ${{ needs.collect-version.outputs.release_body }}
           name: ${{ needs.collect-version.outputs.name }}
           tag_name: ${{ needs.collect-version.outputs.tag_name }}
@@ -313,6 +316,7 @@ jobs:
       - name: Publish
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
+          draft: true
           body: ${{ needs.collect-version.outputs.release_body }}
           name: ${{ needs.collect-version.outputs.name }}
           tag_name: ${{ needs.collect-version.outputs.tag_name }}
@@ -349,6 +353,7 @@ jobs:
       - name: Publish
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
+          draft: true
           body: ${{ needs.collect-version.outputs.release_body }}
           name: ${{ needs.collect-version.outputs.name }}
           tag_name: ${{ needs.collect-version.outputs.tag_name }}
