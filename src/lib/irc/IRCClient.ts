@@ -13,6 +13,7 @@ import type {
   User,
   WhoisSession,
 } from "../../types";
+import { APP_VERSION } from "../appVersion";
 import { parseIrcUrl } from "../ircUrlParser";
 import { chantypesOf, isChannelTarget, parseMessageTags } from "../ircUtils";
 import { createBatchId, splitLongMessage } from "../messageProtocol";
@@ -806,7 +807,7 @@ export class IRCClient implements IRCClientContext {
     [K in EventKey]?: EventCallback<K>[];
   } = {};
 
-  public version = __APP_VERSION__;
+  public version = APP_VERSION;
 
   connect(
     name: string,
