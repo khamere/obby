@@ -43,8 +43,8 @@ both need accounts the fork does not have.
    ```
 
 3. Watch the run under Actions. The release appears on the Releases page as
-   `Obby 0.4.0-cf1.0.0` with generated notes since the previous community
-   release.
+   a draft named `Obby 0.4.0-cf1.0.0` with generated notes since the previous
+   community release. Publish it from there when it is ready for others.
 
 If the tag is not `v` plus the `package.json` version plus `-cf<a>.<b>.<c>`,
 the run stops in its first job before building anything. The Android version
