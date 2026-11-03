@@ -1,10 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   historyPollConfigFor,
   isHistoryPollDecided,
   type LiveServerState,
   needsHistoryPoll,
 } from "../../../src/lib/historyPoll/historyPollConfig";
+import { muteChat, resetMutesForTests } from "../../../src/lib/mutes";
 import useStore from "../../../src/store";
 import type { Server, ServerConfig } from "../../../src/types";
 
@@ -82,6 +83,32 @@ describe("history poll config", () => {
       }),
     ]);
     expect(config?.strings.channelTitle).toBe("{sender} in {target}");
+  });
+
+  it("carries the mutes that cover mentions, by chat name", () => {
+    resetMutesForTests();
+    vi.mocked(localStorage.getItem).mockReturnValue(null);
+    muteChat("s1", "c-dev", "channel", null, true);
+    muteChat("s1", "c-ops", "channel", null, false);
+    const config = historyPollConfigFor(
+      [
+        server({
+          persistenceEffective: "ON",
+          channels: [
+            { id: "c-dev", name: "#dev" },
+            { id: "c-ops", name: "#ops" },
+          ] as Server["channels"],
+        }),
+      ],
+      [saved({})],
+      settings(),
+      live(),
+      1000,
+    );
+    expect(config?.servers[0].silenced).toEqual([
+      { chat: "#dev", until: null },
+    ]);
+    resetMutesForTests();
   });
 
   it("keeps a WebSocket address as it is saved", () => {

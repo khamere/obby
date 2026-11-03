@@ -13,6 +13,7 @@ const CONTEXT = {
   nick: "me",
   customMentions: [],
   ignoreList: [],
+  silenced: [],
 };
 
 function fakeSubscription(endpoint: string, key: number[]) {

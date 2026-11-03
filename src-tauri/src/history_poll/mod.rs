@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 use tokio::time::{Duration, Instant};
 
-use crate::chat_notice::{notices_for, Notice, Recipient, Strings};
+use crate::chat_notice::{notices_for, Notice, Recipient, Silence, Strings};
 
 const SESSION_TIMEOUT: Duration = Duration::from_secs(12);
 const TOTAL_BUDGET: Duration = Duration::from_secs(25);
@@ -39,6 +39,8 @@ pub struct ServerConfig {
     pub custom_mentions: Vec<String>,
     #[serde(default)]
     pub ignore_list: Vec<String>,
+    #[serde(default)]
+    pub silenced: Vec<Silence>,
     /// When the app stopped watching this server live.
     pub since: i64,
 }
@@ -88,6 +90,8 @@ pub async fn check(config: Config, mut state: State, now: i64) -> Outcome {
                     nick: &server.nick,
                     custom_mentions: &server.custom_mentions,
                     ignore_list: &server.ignore_list,
+                    silenced: &server.silenced,
+                    now,
                 };
                 let (found, msgids) = notices_for(
                     &recipient,

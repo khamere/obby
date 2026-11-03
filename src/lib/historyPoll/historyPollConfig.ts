@@ -3,6 +3,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { GlobalSettings } from "../../store/types";
 import type { Server, ServerConfig } from "../../types";
+import { type Silence, silencesFor } from "../mutes";
 import {
   areChatNotificationsOn,
   backgroundNotificationStrings,
@@ -22,6 +23,7 @@ export interface HistoryPollServer {
   bouncerNetid?: string;
   customMentions: string[];
   ignoreList: string[];
+  silenced: Silence[];
   since: number;
 }
 
@@ -107,6 +109,7 @@ export function historyPollConfigFor(
       bouncerNetid: server.bouncerNetid,
       customMentions: settings.customMentions,
       ignoreList: settings.ignoreList,
+      silenced: silencesFor(server),
       since,
     });
   }

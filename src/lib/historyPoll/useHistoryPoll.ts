@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import useStore, { type AppState, loadSavedServers } from "../../store";
 import ircClient from "../ircClient";
+import { subscribeMutes } from "../mutes";
 import { areChatNotificationsOn } from "../notifications";
 import { isTauriMobile } from "../platformUtils";
 import {
@@ -49,8 +50,10 @@ export function useHistoryPoll(): void {
         sync(state);
     });
     document.addEventListener("visibilitychange", onVisibility);
+    const unsubscribeMutes = subscribeMutes(() => sync(useStore.getState()));
     return () => {
       unsubscribe();
+      unsubscribeMutes();
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);

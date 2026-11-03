@@ -1,6 +1,7 @@
 import type { GlobalSettings } from "../store/types";
-import type { WebPushFailure } from "../types";
+import type { Server, WebPushFailure } from "../types";
 import ircClient from "./ircClient";
+import { type Silence, silencesFor } from "./mutes";
 import { backgroundNotificationStrings } from "./notifications";
 import { findPushRegistration, pushScope } from "./pushRegistration";
 import { b64uDecode, b64uEncode } from "./sasl/webauthn";
@@ -16,6 +17,7 @@ export interface PushContext {
   nick: string;
   customMentions: string[];
   ignoreList: string[];
+  silenced: Silence[];
 }
 
 export function hasWebPush(serverId: string): boolean {
@@ -25,7 +27,7 @@ export function hasWebPush(serverId: string): boolean {
 }
 
 export function pushContextFor(
-  serverId: string,
+  server: Pick<Server, "id" | "channels" | "privateChats">,
   {
     customMentions,
     ignoreList,
@@ -33,10 +35,11 @@ export function pushContextFor(
 ): PushContext {
   return {
     ...backgroundNotificationStrings(),
-    chantypes: ircClient.chantypes(serverId),
-    nick: ircClient.getNick(serverId) ?? "",
+    chantypes: ircClient.chantypes(server.id),
+    nick: ircClient.getNick(server.id) ?? "",
     customMentions,
     ignoreList,
+    silenced: silencesFor(server),
   };
 }
 
