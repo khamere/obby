@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { isGestureClaimed } from "../lib/gestures";
 
 interface SwipeNavigationConfig {
   currentPage: number;
@@ -64,9 +65,7 @@ export function useSwipeNavigation({
       isDragging: false,
       isHorizontal: null,
       target: e.target as HTMLElement,
-      // A map or a carousel handles its own dragging, and a modal reaches us
-      // through the React tree even when it renders into its own portal.
-      ignored: !!(e.target as Element).closest?.("[data-no-gesture]"),
+      ignored: isGestureClaimed(e.target),
     };
   }, []);
 
