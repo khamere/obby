@@ -1,3 +1,4 @@
+use futures_util::{SinkExt, StreamExt};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -7,9 +8,11 @@ use tokio::net::{lookup_host, TcpStream};
 use tokio::sync::{mpsc, oneshot, Mutex};
 use tokio::task;
 use tokio::time::{timeout, Duration};
+use tokio_tungstenite::tungstenite::Message as WsMessage;
 
 const ADDRESS_CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 const TLS_HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(15);
+const WEBSOCKET_CONNECT_TIMEOUT: Duration = Duration::from_secs(20);
 
 // Platform-specific TLS imports
 #[cfg(not(target_os = "android"))]
@@ -266,6 +269,162 @@ pub(crate) async fn tls_handshake(
     }
 }
 
+fn emit_event(app_handle: &tauri::AppHandle, client_id: &str, event: MessageEvent) {
+    let _ = app_handle.emit(
+        "tcp-message",
+        ReceivedPayload {
+            id: client_id.to_string(),
+            event,
+        },
+    );
+}
+
+// A WebSocket carries one IRC line per frame. We hand each one to the page
+// with the line ending the TCP path delivers, so both arrive the same way.
+async fn websocket_read_task<R>(
+    client_id: String,
+    mut reader: R,
+    app_handle: tauri::AppHandle,
+    state: Arc<Mutex<HashMap<String, ConnectionHandle>>>,
+) where
+    R: StreamExt<Item = Result<WsMessage, tokio_tungstenite::tungstenite::Error>> + Unpin,
+{
+    let mut error = None;
+    loop {
+        match reader.next().await {
+            Some(Ok(WsMessage::Text(text))) => {
+                let mut data = text.as_bytes().to_vec();
+                if !data.ends_with(b"\r\n") {
+                    data.extend_from_slice(b"\r\n");
+                }
+                emit_event(
+                    &app_handle,
+                    &client_id,
+                    MessageEvent {
+                        message: Some(MessageData { data }),
+                        error: None,
+                        connected: None,
+                    },
+                );
+            }
+            Some(Ok(WsMessage::Binary(bytes))) => {
+                let mut data = bytes.to_vec();
+                if !data.ends_with(b"\r\n") {
+                    data.extend_from_slice(b"\r\n");
+                }
+                emit_event(
+                    &app_handle,
+                    &client_id,
+                    MessageEvent {
+                        message: Some(MessageData { data }),
+                        error: None,
+                        connected: None,
+                    },
+                );
+            }
+            Some(Ok(WsMessage::Close(_))) | None => break,
+            Some(Ok(_)) => continue,
+            Some(Err(e)) => {
+                error = Some(format!("Read error: {}", e));
+                break;
+            }
+        }
+    }
+    emit_event(
+        &app_handle,
+        &client_id,
+        MessageEvent {
+            message: None,
+            error,
+            connected: Some(false),
+        },
+    );
+    state.lock().await.remove(&client_id);
+}
+
+async fn websocket_write_task<W>(
+    mut writer: W,
+    mut write_rx: mpsc::Receiver<String>,
+    mut shutdown_rx: oneshot::Receiver<()>,
+) where
+    W: SinkExt<WsMessage> + Unpin,
+    W::Error: std::fmt::Display,
+{
+    loop {
+        tokio::select! {
+            Some(data) = write_rx.recv() => {
+                // The frame itself ends the line, so a trailing CRLF goes.
+                let line = data.trim_end_matches(['\r', '\n']).to_string();
+                if let Err(e) = writer.send(WsMessage::text(line)).await {
+                    eprintln!("WebSocket write error: {}", e);
+                    break;
+                }
+            }
+            _ = &mut shutdown_rx => {
+                let _ = writer.send(WsMessage::Close(None)).await;
+                let _ = writer.close().await;
+                break;
+            }
+        }
+    }
+}
+
+// The WebSocket lives here rather than in the web view, which a phone
+// suspends along with every connection it holds the moment the app leaves
+// the screen. Certificates are checked the same way as for a TLS socket.
+async fn connect_websocket(
+    client_id: String,
+    address: String,
+    state: Arc<Mutex<HashMap<String, ConnectionHandle>>>,
+    app_handle: tauri::AppHandle,
+) -> Result<(), String> {
+    let (stream, _) = timeout(
+        WEBSOCKET_CONNECT_TIMEOUT,
+        tokio_tungstenite::connect_async(address.as_str()),
+    )
+    .await
+    .map_err(|_| {
+        format!(
+            "WebSocket connect timed out after {}s ({})",
+            WEBSOCKET_CONNECT_TIMEOUT.as_secs(),
+            address
+        )
+    })?
+    .map_err(|e| format!("WebSocket connect to {} failed: {}", address, e))?;
+    let (writer, reader) = stream.split();
+
+    let (write_tx, write_rx) = mpsc::channel::<String>(100);
+    let (shutdown_tx, shutdown_rx) = oneshot::channel();
+
+    let client_id_read = client_id.clone();
+    let app_handle_read = app_handle.clone();
+    let state_read = state.clone();
+    task::spawn(async move {
+        websocket_read_task(client_id_read, reader, app_handle_read, state_read).await;
+    });
+    task::spawn(async move {
+        websocket_write_task(writer, write_rx, shutdown_rx).await;
+    });
+
+    state.lock().await.insert(
+        client_id.clone(),
+        ConnectionHandle {
+            write_tx,
+            shutdown_tx: Some(shutdown_tx),
+        },
+    );
+    emit_event(
+        &app_handle,
+        &client_id,
+        MessageEvent {
+            message: None,
+            error: None,
+            connected: Some(true),
+        },
+    );
+    Ok(())
+}
+
 /// Connect to IRC server with real TCP/TLS implementation
 #[tauri::command]
 pub async fn connect(
@@ -274,6 +433,10 @@ pub async fn connect(
     state: State<'_, SocketState>,
     app_handle: tauri::AppHandle,
 ) -> Result<(), String> {
+    if address.starts_with("wss://") || address.starts_with("ws://") {
+        return connect_websocket(client_id, address, state.0.clone(), app_handle).await;
+    }
+
     // Parse the address to determine protocol and extract host:port
     let (use_tls, host, port) = parse_address(&address)?;
 
