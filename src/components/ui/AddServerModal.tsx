@@ -6,6 +6,7 @@ import BaseModal from "../../lib/modal/BaseModal";
 import { Button, ModalBody, ModalFooter } from "../../lib/modal/components";
 import { getBuiltinOAuthConfig } from "../../lib/oauth";
 import { isTauri } from "../../lib/platformUtils";
+import { buildNativeAddress, connectionKindOf } from "../../lib/serverAddress";
 import useStore from "../../store";
 import type { ServerOAuthConfig } from "../../types";
 import { OAuthSection } from "./OAuthSection";
@@ -69,6 +70,14 @@ export const AddServerModal: React.FC = () => {
     setUseWebSocket(prefillServerDetails?.useWebSocket || false);
   }, [prefillServerDetails]);
 
+  // A scheme typed into the host field names the connection kind, so the
+  // checkbox follows it instead of contradicting it.
+  useEffect(() => {
+    if (!isTauri()) return;
+    const kind = connectionKindOf(serverHost);
+    if (kind !== undefined) setUseWebSocket(kind);
+  }, [serverHost]);
+
   useEffect(() => {
     if (!isTauri()) return;
 
@@ -113,17 +122,11 @@ export const AddServerModal: React.FC = () => {
     try {
       let finalHost = serverHost;
       if (isTauri()) {
-        const port = Number.parseInt(serverPort, 10);
-        // Strip scheme AND any embedded :port / path so we don't end up
-        // appending port twice (e.g. ircs://host:6697:6697).
-        const cleanHost = serverHost
-          .replace(/^(https?|wss?|ircs?|irc):\/\//, "")
-          .replace(/[:/].*$/, "");
-        // We default to TLS and use plaintext only for a host typed as irc://.
-        const tcpScheme = serverHost.startsWith("irc://") ? "irc" : "ircs";
-        finalHost = useWebSocket
-          ? `wss://${cleanHost}:${port}`
-          : `${tcpScheme}://${cleanHost}:${port}`;
+        finalHost = buildNativeAddress(
+          serverHost,
+          Number.parseInt(serverPort, 10),
+          useWebSocket,
+        );
       }
 
       await connect(
