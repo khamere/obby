@@ -80,7 +80,25 @@ function isPushContext(context) {
     typeof context.nick === "string" &&
     [context.ignoreList, context.customMentions].every(
       (list) => Array.isArray(list) && list.every((item) => typeof item === "string"),
-    )
+    ) &&
+    (context.silenced === undefined ||
+      (Array.isArray(context.silenced) &&
+        context.silenced.every(
+          (entry) =>
+            typeof entry?.chat === "string" &&
+            (entry.until === null || typeof entry.until === "number"),
+        )))
+  );
+}
+
+// A muted chat, or a muted server, posts nothing; the page sends the mutes
+// that also cover mentions, by chat name, with `*` for the whole server.
+function isSilenced(context, chat, now) {
+  const wanted = chat.toLowerCase();
+  return (context?.silenced ?? []).some(
+    (entry) =>
+      (entry.chat === "*" || entry.chat.toLowerCase() === wanted) &&
+      (entry.until === null || entry.until > now),
   );
 }
 
@@ -244,6 +262,7 @@ async function showPush(event) {
   if (context?.ignoreList.some((pattern) => matchesIgnorePattern(parsed.source, pattern)))
     return false;
   if (isChannel && !mentionsUs(parsed.text, context)) return false;
+  if (isSilenced(context, chat, Date.now())) return false;
 
   // A focused window shows this message itself.
   const windows = await self.clients.matchAll({

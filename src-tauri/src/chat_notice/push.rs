@@ -4,7 +4,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::text::{notification_id, parse_iso_time, parse_line};
-use super::{notices_for, ChatMessage, Notice, Recipient, Strings};
+use super::{notices_for, ChatMessage, Notice, Recipient, Silence, Strings};
 
 /// What the app saved for one server when it registered for push.
 #[derive(Debug, Deserialize)]
@@ -17,6 +17,8 @@ pub struct PushContext {
     pub custom_mentions: Vec<String>,
     #[serde(default)]
     pub ignore_list: Vec<String>,
+    #[serde(default)]
+    pub silenced: Vec<Silence>,
     #[serde(flatten)]
     pub strings: Strings,
 }
@@ -67,6 +69,8 @@ pub fn notice_for_push(context: &PushContext, raw: &str, now: i64) -> PushOutcom
         nick: &context.nick,
         custom_mentions: &context.custom_mentions,
         ignore_list: &context.ignore_list,
+        silenced: &context.silenced,
+        now,
     };
     let (notices, _) = notices_for(&recipient, &context.nick, &[message], &context.strings, &[]);
     PushOutcome {
@@ -157,6 +161,19 @@ mod tests {
                 "{line}"
             );
         }
+    }
+
+    #[test]
+    fn stays_quiet_for_a_muted_chat() {
+        let mut context = context();
+        context.silenced = vec![Silence {
+            chat: "#dev".into(),
+            until: Some(10),
+        }];
+        let muted = notice_for_push(&context, ":alice!a@h PRIVMSG #dev :max: look", 5);
+        assert!(muted.notices.is_empty());
+        let over = notice_for_push(&context, ":alice!a@h PRIVMSG #dev :max: look", 11);
+        assert_eq!(over.notices.len(), 1);
     }
 
     #[test]

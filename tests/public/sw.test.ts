@@ -137,6 +137,23 @@ describe("push service worker", () => {
     expect(worker.shown[0].title).toBe("alice dans #dev");
   });
 
+  it("stays quiet for a muted chat while the mute holds", async () => {
+    await worker.post({
+      type: "obby-push-context",
+      context: {
+        ...context,
+        silenced: [
+          { chat: "#DEV", until: null },
+          { chat: "carol", until: Date.now() - 1000 },
+        ],
+      },
+    });
+    await worker.push(":alice!a@h PRIVMSG #dev :the release is out");
+    expectQuiet(worker);
+    await worker.push(":carol!c@h PRIVMSG pushy :still here?");
+    expect(worker.shown.some((s) => s.title === "carol")).toBe(true);
+  });
+
   it("stays quiet for channel talk that does not mention us", async () => {
     await worker.push(":alice!a@h PRIVMSG #dev :pushyfoo said hi");
     expectQuiet(worker);
