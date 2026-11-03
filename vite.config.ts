@@ -12,6 +12,10 @@ const require = createRequire(import.meta.url);
 
 // Short commit the build came from: OBBY_COMMIT when set (Docker builds from
 // an archive have no .git), else git, else empty.
+// Tauri 2 names the platform TAURI_ENV_PLATFORM; the older name is kept for
+// anyone building with a Tauri 1 CLI.
+const tauriPlatform = process.env.TAURI_ENV_PLATFORM ?? process.env.TAURI_PLATFORM;
+
 function appCommit(): string {
   if (process.env.OBBY_COMMIT) return process.env.OBBY_COMMIT.slice(0, 12);
   try {
@@ -211,8 +215,15 @@ export default defineConfig(({ mode }) => {
     build: {
       // Main chunk includes the full app + react-icons/fa (~35 files); gzip is ~570KB which is fine.
       chunkSizeWarningLimit: 3000,
-      // Tauri uses Chromium on Windows and WebKit on macOS and Linux
-      target: process.env.TAURI_PLATFORM == 'windows' ? 'chrome105' : 'safari13',
+      // Tauri uses Chromium on Windows, the system WebView on Android, and
+      // WebKit on macOS, Linux and iOS. Android WebViews lag years behind,
+      // so that bundle targets an older Chrome.
+      target:
+        tauriPlatform === 'windows'
+          ? 'chrome105'
+          : tauriPlatform === 'android'
+            ? 'chrome64'
+            : 'safari13',
       // don't minify for debug builds
       minify: !process.env.TAURI_DEBUG ? 'esbuild' : false,
       // produce sourcemaps for debug builds
