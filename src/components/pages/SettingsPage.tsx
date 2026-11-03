@@ -3,6 +3,7 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import type React from "react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useWebPushFailure } from "../../hooks/useWebPushFailure";
+import { APP_VERSION } from "../../lib/appVersion";
 import ircClient from "../../lib/ircClient";
 import { openExternalUrl } from "../../lib/openUrl";
 import { isTauri } from "../../lib/platformUtils";
@@ -752,7 +753,7 @@ const SettingsContent: React.FC<
 /** Which build is running: package version plus the commit it was built from. */
 const AppVersion: React.FC<{ className?: string }> = ({ className = "" }) => (
   <div className={`select-text text-xs text-discord-text-muted ${className}`}>
-    Obby {__APP_VERSION__}
+    Obby {APP_VERSION}
     {__APP_COMMIT__ && ` · ${__APP_COMMIT__}`}
   </div>
 );

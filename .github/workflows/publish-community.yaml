@@ -1,13 +1,15 @@
 # Releases of the community-fixes line. Runs only for a tag named
-# cf-v<version>, where <version> is the version in package.json, and
-# publishes to this repository's releases and container registry. Upstream's
-# publish.yaml stays untouched so merges from upstream apply cleanly.
+# v<version>-cf<n>, where <version> is the version in package.json and <n>
+# counts the community releases on top of it, and publishes to this
+# repository's releases and container registry. Upstream's publish.yaml stays
+# untouched so merges from upstream apply cleanly. The tag also matches
+# upstream's v*.*.* trigger, so that workflow must stay disabled here.
 name: "Community release"
 
 on:
   push:
     tags:
-      - "cf-v*"
+      - "v*-cf*"
 
 jobs:
   collect-version:
@@ -16,8 +18,11 @@ jobs:
       contents: write
     outputs:
       current_version: ${{ steps.package-version.outputs.version }}
+      release: ${{ steps.package-version.outputs.release }}
+      label: ${{ steps.package-version.outputs.label }}
+      version_code: ${{ steps.package-version.outputs.version_code }}
       tag_name: ${{ github.ref_name }}
-      name: Obby ${{ github.ref_name }}
+      name: Obby ${{ steps.package-version.outputs.label }}
       release_body: ${{ steps.release-notes.outputs.release_body }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -28,17 +33,24 @@ jobs:
         id: package-version
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          if [ "$GITHUB_REF_NAME" != "cf-v$VERSION" ]; then
-            echo "Tag $GITHUB_REF_NAME does not match package.json version $VERSION (expected cf-v$VERSION)"
+          N="${GITHUB_REF_NAME#v${VERSION}-cf}"
+          if [ "$GITHUB_REF_NAME" = "$N" ] || ! [[ "$N" =~ ^[1-9][0-9]*$ ]]; then
+            echo "Tag $GITHUB_REF_NAME must be v${VERSION}-cf<n> for package.json version $VERSION"
             exit 1
           fi
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+          # Android needs a rising integer; upstream's own scheme leaves no
+          # room for a community counter, so we spread the parts out.
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "release=cf$N" >> "$GITHUB_OUTPUT"
+          echo "label=$VERSION-cf$N" >> "$GITHUB_OUTPUT"
+          echo "version_code=$((MAJOR * 1000000 + MINOR * 10000 + PATCH * 100 + N))" >> "$GITHUB_OUTPUT"
 
       - name: Generate release notes since the previous community release
         id: release-notes
         run: |
           PREV_TAG=$(gh api "repos/$GITHUB_REPOSITORY/releases" \
-            --jq "[.[] | select(.draft == false and .tag_name != \"$GITHUB_REF_NAME\" and (.tag_name | startswith(\"cf-v\")))] | .[0].tag_name // empty")
+            --jq "[.[] | select(.draft == false and .tag_name != \"$GITHUB_REF_NAME\" and (.tag_name | test(\"-cf[0-9]+$\")))] | .[0].tag_name // empty")
           if [ -n "$PREV_TAG" ]; then
             NOTES=$(gh api "repos/$GITHUB_REPOSITORY/releases/generate-notes" \
               -X POST \
@@ -122,6 +134,7 @@ jobs:
       - uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OBBY_RELEASE: ${{ needs.collect-version.outputs.release }}
         with:
           tagName: ${{ needs.collect-version.outputs.tag_name }}
           releaseName: ${{ needs.collect-version.outputs.name }}
@@ -192,6 +205,8 @@ jobs:
         run: npm install
 
       - name: Build app
+        env:
+          OBBY_RELEASE: ${{ needs.collect-version.outputs.release }}
         run: |
           npm run tauri build -- --verbose --config "{\"plugins\":{\"updater\":{\"endpoints\":[\"https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/latest.json\"]}}}"
 
@@ -263,8 +278,10 @@ jobs:
         run: npm install
 
       - name: Build app bundle
-        run: npm run tauri android build
+        run: |
+          npm run tauri android build -- --config "{\"bundle\":{\"android\":{\"versionCode\":${{ needs.collect-version.outputs.version_code }}}}}"
         env:
+          OBBY_RELEASE: ${{ needs.collect-version.outputs.release }}
           NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.0.11902837
           ANDROID_NDK_ROOT: ${{ env.ANDROID_HOME }}/ndk/27.0.11902837
           ANDROID_NDK: ${{ env.ANDROID_HOME }}/ndk/27.0.11902837
@@ -280,7 +297,7 @@ jobs:
             --ks src-tauri/gen/android/release.jks \
             --ks-key-alias "${{ secrets.ANDROID_RELEASE_KEY }}" \
             --ks-pass "pass:${{ secrets.ANDROID_RELEASE_PASSWORD }}" \
-            --out "$OUT/apk/universal/release/Obby-${{ needs.collect-version.outputs.current_version }}.apk" \
+            --out "$OUT/apk/universal/release/Obby-${{ needs.collect-version.outputs.label }}.apk" \
             "$OUT/apk/universal/release/app-universal-release-unsigned.apk"
           "${ANDROID_HOME}/build-tools/34.0.0/apksigner" sign \
             --min-sdk-version 22 \
@@ -289,7 +306,7 @@ jobs:
             --ks src-tauri/gen/android/release.jks \
             --ks-key-alias "${{ secrets.ANDROID_RELEASE_KEY }}" \
             --ks-pass "pass:${{ secrets.ANDROID_RELEASE_PASSWORD }}" \
-            --out "$OUT/bundle/universalRelease/Obby-${{ needs.collect-version.outputs.current_version }}.aab" \
+            --out "$OUT/bundle/universalRelease/Obby-${{ needs.collect-version.outputs.label }}.aab" \
             "$OUT/bundle/universalRelease/app-universal-release.aab"
 
       - name: Publish
@@ -299,8 +316,8 @@ jobs:
           name: ${{ needs.collect-version.outputs.name }}
           tag_name: ${{ needs.collect-version.outputs.tag_name }}
           files: |
-            ./src-tauri/gen/android/app/build/outputs/apk/universal/release/Obby-${{ needs.collect-version.outputs.current_version }}.apk
-            ./src-tauri/gen/android/app/build/outputs/bundle/universalRelease/Obby-${{ needs.collect-version.outputs.current_version }}.aab
+            ./src-tauri/gen/android/app/build/outputs/apk/universal/release/Obby-${{ needs.collect-version.outputs.label }}.apk
+            ./src-tauri/gen/android/app/build/outputs/bundle/universalRelease/Obby-${{ needs.collect-version.outputs.label }}.aab
 
   publish-web:
     runs-on: ubuntu-latest
@@ -322,9 +339,11 @@ jobs:
         run: npm ci
 
       - name: Build
+        env:
+          OBBY_RELEASE: ${{ needs.collect-version.outputs.release }}
         run: |
           npm run build
-          zip -r Obby-${{ needs.collect-version.outputs.current_version }}-web.zip ./dist
+          zip -r Obby-${{ needs.collect-version.outputs.label }}-web.zip ./dist
 
       - name: Publish
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
@@ -333,10 +352,10 @@ jobs:
           name: ${{ needs.collect-version.outputs.name }}
           tag_name: ${{ needs.collect-version.outputs.tag_name }}
           files: |
-            ./Obby-${{ needs.collect-version.outputs.current_version }}-web.zip
+            ./Obby-${{ needs.collect-version.outputs.label }}-web.zip
 
   # The same image the Dockerfile builds locally, published as
-  # ghcr.io/<owner>/obby:<version> and :latest.
+  # ghcr.io/<owner>/obby:<version>-cf<n> and :latest.
   publish-docker:
     runs-on: ubuntu-latest
     needs: collect-version
@@ -372,8 +391,9 @@ jobs:
           platforms: linux/amd64,linux/arm64
           build-args: |
             OBBY_COMMIT=${{ steps.image.outputs.commit }}
+            OBBY_RELEASE=${{ needs.collect-version.outputs.release }}
           tags: |
-            ${{ steps.image.outputs.name }}:${{ needs.collect-version.outputs.current_version }}
+            ${{ steps.image.outputs.name }}:${{ needs.collect-version.outputs.label }}
             ${{ steps.image.outputs.name }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
