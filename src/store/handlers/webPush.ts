@@ -1,4 +1,5 @@
 import type { StoreApi } from "zustand";
+import { subscribeMutes } from "../../lib/mutes";
 import { areChatNotificationsOn } from "../../lib/notifications";
 import { isTauri } from "../../lib/platformUtils";
 import {
@@ -67,7 +68,7 @@ export function registerWebPushHandlers(store: StoreApi<AppState>): void {
         continue;
       }
       if (!hasWebPush(server.id)) continue;
-      const context = pushContextFor(server.id, state.globalSettings);
+      const context = pushContextFor(server, state.globalSettings);
       const wanted = `${isOn}:${server.vapidKey}`;
       if (applied.get(server.id) === wanted) {
         const contextJson = JSON.stringify(context);
@@ -115,4 +116,6 @@ export function registerWebPushHandlers(store: StoreApi<AppState>): void {
     }
     applyPushState(state);
   });
+  // A mute changes what the push worker should show, so it gets a new context.
+  subscribeMutes(() => applyPushState(store.getState()));
 }

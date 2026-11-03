@@ -7,6 +7,7 @@ import {
   muteServer,
   resetMutesForTests,
   setChatMuteMentions,
+  silencesFor,
   unmuteChat,
   unmuteServer,
 } from "../../src/lib/mutes";
@@ -79,6 +80,30 @@ describe("mutes", () => {
     unmuteServer("s1");
     unmuteChat("s1", "chan");
     expect(isSilenced("s1", "chan", false)).toBe(false);
+  });
+
+  it("lists the mutes that cover mentions by chat name for the background side", () => {
+    const server = {
+      id: "s1",
+      channels: [
+        { id: "c-dev", name: "#dev" },
+        { id: "c-ops", name: "#ops" },
+      ],
+      privateChats: [{ id: "p-bob", username: "bob" }],
+    };
+    const now = Date.now();
+    muteChat("s1", "c-dev", "channel", null, true);
+    muteChat("s1", "c-ops", "channel", null, false);
+    muteChat("s1", "p-bob", "dm", now + HOUR);
+    expect(silencesFor(server, now)).toEqual([
+      { chat: "#dev", until: null },
+      { chat: "bob", until: now + HOUR },
+    ]);
+    expect(silencesFor(server, now + 2 * HOUR)).toEqual([
+      { chat: "#dev", until: null },
+    ]);
+    muteServer("s1", null);
+    expect(silencesFor(server, now)[0]).toEqual({ chat: "*", until: null });
   });
 
   it("the notification sound respects mutes", () => {

@@ -31,12 +31,32 @@ impl ChatMessage {
     }
 }
 
+/// A chat the user muted so that nothing from it notifies, by name, until
+/// `until` (epoch ms; none means until unmuted). The name `*` stands for the
+/// whole server.
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct Silence {
+    pub chat: String,
+    pub until: Option<i64>,
+}
+
+impl Silence {
+    fn covers(&self, chat: &str, now: i64) -> bool {
+        (self.chat == "*" || self.chat.eq_ignore_ascii_case(chat))
+            && self.until.map_or(true, |until| until > now)
+    }
+}
+
 /// Who the notifications are for on one server.
 pub struct Recipient<'a> {
     pub server_id: &'a str,
     pub nick: &'a str,
     pub custom_mentions: &'a [String],
     pub ignore_list: &'a [String],
+    pub silenced: &'a [Silence],
+    /// Now in epoch ms, which decides whether a timed mute still holds.
+    pub now: i64,
 }
 
 /// Translated text, since the native side has no translation catalog.
@@ -144,6 +164,13 @@ pub fn notices_for(
         if !is_mention {
             continue;
         }
+        if recipient
+            .silenced
+            .iter()
+            .any(|silence| silence.covers(&message.chat, recipient.now))
+        {
+            continue;
+        }
         if let Some(id) = &message.msgid {
             fresh_msgids.push(id.clone());
         }
@@ -198,6 +225,14 @@ mod tests {
     const IGNORED: [&str; 1] = ["spam!*@*"];
 
     fn notices(messages: &[ChatMessage], notified: &[String]) -> (Vec<Notice>, Vec<String>) {
+        notices_silenced(messages, notified, &[])
+    }
+
+    fn notices_silenced(
+        messages: &[ChatMessage],
+        notified: &[String],
+        silenced: &[Silence],
+    ) -> (Vec<Notice>, Vec<String>) {
         let mentions: Vec<String> = MENTIONS.iter().map(|m| m.to_string()).collect();
         let ignored: Vec<String> = IGNORED.iter().map(|m| m.to_string()).collect();
         let recipient = Recipient {
@@ -205,8 +240,37 @@ mod tests {
             nick: "max",
             custom_mentions: &mentions,
             ignore_list: &ignored,
+            silenced,
+            now: 100,
         };
         notices_for(&recipient, "max", messages, &strings(), notified)
+    }
+
+    #[test]
+    fn skips_muted_chats_and_servers_while_the_mute_holds() {
+        let messages = vec![
+            message("#dev", "alice", "max: look", 1, false),
+            message("#ops", "alice", "max: look", 2, false),
+            message("bob", "bob", "hey", 3, true),
+        ];
+        let silence = |chat: &str, until: Option<i64>| Silence {
+            chat: chat.into(),
+            until,
+        };
+        let (notices, msgids) = notices_silenced(
+            &messages,
+            &[],
+            &[silence("#DEV", None), silence("bob", Some(500))],
+        );
+        assert_eq!(notices.len(), 1);
+        assert_eq!(notices[0].title, "alice in #ops");
+        assert_eq!(msgids, vec!["m2"]);
+
+        let (expired, _) = notices_silenced(&messages, &[], &[silence("#dev", Some(50))]);
+        assert_eq!(expired.len(), 3);
+
+        let (whole, _) = notices_silenced(&messages, &[], &[silence("*", None)]);
+        assert!(whole.is_empty());
     }
 
     fn strings() -> Strings {

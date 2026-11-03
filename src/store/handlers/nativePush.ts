@@ -1,5 +1,6 @@
 import type { StoreApi } from "zustand";
 import ircClient from "../../lib/ircClient";
+import { subscribeMutes } from "../../lib/mutes";
 import {
   type NativePushContext,
   onPushEndpoint,
@@ -12,14 +13,15 @@ import {
 import { areChatNotificationsOn } from "../../lib/notifications";
 import { isTauriAndroid } from "../../lib/platformUtils";
 import { hasWebPush, pushContextFor } from "../../lib/webpush";
+import type { Server } from "../../types";
 import { type AppState, loadSavedServers } from "../index";
 import type { GlobalSettings } from "../types";
 
 function nativePushContext(
-  serverId: string,
+  server: Server,
   settings: GlobalSettings,
 ): NativePushContext {
-  return { ...pushContextFor(serverId, settings), serverId };
+  return { ...pushContextFor(server, settings), serverId: server.id };
 }
 
 // The Android app registers a UnifiedPush endpoint (its embedded FCM
@@ -90,12 +92,7 @@ export function registerNativePushHandlers(store: StoreApi<AppState>): void {
   };
   pruneInstances(store.getState());
 
-  store.subscribe((state, previous) => {
-    if (
-      state.servers === previous.servers &&
-      state.globalSettings === previous.globalSettings
-    )
-      return;
+  const sync = (state: AppState) => {
     pruneInstances(state);
     const mode = state.globalSettings.pushMethod;
     const isOn =
@@ -111,7 +108,7 @@ export function registerNativePushHandlers(store: StoreApi<AppState>): void {
         continue;
       }
       if (!server.vapidKey || !hasWebPush(server.id)) continue;
-      const context = nativePushContext(server.id, state.globalSettings);
+      const context = nativePushContext(server, state.globalSettings);
       const wanted = JSON.stringify([isOn, mode, server.vapidKey, context]);
       if (applied.get(server.id) === wanted) continue;
       applied.set(server.id, wanted);
@@ -143,5 +140,15 @@ export function registerNativePushHandlers(store: StoreApi<AppState>): void {
         })
         .catch((error) => console.warn("push registration failed", error));
     }
+  };
+  store.subscribe((state, previous) => {
+    if (
+      state.servers === previous.servers &&
+      state.globalSettings === previous.globalSettings
+    )
+      return;
+    sync(state);
   });
+  // A mute changes what the push side should post, so it re-registers.
+  subscribeMutes(() => sync(store.getState()));
 }

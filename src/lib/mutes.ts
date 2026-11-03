@@ -164,9 +164,45 @@ export function isSilenced(
   return mute.kind === "dm" || !mentionsMe || !!mute.mentions;
 }
 
-function subscribe(listener: () => void): () => void {
+export function subscribeMutes(listener: () => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);
+}
+
+/** A chat, by name, whose notifications are off until `until` (null: until unmuted);
+ *  the name `*` stands for the whole server. */
+export interface Silence {
+  chat: string;
+  until: number | null;
+}
+
+// The native side and the push worker notify while the page is closed, so
+// they get the mutes as chat names, since ids mean nothing to them. Only
+// mutes that also cover mentions matter there: anything else never notifies
+// in the background anyway.
+export function silencesFor(
+  server: {
+    id: string;
+    channels: { id: string; name: string }[];
+    privateChats: { id: string; username: string }[];
+  },
+  now: number = Date.now(),
+): Silence[] {
+  load();
+  const silences: Silence[] = [];
+  const whole = serverMute(server.id, now);
+  if (whole) silences.push({ chat: "*", until: whole.until });
+  const nameOf = new Map<string, string>();
+  for (const channel of server.channels) nameOf.set(channel.id, channel.name);
+  for (const chat of server.privateChats) nameOf.set(chat.id, chat.username);
+  const prefix = `${server.id}/`;
+  for (const [key, entry] of Object.entries(state.chats)) {
+    if (!key.startsWith(prefix) || !active(entry, now)) continue;
+    if (entry.kind === "channel" && !entry.mentions) continue;
+    const name = nameOf.get(key.slice(prefix.length));
+    if (name) silences.push({ chat: name, until: entry.until });
+  }
+  return silences;
 }
 
 function snapshot(): MuteState {
@@ -176,7 +212,7 @@ function snapshot(): MuteState {
 
 /** Re-renders when mutes change (expiry is checked by the reader). */
 export function useMutes(): MuteState {
-  return useSyncExternalStore(subscribe, snapshot);
+  return useSyncExternalStore(subscribeMutes, snapshot);
 }
 
 // test hook
