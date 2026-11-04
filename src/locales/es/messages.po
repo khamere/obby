@@ -1335,6 +1335,10 @@ msgstr "Fuente del chat"
 msgid "Chats and networks"
 msgstr "Chats y redes"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Check for new releases"
+msgstr "Buscar nuevas versiones"
+
 #: src/lib/mediaUpload.ts
 msgid "Choose a different file type. The file host does not accept {ext} files."
 msgstr "Elige otro tipo de archivo. El servidor de archivos no acepta archivos {ext}."
@@ -3932,6 +3936,11 @@ msgstr "Nuevo paquete"
 msgid "New password"
 msgstr "Nueva contraseña"
 
+#. placeholder {0}: latest.version
+#: src/components/pages/SettingsPage.tsx
+msgid "New release {0}"
+msgstr "Nueva versión {0}"
+
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Next image"
 msgstr "Imagen siguiente"
@@ -4291,6 +4300,10 @@ msgstr "OK"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "on"
 msgstr "activado"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Once a day, ask the project's release page whether a newer build exists and say so under the version. Nothing is downloaded or installed."
+msgstr "Una vez al día, consultar la página de versiones del proyecto para ver si hay una compilación más nueva e indicarlo bajo la versión. No se descarga ni instala nada."
 
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/ChatHeader.tsx
@@ -6490,6 +6503,10 @@ msgstr "Actualización disponible"
 #: src/components/ui/UpdateModal.tsx
 msgid "Update failed. Please try again."
 msgstr "La actualización falló. Inténtalo de nuevo."
+
+#: src/components/pages/SettingsPage.tsx
+msgid "Updates"
+msgstr "Actualizaciones"
 
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Upload .css file"

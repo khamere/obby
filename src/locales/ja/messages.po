@@ -1335,6 +1335,10 @@ msgstr "チャットのフォント"
 msgid "Chats and networks"
 msgstr "チャットとネットワーク"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Check for new releases"
+msgstr "新しいリリースを確認"
+
 #: src/lib/mediaUpload.ts
 msgid "Choose a different file type. The file host does not accept {ext} files."
 msgstr "別のファイル形式を選択してください。ファイルホストは {ext} ファイルを受け付けません。"
@@ -3932,6 +3936,11 @@ msgstr "新しいパック"
 msgid "New password"
 msgstr "新しいパスワード"
 
+#. placeholder {0}: latest.version
+#: src/components/pages/SettingsPage.tsx
+msgid "New release {0}"
+msgstr "新しいリリース {0}"
+
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Next image"
 msgstr "次の画像"
@@ -4291,6 +4300,10 @@ msgstr "OK"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "on"
 msgstr "オン"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Once a day, ask the project's release page whether a newer build exists and say so under the version. Nothing is downloaded or installed."
+msgstr "1日に1回、プロジェクトのリリースページに新しいビルドがあるか問い合わせ、バージョンの下に表示します。何もダウンロードやインストールはされません。"
 
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/ChatHeader.tsx
@@ -6490,6 +6503,10 @@ msgstr "アップデートが利用可能"
 #: src/components/ui/UpdateModal.tsx
 msgid "Update failed. Please try again."
 msgstr "アップデートに失敗しました。もう一度お試しください。"
+
+#: src/components/pages/SettingsPage.tsx
+msgid "Updates"
+msgstr "アップデート"
 
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Upload .css file"
