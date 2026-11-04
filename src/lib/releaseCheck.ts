@@ -18,6 +18,7 @@ export interface LatestRelease {
 }
 
 interface Remembered {
+  repo: string;
   checkedAt: number;
   latest: LatestRelease | null;
 }
@@ -111,11 +112,17 @@ export async function newerRelease({
   if (!repo || !parseReleaseVersion(current)) return null;
   const known = remembered();
   let latest: LatestRelease | null;
-  if (known && now - known.checkedAt < RELEASE_CHECK_INTERVAL_MS) {
+  // The answer is kept a day, for the repository it came from: a build from
+  // another repository served on the same origin asks afresh.
+  if (
+    known &&
+    known.repo === repo &&
+    now - known.checkedAt < RELEASE_CHECK_INTERVAL_MS
+  ) {
     latest = known.latest;
   } else {
     latest = await fetchLatestRelease(repo, fetchImpl);
-    remember({ checkedAt: now, latest });
+    remember({ repo, checkedAt: now, latest });
   }
   return latest && isNewerRelease(latest.version, current) ? latest : null;
 }

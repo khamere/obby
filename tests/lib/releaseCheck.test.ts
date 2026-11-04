@@ -103,6 +103,23 @@ describe("newerRelease", () => {
     ).resolves.toBeNull();
   });
 
+  it("asks again when the build comes from another repository", async () => {
+    const fetchImpl = fetching(async () => release("v0.4.0-cf1.0.2"));
+    await newerRelease({
+      repo: "a/obby",
+      current: "0.4.0-cf1.0.1",
+      fetchImpl,
+      now: 1,
+    });
+    await newerRelease({
+      repo: "b/obby",
+      current: "0.4.0-cf1.0.1",
+      fetchImpl,
+      now: 2,
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
   it("does nothing for a build without a release repository or label", async () => {
     const fetchImpl = fetching(async () => release("v9.0.0-cf1.0.0"));
     await expect(
