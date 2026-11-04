@@ -10,4 +10,6 @@ permissions = [
   "allow-register-push",
   "allow-unregister-push",
   "allow-push-instances",
+  "allow-set-keep-alive",
+  "allow-request-battery-exemption",
 ]

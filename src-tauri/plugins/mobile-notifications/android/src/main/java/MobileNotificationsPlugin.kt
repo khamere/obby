@@ -2,6 +2,10 @@ package world.obby.notifications
 
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.os.PowerManager
+import android.provider.Settings
 import android.webkit.WebView
 import app.tauri.annotation.Command
 import app.tauri.annotation.InvokeArg
@@ -33,6 +37,13 @@ class RegisterPushArgs {
 @InvokeArg
 class UnregisterPushArgs {
   lateinit var serverId: String
+}
+
+@InvokeArg
+class SetKeepAliveArgs {
+  var enabled: Boolean = false
+  var status: String = "Obby"
+  var channelName: String = "Connection"
 }
 
 @TauriPlugin
@@ -154,6 +165,34 @@ class MobileNotificationsPlugin(private val activity: Activity) : Plugin(activit
     result.put("distributors", distributors)
     result.put("current", saved)
     return result
+  }
+
+  @Command
+  fun setKeepAlive(invoke: Invoke) {
+    val args = invoke.parseArgs(SetKeepAliveArgs::class.java)
+    if (args.enabled) {
+      KeepAliveService.start(activity, args.status, args.channelName)
+    } else {
+      KeepAliveService.stop(activity)
+    }
+    invoke.resolve()
+  }
+
+  // Some vendors freeze a background app's sockets unless the user exempts
+  // it from battery optimisation; the system dialog asks them once.
+  @Command
+  fun requestBatteryExemption(invoke: Invoke) {
+    val result = JSObject()
+    val power = activity.getSystemService(Activity.POWER_SERVICE) as? PowerManager
+    val isExempt = Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
+      power?.isIgnoringBatteryOptimizations(activity.packageName) == true
+    if (!isExempt && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+        .setData(Uri.parse("package:${activity.packageName}"))
+      if (intent.resolveActivity(activity.packageManager) != null) activity.startActivity(intent)
+    }
+    result.put("isExempt", isExempt)
+    invoke.resolve(result)
   }
 
   @Command

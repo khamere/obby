@@ -129,6 +129,10 @@ msgstr "{count, plural, one {{0}} other {{1}}}"
 msgid "{count, plural, one {# result} other {# results}}"
 msgstr "{count, plural, one {# rezultat} few {# rezultate} other {# de rezultate}}"
 
+#: src/store/handlers/keepAlive.ts
+msgid "{count, plural, one {Connected to # network} other {Connected to # networks}}"
+msgstr "{count, plural, one {Conectat la # rețea} few {Conectat la # rețele} other {Conectat la # de rețele}}"
+
 #: src/components/ui/MentionJumpBar.tsx
 msgid "{count} new mentions"
 msgstr "{count} mențiuni noi"
@@ -1663,6 +1667,7 @@ msgid "Connecting…"
 msgstr "Se conectează…"
 
 #: src/components/layout/ProfilePane.tsx
+#: src/store/handlers/keepAlive.ts
 msgid "Connection"
 msgstr "Conexiune"
 
@@ -3259,6 +3264,10 @@ msgstr "Ține Obby deschis pentru a primi notificări"
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Keep the channel after everyone leaves. Only IRCops can set this."
 msgstr "Păstrează canalul după ce pleacă toată lumea. Doar IRCops pot seta asta."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Keep the IRC connections open while Obby is off the screen, behind a quiet \"Connected\" notification, so messages and mentions arrive at once and nothing reloads when you come back. Android may ask to exempt Obby from battery optimisation."
+msgstr "Păstrează conexiunile IRC deschise cât Obby nu este pe ecran, în spatele unei notificări discrete \"Conectat\", ca mesajele și mențiunile să sosească imediat și nimic să nu se reîncarce la revenire. Android poate cere scutirea Obby de optimizarea bateriei."
 
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Kept in this browser and applied after the linked file, so it can override it."
@@ -5934,6 +5943,10 @@ msgstr "Stare"
 #: src/components/pages/SettingsPage.tsx
 msgid "Status Messages"
 msgstr "Mesaje de stare"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Stay connected in the background"
+msgstr "Rămâi conectat în fundal"
 
 #: src/components/message/MediaPreview.tsx
 #: src/components/ui/BotToolsCard.tsx

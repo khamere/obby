@@ -129,6 +129,10 @@ msgstr "{count, plural, one {{0}} other {{1}}}"
 msgid "{count, plural, one {# result} other {# results}}"
 msgstr "{count, plural, one {# tulos} other {# tulosta}}"
 
+#: src/store/handlers/keepAlive.ts
+msgid "{count, plural, one {Connected to # network} other {Connected to # networks}}"
+msgstr "{count, plural, one {Yhdistetty # verkkoon} other {Yhdistetty # verkkoon}}"
+
 #: src/components/ui/MentionJumpBar.tsx
 msgid "{count} new mentions"
 msgstr "{count} uutta mainintaa"
@@ -1663,6 +1667,7 @@ msgid "Connecting…"
 msgstr "Yhdistetään…"
 
 #: src/components/layout/ProfilePane.tsx
+#: src/store/handlers/keepAlive.ts
 msgid "Connection"
 msgstr "Yhteys"
 
@@ -3259,6 +3264,10 @@ msgstr "Pidä Obby auki saadaksesi ilmoituksia"
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Keep the channel after everyone leaves. Only IRCops can set this."
 msgstr "Pidä kanava, kun kaikki ovat poistuneet. Vain IRCopit voivat asettaa tämän."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Keep the IRC connections open while Obby is off the screen, behind a quiet \"Connected\" notification, so messages and mentions arrive at once and nothing reloads when you come back. Android may ask to exempt Obby from battery optimisation."
+msgstr "Pidä IRC-yhteydet auki, kun Obby ei ole näytöllä, hiljaisen \"Yhdistetty\"-ilmoituksen takana, jotta viestit ja maininnat tulevat heti eikä mikään lataudu uudelleen palatessa. Android voi pyytää vapauttamaan Obbyn akun optimoinnista."
 
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Kept in this browser and applied after the linked file, so it can override it."
@@ -5934,6 +5943,10 @@ msgstr "Tila"
 #: src/components/pages/SettingsPage.tsx
 msgid "Status Messages"
 msgstr "Tilaviestit"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Stay connected in the background"
+msgstr "Pysy yhteydessä taustalla"
 
 #: src/components/message/MediaPreview.tsx
 #: src/components/ui/BotToolsCard.tsx

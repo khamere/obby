@@ -129,6 +129,10 @@ msgstr "{count, plural, one {{0}} other {{1}}}"
 msgid "{count, plural, one {# result} other {# results}}"
 msgstr "{count, plural, one {# résultat} other {# résultats}}"
 
+#: src/store/handlers/keepAlive.ts
+msgid "{count, plural, one {Connected to # network} other {Connected to # networks}}"
+msgstr "{count, plural, one {Connecté à # réseau} other {Connecté à # réseaux}}"
+
 #: src/components/ui/MentionJumpBar.tsx
 msgid "{count} new mentions"
 msgstr "{count} nouvelles mentions"
@@ -1663,6 +1667,7 @@ msgid "Connecting…"
 msgstr "Connexion…"
 
 #: src/components/layout/ProfilePane.tsx
+#: src/store/handlers/keepAlive.ts
 msgid "Connection"
 msgstr "Connexion"
 
@@ -3259,6 +3264,10 @@ msgstr "Gardez Obby ouvert pour recevoir les notifications"
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Keep the channel after everyone leaves. Only IRCops can set this."
 msgstr "Conservez le salon après le départ de tous. Seuls les IRCops peuvent l'activer."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Keep the IRC connections open while Obby is off the screen, behind a quiet \"Connected\" notification, so messages and mentions arrive at once and nothing reloads when you come back. Android may ask to exempt Obby from battery optimisation."
+msgstr "Garder les connexions IRC ouvertes quand Obby n'est pas à l'écran, derrière une notification discrète \"Connecté\", pour que messages et mentions arrivent aussitôt et que rien ne se recharge au retour. Android peut demander d'exempter Obby de l'optimisation de la batterie."
 
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Kept in this browser and applied after the linked file, so it can override it."
@@ -5934,6 +5943,10 @@ msgstr "Statut"
 #: src/components/pages/SettingsPage.tsx
 msgid "Status Messages"
 msgstr "Messages de statut"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Stay connected in the background"
+msgstr "Rester connecté en arrière-plan"
 
 #: src/components/message/MediaPreview.tsx
 #: src/components/ui/BotToolsCard.tsx
