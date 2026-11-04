@@ -789,10 +789,7 @@ const AppVersion: React.FC<{ className?: string }> = ({ className = "" }) => {
       <ExternalLinkWarningModal
         isOpen={!!pendingUrl}
         url={pendingUrl ?? ""}
-        onConfirm={() => {
-          if (pendingUrl) openExternalUrl(pendingUrl);
-          setPendingUrl(null);
-        }}
+        onConfirm={() => setPendingUrl(null)}
         onCancel={() => setPendingUrl(null)}
       />
     </div>
