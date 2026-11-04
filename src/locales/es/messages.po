@@ -129,6 +129,10 @@ msgstr "{count, plural, one {{0}} other {{1}}}"
 msgid "{count, plural, one {# result} other {# results}}"
 msgstr "{count, plural, one {# resultado} other {# resultados}}"
 
+#: src/store/handlers/keepAlive.ts
+msgid "{count, plural, one {Connected to # network} other {Connected to # networks}}"
+msgstr "{count, plural, one {Conectado a # red} other {Conectado a # redes}}"
+
 #: src/components/ui/MentionJumpBar.tsx
 msgid "{count} new mentions"
 msgstr "{count} menciones nuevas"
@@ -1667,6 +1671,7 @@ msgid "Connecting…"
 msgstr "Conectando…"
 
 #: src/components/layout/ProfilePane.tsx
+#: src/store/handlers/keepAlive.ts
 msgid "Connection"
 msgstr "Conexión"
 
@@ -3263,6 +3268,10 @@ msgstr "Mantén Obby abierto para recibir notificaciones"
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Keep the channel after everyone leaves. Only IRCops can set this."
 msgstr "Mantener el canal después de que todos salgan. Solo los IRCops pueden establecerlo."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Keep the IRC connections open while Obby is off the screen, behind a quiet \"Connected\" notification, so messages and mentions arrive at once and nothing reloads when you come back. Android may ask to exempt Obby from battery optimisation."
+msgstr "Mantener las conexiones IRC abiertas mientras Obby no está en pantalla, tras una notificación silenciosa de \"Conectado\", para que mensajes y menciones lleguen al momento y nada se recargue al volver. Android puede pedir eximir a Obby de la optimización de batería."
 
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Kept in this browser and applied after the linked file, so it can override it."
@@ -5947,6 +5956,10 @@ msgstr "Estado"
 #: src/components/pages/SettingsPage.tsx
 msgid "Status Messages"
 msgstr "Mensajes de estado"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Stay connected in the background"
+msgstr "Seguir conectado en segundo plano"
 
 #: src/components/message/MediaPreview.tsx
 #: src/components/ui/BotToolsCard.tsx

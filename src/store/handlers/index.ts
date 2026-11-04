@@ -10,6 +10,7 @@ import { registerConnectionHandlers } from "./connection";
 import { registerE2EEHandlers } from "./e2ee";
 import { registerHistoryHandlers } from "./history";
 import { registerInvitelinkHandlers } from "./invitelink";
+import { registerKeepAliveHandlers } from "./keepAlive";
 import { registerMessageHandlers } from "./messages";
 import { registerMetadataHandlers } from "./metadata";
 import { registerNamedModesHandlers } from "./named-modes";
@@ -45,6 +46,7 @@ export function registerAllHandlers(store: StoreApi<AppState>): void {
   registerE2EEHandlers(store);
   registerServerReplyHandlers(store);
   registerHistoryHandlers(store);
+  registerKeepAliveHandlers(store);
   registerNotificationPermission(store);
   registerWebPushHandlers(store);
   registerNativePushHandlers(store);

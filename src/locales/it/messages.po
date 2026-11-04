@@ -129,6 +129,10 @@ msgstr "{count, plural, one {{0}} other {{1}}}"
 msgid "{count, plural, one {# result} other {# results}}"
 msgstr "{count, plural, one {# risultato} other {# risultati}}"
 
+#: src/store/handlers/keepAlive.ts
+msgid "{count, plural, one {Connected to # network} other {Connected to # networks}}"
+msgstr "{count, plural, one {Connesso a # rete} other {Connesso a # reti}}"
+
 #: src/components/ui/MentionJumpBar.tsx
 msgid "{count} new mentions"
 msgstr "{count} nuove menzioni"
@@ -1667,6 +1671,7 @@ msgid "Connecting…"
 msgstr "Connessione in corso…"
 
 #: src/components/layout/ProfilePane.tsx
+#: src/store/handlers/keepAlive.ts
 msgid "Connection"
 msgstr "Connessione"
 
@@ -3263,6 +3268,10 @@ msgstr "Tieni Obby aperto per ricevere notifiche"
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Keep the channel after everyone leaves. Only IRCops can set this."
 msgstr "Mantieni il canale dopo che tutti sono usciti. Solo gli IRCop possono impostarlo."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Keep the IRC connections open while Obby is off the screen, behind a quiet \"Connected\" notification, so messages and mentions arrive at once and nothing reloads when you come back. Android may ask to exempt Obby from battery optimisation."
+msgstr "Tenere aperte le connessioni IRC mentre Obby non è sullo schermo, dietro una notifica silenziosa \"Connesso\", così messaggi e menzioni arrivano subito e nulla si ricarica al ritorno. Android potrebbe chiedere di escludere Obby dall'ottimizzazione della batteria."
 
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Kept in this browser and applied after the linked file, so it can override it."
@@ -5947,6 +5956,10 @@ msgstr "Stato"
 #: src/components/pages/SettingsPage.tsx
 msgid "Status Messages"
 msgstr "Messaggi di stato"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Stay connected in the background"
+msgstr "Resta connesso in background"
 
 #: src/components/message/MediaPreview.tsx
 #: src/components/ui/BotToolsCard.tsx
