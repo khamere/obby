@@ -56,6 +56,49 @@ describe("keep-alive service", () => {
   });
   afterEach(() => stop());
 
+  it("retries a rejected stop by itself", async () => {
+    vi.useFakeTimers();
+    try {
+      stop = registerKeepAliveHandlers(useStore);
+      await vi.advanceTimersByTimeAsync(0);
+      useStore.setState({ servers: [server("a", true)] });
+      await vi.advanceTimersByTimeAsync(0);
+      bridge.setKeepAlive.mockImplementationOnce(() =>
+        Promise.reject(new Error("stopService refused")),
+      );
+      useStore.setState({ servers: [] });
+      await vi.advanceTimersByTimeAsync(0);
+      const before = bridge.setKeepAlive.mock.calls.length;
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(bridge.setKeepAlive.mock.calls.length).toBe(before + 1);
+      expect(lastCall()[0]).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("asks for the battery exemption only once the app is visible", async () => {
+    const visibility = vi
+      .spyOn(document, "visibilityState", "get")
+      .mockReturnValue("hidden");
+    try {
+      stop = registerKeepAliveHandlers(useStore);
+      useStore.setState({ servers: [server("a", true)] });
+      await settle();
+      expect(bridge.requestBatteryExemption).not.toHaveBeenCalled();
+      expect(backing.has("obby.batteryExemptionAsked")).toBe(false);
+      visibility.mockReturnValue("visible");
+      document.dispatchEvent(new Event("visibilitychange"));
+      await settle();
+      expect(bridge.requestBatteryExemption).toHaveBeenCalledTimes(1);
+      document.dispatchEvent(new Event("visibilitychange"));
+      await settle();
+      expect(bridge.requestBatteryExemption).toHaveBeenCalledTimes(1);
+    } finally {
+      visibility.mockRestore();
+    }
+  });
+
   it("does nothing off Android", async () => {
     platform.isTauriAndroid.mockReturnValueOnce(false);
     stop = registerKeepAliveHandlers(useStore);

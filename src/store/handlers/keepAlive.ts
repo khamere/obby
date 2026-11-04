@@ -5,6 +5,7 @@ import { isTauriAndroid } from "../../lib/platformUtils";
 import type { AppState } from "../index";
 
 const EXEMPTION_ASKED_KEY = "obby.batteryExemptionAsked";
+const RETRY_DELAY_MS = 5000;
 
 function connectedNetworks(state: AppState): number {
   return state.servers.filter(
@@ -27,6 +28,7 @@ export function registerKeepAliveHandlers(
   let applied = "";
   let requested = "";
   let queue: Promise<void> = Promise.resolve();
+  let retry: ReturnType<typeof setTimeout> | undefined;
   const sync = (state: AppState) => {
     const count = connectedNetworks(state);
     const enabled =
@@ -56,8 +58,13 @@ export function registerKeepAliveHandlers(
         },
         (error) => {
           console.warn("keep-alive update failed", error);
-          // The state stays unapplied, so the next look asks for it again.
-          if (requested === wanted) requested = applied;
+          // The state stays unapplied: a later look asks for it again, and
+          // one is scheduled in case no change or return to the screen comes.
+          if (requested === wanted) {
+            requested = applied;
+            clearTimeout(retry);
+            retry = setTimeout(() => sync(store.getState()), RETRY_DELAY_MS);
+          }
         },
       );
   };
@@ -74,6 +81,7 @@ export function registerKeepAliveHandlers(
   };
   document.addEventListener("visibilitychange", onVisible);
   return () => {
+    clearTimeout(retry);
     unsubscribe();
     document.removeEventListener("visibilitychange", onVisible);
   };
