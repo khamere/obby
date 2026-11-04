@@ -2,6 +2,7 @@
 declare const __APP_VERSION__: string;
 declare const __APP_COMMIT__: string;
 declare const __APP_RELEASE__: string;
+declare const __APP_RELEASES_REPO__: string;
 declare const __APP_NAME__: string;
 declare const __APP_DESCRIPTION__: string;
 declare const __BUILD_CONFIG__: Record<string, unknown>;

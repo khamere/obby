@@ -137,6 +137,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OBBY_RELEASE: ${{ needs.collect-version.outputs.release }}
+          OBBY_RELEASES_REPO: ${{ github.repository }}
         with:
           tagName: ${{ needs.collect-version.outputs.tag_name }}
           releaseName: ${{ needs.collect-version.outputs.name }}
@@ -210,6 +211,7 @@ jobs:
       - name: Build app
         env:
           OBBY_RELEASE: ${{ needs.collect-version.outputs.release }}
+          OBBY_RELEASES_REPO: ${{ github.repository }}
         run: |
           npm run tauri build -- --verbose --config "{\"plugins\":{\"updater\":{\"endpoints\":[\"https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/latest.json\"]}}}"
 
@@ -286,6 +288,7 @@ jobs:
           npm run tauri android build -- --config "{\"bundle\":{\"android\":{\"versionCode\":${{ needs.collect-version.outputs.version_code }}}}}"
         env:
           OBBY_RELEASE: ${{ needs.collect-version.outputs.release }}
+          OBBY_RELEASES_REPO: ${{ github.repository }}
           NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.0.11902837
           ANDROID_NDK_ROOT: ${{ env.ANDROID_HOME }}/ndk/27.0.11902837
           ANDROID_NDK: ${{ env.ANDROID_HOME }}/ndk/27.0.11902837
@@ -346,6 +349,7 @@ jobs:
       - name: Build
         env:
           OBBY_RELEASE: ${{ needs.collect-version.outputs.release }}
+          OBBY_RELEASES_REPO: ${{ github.repository }}
         run: |
           npm run build
           zip -r Obby-${{ needs.collect-version.outputs.label }}-web.zip ./dist
@@ -398,6 +402,7 @@ jobs:
           build-args: |
             OBBY_COMMIT=${{ steps.image.outputs.commit }}
             OBBY_RELEASE=${{ needs.collect-version.outputs.release }}
+            OBBY_RELEASES_REPO=${{ github.repository }}
           tags: |
             ${{ steps.image.outputs.name }}:${{ needs.collect-version.outputs.label }}
             ${{ steps.image.outputs.name }}:latest

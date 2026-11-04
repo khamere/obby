@@ -1339,6 +1339,10 @@ msgstr "Fontul chatului"
 msgid "Chats and networks"
 msgstr "Conversații și rețele"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Check for new releases"
+msgstr "Caută versiuni noi"
+
 #: src/lib/mediaUpload.ts
 msgid "Choose a different file type. The file host does not accept {ext} files."
 msgstr "Alege alt tip de fișier. Gazda de fișiere nu acceptă fișiere {ext}."
@@ -3941,6 +3945,11 @@ msgstr "Pachet nou"
 msgid "New password"
 msgstr "Parolă nouă"
 
+#. placeholder {0}: latest.version
+#: src/components/pages/SettingsPage.tsx
+msgid "New release {0}"
+msgstr "Versiune nouă {0}"
+
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Next image"
 msgstr "Imaginea următoare"
@@ -4300,6 +4309,10 @@ msgstr "OK"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "on"
 msgstr "activ"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Once a day, ask the project's release page whether a newer build exists and say so under the version. Nothing is downloaded or installed."
+msgstr "O dată pe zi, întreabă pagina de versiuni a proiectului dacă există o versiune mai nouă și arată asta sub versiune. Nu se descarcă și nu se instalează nimic."
 
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/ChatHeader.tsx
@@ -6503,6 +6516,10 @@ msgstr "Actualizare disponibilă"
 #: src/components/ui/UpdateModal.tsx
 msgid "Update failed. Please try again."
 msgstr "Actualizarea a eșuat. Încearcă din nou."
+
+#: src/components/pages/SettingsPage.tsx
+msgid "Updates"
+msgstr "Actualizări"
 
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Upload .css file"

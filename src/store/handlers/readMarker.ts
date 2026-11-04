@@ -11,7 +11,7 @@ import {
   type UnreadCounts,
 } from "../helpers";
 import type { AppState } from "../index";
-import { markMentionsSeen, mentionChannelKey } from "../mentionLog";
+import { markMentionsSeen } from "../mentionLog";
 import { findConversation } from "./history";
 
 // We wait for a burst of messages to settle before telling the server, so a
@@ -261,15 +261,17 @@ export function registerReadMarkerHandlers(store: StoreApi<AppState>): void {
       newestMessageTime(state, chatKey(serverId, chat)) !== undefined;
     if (isRead) closeChatNotification(serverId, target);
     // Reading a channel on another device moves the marker here too, and a
-    // mention under the marker has been seen wherever it was read.
-    if (timestamp !== null && chat && "name" in chat) {
+    // mention under the marker has been seen wherever it was read. The inbox
+    // keeps mentions of channels we have since left, so we go by name.
+    if (timestamp !== null && ircClient.isChannel(serverId, target)) {
       const readAt = Date.parse(timestamp);
-      const key = mentionChannelKey({ serverId, channelId: chat.id });
       store.setState((current) => ({
         mentionLog: markMentionsSeen(
           current.mentionLog,
           (m) =>
-            mentionChannelKey(m) === key && Date.parse(m.timestamp) <= readAt,
+            m.serverId === serverId &&
+            eqIC(m.channelName, target) &&
+            Date.parse(m.timestamp) <= readAt,
         ),
       }));
     }

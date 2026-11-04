@@ -103,6 +103,7 @@ export interface GlobalSettings {
   enableMultilineInput: boolean;
   stripImageMetadata: boolean;
   keepConnectionAlive: boolean;
+  checkForReleases: boolean;
   bridgedUsers: boolean;
   multilineOnShiftEnter: boolean;
   autoFallbackToSingleLine: boolean;

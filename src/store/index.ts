@@ -1393,6 +1393,7 @@ const useStore = create<AppState>((set, get) => ({
     sendTypingNotifications: true,
     stripImageMetadata: true,
     keepConnectionAlive: true,
+    checkForReleases: true,
     bridgedUsers: true,
     // Event visibility settings (enabled by default)
     showEvents: true,
