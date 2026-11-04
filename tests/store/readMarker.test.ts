@@ -171,6 +171,33 @@ describe("read markers", () => {
     );
   });
 
+  it("marks mentions under a marker another device set as seen", async () => {
+    const { useStore, ircClient } = await boot({ selected: false });
+    const mention = (id: string, offset: number) => ({
+      messageId: id,
+      msgid: id,
+      serverId: SERVER,
+      channelId: "chan-1",
+      channelName: "#chan",
+      sender: "alice",
+      content: "tester: hi",
+      timestamp: new Date(BASE + offset).toISOString(),
+      seen: false,
+    });
+    useStore.setState({
+      mentionLog: [mention("m1", 1500), mention("m2", 2500)],
+    });
+    ircClient.triggerEvent("MARKREAD", {
+      serverId: SERVER,
+      target: "#chan",
+      timestamp: new Date(BASE + 2000).toISOString(),
+    });
+    expect(useStore.getState().mentionLog.map((m) => m.seen)).toEqual([
+      true,
+      false,
+    ]);
+  });
+
   it("stores a start for a channel the server has no marker for, so the next launch keeps what arrived meanwhile unread", async () => {
     const { useStore, ircClient, markreadSet, channel } = await boot({
       selected: false,
