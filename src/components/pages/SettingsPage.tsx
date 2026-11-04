@@ -17,6 +17,7 @@ import useStore, {
 } from "../../store";
 import type { SettingsSection } from "../../store/types";
 import AvatarUpload from "../ui/AvatarUpload";
+import ExternalLinkWarningModal from "../ui/ExternalLinkWarningModal";
 import InvitationsPanel from "../ui/InvitationsPanel";
 import PersistenceSettingsPanel from "../ui/PersistenceSettingsPanel";
 import { ProfileBanner } from "../ui/ProfileBanner";
@@ -769,10 +770,9 @@ const AppVersion: React.FC<{ className?: string }> = ({ className = "" }) => {
       isCancelled = true;
     };
   }, [checkForReleases]);
-  // The release page is the project's own, so it opens without the warning
-  // shown for links from chat.
-  const openRelease = (url: string) =>
-    isTauri() ? openExternalUrl(url) : window.open(url, "_blank");
+  // The page address comes from the release API, so it opens with the same
+  // warning as any other link the app did not write itself.
+  const [pendingUrl, setPendingUrl] = useState<string | null>(null);
   return (
     <div className={`select-text text-xs text-discord-text-muted ${className}`}>
       Obby {APP_VERSION}
@@ -780,12 +780,21 @@ const AppVersion: React.FC<{ className?: string }> = ({ className = "" }) => {
       {latest && (
         <button
           type="button"
-          onClick={() => openRelease(latest.url)}
+          onClick={() => setPendingUrl(latest.url)}
           className="ml-2 rounded bg-discord-primary/20 px-2 py-0.5 text-discord-text-link hover:bg-discord-primary/30"
         >
           <Trans>New release {latest.version}</Trans>
         </button>
       )}
+      <ExternalLinkWarningModal
+        isOpen={!!pendingUrl}
+        url={pendingUrl ?? ""}
+        onConfirm={() => {
+          if (pendingUrl) openExternalUrl(pendingUrl);
+          setPendingUrl(null);
+        }}
+        onCancel={() => setPendingUrl(null)}
+      />
     </div>
   );
 };
