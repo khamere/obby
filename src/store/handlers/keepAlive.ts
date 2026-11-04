@@ -29,7 +29,9 @@ export function registerKeepAliveHandlers(
   let requested = "";
   let queue: Promise<void> = Promise.resolve();
   let retry: ReturnType<typeof setTimeout> | undefined;
+  let isDisposed = false;
   const sync = (state: AppState) => {
+    if (isDisposed) return;
     const count = connectedNetworks(state);
     const enabled =
       state.globalSettings.keepConnectionAlive !== false && count > 0;
@@ -60,7 +62,7 @@ export function registerKeepAliveHandlers(
           console.warn("keep-alive update failed", error);
           // The state stays unapplied: a later look asks for it again, and
           // one is scheduled in case no change or return to the screen comes.
-          if (requested === wanted) {
+          if (requested === wanted && !isDisposed) {
             requested = applied;
             clearTimeout(retry);
             retry = setTimeout(() => sync(store.getState()), RETRY_DELAY_MS);
@@ -81,6 +83,7 @@ export function registerKeepAliveHandlers(
   };
   document.addEventListener("visibilitychange", onVisible);
   return () => {
+    isDisposed = true;
     clearTimeout(retry);
     unsubscribe();
     document.removeEventListener("visibilitychange", onVisible);

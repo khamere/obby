@@ -99,6 +99,30 @@ describe("keep-alive service", () => {
     }
   });
 
+  it("makes no call after cleanup, even for a request that fails late", async () => {
+    vi.useFakeTimers();
+    try {
+      let fail: (error: Error) => void = () => {};
+      stop = registerKeepAliveHandlers(useStore);
+      await vi.advanceTimersByTimeAsync(0);
+      bridge.setKeepAlive.mockImplementationOnce(
+        () =>
+          new Promise<void>((_, reject) => {
+            fail = reject;
+          }),
+      );
+      useStore.setState({ servers: [server("a", true)] });
+      await vi.advanceTimersByTimeAsync(0);
+      const before = bridge.setKeepAlive.mock.calls.length;
+      stop();
+      fail(new Error("too late"));
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(bridge.setKeepAlive.mock.calls.length).toBe(before);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("does nothing off Android", async () => {
     platform.isTauriAndroid.mockReturnValueOnce(false);
     stop = registerKeepAliveHandlers(useStore);
