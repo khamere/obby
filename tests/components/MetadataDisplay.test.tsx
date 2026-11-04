@@ -197,6 +197,7 @@ describe("Metadata Display Features", () => {
         enableMultilineInput: true,
         stripImageMetadata: true,
         keepConnectionAlive: true,
+        checkForReleases: true,
         bridgedUsers: true,
         multilineOnShiftEnter: true,
         autoFallbackToSingleLine: true,
