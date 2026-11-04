@@ -164,6 +164,7 @@ jobs:
           name: ${{ needs.collect-version.outputs.name }}
           tag_name: ${{ needs.collect-version.outputs.tag_name }}
           files: ${{ matrix.files }}
+          fail_on_unmatched_files: true
 
   # Needs the ANDROID_RELEASE_KEYSTORE, ANDROID_RELEASE_KEY and
   # ANDROID_RELEASE_PASSWORD secrets; see docs/community-releases.md.
@@ -244,6 +245,7 @@ jobs:
           body: ${{ needs.collect-version.outputs.release_body }}
           name: ${{ needs.collect-version.outputs.name }}
           tag_name: ${{ needs.collect-version.outputs.tag_name }}
+          fail_on_unmatched_files: true
           files: |
             ./src-tauri/gen/android/app/build/outputs/apk/universal/release/Obby-${{ needs.collect-version.outputs.label }}.apk
 
@@ -282,6 +284,7 @@ jobs:
           body: ${{ needs.collect-version.outputs.release_body }}
           name: ${{ needs.collect-version.outputs.name }}
           tag_name: ${{ needs.collect-version.outputs.tag_name }}
+          fail_on_unmatched_files: true
           files: |
             ./Obby-${{ needs.collect-version.outputs.label }}-web.zip
 
