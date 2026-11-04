@@ -185,17 +185,29 @@ describe("read markers", () => {
       seen: false,
     });
     useStore.setState({
-      mentionLog: [mention("m1", 1500), mention("m2", 2500)],
+      mentionLog: [
+        mention("m1", 1500),
+        mention("m2", 2500),
+        { ...mention("m3", 1500), channelId: "gone", channelName: "#left" },
+      ],
     });
     ircClient.triggerEvent("MARKREAD", {
       serverId: SERVER,
-      target: "#chan",
+      target: "#CHAN",
       timestamp: new Date(BASE + 2000).toISOString(),
     });
     expect(useStore.getState().mentionLog.map((m) => m.seen)).toEqual([
       true,
       false,
+      false,
     ]);
+    // A channel we left keeps its inbox entries, and a marker still reaches them.
+    ircClient.triggerEvent("MARKREAD", {
+      serverId: SERVER,
+      target: "#left",
+      timestamp: new Date(BASE + 2000).toISOString(),
+    });
+    expect(useStore.getState().mentionLog[2].seen).toBe(true);
   });
 
   it("stores a start for a channel the server has no marker for, so the next launch keeps what arrived meanwhile unread", async () => {
