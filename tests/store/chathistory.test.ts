@@ -211,6 +211,65 @@ describe("chathistory batch end — hasMoreHistory", () => {
     expect(channel?.hasMoreHistory).toBe(true);
   });
 
+  it("adds mentions past the read marker from a history page to the inbox", () => {
+    useStore.setState({
+      mentionLog: [],
+      activeBatches: {
+        "srv-1": {
+          batchM: {
+            type: "chathistory",
+            parameters: ["#test"],
+            events: [],
+            startTime: new Date(),
+          },
+        },
+      },
+    });
+    useStore.setState((state) => ({
+      servers: state.servers.map((s) => ({
+        ...s,
+        channels: s.channels.map((c) => ({
+          ...c,
+          readMarker: "2024-01-01T12:00:00.000Z",
+        })),
+      })),
+    }));
+    const me = "max";
+    const spy = vi
+      .spyOn(ircClient, "getCurrentUser")
+      .mockReturnValue({ id: "u-max", username: me, isOnline: true });
+    chathistoryBuffers.set(historyBufferKey("srv-1", "batchM"), [
+      makeMessage({
+        id: "old",
+        msgid: "old",
+        content: `${me}: before you left`,
+        timestamp: new Date("2024-01-01T11:00:00.000Z"),
+      }),
+      makeMessage({
+        id: "ping",
+        msgid: "ping",
+        content: `${me}: while you were away`,
+        timestamp: new Date("2024-01-01T13:00:00.000Z"),
+      }),
+      makeMessage({
+        id: "chatter",
+        msgid: "chatter",
+        content: "nothing for you",
+        timestamp: new Date("2024-01-01T13:01:00.000Z"),
+      }),
+    ]);
+
+    ircClient.triggerEvent("BATCH_END", {
+      serverId: "srv-1",
+      batchId: "batchM",
+    });
+
+    const log = useStore.getState().mentionLog;
+    expect(log.map((m) => m.msgid)).toEqual(["ping"]);
+    expect(log[0].seen).toBe(false);
+    spy.mockRestore();
+  });
+
   it("sets hasMoreHistory=false when batch had no messages (reached beginning)", () => {
     useStore.setState({
       activeBatches: {

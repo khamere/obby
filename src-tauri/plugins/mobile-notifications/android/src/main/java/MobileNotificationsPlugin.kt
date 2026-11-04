@@ -1,6 +1,7 @@
 package world.obby.notifications
 
 import android.app.Activity
+import android.content.Intent
 import android.webkit.WebView
 import app.tauri.annotation.Command
 import app.tauri.annotation.InvokeArg
@@ -50,6 +51,14 @@ class MobileNotificationsPlugin(private val activity: Activity) : Plugin(activit
     launchTarget = ChatNotices.tappedTarget(activity.intent)
     ChatNotices.consumeTap(activity.intent)
     currentRef = WeakReference(this)
+  }
+
+  // A tap while the app is running reaches the activity as a new intent
+  // rather than as the launch intent, so we hand the chat to the page here.
+  override fun onNewIntent(intent: Intent) {
+    val target = ChatNotices.tappedTarget(intent) ?: return
+    ChatNotices.consumeTap(intent)
+    trigger("notificationTapped", target)
   }
 
   @Command
