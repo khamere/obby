@@ -15,10 +15,10 @@ its CTCP VERSION reply. Pushing the tag runs
 [`publish-community.yaml`](../.github/workflows/publish-community.yaml), which
 builds and attaches to a GitHub release:
 
-- Linux: `.deb`, `.rpm` and AppImage for x64 and arm64
+- Linux: `.deb`, `.rpm` and AppImage for x64
 - Windows: `.msi` and `.exe` installers
 - macOS: `.dmg` for Apple silicon and Intel, unsigned (right-click, Open)
-- Android: signed `.apk` and `.aab`
+- Android: signed `.apk`
 - Web: `Obby-<version>-web.zip` with the built `dist/`
 - Docker: `ghcr.io/<owner>/obby:<version>-cf<a>.<b>.<c>` and `:latest` for
   amd64 and arm64
