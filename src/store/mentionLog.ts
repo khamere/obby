@@ -18,8 +18,9 @@ export interface MentionEntry {
 
 export const MAX_MENTIONS = 200;
 
-export const mentionChannelKey = (m: MentionEntry) =>
-  `${m.serverId}-${m.channelId}`;
+export const mentionChannelKey = (
+  m: Pick<MentionEntry, "serverId" | "channelId">,
+) => `${m.serverId}-${m.channelId}`;
 
 export const mentionTarget = (m: MentionEntry) => m.msgid ?? m.messageId;
 
