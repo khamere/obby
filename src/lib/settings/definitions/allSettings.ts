@@ -887,6 +887,18 @@ const preferenceSettings: SettingDefinition[] = [
     customComponent: HistoryUsageField,
   },
   {
+    id: "preferences.checkForReleases",
+    key: "checkForReleases",
+    category: "preferences",
+    subcategory: "Updates",
+    title: msg`Check for new releases`,
+    description: msg`Once a day, ask the project's release page whether a newer build exists and say so under the version. Nothing is downloaded or installed.`,
+    type: "toggle",
+    defaultValue: true,
+    searchKeywords: ["update", "release", "version", "new"],
+    priority: 16,
+  },
+  {
     id: "preferences.backup",
     key: "backup",
     category: "preferences",

@@ -1335,6 +1335,10 @@ msgstr "Sohbet yazı tipi"
 msgid "Chats and networks"
 msgstr "Sohbetler ve ağlar"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Check for new releases"
+msgstr "Yeni sürümleri denetle"
+
 #: src/lib/mediaUpload.ts
 msgid "Choose a different file type. The file host does not accept {ext} files."
 msgstr "Farklı bir dosya türü seçin. Dosya sunucusu {ext} dosyalarını kabul etmiyor."
@@ -3932,6 +3936,11 @@ msgstr "Yeni paket"
 msgid "New password"
 msgstr "Yeni parola"
 
+#. placeholder {0}: latest.version
+#: src/components/pages/SettingsPage.tsx
+msgid "New release {0}"
+msgstr "Yeni sürüm {0}"
+
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Next image"
 msgstr "Sonraki görüntü"
@@ -4291,6 +4300,10 @@ msgstr "Tamam"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "on"
 msgstr "açık"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Once a day, ask the project's release page whether a newer build exists and say so under the version. Nothing is downloaded or installed."
+msgstr "Günde bir kez projenin sürüm sayfasına daha yeni bir yapı olup olmadığını sor ve bunu sürümün altında göster. Hiçbir şey indirilmez veya kurulmaz."
 
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/ChatHeader.tsx
@@ -6490,6 +6503,10 @@ msgstr "Güncelleme mevcut"
 #: src/components/ui/UpdateModal.tsx
 msgid "Update failed. Please try again."
 msgstr "Güncelleme başarısız oldu. Lütfen tekrar deneyin."
+
+#: src/components/pages/SettingsPage.tsx
+msgid "Updates"
+msgstr "Güncellemeler"
 
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Upload .css file"

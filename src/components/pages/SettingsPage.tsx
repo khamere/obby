@@ -7,6 +7,7 @@ import { APP_VERSION } from "../../lib/appVersion";
 import ircClient from "../../lib/ircClient";
 import { openExternalUrl } from "../../lib/openUrl";
 import { isTauri } from "../../lib/platformUtils";
+import { type LatestRelease, newerRelease } from "../../lib/releaseCheck";
 import { settingsRegistry } from "../../lib/settings";
 import type { SettingDefinition, SettingValue } from "../../lib/settings/types";
 import useStore, {
@@ -92,6 +93,7 @@ const subcategoryLabel = (name: string): string => {
     Privacy: t`Privacy`,
     History: t`History`,
     Backup: t`Backup`,
+    Updates: t`Updates`,
     Devices: t`Devices`,
     "Audio Processing": t`Audio Processing`,
   };
@@ -750,12 +752,42 @@ const SettingsContent: React.FC<
   );
 };
 
-/** Which build is running: package version plus the commit it was built from. */
-const AppVersion: React.FC<{ className?: string }> = ({ className = "" }) => (
-  <div className={`select-text text-xs text-discord-text-muted ${className}`}>
-    Obby {APP_VERSION}
-    {__APP_COMMIT__ && ` · ${__APP_COMMIT__}`}
-  </div>
-);
+/** Which build is running: package version plus the commit it was built from,
+ *  and the newer release when the project has one. */
+const AppVersion: React.FC<{ className?: string }> = ({ className = "" }) => {
+  const checkForReleases = useStore(
+    (s) => s.globalSettings.checkForReleases !== false,
+  );
+  const [latest, setLatest] = useState<LatestRelease | null>(null);
+  useEffect(() => {
+    if (!checkForReleases) return;
+    let isCancelled = false;
+    newerRelease().then((release) => {
+      if (!isCancelled) setLatest(release);
+    });
+    return () => {
+      isCancelled = true;
+    };
+  }, [checkForReleases]);
+  // The release page is the project's own, so it opens without the warning
+  // shown for links from chat.
+  const openRelease = (url: string) =>
+    isTauri() ? openExternalUrl(url) : window.open(url, "_blank");
+  return (
+    <div className={`select-text text-xs text-discord-text-muted ${className}`}>
+      Obby {APP_VERSION}
+      {__APP_COMMIT__ && ` · ${__APP_COMMIT__}`}
+      {latest && (
+        <button
+          type="button"
+          onClick={() => openRelease(latest.url)}
+          className="ml-2 rounded bg-discord-primary/20 px-2 py-0.5 text-discord-text-link hover:bg-discord-primary/30"
+        >
+          <Trans>New release {latest.version}</Trans>
+        </button>
+      )}
+    </div>
+  );
+};
 
 export default SettingsPage;

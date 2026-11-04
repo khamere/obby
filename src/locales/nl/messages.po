@@ -1335,6 +1335,10 @@ msgstr "Chatlettertype"
 msgid "Chats and networks"
 msgstr "Chats en netwerken"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Check for new releases"
+msgstr "Controleren op nieuwe versies"
+
 #: src/lib/mediaUpload.ts
 msgid "Choose a different file type. The file host does not accept {ext} files."
 msgstr "Kies een ander bestandstype. De bestandshost accepteert geen {ext}-bestanden."
@@ -3932,6 +3936,11 @@ msgstr "Nieuw pack"
 msgid "New password"
 msgstr "Nieuw wachtwoord"
 
+#. placeholder {0}: latest.version
+#: src/components/pages/SettingsPage.tsx
+msgid "New release {0}"
+msgstr "Nieuwe versie {0}"
+
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Next image"
 msgstr "Volgende afbeelding"
@@ -4291,6 +4300,10 @@ msgstr "OK"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "on"
 msgstr "aan"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Once a day, ask the project's release page whether a newer build exists and say so under the version. Nothing is downloaded or installed."
+msgstr "Eén keer per dag op de releasepagina van het project kijken of er een nieuwere build is en dat onder de versie tonen. Er wordt niets gedownload of geïnstalleerd."
 
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/ChatHeader.tsx
@@ -6490,6 +6503,10 @@ msgstr "Update beschikbaar"
 #: src/components/ui/UpdateModal.tsx
 msgid "Update failed. Please try again."
 msgstr "Update mislukt. Probeer het opnieuw."
+
+#: src/components/pages/SettingsPage.tsx
+msgid "Updates"
+msgstr "Updates"
 
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Upload .css file"
