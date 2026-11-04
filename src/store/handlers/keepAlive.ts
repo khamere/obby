@@ -36,6 +36,16 @@ export function registerKeepAliveHandlers(
       other: "Connected to # networks",
     });
     const wanted = JSON.stringify([enabled, status]);
+    // The exemption dialog can only be shown from the foreground, so a hidden
+    // app leaves the question for the next look while it is on the screen.
+    if (
+      enabled &&
+      document.visibilityState === "visible" &&
+      !hasAskedForExemption()
+    ) {
+      rememberExemptionAsked();
+      void requestBatteryExemption().catch(() => false);
+    }
     if (wanted === requested) return;
     requested = wanted;
     queue = queue
@@ -50,10 +60,6 @@ export function registerKeepAliveHandlers(
           if (requested === wanted) requested = applied;
         },
       );
-    if (enabled && !hasAskedForExemption()) {
-      rememberExemptionAsked();
-      void requestBatteryExemption().catch(() => false);
-    }
   };
   sync(store.getState());
   const unsubscribe = store.subscribe((state, previous) => {
