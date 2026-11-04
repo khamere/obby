@@ -196,6 +196,7 @@ describe("Metadata Display Features", () => {
         accountPassword: "",
         enableMultilineInput: true,
         stripImageMetadata: true,
+        keepConnectionAlive: true,
         bridgedUsers: true,
         multilineOnShiftEnter: true,
         autoFallbackToSingleLine: true,

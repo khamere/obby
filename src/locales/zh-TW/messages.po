@@ -129,6 +129,10 @@ msgstr "{count, plural, one {{0}} other {{1}}}"
 msgid "{count, plural, one {# result} other {# results}}"
 msgstr "{count, plural, other {# 筆結果}}"
 
+#: src/store/handlers/keepAlive.ts
+msgid "{count, plural, one {Connected to # network} other {Connected to # networks}}"
+msgstr "{count, plural, other {已連線 # 個網路}}"
+
 #: src/components/ui/MentionJumpBar.tsx
 msgid "{count} new mentions"
 msgstr "{count} 則新提及"
@@ -1663,6 +1667,7 @@ msgid "Connecting…"
 msgstr "連線中…"
 
 #: src/components/layout/ProfilePane.tsx
+#: src/store/handlers/keepAlive.ts
 msgid "Connection"
 msgstr "連線"
 
@@ -3259,6 +3264,10 @@ msgstr "保持 Obby 開啟以接收通知"
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Keep the channel after everyone leaves. Only IRCops can set this."
 msgstr "所有人離開後保留頻道。只有 IRCop 可以設定。"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Keep the IRC connections open while Obby is off the screen, behind a quiet \"Connected\" notification, so messages and mentions arrive at once and nothing reloads when you come back. Android may ask to exempt Obby from battery optimisation."
+msgstr "在 Obby 不在螢幕上時，透過一則安靜的\"已連線\"通知保持 IRC 連線，讓訊息和提及即時送達，回來時不需重新載入。Android 可能會詢問是否將 Obby 排除在電池最佳化之外。"
 
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Kept in this browser and applied after the linked file, so it can override it."
@@ -5934,6 +5943,10 @@ msgstr "状态"
 #: src/components/pages/SettingsPage.tsx
 msgid "Status Messages"
 msgstr "状态消息"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Stay connected in the background"
+msgstr "在背景保持連線"
 
 #: src/components/message/MediaPreview.tsx
 #: src/components/ui/BotToolsCard.tsx

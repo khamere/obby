@@ -29,7 +29,54 @@ struct ConfigureHistoryPollArgs {
 }
 
 #[cfg(mobile)]
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SetKeepAliveArgs {
+    enabled: bool,
+    status: String,
+    channel_name: String,
+}
+
+#[cfg(mobile)]
 struct Native<R: Runtime>(PluginHandle<R>);
+
+/// Keeps the app process, and its connections, alive in the background
+/// behind an ongoing notification; a no-op outside Android.
+#[tauri::command]
+async fn set_keep_alive<R: Runtime>(
+    _app: tauri::AppHandle<R>,
+    enabled: bool,
+    status: String,
+    channel_name: String,
+) -> Result<(), String> {
+    #[cfg(target_os = "android")]
+    {
+        let args = SetKeepAliveArgs {
+            enabled,
+            status,
+            channel_name,
+        };
+        _app.state::<Native<R>>()
+            .0
+            .run_mobile_plugin::<Value>("setKeepAlive", args)
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(not(target_os = "android"))]
+    let _ = (enabled, status, channel_name);
+    Ok(())
+}
+
+#[tauri::command]
+async fn request_battery_exemption<R: Runtime>(_app: tauri::AppHandle<R>) -> Result<Value, String> {
+    #[cfg(target_os = "android")]
+    return _app
+        .state::<Native<R>>()
+        .0
+        .run_mobile_plugin::<Value>("requestBatteryExemption", ())
+        .map_err(|e| e.to_string());
+    #[cfg(not(target_os = "android"))]
+    Ok(Value::Null)
+}
 
 #[tauri::command]
 async fn configure_history_poll<R: Runtime>(
@@ -75,7 +122,9 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
     Builder::new("mobile-notifications")
         .invoke_handler(tauri::generate_handler![
             configure_history_poll,
-            take_launch_target
+            take_launch_target,
+            set_keep_alive,
+            request_battery_exemption
         ])
         .setup(|_app, _api| {
             #[cfg(target_os = "android")]

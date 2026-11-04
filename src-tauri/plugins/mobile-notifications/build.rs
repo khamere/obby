@@ -8,6 +8,8 @@ const COMMANDS: &[&str] = &[
     "unregister_push",
     "push_instances",
     "register_listener",
+    "set_keep_alive",
+    "request_battery_exemption",
 ];
 
 fn main() {
