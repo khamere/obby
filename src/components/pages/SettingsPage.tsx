@@ -7,6 +7,7 @@ import { APP_VERSION } from "../../lib/appVersion";
 import ircClient from "../../lib/ircClient";
 import { openExternalUrl } from "../../lib/openUrl";
 import { isTauri } from "../../lib/platformUtils";
+import { type LatestRelease, newerRelease } from "../../lib/releaseCheck";
 import { settingsRegistry } from "../../lib/settings";
 import type { SettingDefinition, SettingValue } from "../../lib/settings/types";
 import useStore, {
@@ -16,6 +17,7 @@ import useStore, {
 } from "../../store";
 import type { SettingsSection } from "../../store/types";
 import AvatarUpload from "../ui/AvatarUpload";
+import ExternalLinkWarningModal from "../ui/ExternalLinkWarningModal";
 import InvitationsPanel from "../ui/InvitationsPanel";
 import PersistenceSettingsPanel from "../ui/PersistenceSettingsPanel";
 import { ProfileBanner } from "../ui/ProfileBanner";
@@ -92,6 +94,7 @@ const subcategoryLabel = (name: string): string => {
     Privacy: t`Privacy`,
     History: t`History`,
     Backup: t`Backup`,
+    Updates: t`Updates`,
     Devices: t`Devices`,
     "Audio Processing": t`Audio Processing`,
   };
@@ -750,12 +753,47 @@ const SettingsContent: React.FC<
   );
 };
 
-/** Which build is running: package version plus the commit it was built from. */
-const AppVersion: React.FC<{ className?: string }> = ({ className = "" }) => (
-  <div className={`select-text text-xs text-discord-text-muted ${className}`}>
-    Obby {APP_VERSION}
-    {__APP_COMMIT__ && ` · ${__APP_COMMIT__}`}
-  </div>
-);
+/** Which build is running: package version plus the commit it was built from,
+ *  and the newer release when the project has one. */
+const AppVersion: React.FC<{ className?: string }> = ({ className = "" }) => {
+  const checkForReleases = useStore(
+    (s) => s.globalSettings.checkForReleases !== false,
+  );
+  const [latest, setLatest] = useState<LatestRelease | null>(null);
+  useEffect(() => {
+    if (!checkForReleases) return;
+    let isCancelled = false;
+    newerRelease().then((release) => {
+      if (!isCancelled) setLatest(release);
+    });
+    return () => {
+      isCancelled = true;
+    };
+  }, [checkForReleases]);
+  // The page address comes from the release API, so it opens with the same
+  // warning as any other link the app did not write itself.
+  const [pendingUrl, setPendingUrl] = useState<string | null>(null);
+  return (
+    <div className={`select-text text-xs text-discord-text-muted ${className}`}>
+      Obby {APP_VERSION}
+      {__APP_COMMIT__ && ` · ${__APP_COMMIT__}`}
+      {latest && (
+        <button
+          type="button"
+          onClick={() => setPendingUrl(latest.url)}
+          className="ml-2 rounded bg-discord-primary/20 px-2 py-0.5 text-discord-text-link hover:bg-discord-primary/30"
+        >
+          <Trans>New release {latest.version}</Trans>
+        </button>
+      )}
+      <ExternalLinkWarningModal
+        isOpen={!!pendingUrl}
+        url={pendingUrl ?? ""}
+        onConfirm={() => setPendingUrl(null)}
+        onCancel={() => setPendingUrl(null)}
+      />
+    </div>
+  );
+};
 
 export default SettingsPage;
