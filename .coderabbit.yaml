@@ -7,6 +7,11 @@ reviews:
   poem: false
   review_status: true
   collapse_walkthrough: true
+  suggested_reviewers: false
+  # The codebase explains why in comments, not what in docstrings (CLAUDE.md).
+  pre_merge_checks:
+    docstrings:
+      mode: "off"
   auto_review:
     enabled: true
     drafts: false
