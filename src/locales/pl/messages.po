@@ -129,6 +129,10 @@ msgstr "{count, plural, one {{0}} other {{1}}}"
 msgid "{count, plural, one {# result} other {# results}}"
 msgstr "{count, plural, one {# wynik} few {# wyniki} many {# wyników} other {# wyniku}}"
 
+#: src/store/handlers/keepAlive.ts
+msgid "{count, plural, one {Connected to # network} other {Connected to # networks}}"
+msgstr "{count, plural, one {Połączono z # siecią} few {Połączono z # sieciami} many {Połączono z # sieciami} other {Połączono z # sieciami}}"
+
 #: src/components/ui/MentionJumpBar.tsx
 msgid "{count} new mentions"
 msgstr "Nowe wzmianki: {count}"
@@ -1667,6 +1671,7 @@ msgid "Connecting…"
 msgstr "Łączenie…"
 
 #: src/components/layout/ProfilePane.tsx
+#: src/store/handlers/keepAlive.ts
 msgid "Connection"
 msgstr "Połączenie"
 
@@ -3263,6 +3268,10 @@ msgstr "Pozostaw Obby otwarte, aby otrzymywać powiadomienia"
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Keep the channel after everyone leaves. Only IRCops can set this."
 msgstr "Zachowaj kanał po wyjściu wszystkich. Może to ustawić tylko IRCop."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Keep the IRC connections open while Obby is off the screen, behind a quiet \"Connected\" notification, so messages and mentions arrive at once and nothing reloads when you come back. Android may ask to exempt Obby from battery optimisation."
+msgstr "Utrzymuj połączenia IRC, gdy Obby nie jest na ekranie, za cichym powiadomieniem \"Połączono\", aby wiadomości i wzmianki przychodziły od razu i nic nie ładowało się ponownie po powrocie. Android może poprosić o wyłączenie optymalizacji baterii dla Obby."
 
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Kept in this browser and applied after the linked file, so it can override it."
@@ -5947,6 +5956,10 @@ msgstr "Status"
 #: src/components/pages/SettingsPage.tsx
 msgid "Status Messages"
 msgstr "Wiadomości statusu"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Stay connected in the background"
+msgstr "Pozostań połączony w tle"
 
 #: src/components/message/MediaPreview.tsx
 #: src/components/ui/BotToolsCard.tsx

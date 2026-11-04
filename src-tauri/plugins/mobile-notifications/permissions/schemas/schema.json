@@ -367,6 +367,30 @@
           "markdownDescription": "Denies the register_push command without any pre-configured scope."
         },
         {
+          "description": "Enables the request_battery_exemption command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-request-battery-exemption",
+          "markdownDescription": "Enables the request_battery_exemption command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the request_battery_exemption command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-request-battery-exemption",
+          "markdownDescription": "Denies the request_battery_exemption command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the set_keep_alive command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-set-keep-alive",
+          "markdownDescription": "Enables the set_keep_alive command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the set_keep_alive command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-set-keep-alive",
+          "markdownDescription": "Denies the set_keep_alive command without any pre-configured scope."
+        },
+        {
           "description": "Enables the show_notification command without any pre-configured scope.",
           "type": "string",
           "const": "allow-show-notification",
@@ -403,10 +427,10 @@
           "markdownDescription": "Denies the unregister_push command without any pre-configured scope."
         },
         {
-          "description": "Lets the app register for push, configure the history poll, post chat notifications, read the notification that launched it and hear about later taps.\n#### This default permission set includes:\n\n- `allow-configure-history-poll`\n- `allow-take-launch-target`\n- `allow-show-notification`\n- `allow-register-listener`\n- `allow-push-status`\n- `allow-pick-push-distributor`\n- `allow-register-push`\n- `allow-unregister-push`\n- `allow-push-instances`",
+          "description": "Lets the app register for push, configure the history poll, post chat notifications, read the notification that launched it and hear about later taps.\n#### This default permission set includes:\n\n- `allow-configure-history-poll`\n- `allow-take-launch-target`\n- `allow-show-notification`\n- `allow-register-listener`\n- `allow-push-status`\n- `allow-pick-push-distributor`\n- `allow-register-push`\n- `allow-unregister-push`\n- `allow-push-instances`\n- `allow-set-keep-alive`\n- `allow-request-battery-exemption`",
           "type": "string",
           "const": "default",
-          "markdownDescription": "Lets the app register for push, configure the history poll, post chat notifications, read the notification that launched it and hear about later taps.\n#### This default permission set includes:\n\n- `allow-configure-history-poll`\n- `allow-take-launch-target`\n- `allow-show-notification`\n- `allow-register-listener`\n- `allow-push-status`\n- `allow-pick-push-distributor`\n- `allow-register-push`\n- `allow-unregister-push`\n- `allow-push-instances`"
+          "markdownDescription": "Lets the app register for push, configure the history poll, post chat notifications, read the notification that launched it and hear about later taps.\n#### This default permission set includes:\n\n- `allow-configure-history-poll`\n- `allow-take-launch-target`\n- `allow-show-notification`\n- `allow-register-listener`\n- `allow-push-status`\n- `allow-pick-push-distributor`\n- `allow-register-push`\n- `allow-unregister-push`\n- `allow-push-instances`\n- `allow-set-keep-alive`\n- `allow-request-battery-exemption`"
         }
       ]
     }

@@ -129,6 +129,10 @@ msgstr "{count, plural, one {{0}} other {{1}}}"
 msgid "{count, plural, one {# result} other {# results}}"
 msgstr "{count, plural, other {# 件の結果}}"
 
+#: src/store/handlers/keepAlive.ts
+msgid "{count, plural, one {Connected to # network} other {Connected to # networks}}"
+msgstr "{count, plural, other {# 個のネットワークに接続中}}"
+
 #: src/components/ui/MentionJumpBar.tsx
 msgid "{count} new mentions"
 msgstr "新しいメンション {count} 件"
@@ -1667,6 +1671,7 @@ msgid "Connecting…"
 msgstr "接続中…"
 
 #: src/components/layout/ProfilePane.tsx
+#: src/store/handlers/keepAlive.ts
 msgid "Connection"
 msgstr "接続"
 
@@ -3263,6 +3268,10 @@ msgstr "通知を受け取るには Obby を開いたままにしてください
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Keep the channel after everyone leaves. Only IRCops can set this."
 msgstr "全員が退出した後もチャンネルを保持します。IRCop のみ設定できます。"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Keep the IRC connections open while Obby is off the screen, behind a quiet \"Connected\" notification, so messages and mentions arrive at once and nothing reloads when you come back. Android may ask to exempt Obby from battery optimisation."
+msgstr "Obby が画面にない間も、静かな「接続中」通知の背後で IRC 接続を開いたままにし、メッセージやメンションがすぐ届き、戻ったときに再読み込みが起きないようにします。Android がバッテリー最適化からの除外を求めることがあります。"
 
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Kept in this browser and applied after the linked file, so it can override it."
@@ -5947,6 +5956,10 @@ msgstr "ステータス"
 #: src/components/pages/SettingsPage.tsx
 msgid "Status Messages"
 msgstr "ステータスメッセージ"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Stay connected in the background"
+msgstr "バックグラウンドで接続を維持"
 
 #: src/components/message/MediaPreview.tsx
 #: src/components/ui/BotToolsCard.tsx

@@ -13,6 +13,8 @@ Lets the app register for push, configure the history poll, post chat notificati
 - `allow-register-push`
 - `allow-unregister-push`
 - `allow-push-instances`
+- `allow-set-keep-alive`
+- `allow-request-battery-exemption`
 
 ## Permission Table
 
@@ -175,6 +177,58 @@ Enables the register_push command without any pre-configured scope.
 <td>
 
 Denies the register_push command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`mobile-notifications:allow-request-battery-exemption`
+
+</td>
+<td>
+
+Enables the request_battery_exemption command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`mobile-notifications:deny-request-battery-exemption`
+
+</td>
+<td>
+
+Denies the request_battery_exemption command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`mobile-notifications:allow-set-keep-alive`
+
+</td>
+<td>
+
+Enables the set_keep_alive command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`mobile-notifications:deny-set-keep-alive`
+
+</td>
+<td>
+
+Denies the set_keep_alive command without any pre-configured scope.
 
 </td>
 </tr>
