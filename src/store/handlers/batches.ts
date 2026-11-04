@@ -2,7 +2,8 @@ import { t } from "@lingui/core/macro";
 import type { StoreApi } from "zustand";
 import { LOCAL_BATCH_PREFIX } from "../../lib/history/historyLines";
 import ircClient from "../../lib/ircClient";
-import type { Message } from "../../types";
+import { checkForMention } from "../../lib/notifications";
+import type { Channel, Message } from "../../types";
 import {
   type BatchInfo,
   capMergedMessages,
@@ -13,11 +14,46 @@ import {
   withReaction,
 } from "../helpers";
 import { type AppState, rememberMsgIds } from "../index";
+import type { MentionEntry } from "../mentionLog";
 import { isServerPageComing } from "./history";
 
 // Chathistory messages are buffered here (outside the store) to avoid one
 // store.setState per incoming PRIVMSG.  Only flushed at BATCH_END.
 export const chathistoryBuffers = new Map<string, Message[]>();
+
+// A page of history carries the mentions we were not connected for, so those
+// past the read marker join the inbox like live ones. Without a marker from
+// the server we cannot tell old from unread, and record none.
+function unreadMentionsIn(
+  state: AppState,
+  serverId: string,
+  channel: Channel,
+  messages: Message[],
+): MentionEntry[] {
+  if (!channel.readMarker) return [];
+  const me = ircClient.getCurrentUser(serverId);
+  if (!me) return [];
+  const readAt = new Date(channel.readMarker).getTime();
+  return messages
+    .filter(
+      (m) =>
+        m.type === "message" &&
+        new Date(m.timestamp).getTime() > readAt &&
+        m.userId.toLowerCase() !== me.username.toLowerCase() &&
+        checkForMention(m.content, me, state.globalSettings),
+    )
+    .map((m) => ({
+      messageId: m.id,
+      msgid: m.msgid,
+      serverId,
+      channelId: channel.id,
+      channelName: channel.name,
+      sender: m.userId,
+      content: m.content,
+      timestamp: new Date(m.timestamp).toISOString(),
+      seen: false,
+    }));
+}
 
 // Batch ids are only unique per connection: soju numbers them per downstream,
 // so two bouncer networks reconnecting together both run "+1, +2, ..." and
@@ -273,6 +309,7 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
     // state (isLoadingHistory still true), overwriting the inner change.
     let chathistoryChannelName: string | null = null;
     let isServerPageStillComing = false;
+    let historyMentions: MentionEntry[] = [];
 
     store.setState((state) => {
       const serverBatches = state.activeBatches[serverId];
@@ -392,6 +429,12 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
           const newMsgIds = newMessages
             .filter((m) => m.msgid)
             .map((m) => m.msgid as string);
+          historyMentions = unreadMentionsIn(
+            state,
+            serverId,
+            channel,
+            newMessages,
+          );
 
           return {
             activeBatches: {
@@ -504,6 +547,8 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
         },
       };
     });
+
+    for (const entry of historyMentions) store.getState().recordMention(entry);
 
     // Fire after setState so the WHO/metadata side effects run on correct state.
     // isLoadingHistory is already false from the setState above.
