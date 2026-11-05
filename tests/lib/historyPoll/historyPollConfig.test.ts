@@ -85,11 +85,10 @@ describe("history poll config", () => {
     expect(config?.strings.channelTitle).toBe("{sender} in {target}");
   });
 
-  it("carries the mutes that cover mentions, by chat name", () => {
+  it("carries the mutes by chat name", () => {
     resetMutesForTests();
     vi.mocked(localStorage.getItem).mockReturnValue(null);
-    muteChat("s1", "c-dev", "channel", null, true);
-    muteChat("s1", "c-ops", "channel", null, false);
+    muteChat("s1", "c-dev", "channel", null);
     const config = historyPollConfigFor(
       [
         server({

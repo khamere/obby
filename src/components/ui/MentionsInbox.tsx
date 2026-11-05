@@ -1,8 +1,9 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type React from "react";
 import { useMemo, useRef, useState } from "react";
-import { FaAt } from "react-icons/fa";
+import { FaAt, FaChevronDown, FaChevronRight } from "react-icons/fa";
 import { stripIrcFormatting } from "../../lib/messageFormatter";
+import { isSilenced, useMutes } from "../../lib/mutes";
 import useStore from "../../store";
 import type { MentionEntry } from "../../store/mentionLog";
 import Popover from "./Popover";
@@ -32,9 +33,24 @@ export const MentionsInbox: React.FC = () => {
   const mentionLog = useStore((state) => state.mentionLog);
   const servers = useStore((state) => state.servers);
   const [open, setOpen] = useState(false);
+  const [showMuted, setShowMuted] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const mutes = useMutes();
 
-  const entries = useMemo(() => [...mentionLog].reverse(), [mentionLog]);
+  // Mentions from muted channels stay out of the way: their own list,
+  // folded, and never in the badge.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: isSilenced reads the mute state that `mutes` tracks
+  const { entries, muted } = useMemo(() => {
+    const entries: MentionEntry[] = [];
+    const muted: MentionEntry[] = [];
+    for (const entry of [...mentionLog].reverse()) {
+      (isSilenced(entry.serverId, entry.channelId, true)
+        ? muted
+        : entries
+      ).push(entry);
+    }
+    return { entries, muted };
+  }, [mentionLog, mutes]);
   const hasUnread = useMemo(
     () =>
       servers.some((s) =>
@@ -45,8 +61,8 @@ export const MentionsInbox: React.FC = () => {
     [servers],
   );
   const unseen = useMemo(
-    () => mentionLog.filter((m) => !m.seen).length,
-    [mentionLog],
+    () => entries.filter((m) => !m.seen).length,
+    [entries],
   );
 
   const openMention = (entry: MentionEntry) => {
@@ -60,6 +76,60 @@ export const MentionsInbox: React.FC = () => {
     store.jumpToMention(entry);
     setOpen(false);
   };
+
+  const renderList = (list: MentionEntry[]) => (
+    <ul className="divide-y divide-discord-dark-400/60">
+      {list.map((entry) => {
+        const server = servers.find((s) => s.id === entry.serverId);
+        const joined = !!server?.channels.some((c) => c.id === entry.channelId);
+        return (
+          <li key={entry.messageId}>
+            <button
+              type="button"
+              disabled={!joined}
+              onClick={() => openMention(entry)}
+              className={`w-full flex gap-2.5 px-3 py-2 text-left transition-colors ${
+                joined
+                  ? "hover:bg-discord-dark-400/60"
+                  : "opacity-50 cursor-default"
+              }`}
+              title={joined ? t`Jump to message` : t`Not in this channel`}
+            >
+              <span
+                className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${
+                  entry.seen ? "bg-transparent" : "bg-red-500"
+                }`}
+                aria-hidden="true"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline gap-1.5 text-[11px] text-discord-text-muted">
+                  <span className="font-semibold text-discord-text-strong truncate">
+                    {entry.sender}
+                  </span>
+                  <span className="truncate">
+                    {entry.channelName}
+                    {server ? ` · ${server.name}` : ""}
+                  </span>
+                  <span className="ml-auto shrink-0 tabular-nums">
+                    {fmtAgo(entry.timestamp)}
+                  </span>
+                </div>
+                <div
+                  className={`text-sm line-clamp-2 break-words ${
+                    entry.seen
+                      ? "text-discord-text-muted"
+                      : "text-discord-text-normal"
+                  }`}
+                >
+                  {preview(entry)}
+                </div>
+              </div>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
 
   return (
     <>
@@ -118,64 +188,32 @@ export const MentionsInbox: React.FC = () => {
         }
         bodyClassName="max-h-[60vh]"
       >
-        {entries.length === 0 ? (
+        {entries.length === 0 && muted.length === 0 ? (
           <p className="px-3 py-6 text-sm text-center text-discord-text-muted">
             <Trans>Nobody has mentioned you yet.</Trans>
           </p>
         ) : (
-          <ul className="divide-y divide-discord-dark-400/60">
-            {entries.map((entry) => {
-              const server = servers.find((s) => s.id === entry.serverId);
-              const joined = !!server?.channels.some(
-                (c) => c.id === entry.channelId,
-              );
-              return (
-                <li key={entry.messageId}>
-                  <button
-                    type="button"
-                    disabled={!joined}
-                    onClick={() => openMention(entry)}
-                    className={`w-full flex gap-2.5 px-3 py-2 text-left transition-colors ${
-                      joined
-                        ? "hover:bg-discord-dark-400/60"
-                        : "opacity-50 cursor-default"
-                    }`}
-                    title={joined ? t`Jump to message` : t`Not in this channel`}
-                  >
-                    <span
-                      className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${
-                        entry.seen ? "bg-transparent" : "bg-red-500"
-                      }`}
-                      aria-hidden="true"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline gap-1.5 text-[11px] text-discord-text-muted">
-                        <span className="font-semibold text-discord-text-strong truncate">
-                          {entry.sender}
-                        </span>
-                        <span className="truncate">
-                          {entry.channelName}
-                          {server ? ` · ${server.name}` : ""}
-                        </span>
-                        <span className="ml-auto shrink-0 tabular-nums">
-                          {fmtAgo(entry.timestamp)}
-                        </span>
-                      </div>
-                      <div
-                        className={`text-sm line-clamp-2 break-words ${
-                          entry.seen
-                            ? "text-discord-text-muted"
-                            : "text-discord-text-normal"
-                        }`}
-                      >
-                        {preview(entry)}
-                      </div>
-                    </div>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+          <>
+            {renderList(entries)}
+            {muted.length > 0 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setShowMuted((v) => !v)}
+                  aria-expanded={showMuted}
+                  className="section-label flex w-full items-center gap-1.5 px-3 pt-3 pb-1 text-left hover:text-discord-text-normal"
+                >
+                  {showMuted ? (
+                    <FaChevronDown className="text-[10px]" />
+                  ) : (
+                    <FaChevronRight className="text-[10px]" />
+                  )}
+                  <Trans>Muted channels ({muted.length})</Trans>
+                </button>
+                {showMuted && renderList(muted)}
+              </>
+            )}
+          </>
         )}
       </Popover>
     </>
