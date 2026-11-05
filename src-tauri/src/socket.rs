@@ -26,8 +26,6 @@ use rustls::pki_types::ServerName;
 use std::sync::Arc as StdArc;
 #[cfg(target_os = "android")]
 use tokio_rustls::TlsConnector;
-#[cfg(target_os = "android")]
-use webpki_roots;
 
 /// Connection handle for managing write operations and shutdown
 #[derive(Debug)]
@@ -219,8 +217,33 @@ pub(crate) async fn connect_tcp(host: &str, port: u16) -> Result<TcpStream, Stri
 pub(crate) trait AsyncStream: AsyncRead + AsyncWrite + Unpin + Send {}
 impl<T: AsyncRead + AsyncWrite + Unpin + Send> AsyncStream for T {}
 
-// Android has no system TLS we can reach from Rust, so it verifies against the
-// bundled webpki roots; the other platforms use the OS trust store.
+// Android verifies through the system's own trust manager, so a CA the user
+// installed on the phone counts; the other platforms use the OS trust store
+// directly. The verifier needs the JVM once, which it keeps for the process.
+#[cfg(target_os = "android")]
+fn android_tls_config() -> Result<StdArc<rustls::ClientConfig>, String> {
+    use jni::{objects::JObject, JavaVM};
+    use rustls_platform_verifier::BuilderVerifierExt;
+    use std::sync::OnceLock;
+
+    static CONFIG: OnceLock<StdArc<rustls::ClientConfig>> = OnceLock::new();
+    if let Some(config) = CONFIG.get() {
+        return Ok(config.clone());
+    }
+    let ctx = ndk_context::android_context();
+    // SAFETY: pointers come from the Android runtime and are valid for the app lifetime.
+    let vm = unsafe { JavaVM::from_raw(ctx.vm().cast()) }.map_err(|e| e.to_string())?;
+    let mut env = vm.attach_current_thread().map_err(|e| e.to_string())?;
+    let context = unsafe { JObject::from_raw(ctx.context().cast()) };
+    rustls_platform_verifier::android::init_with_env(&mut env, context)
+        .map_err(|e| format!("Failed to reach the Android certificate verifier: {}", e))?;
+    let config = rustls::ClientConfig::builder()
+        .with_platform_verifier()
+        .map_err(|e| format!("Failed to create TLS verifier: {}", e))?
+        .with_no_client_auth();
+    Ok(CONFIG.get_or_init(|| StdArc::new(config)).clone())
+}
+
 pub(crate) async fn tls_handshake(
     host: &str,
     tcp_stream: TcpStream,
@@ -249,13 +272,7 @@ pub(crate) async fn tls_handshake(
 
     #[cfg(target_os = "android")]
     {
-        let root_store = rustls::RootCertStore {
-            roots: webpki_roots::TLS_SERVER_ROOTS.to_vec(),
-        };
-        let config = rustls::ClientConfig::builder()
-            .with_root_certificates(root_store)
-            .with_no_client_auth();
-        let connector = TlsConnector::from(StdArc::new(config));
+        let connector = TlsConnector::from(android_tls_config()?);
         let server_name = ServerName::try_from(host.to_string())
             .map_err(|_| format!("Invalid DNS name: {}", host))?;
         let tls_stream = timeout(
@@ -378,9 +395,13 @@ async fn connect_websocket(
     state: Arc<Mutex<HashMap<String, ConnectionHandle>>>,
     app_handle: tauri::AppHandle,
 ) -> Result<(), String> {
+    #[cfg(target_os = "android")]
+    let connector = Some(tokio_tungstenite::Connector::Rustls(android_tls_config()?));
+    #[cfg(not(target_os = "android"))]
+    let connector = None;
     let (stream, _) = timeout(
         WEBSOCKET_CONNECT_TIMEOUT,
-        tokio_tungstenite::connect_async(address.as_str()),
+        tokio_tungstenite::connect_async_tls_with_config(address.as_str(), None, false, connector),
     )
     .await
     .map_err(|_| {

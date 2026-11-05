@@ -7,6 +7,33 @@ plugins {
     id("rust")
 }
 
+// The certificate verifier is a Rust crate with a Kotlin half, which the
+// crate ships as a Maven repository; cargo says where it unpacked it.
+fun RepositoryHandler.rustlsPlatformVerifier(): MavenArtifactRepository {
+    val manifest = File(project.rootDir, "../../Cargo.toml").canonicalPath
+    val metadata = providers.exec {
+        workingDir = File(project.rootDir, "../../")
+        commandLine(
+            "cargo", "metadata", "--format-version", "1",
+            "--filter-platform", "aarch64-linux-android",
+            "--manifest-path", manifest,
+        )
+    }.standardOutput.asText.get()
+    // The package entry carries its version right after its name; the entries
+    // naming it as a dependency carry a source instead.
+    val manifestPath = Regex(""""name":"rustls-platform-verifier-android","version":"[^"]*".*?"manifest_path":"([^"]+)"""")
+        .find(metadata)?.groupValues?.get(1)
+        ?: error("rustls-platform-verifier-android not found in cargo metadata")
+    return maven {
+        url = uri(File(File(manifestPath).parentFile, "maven"))
+        metadataSources.artifact()
+    }
+}
+
+repositories {
+    rustlsPlatformVerifier()
+}
+
 val tauriProperties = Properties().apply {
     val propFile = file("tauri.properties")
     if (propFile.exists()) {
@@ -93,6 +120,7 @@ rust {
 }
 
 dependencies {
+    implementation("rustls:rustls-platform-verifier:latest.release")
     implementation("androidx.webkit:webkit:1.6.1")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.8.0")
