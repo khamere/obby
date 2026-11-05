@@ -173,11 +173,12 @@ export const MessageReply: React.FC<MessageReplyProps> = ({
 };
 
 // A reply whose original is older than the loaded history: draft/reply
-// carries only the msgid, so there is no author or text to show until a
-// jump has paged back far enough to load it.
-export const UnloadedReply: React.FC<{ onClick: () => void }> = ({
-  onClick,
-}) => {
+// carries only the msgid, so the author and text come from the saved copy,
+// and a click pages back to the original.
+export const UnloadedReply: React.FC<{
+  saved: { nick: string; text: string } | null;
+  onClick: () => void;
+}> = ({ saved, onClick }) => {
   const { t } = useLingui();
   return (
     <button
@@ -187,12 +188,28 @@ export const UnloadedReply: React.FC<{ onClick: () => void }> = ({
       title={t`Load older messages and jump to the original`}
     >
       <div className="w-0.5 flex-shrink-0 bg-discord-reply/70 rounded-l" />
-      <div className="flex items-center gap-1.5 py-1.5 px-2.5 min-w-0">
-        <RiReplyFill className="text-[11px] flex-shrink-0 text-discord-reply/70" />
-        <span className="text-xs italic text-discord-text-muted opacity-80 truncate">
-          {t`Reply to an earlier message`}
-        </span>
-      </div>
+      {saved ? (
+        <div className="flex-1 min-w-0 py-1.5 px-2.5 overflow-hidden">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <RiReplyFill className="text-[11px] flex-shrink-0 text-discord-reply/70" />
+            <span className="text-xs font-semibold text-discord-reply truncate">
+              {saved.nick}
+            </span>
+          </div>
+          {saved.text && (
+            <div className="text-xs text-discord-text-muted opacity-80 truncate">
+              {saved.text}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="flex items-center gap-1.5 py-1.5 px-2.5 min-w-0">
+          <RiReplyFill className="text-[11px] flex-shrink-0 text-discord-reply/70" />
+          <span className="text-xs italic text-discord-text-muted opacity-80 truncate">
+            {t`Reply to an earlier message`}
+          </span>
+        </div>
+      )}
     </button>
   );
 };

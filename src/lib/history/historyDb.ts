@@ -403,6 +403,24 @@ export function newestEventRows(
   return eventRowsBefore(server, target, Number.POSITIVE_INFINITY, limit);
 }
 
+export function rowByMsgid(
+  server: string,
+  target: string,
+  msgid: string,
+): Promise<HistoryRow | undefined> {
+  return enqueue(undefined, (db) =>
+    inTx(db, [ROWS], "readonly", async (tx) => {
+      const rows = await awaitRequest<HistoryRow[]>(
+        tx
+          .objectStore(ROWS)
+          .index("msgid")
+          .getAll(IDBKeyRange.only([server, target, msgid])),
+      );
+      return rows.sort((a, b) => a.time - b.time || a.id - b.id)[0];
+    }),
+  );
+}
+
 export function refRowsFor(
   server: string,
   msgids: string[],
