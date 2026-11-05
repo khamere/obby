@@ -1,4 +1,6 @@
-FROM node:23-alpine AS builder
+# The web bundle is the same for every architecture, so it is built once on
+# the machine doing the build; only the nginx stage is made per platform.
+FROM --platform=$BUILDPLATFORM node:23-alpine AS builder
 
 ARG OBBY_COMMIT
 ARG OBBY_RELEASE
