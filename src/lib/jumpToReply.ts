@@ -41,11 +41,17 @@ function loadedReply(key: string, msgid: string) {
   return findReplyTarget(msgid, useStore.getState().messages[key] ?? []);
 }
 
-// Resolves once the conversation's oldest loaded message changes or loading
-// ends, or on timeout.
-function waitForOlderPage(key: string, serverId: string): Promise<void> {
+// Resolves once the conversation's oldest loaded message is no longer the
+// given one or loading ends, or on timeout. A page read from disk may have
+// landed before the wait starts.
+function waitForOlderPage(
+  key: string,
+  serverId: string,
+  oldestId: string | undefined,
+): Promise<void> {
   return new Promise((resolve) => {
-    const oldestId = useStore.getState().messages[key]?.[0]?.id;
+    if (useStore.getState().messages[key]?.[0]?.id !== oldestId)
+      return resolve();
     const isLoading = () => {
       const server = useStore.getState().servers.find((s) => s.id === serverId);
       return [
@@ -117,7 +123,7 @@ export async function jumpToReply(
       oldestTime,
     );
     if (!coming) break;
-    await waitForOlderPage(key, serverId);
+    await waitForOlderPage(key, serverId, oldest?.id);
     const found = loadedReply(key, msgid);
     if (found) {
       useStore.getState().revealMessage(found.id);
