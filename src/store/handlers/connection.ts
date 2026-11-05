@@ -688,7 +688,7 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
       !readyServer.isBouncerControl
     ) {
       setTimeout(
-        () => requestTargets(serverId, CHATHISTORY_TARGETS_WINDOW_MS),
+        () => requestTargets(store, serverId, CHATHISTORY_TARGETS_WINDOW_MS),
         50,
       );
     }
@@ -703,14 +703,18 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
     // fetch their page when they are rejoined, so only a wake asks for
     // theirs; a bouncer replays nothing to a client that can ask.
     const conversation = findConversation(store, serverId, target);
+    const isChannel = ircClient.isChannel(serverId, target);
     if (conversation) {
-      if (isChannelTarget(target) && !isCatchingUp(serverId)) return;
-      const newest = newestMessageTime(store.getState(), conversation.key);
+      if (isChannel && !isCatchingUp(serverId)) return;
+      // A line that came in live while the answer was on its way says
+      // nothing about earlier ones, so the newest message from before the
+      // question is what the answer is measured against.
+      const newest = baselineFor(store, serverId, conversation.key);
       if (newest === undefined || Date.parse(timestamp) > newest)
         ircClient.loadLatestHistory(serverId, target);
       return;
     }
-    if (isChannelTarget(target)) return;
+    if (isChannel) return;
     // The user closed this chat; only bring it back for newer activity.
     const closedAt = storage.closedChats.closedAt(serverId, target);
     if (closedAt && Date.parse(timestamp) <= Date.parse(closedAt)) return;
@@ -725,12 +729,41 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
 const CATCH_UP_WINDOW_MS = 24 * 60 * 60 * 1000;
 const CATCH_UP_ANSWER_MS = 30 * 1000;
 const catchUpUntil = new Map<string, number>();
+// The newest message of every conversation at the moment the question went
+// out, per server.
+const targetsBaseline = new Map<string, Map<string, number | undefined>>();
 
 function isCatchingUp(serverId: string): boolean {
   return (catchUpUntil.get(serverId) ?? 0) > Date.now();
 }
 
-function requestTargets(serverId: string, windowMs: number): void {
+function baselineFor(
+  store: StoreApi<AppState>,
+  serverId: string,
+  key: string,
+): number | undefined {
+  const baseline = targetsBaseline.get(serverId);
+  return baseline?.has(key)
+    ? baseline.get(key)
+    : newestMessageTime(store.getState(), key);
+}
+
+function requestTargets(
+  store: StoreApi<AppState>,
+  serverId: string,
+  windowMs: number,
+): void {
+  const state = store.getState();
+  const server = state.servers.find((s) => s.id === serverId);
+  const baseline = new Map<string, number | undefined>();
+  for (const chat of [
+    ...(server?.channels ?? []),
+    ...(server?.privateChats ?? []),
+  ]) {
+    const key = `${serverId}-${chat.id}`;
+    baseline.set(key, newestMessageTime(state, key));
+  }
+  targetsBaseline.set(serverId, baseline);
   const to = new Date();
   const from = new Date(to.getTime() - windowMs);
   ircClient.sendRaw(
@@ -754,7 +787,7 @@ export function catchUpHistory(
   )
     return;
   catchUpUntil.set(serverId, Date.now() + CATCH_UP_ANSWER_MS);
-  requestTargets(serverId, CATCH_UP_WINDOW_MS);
+  requestTargets(store, serverId, CATCH_UP_WINDOW_MS);
 }
 
 // How far back to look for conversations on connect, and how many targets
@@ -762,11 +795,6 @@ export function catchUpHistory(
 // leave room for them.
 const CHATHISTORY_TARGETS_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const CHATHISTORY_TARGETS_LIMIT = 100;
-
-// RFC 1459 / common CHANTYPES; Obby doesn't track ISUPPORT CHANTYPES.
-function isChannelTarget(target: string): boolean {
-  return /^[#&+!]/.test(target);
-}
 
 // The profile fields the settings page edits.
 const OWN_METADATA_KEYS = [
