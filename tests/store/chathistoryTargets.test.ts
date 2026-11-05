@@ -378,6 +378,14 @@ describe("catching up after a wake", () => {
     expect(
       sent().filter((c) => c === "CHATHISTORY LATEST alice * 50"),
     ).toHaveLength(1);
+    // Another request's refusal says nothing about the page on its way.
+    feed(
+      ":soju FAIL CHATHISTORY MESSAGE_ERROR BEFORE alice :Something went wrong",
+    );
+    feed(":soju CHATHISTORY TARGETS alice 2026-10-14T18:14:46.716Z");
+    expect(
+      sent().filter((c) => c === "CHATHISTORY LATEST alice * 50"),
+    ).toHaveLength(1);
     // The page was refused, so a later answer may ask again.
     feed(
       ":soju FAIL CHATHISTORY MESSAGE_ERROR LATEST alice :Something went wrong",
