@@ -395,8 +395,14 @@ async fn connect_websocket(
     state: Arc<Mutex<HashMap<String, ConnectionHandle>>>,
     app_handle: tauri::AppHandle,
 ) -> Result<(), String> {
+    // A plain ws:// stream has no certificate to check, so only wss:// pays
+    // for the verifier.
     #[cfg(target_os = "android")]
-    let connector = Some(tokio_tungstenite::Connector::Rustls(android_tls_config()?));
+    let connector = if address.to_ascii_lowercase().starts_with("wss://") {
+        Some(tokio_tungstenite::Connector::Rustls(android_tls_config()?))
+    } else {
+        None
+    };
     #[cfg(not(target_os = "android"))]
     let connector = None;
     let (stream, _) = timeout(
