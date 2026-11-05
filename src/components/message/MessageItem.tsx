@@ -6,6 +6,7 @@ import { useShallow } from "zustand/react/shallow";
 import { useIsTouchInput } from "../../hooks/useIsTouchInput";
 import { useLongPress } from "../../hooks/useLongPress";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { useSavedReply } from "../../hooks/useSavedReply";
 import { workflowIdFromTags } from "../../lib/botTools";
 import { formatCopyAuthor } from "../../lib/chatMarkdownCopy";
 import { renderWithCustomEmoji, useEmojiResolver } from "../../lib/customEmoji";
@@ -29,6 +30,7 @@ import {
   processMarkdownInText,
   serverFilehosts,
 } from "../../lib/ircUtils";
+import { jumpToReply } from "../../lib/jumpToReply";
 import {
   canShowAvatarUrl,
   canShowMedia,
@@ -198,6 +200,17 @@ export const MessageItem = memo((props: MessageItemProps) => {
   const mediaChannelId = channelId ?? privateChatId;
   const pmUserCache = useRef(new Map<string, User>());
   const isNarrowView = useMediaQuery();
+  // A reply whose original is not loaded still shows as a reply; the msgid
+  // finds the original once history has brought it in.
+  const unloadedReplyId = message.replyMessage
+    ? null
+    : (message.tags?.["+reply"] ?? message.tags?.["+draft/reply"])?.trim() ||
+      null;
+  const savedReply = useSavedReply(
+    message.serverId,
+    message.channelId,
+    unloadedReplyId,
+  );
   const isTouchDevice = useIsTouchInput();
   const messageRowRef = useRef<HTMLDivElement>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -886,22 +899,6 @@ export const MessageItem = memo((props: MessageItemProps) => {
       useStore.getState().revealMessage(message.replyMessage.id);
   };
 
-  // A reply whose original is not loaded still shows as a reply; the msgid
-  // finds the original once history has brought it in.
-  const unloadedReplyId = message.replyMessage
-    ? null
-    : (message.tags?.["+reply"] ?? message.tags?.["+draft/reply"])?.trim() ||
-      null;
-  const revealByMsgid = (msgid: string) => {
-    const key = `${message.serverId}-${message.channelId}`;
-    const loaded = useStore
-      .getState()
-      .messages[key]?.find(
-        (m) => m.msgid === msgid || m.multilineMessageIds?.includes(msgid),
-      );
-    if (loaded) useStore.getState().revealMessage(loaded.id);
-  };
-
   // Someone said our name, or answered something we said. Either way the row
   // is worth finding again while scrolling past everything else.
   const isAimedAtUs =
@@ -1010,7 +1007,16 @@ export const MessageItem = memo((props: MessageItemProps) => {
               />
             )}
             {unloadedReplyId && (
-              <UnloadedReply onClick={() => revealByMsgid(unloadedReplyId)} />
+              <UnloadedReply
+                saved={savedReply}
+                onClick={() =>
+                  void jumpToReply(
+                    message.serverId,
+                    message.channelId,
+                    unloadedReplyId,
+                  )
+                }
+              />
             )}
 
             {encryptedMedia && (

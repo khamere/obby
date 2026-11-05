@@ -20,6 +20,7 @@ import {
   parkServerHistory,
   pruneToLimit,
   refRowsFor,
+  rowByMsgid,
   savedSenders,
   updateGap,
 } from "../../lib/history/historyDb";
@@ -44,7 +45,11 @@ import {
   searchCandidates,
   searchMessages,
 } from "../../lib/history/historySearch";
-import { containsLink, plainText } from "../../lib/history/searchFields";
+import {
+  containsLink,
+  plainText,
+  searchFieldsOf,
+} from "../../lib/history/searchFields";
 import ircClient from "../../lib/ircClient";
 import { parseMessageTags } from "../../lib/ircUtils";
 import type {
@@ -234,6 +239,37 @@ export function listSavedSenders(
     candidate.nick.toLowerCase(),
   );
   return Promise.resolve([...new Set(nicks)].filter(Boolean).sort());
+}
+
+export interface SavedMessage {
+  nick: string;
+  text: string;
+  time: number;
+}
+
+// The saved copy of a message, for a reply whose original is not loaded.
+export async function findSavedMessage(
+  store: StoreApi<AppState>,
+  serverId: string,
+  target: string,
+  msgid: string,
+): Promise<SavedMessage | null> {
+  if (!isEnabled(store)) return null;
+  let row: HistoryRow | undefined;
+  try {
+    row = await rowByMsgid(serverId, target.toLowerCase(), msgid);
+  } catch (error) {
+    // A database another tab holds open counts as no saved copy, so the
+    // server can still be asked.
+    console.warn("saved history unavailable", error);
+    return null;
+  }
+  if (!row || row.ref !== undefined) return null;
+  // The row's own nick column is lowercased for search; the line keeps the
+  // casing the person uses.
+  const { nick, text } = searchFieldsOf(row.raw);
+  if (!nick) return null;
+  return { nick, text, time: row.time };
 }
 
 export async function hasSavedChat(
