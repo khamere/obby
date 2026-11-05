@@ -5,6 +5,7 @@ import {
   isSilenced,
   muteChat,
   muteServer,
+  nextMuteExpiry,
   resetMutesForTests,
   silencesFor,
   unmuteChat,
@@ -56,6 +57,17 @@ describe("mutes", () => {
     expect(isServerMuted("s1", now + HOUR - 1)).toBe(true);
     expect(isServerMuted("s1", now + HOUR + 1)).toBe(false);
     expect(chatMute("s1", "chan", now + 9 * HOUR)).toBeUndefined();
+  });
+
+  it("names the earliest timed mute's end", () => {
+    const now = Date.now();
+    expect(nextMuteExpiry(now)).toBeUndefined();
+    muteServer("s1", null);
+    expect(nextMuteExpiry(now)).toBeUndefined();
+    muteChat("s1", "c-dev", "channel", now + 2 * HOUR);
+    muteChat("s1", "bob", "dm", now + HOUR);
+    expect(nextMuteExpiry(now)).toBe(now + HOUR);
+    expect(nextMuteExpiry(now + HOUR)).toBe(now + 2 * HOUR);
   });
 
   it("unmuting works and mutes survive a reload", () => {
