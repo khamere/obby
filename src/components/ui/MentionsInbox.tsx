@@ -1,9 +1,9 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type React from "react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FaAt, FaChevronDown, FaChevronRight } from "react-icons/fa";
 import { stripIrcFormatting } from "../../lib/messageFormatter";
-import { isSilenced, useMutes } from "../../lib/mutes";
+import { isSilenced, nextMuteExpiry, useMutes } from "../../lib/mutes";
 import useStore from "../../store";
 import type { MentionEntry } from "../../store/mentionLog";
 import Popover from "./Popover";
@@ -36,10 +36,22 @@ export const MentionsInbox: React.FC = () => {
   const [showMuted, setShowMuted] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const mutes = useMutes();
+  // A timed mute ends without a mute change, so the groups are rebuilt
+  // when the earliest one runs out.
+  const [expired, setExpired] = useState(0);
+  useEffect(() => {
+    const next = nextMuteExpiry();
+    if (next === undefined) return;
+    const timer = setTimeout(
+      () => setExpired((n) => n + 1),
+      Math.min(next - Date.now() + 1, 0x7fffffff),
+    );
+    return () => clearTimeout(timer);
+  }, [mutes, expired]);
 
   // Mentions from muted channels stay out of the way: their own list,
   // folded, and never in the badge.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: isSilenced reads the mute state that `mutes` tracks
+  // biome-ignore lint/correctness/useExhaustiveDependencies: isSilenced reads the mute state that `mutes` and `expired` track
   const { entries, muted } = useMemo(() => {
     const entries: MentionEntry[] = [];
     const muted: MentionEntry[] = [];
@@ -50,7 +62,7 @@ export const MentionsInbox: React.FC = () => {
       ).push(entry);
     }
     return { entries, muted };
-  }, [mentionLog, mutes]);
+  }, [mentionLog, mutes, expired]);
   const hasUnread = useMemo(
     () =>
       servers.some((s) =>

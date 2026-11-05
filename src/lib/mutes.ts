@@ -182,6 +182,20 @@ export function silencesFor(
   return silences;
 }
 
+/** When the earliest timed mute runs out, so a view can refresh then. */
+export function nextMuteExpiry(now: number = Date.now()): number | undefined {
+  load();
+  let next: number | undefined;
+  for (const entry of [
+    ...Object.values(state.servers),
+    ...Object.values(state.chats),
+  ]) {
+    if (!active(entry, now) || entry.until === null) continue;
+    if (next === undefined || entry.until < next) next = entry.until;
+  }
+  return next;
+}
+
 function snapshot(): MuteState {
   load();
   return state;
