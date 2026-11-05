@@ -378,9 +378,41 @@ describe("catching up after a wake", () => {
     expect(
       sent().filter((c) => c === "CHATHISTORY LATEST alice * 50"),
     ).toHaveLength(1);
-    // The page has arrived, so a later answer may ask again.
-    feed(":soju BATCH +p chathistory alice", ":soju BATCH -p");
+    // The page was refused, so a later answer may ask again.
+    feed(
+      ":soju FAIL CHATHISTORY MESSAGE_ERROR LATEST alice :Something went wrong",
+    );
     catchUpHistory(useStore, serverId);
+    feed(":soju CHATHISTORY TARGETS alice 2026-10-14T18:15:46.716Z");
+    expect(
+      sent().filter((c) => c === "CHATHISTORY LATEST alice * 50"),
+    ).toHaveLength(2);
+  });
+
+  it("asks again once the page has arrived", async () => {
+    const { catchUpHistory } = await import(
+      "../../src/store/handlers/connection"
+    );
+    useStore.setState((state) => ({
+      servers: state.servers.map((s) => ({
+        ...s,
+        privateChats: [
+          {
+            id: "pm-alice",
+            username: "alice",
+            serverId,
+            unreadCount: 0,
+            isMentioned: false,
+            messages: [],
+          },
+        ],
+      })),
+      messages: {},
+    }));
+    catchUpHistory(useStore, serverId);
+    feed(":soju CHATHISTORY TARGETS alice 2026-10-14T18:14:46.716Z");
+    feed(":soju CHATHISTORY TARGETS alice 2026-10-14T18:14:46.716Z");
+    feed(":soju BATCH +p chathistory alice", ":soju BATCH -p");
     feed(":soju CHATHISTORY TARGETS alice 2026-10-14T18:15:46.716Z");
     expect(
       sent().filter((c) => c === "CHATHISTORY LATEST alice * 50"),

@@ -719,6 +719,12 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
     if (question.unanswered <= 0) questions.delete(serverId);
   });
 
+  // A refused page opens no batch, so the refusal is what releases it.
+  ircClient.on("FAIL", ({ serverId, command, context }) => {
+    if (command !== "CHATHISTORY") return;
+    for (const part of context) pagesInFlight.delete(pageKey(serverId, part));
+  });
+
   ircClient.on("CHATHISTORY_TARGET", ({ serverId, target, timestamp }) => {
     const self = ircClient.getNick(serverId);
     if (self && self.toLowerCase() === target.toLowerCase()) return;
