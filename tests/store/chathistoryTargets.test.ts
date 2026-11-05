@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ircClient from "../../src/lib/ircClient";
 import useStore from "../../src/store";
-import type { Server } from "../../src/types";
+import type { Message, Server } from "../../src/types";
 
 const serverId = "s1";
 
@@ -248,6 +248,62 @@ describe("catching up after a wake", () => {
     ircClient.servers.delete(serverId);
   });
 
+  it("measures the answer against the messages from before the question", async () => {
+    const { catchUpHistory } = await import(
+      "../../src/store/handlers/connection"
+    );
+    const line = (id: string, at: string): Message => ({
+      id,
+      msgid: id,
+      type: "message",
+      content: id,
+      timestamp: new Date(at),
+      userId: "alice",
+      channelId: "pm-alice",
+      serverId,
+      reactions: [],
+      replyMessage: null,
+      mentioned: [],
+    });
+    useStore.setState((state) => ({
+      servers: state.servers.map((s) => ({
+        ...s,
+        privateChats: [
+          {
+            id: "pm-alice",
+            username: "alice",
+            serverId,
+            unreadCount: 0,
+            isMentioned: false,
+            isPinned: true,
+          },
+        ],
+      })),
+      messages: {
+        [`${serverId}-pm-alice`]: [line("old", "2026-10-14T10:00:00.000Z")],
+      },
+    }));
+    catchUpHistory(useStore, serverId);
+    // A line arrives live while the answer is on its way.
+    useStore.setState((state) => ({
+      messages: {
+        [`${serverId}-pm-alice`]: [
+          ...(state.messages[`${serverId}-pm-alice`] ?? []),
+          line("live", "2026-10-14T18:14:42.492Z"),
+        ],
+      },
+    }));
+    feed(":soju CHATHISTORY TARGETS alice 2026-10-14T18:14:42.492Z");
+    expect(sent()).toContain("CHATHISTORY LATEST alice * 50");
+  });
+
+  it("tells channels from private chats by the server's channel types", () => {
+    feed(":soju 005 me CHANTYPES=#~ :are supported by this server");
+    feed(":soju CHATHISTORY TARGETS ~ops 2026-10-14T18:14:46.716Z");
+    vi.runOnlyPendingTimers();
+    expect(pms()).toEqual([]);
+  });
+
   it("asks for a day of activity and refreshes channels that fell behind", async () => {
     const { catchUpHistory } = await import(
       "../../src/store/handlers/connection"
@@ -287,7 +343,9 @@ describe("catching up after a wake", () => {
         ],
       },
     }));
-    // Without a wake, a channel named by the server is left to its rejoin.
+    // An earlier wake's window is over; without a wake, a channel named by
+    // the server is left to its rejoin.
+    vi.advanceTimersByTime(31_000);
     feed(":soju CHATHISTORY TARGETS #lobby 2026-10-14T18:14:46.716Z");
     expect(sent().some((l) => l.startsWith("CHATHISTORY LATEST #lobby"))).toBe(
       false,
