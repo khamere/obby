@@ -172,8 +172,35 @@ describe("jumpToReply", () => {
       serverId,
       "#dev",
       "2026-10-14T10:02:00.000Z",
+      { showLoading: false },
     );
     expect(useStore.getState().revealMessage).toHaveBeenCalledWith("m0");
+    before.mockRestore();
+  });
+
+  it("stops when the server refuses the direct request", async () => {
+    vi.mocked(findSavedMessage).mockResolvedValue(null);
+    vi.mocked(loadOlderMessages).mockRejectedValue(new Error("blocked"));
+    const before = vi
+      .spyOn(ircClient, "requestChathistoryBefore")
+      .mockImplementation(() => {
+        setTimeout(() => {
+          ircClient.triggerEvent("FAIL", {
+            serverId,
+            mtags: undefined,
+            command: "CHATHISTORY",
+            code: "INVALID_TARGET",
+            target: "BEFORE",
+            context: ["BEFORE", "#dev"],
+            message: "no history",
+          });
+        }, 0);
+        return true;
+      });
+    await jumpToReply(serverId, "ch-dev", "id-0");
+    expect(before).toHaveBeenCalledTimes(1);
+    expect(before.mock.calls[0][3]).toEqual({ showLoading: false });
+    expect(reportJumpFailure).toHaveBeenCalledWith(serverId, "not-found");
     before.mockRestore();
   });
 
