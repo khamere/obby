@@ -97,9 +97,17 @@ Put the `.json` file somewhere with a stable link and share the link:
 - `nickFormat`: for networks where web users join IRC themselves under a
   wrapped nick such as `(Jeditwo)`. The bare name is shown with the real nick
   on hover; the message text is untouched. Mutually exclusive with `bot`.
-- `label`: the word shown in the marker for `nickFormat` rules ("via web").
-  Default `web`; 1 to 32 characters, and a rule with an empty label is
-  skipped, since the marker is never optional.
+- `label`: the words shown in the marker ("via web"). Defaults to the bot's
+  nick for `bot` rules and to `web` for `nickFormat` rules; 1 to 32
+  characters, and a rule with an empty label is skipped, since the marker is
+  never optional. A bot that relays several places gets one rule per place,
+  each with its own label:
+
+  ```json
+  { "host": "irc.example.net", "bot": "Relay", "label": "Relay (site)", "formats": ["[{nick}] (WEB): {text}"] },
+  { "host": "irc.example.net", "bot": "Relay", "label": "Relay (matrix)", "formats": ["[{nick}] (MTX): {text}"] }
+  ```
+
 - `note`: free text, ignored by Obby.
 
 Templates are literal text with placeholders:
