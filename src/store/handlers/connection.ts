@@ -129,6 +129,9 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
     if (connectionState === "disconnected") {
       readyProcessedServers.delete(serverId);
       forgetJoins(serverId);
+      // A new connection asks its own question; an old answer would measure
+      // against a snapshot this connection never took.
+      forgetQuestions(serverId);
       // e2ee ratchet keys live only in memory and can't survive a dropped
       // connection, so tear the sessions down rather than keep showing a lock
       // that no longer protects anything. Encryption resumes after reconnecting,
@@ -697,11 +700,18 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
 
   // Batch tags are only unique per connection, so the key carries the server.
   const targetBatches = new Set<string>();
-  ircClient.on("BATCH_START", ({ serverId, batchId, type }) => {
+  ircClient.on("BATCH_START", ({ serverId, batchId, type, parameters }) => {
     if (type === "draft/chathistory-targets")
       targetBatches.add(`${serverId}:${batchId}`);
+    if (type === "chathistory" && parameters?.[0])
+      pageBatches.set(`${serverId}:${batchId}`, parameters[0]);
   });
   ircClient.on("BATCH_END", ({ serverId, batchId }) => {
+    const pageTarget = pageBatches.get(`${serverId}:${batchId}`);
+    if (pageTarget !== undefined) {
+      pageBatches.delete(`${serverId}:${batchId}`);
+      pagesInFlight.delete(pageKey(serverId, pageTarget));
+    }
     if (!targetBatches.delete(`${serverId}:${batchId}`)) return;
     const question = questions.get(serverId);
     if (!question) return;
@@ -729,7 +739,7 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
         ? question.baseline.get(conversation.key)
         : newestMessageTime(store.getState(), conversation.key);
       if (newest === undefined || Date.parse(timestamp) > newest)
-        ircClient.loadLatestHistory(serverId, target);
+        requestPage(serverId, target);
       return;
     }
     if (isChannel) return;
@@ -760,6 +770,34 @@ interface TargetsQuestion {
 }
 
 const questions = new Map<string, TargetsQuestion>();
+
+// Overlapping answers name the same conversation more than once; one page
+// covers them all, so a conversation whose page is still coming asks for no
+// second one. The page's batch end releases it, or time on a server that
+// sends its pages unbatched.
+const pagesInFlight = new Map<string, number>();
+const pageBatches = new Map<string, string>();
+
+function pageKey(serverId: string, target: string): string {
+  return `${serverId}:${target.toLowerCase()}`;
+}
+
+function requestPage(serverId: string, target: string): void {
+  const key = pageKey(serverId, target);
+  const sentAt = pagesInFlight.get(key);
+  if (sentAt !== undefined && Date.now() - sentAt <= QUESTION_FALLBACK_MS)
+    return;
+  if (ircClient.loadLatestHistory(serverId, target))
+    pagesInFlight.set(key, Date.now());
+}
+
+function forgetQuestions(serverId: string): void {
+  questions.delete(serverId);
+  for (const key of pagesInFlight.keys())
+    if (key.startsWith(`${serverId}:`)) pagesInFlight.delete(key);
+  for (const key of pageBatches.keys())
+    if (key.startsWith(`${serverId}:`)) pageBatches.delete(key);
+}
 
 export function outstandingQuestion(
   serverId: string,

@@ -49,6 +49,14 @@ const sent = () =>
     .filter((c) => c[0] === serverId)
     .map((c) => c[1] as string);
 
+// A disconnect forgets the server's questions and the pages on their way,
+// so one test's catch-up never reaches the next.
+const disconnect = () =>
+  ircClient.triggerEvent("connectionStateChange", {
+    serverId,
+    connectionState: "disconnected",
+  });
+
 const pms = () =>
   (useStore.getState().servers[0].privateChats ?? []).map((pc) => ({
     username: pc.username,
@@ -62,6 +70,7 @@ describe("CHATHISTORY TARGETS on connect", () => {
     seed();
   });
   afterEach(() => {
+    disconnect();
     vi.runOnlyPendingTimers();
     vi.useRealTimers();
     vi.restoreAllMocks();
@@ -94,6 +103,7 @@ describe("CHATHISTORY TARGETS replies", () => {
     seed();
   });
   afterEach(() => {
+    disconnect();
     vi.runOnlyPendingTimers();
     vi.useRealTimers();
     vi.restoreAllMocks();
@@ -241,6 +251,7 @@ describe("catching up after a wake", () => {
     seed();
   });
   afterEach(() => {
+    disconnect();
     vi.runOnlyPendingTimers();
     vi.useRealTimers();
     vi.restoreAllMocks();
@@ -298,7 +309,7 @@ describe("catching up after a wake", () => {
   });
 
   it("keeps the question until the last overlapping answer has ended", async () => {
-    const { catchUpHistory } = await import(
+    const { catchUpHistory, outstandingQuestion } = await import(
       "../../src/store/handlers/connection"
     );
     useStore.setState((state) => ({
@@ -330,6 +341,50 @@ describe("catching up after a wake", () => {
       ":soju BATCH -b",
     );
     expect(sent()).toContain("CHATHISTORY LATEST #lobby * 50");
+    // The last answer has ended, so the next CHATHISTORY TARGETS belongs to no wake.
+    expect(outstandingQuestion(serverId)).toBeUndefined();
+  });
+
+  it("asks one page for a conversation named by overlapping answers", async () => {
+    const { catchUpHistory } = await import(
+      "../../src/store/handlers/connection"
+    );
+    useStore.setState((state) => ({
+      servers: state.servers.map((s) => ({
+        ...s,
+        privateChats: [
+          {
+            id: "pm-alice",
+            username: "alice",
+            serverId,
+            unreadCount: 0,
+            isMentioned: false,
+            messages: [],
+          },
+        ],
+      })),
+      messages: {},
+    }));
+    catchUpHistory(useStore, serverId);
+    catchUpHistory(useStore, serverId);
+    feed(
+      ":soju BATCH +a draft/chathistory-targets",
+      "@batch=a :soju CHATHISTORY TARGETS alice 2026-10-14T18:14:46.716Z",
+      ":soju BATCH -a",
+      ":soju BATCH +b draft/chathistory-targets",
+      "@batch=b :soju CHATHISTORY TARGETS alice 2026-10-14T18:14:46.716Z",
+      ":soju BATCH -b",
+    );
+    expect(
+      sent().filter((c) => c === "CHATHISTORY LATEST alice * 50"),
+    ).toHaveLength(1);
+    // The page has arrived, so a later answer may ask again.
+    feed(":soju BATCH +p chathistory alice", ":soju BATCH -p");
+    catchUpHistory(useStore, serverId);
+    feed(":soju CHATHISTORY TARGETS alice 2026-10-14T18:15:46.716Z");
+    expect(
+      sent().filter((c) => c === "CHATHISTORY LATEST alice * 50"),
+    ).toHaveLength(2);
   });
 
   it("tells channels from private chats by the server's channel types", () => {
