@@ -1,5 +1,8 @@
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.Properties
+import javax.inject.Inject
+import org.gradle.process.ExecOperations
 
 plugins {
     id("com.android.application")
@@ -7,31 +10,50 @@ plugins {
     id("rust")
 }
 
-// The certificate verifier is a Rust crate with a Kotlin half, which the
-// crate ships as a Maven repository; cargo says where it unpacked it.
-fun RepositoryHandler.rustlsPlatformVerifier(): MavenArtifactRepository {
-    val manifest = File(project.rootDir, "../../Cargo.toml").canonicalPath
-    val metadata = providers.exec {
-        workingDir = File(project.rootDir, "../../")
-        commandLine(
-            "cargo", "metadata", "--format-version", "1",
-            "--filter-platform", "aarch64-linux-android",
-            "--manifest-path", manifest,
-        )
-    }.standardOutput.asText.get()
-    // The package entry carries its version right after its name; the entries
-    // naming it as a dependency carry a source instead.
-    val manifestPath = Regex(""""name":"rustls-platform-verifier-android","version":"[^"]*".*?"manifest_path":"([^"]+)"""")
-        .find(metadata)?.groupValues?.get(1)
-        ?: error("rustls-platform-verifier-android not found in cargo metadata")
-    return maven {
-        url = uri(File(File(manifestPath).parentFile, "maven"))
-        metadataSources.artifact()
+// The certificate verifier is a Rust crate with a Kotlin half, published as
+// a Maven archive; the two must be the same version, so the Kotlin one is
+// the version cargo resolves for Android.
+abstract class RustlsVersion : ValueSource<String, RustlsVersion.Params> {
+    interface Params : ValueSourceParameters {
+        val manifest: RegularFileProperty
+    }
+
+    @get:Inject
+    abstract val execOperations: ExecOperations
+
+    override fun obtain(): String {
+        val output = ByteArrayOutputStream()
+        execOperations.exec {
+            commandLine(
+                "cargo", "tree", "--target", "aarch64-linux-android", "-e", "normal",
+                "--prefix", "none", "--format", "{p}",
+                "--manifest-path", parameters.manifest.get().asFile.path,
+            )
+            standardOutput = output
+        }
+        return Regex("""rustls-platform-verifier-android v(\S+)""")
+            .find(output.toString(Charsets.UTF_8))?.groupValues?.get(1)
+            ?: error("rustls-platform-verifier-android not found in cargo tree")
+    }
+}
+
+val rustlsPlatformVerifierVersion = providers.of(RustlsVersion::class.java) {
+    parameters.manifest.set(layout.projectDirectory.file("../../../Cargo.toml"))
+}
+
+configurations.configureEach {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "org.rustls" && requested.name == "rustls-platform-verifier") {
+            useVersion(rustlsPlatformVerifierVersion.get())
+            because("the Kotlin verifier must match the rustls-platform-verifier-android crate")
+        }
     }
 }
 
 repositories {
-    rustlsPlatformVerifier()
+    maven {
+        url = uri("https://github.com/rustls/rustls-platform-verifier/raw/maven-archive/android-release-support/maven/")
+    }
 }
 
 val tauriProperties = Properties().apply {
@@ -120,7 +142,7 @@ rust {
 }
 
 dependencies {
-    implementation("rustls:rustls-platform-verifier:latest.release")
+    implementation("org.rustls:rustls-platform-verifier")
     implementation("androidx.webkit:webkit:1.6.1")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.8.0")
