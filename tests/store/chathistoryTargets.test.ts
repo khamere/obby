@@ -297,6 +297,41 @@ describe("catching up after a wake", () => {
     expect(sent()).toContain("CHATHISTORY LATEST alice * 50");
   });
 
+  it("keeps the question until the last overlapping answer has ended", async () => {
+    const { catchUpHistory } = await import(
+      "../../src/store/handlers/connection"
+    );
+    useStore.setState((state) => ({
+      servers: state.servers.map((s) => ({
+        ...s,
+        channels: [
+          {
+            id: "ch-lobby",
+            name: "#lobby",
+            serverId,
+            unreadCount: 0,
+            isMentioned: false,
+            messages: [],
+            users: [],
+            topic: "",
+            isPrivate: false,
+          },
+        ],
+      })),
+      messages: {},
+    }));
+    catchUpHistory(useStore, serverId);
+    catchUpHistory(useStore, serverId);
+    feed(":soju BATCH +a draft/chathistory-targets", ":soju BATCH -a");
+    // The first answer is over; the second still counts as the wake's.
+    feed(
+      ":soju BATCH +b draft/chathistory-targets",
+      "@batch=b :soju CHATHISTORY TARGETS #lobby 2026-10-14T18:14:46.716Z",
+      ":soju BATCH -b",
+    );
+    expect(sent()).toContain("CHATHISTORY LATEST #lobby * 50");
+  });
+
   it("tells channels from private chats by the server's channel types", () => {
     feed(":soju 005 me CHANTYPES=#~ :are supported by this server");
     feed(":soju CHATHISTORY TARGETS ~ops 2026-10-14T18:14:46.716Z");
