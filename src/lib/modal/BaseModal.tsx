@@ -89,10 +89,15 @@ export const BaseModal: React.FC<BaseModalProps> = ({
     }
   }, [isOpen, isTouch]);
 
+  // A dialog opened from inside this one renders in its own portal, and
+  // React still bubbles its presses up through here; those land in another
+  // element entirely and are not a click beside this dialog.
   const handleOverlayMouseDown = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      if (closeOnClickOutside && !modalRef.current?.contains(e.target as Node))
-        onClose();
+      if (!closeOnClickOutside) return;
+      const target = e.target as Node;
+      if (!e.currentTarget.contains(target)) return;
+      if (!modalRef.current?.contains(target)) onClose();
     },
     [closeOnClickOutside, onClose],
   );
