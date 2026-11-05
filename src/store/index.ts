@@ -4634,11 +4634,12 @@ registerAllProtocolHandlers(ircClient, useStore);
 // });
 
 export default useStore;
-registerAllHandlers(useStore);
-
+// Saved before the handlers register, since they settle the restored log
+// against the mutes as they start.
 useStore.subscribe((state, prev) => {
   if (state.mentionLog !== prev.mentionLog) {
     storage.mentionLog.save(state.mentionLog);
   }
 });
+registerAllHandlers(useStore);
 setVoiceStore(useStore);
