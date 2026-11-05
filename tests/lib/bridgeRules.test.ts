@@ -92,6 +92,19 @@ describe("applyBridgeRules", () => {
     ).toEqual({ kind: "bot", nick: "mara", text: "hi", via: "Bot" });
   });
 
+  it("marks a labelled bot rule with its label", () => {
+    const rules = compiled([
+      { ...ALDER, label: "Bot (site)", formats: ["[{nick}] (WEB): {text}"] },
+      { ...ALDER, label: "Bot (matrix)", formats: ["[{nick}] (MTX): {text}"] },
+    ]);
+    expect(
+      applyBridgeRules(rules, "irc.alder.example", "#alder", "Bot", "[mara] (MTX): hi"),
+    ).toEqual({ kind: "bot", nick: "mara", text: "hi", via: "Bot (matrix)" });
+    expect(
+      applyBridgeRules(rules, "irc.alder.example", "#alder", "Bot", "[mara] (WEB): hi"),
+    ).toEqual({ kind: "bot", nick: "mara", text: "hi", via: "Bot (site)" });
+  });
+
   it("ignores case and mode prefixes on the sender and host", () => {
     expect(
       applyBridgeRules(rules, "IRC.ALDER.EXAMPLE", "#general", "@bot", "[mara] hi")

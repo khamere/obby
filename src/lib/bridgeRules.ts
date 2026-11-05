@@ -159,7 +159,12 @@ export function compileBridgeRules(rules: BridgeRule[]): CompiledRules {
         .filter((re): re is RegExp => re !== null);
       const bot = rule.bot.toLowerCase();
       const list = entry.bots.get(bot) ?? [];
-      list.push({ via: rule.bot, channels: channelSet(rule), formats });
+      // One bot may relay several places; a label tells them apart.
+      list.push({
+        via: rule.label ?? rule.bot,
+        channels: channelSet(rule),
+        formats,
+      });
       entry.bots.set(bot, list);
     } else if (rule.nickFormat) {
       const re = compileTemplate(rule.nickFormat, "nick");
