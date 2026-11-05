@@ -702,8 +702,11 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
       targetBatches.add(`${serverId}:${batchId}`);
   });
   ircClient.on("BATCH_END", ({ serverId, batchId }) => {
-    if (targetBatches.delete(`${serverId}:${batchId}`))
-      questions.delete(serverId);
+    if (!targetBatches.delete(`${serverId}:${batchId}`)) return;
+    const question = questions.get(serverId);
+    if (!question) return;
+    question.unanswered -= 1;
+    if (question.unanswered <= 0) questions.delete(serverId);
   });
 
   ircClient.on("CHATHISTORY_TARGET", ({ serverId, target, timestamp }) => {
@@ -751,6 +754,9 @@ interface TargetsQuestion {
   // their rejoin.
   isWake: boolean;
   askedAt: number;
+  // Questions asked before any answer ended share one record, which lives
+  // until the last of their answers has ended.
+  unanswered: number;
 }
 
 const questions = new Map<string, TargetsQuestion>();
@@ -790,6 +796,7 @@ function requestTargets(
     baseline,
     isWake: isWake || !!earlier?.isWake,
     askedAt: Date.now(),
+    unanswered: (earlier?.unanswered ?? 0) + 1,
   });
   const to = new Date();
   const from = new Date(to.getTime() - windowMs);
