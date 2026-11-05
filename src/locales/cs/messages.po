@@ -701,10 +701,6 @@ msgstr "Povolte Obby v Nastavení systému v části Nahrávání obrazovky a pa
 msgid "Already in {0}"
 msgstr "Již v {0}"
 
-#: src/components/ui/MuteModal.tsx
-msgid "Also mute mentions"
-msgstr "Ztlumit i zmínky"
-
 #: src/components/pages/SettingsPage.tsx
 msgid "Also preview YouTube, Vimeo, SoundCloud, and similar known services."
 msgstr "Zobrazovat také náhledy z YouTube, Vimeo, SoundCloud a podobných známých služeb."
@@ -3866,6 +3862,11 @@ msgstr "Ztlumit upozornění"
 msgid "Mute or unmute notification sounds"
 msgstr "Ztlumit nebo zapnout zvuky upozornění"
 
+#. placeholder {0}: muted.length
+#: src/components/ui/MentionsInbox.tsx
+msgid "Muted channels ({0})"
+msgstr "Ztlumené kanály ({0})"
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Muted text"
 msgstr "Ztlumený text"
@@ -4166,10 +4167,6 @@ msgstr "Žádný zvuk, upozornění ani červená tečka u zpráv od této osoby
 #: src/components/ui/MuteModal.tsx
 msgid "No sound, notification or red dot from this channel, even when someone mentions you."
 msgstr "Žádný zvuk, upozornění ani červená tečka z tohoto kanálu, ani když vás někdo zmíní."
-
-#: src/components/ui/MuteModal.tsx
-msgid "No sound, notification or red dot from this channel, except when someone mentions you."
-msgstr "Žádný zvuk, upozornění ani červená tečka z tohoto kanálu, kromě případů, kdy vás někdo zmíní."
 
 #: src/components/ui/settings/CallSpeakerField.tsx
 msgid "No speaker detected."

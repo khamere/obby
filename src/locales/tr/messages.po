@@ -701,10 +701,6 @@ msgstr "Sistem Ayarları'nda Ekran Kaydı altında Obby'ye izin verin, ardından
 msgid "Already in {0}"
 msgstr "{0} kanalında zaten var"
 
-#: src/components/ui/MuteModal.tsx
-msgid "Also mute mentions"
-msgstr "Bahsetmeleri de sessize al"
-
 #: src/components/pages/SettingsPage.tsx
 msgid "Also preview YouTube, Vimeo, SoundCloud, and similar known services."
 msgstr "YouTube, Vimeo, SoundCloud ve benzeri bilinen hizmetleri de önizleyin."
@@ -3866,6 +3862,11 @@ msgstr "Bildirimleri sessize al"
 msgid "Mute or unmute notification sounds"
 msgstr "Bildirim seslerini sessize al veya aç"
 
+#. placeholder {0}: muted.length
+#: src/components/ui/MentionsInbox.tsx
+msgid "Muted channels ({0})"
+msgstr "Sessize alınan kanallar ({0})"
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Muted text"
 msgstr "Soluk metin"
@@ -4166,10 +4167,6 @@ msgstr "Bu kişiden gelen mesajlar için ses, bildirim veya kırmızı nokta yok
 #: src/components/ui/MuteModal.tsx
 msgid "No sound, notification or red dot from this channel, even when someone mentions you."
 msgstr "Biri sizden bahsetse bile bu kanaldan ses, bildirim veya kırmızı nokta yok."
-
-#: src/components/ui/MuteModal.tsx
-msgid "No sound, notification or red dot from this channel, except when someone mentions you."
-msgstr "Biri sizden bahsetmedikçe bu kanaldan ses, bildirim veya kırmızı nokta yok."
 
 #: src/components/ui/settings/CallSpeakerField.tsx
 msgid "No speaker detected."
