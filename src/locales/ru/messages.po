@@ -701,10 +701,6 @@ msgstr "Разрешите Obby в разделе «Запись экрана» 
 msgid "Already in {0}"
 msgstr "Уже в {0}"
 
-#: src/components/ui/MuteModal.tsx
-msgid "Also mute mentions"
-msgstr "Отключить и упоминания"
-
 #: src/components/pages/SettingsPage.tsx
 msgid "Also preview YouTube, Vimeo, SoundCloud, and similar known services."
 msgstr "Также показывать превью YouTube, Vimeo, SoundCloud и похожих известных сервисов."
@@ -3866,6 +3862,11 @@ msgstr "Отключить уведомления"
 msgid "Mute or unmute notification sounds"
 msgstr "Включить или отключить звуки уведомлений"
 
+#. placeholder {0}: muted.length
+#: src/components/ui/MentionsInbox.tsx
+msgid "Muted channels ({0})"
+msgstr "Отключённые каналы ({0})"
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Muted text"
 msgstr "Приглушённый текст"
@@ -4166,10 +4167,6 @@ msgstr "Без звука, уведомлений и красной точки �
 #: src/components/ui/MuteModal.tsx
 msgid "No sound, notification or red dot from this channel, even when someone mentions you."
 msgstr "Без звука, уведомлений и красной точки из этого канала, даже при упоминании."
-
-#: src/components/ui/MuteModal.tsx
-msgid "No sound, notification or red dot from this channel, except when someone mentions you."
-msgstr "Без звука, уведомлений и красной точки из этого канала, кроме упоминаний."
 
 #: src/components/ui/settings/CallSpeakerField.tsx
 msgid "No speaker detected."

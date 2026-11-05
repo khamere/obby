@@ -701,10 +701,6 @@ msgstr "Sta Obby toe onder Schermopname in Systeeminstellingen en neem daarna op
 msgid "Already in {0}"
 msgstr "Al in {0}"
 
-#: src/components/ui/MuteModal.tsx
-msgid "Also mute mentions"
-msgstr "Ook vermeldingen dempen"
-
 #: src/components/pages/SettingsPage.tsx
 msgid "Also preview YouTube, Vimeo, SoundCloud, and similar known services."
 msgstr "Toon ook voorvertoningen van YouTube, Vimeo, SoundCloud en vergelijkbare bekende diensten."
@@ -3866,6 +3862,11 @@ msgstr "Meldingen dempen"
 msgid "Mute or unmute notification sounds"
 msgstr "Meldingsgeluiden dempen of activeren"
 
+#. placeholder {0}: muted.length
+#: src/components/ui/MentionsInbox.tsx
+msgid "Muted channels ({0})"
+msgstr "Gedempte kanalen ({0})"
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Muted text"
 msgstr "Gedempte tekst"
@@ -4166,10 +4167,6 @@ msgstr "Geen geluid, melding of rode stip voor berichten van deze persoon."
 #: src/components/ui/MuteModal.tsx
 msgid "No sound, notification or red dot from this channel, even when someone mentions you."
 msgstr "Geen geluid, melding of rode stip uit dit kanaal, ook niet als iemand je noemt."
-
-#: src/components/ui/MuteModal.tsx
-msgid "No sound, notification or red dot from this channel, except when someone mentions you."
-msgstr "Geen geluid, melding of rode stip uit dit kanaal, behalve als iemand je noemt."
 
 #: src/components/ui/settings/CallSpeakerField.tsx
 msgid "No speaker detected."

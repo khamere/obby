@@ -700,10 +700,6 @@ msgstr "Allow Obby under Screen Recording in System Settings, then record again.
 msgid "Already in {0}"
 msgstr "Already in {0}"
 
-#: src/components/ui/MuteModal.tsx
-msgid "Also mute mentions"
-msgstr "Also mute mentions"
-
 #: src/components/pages/SettingsPage.tsx
 msgid "Also preview YouTube, Vimeo, SoundCloud, and similar known services."
 msgstr "Also preview YouTube, Vimeo, SoundCloud, and similar known services."
@@ -3865,6 +3861,11 @@ msgstr "Mute notifications"
 msgid "Mute or unmute notification sounds"
 msgstr "Mute or unmute notification sounds"
 
+#. placeholder {0}: muted.length
+#: src/components/ui/MentionsInbox.tsx
+msgid "Muted channels ({0})"
+msgstr "Muted channels ({0})"
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Muted text"
 msgstr "Muted text"
@@ -4165,10 +4166,6 @@ msgstr "No sound, notification or red dot for messages from this person."
 #: src/components/ui/MuteModal.tsx
 msgid "No sound, notification or red dot from this channel, even when someone mentions you."
 msgstr "No sound, notification or red dot from this channel, even when someone mentions you."
-
-#: src/components/ui/MuteModal.tsx
-msgid "No sound, notification or red dot from this channel, except when someone mentions you."
-msgstr "No sound, notification or red dot from this channel, except when someone mentions you."
 
 #: src/components/ui/settings/CallSpeakerField.tsx
 msgid "No speaker detected."

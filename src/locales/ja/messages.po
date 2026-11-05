@@ -701,10 +701,6 @@ msgstr "システム設定の「画面収録」で Obby を許可してから、
 msgid "Already in {0}"
 msgstr "すでに {0} にいます"
 
-#: src/components/ui/MuteModal.tsx
-msgid "Also mute mentions"
-msgstr "メンションもミュートする"
-
 #: src/components/pages/SettingsPage.tsx
 msgid "Also preview YouTube, Vimeo, SoundCloud, and similar known services."
 msgstr "YouTube、Vimeo、SoundCloud などの既知のサービスもプレビューします。"
@@ -3866,6 +3862,11 @@ msgstr "通知をミュート"
 msgid "Mute or unmute notification sounds"
 msgstr "通知音をミュートまたはミュート解除する"
 
+#. placeholder {0}: muted.length
+#: src/components/ui/MentionsInbox.tsx
+msgid "Muted channels ({0})"
+msgstr "ミュート中のチャンネル ({0})"
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Muted text"
 msgstr "控えめなテキスト"
@@ -4166,10 +4167,6 @@ msgstr "この人からのメッセージで音・通知・赤い点を出しま
 #: src/components/ui/MuteModal.tsx
 msgid "No sound, notification or red dot from this channel, even when someone mentions you."
 msgstr "このチャンネルでは音・通知・赤い点を出しません（メンションされた場合も含む）。"
-
-#: src/components/ui/MuteModal.tsx
-msgid "No sound, notification or red dot from this channel, except when someone mentions you."
-msgstr "このチャンネルでは音・通知・赤い点を出しません（メンションされた場合を除く）。"
 
 #: src/components/ui/settings/CallSpeakerField.tsx
 msgid "No speaker detected."

@@ -2,6 +2,7 @@ import { t } from "@lingui/core/macro";
 import type { StoreApi } from "zustand";
 import { LOCAL_BATCH_PREFIX } from "../../lib/history/historyLines";
 import ircClient from "../../lib/ircClient";
+import { isSilenced } from "../../lib/mutes";
 import { checkForMention } from "../../lib/notifications";
 import type { Channel, Message } from "../../types";
 import {
@@ -51,7 +52,7 @@ function unreadMentionsIn(
       sender: m.userId,
       content: m.content,
       timestamp: new Date(m.timestamp).toISOString(),
-      seen: false,
+      seen: isSilenced(serverId, channel.id, true),
     }));
 }
 

@@ -53,13 +53,15 @@ function isAlreadyProcessed(
 }
 
 // A mention in the open channel of a visible window has been seen as it
-// arrived; anywhere else it waits in the jump bar.
+// arrived; anywhere else it waits in the jump bar. One from a muted channel
+// is kept for the inbox's muted list and never waits anywhere.
 function recordChannelMention(
   store: StoreApi<AppState>,
   message: Message,
   channelName: string,
   isActiveChannel: boolean,
 ): void {
+  const isMuted = isSilenced(message.serverId, message.channelId, true);
   store.getState().recordMention({
     messageId: message.id,
     msgid: message.msgid,
@@ -69,7 +71,8 @@ function recordChannelMention(
     sender: message.userId,
     content: message.content,
     timestamp: new Date(message.timestamp).toISOString(),
-    seen: isActiveChannel && document.visibilityState === "visible",
+    seen:
+      isMuted || (isActiveChannel && document.visibilityState === "visible"),
   });
 }
 
@@ -463,11 +466,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           return newState;
         });
 
-        if (
-          hasMention &&
-          !isHistoricalMessage &&
-          !isSilenced(server.id, channel.id, true)
-        ) {
+        if (hasMention && !isHistoricalMessage) {
           recordChannelMention(store, newMessage, channelName, isActiveChannel);
         }
 

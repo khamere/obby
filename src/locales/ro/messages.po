@@ -701,10 +701,6 @@ msgstr "Permite Obby la Înregistrare ecran în Configurări sistem, apoi înreg
 msgid "Already in {0}"
 msgstr "Deja în {0}"
 
-#: src/components/ui/MuteModal.tsx
-msgid "Also mute mentions"
-msgstr "Dezactivează și mențiunile"
-
 #: src/components/pages/SettingsPage.tsx
 msgid "Also preview YouTube, Vimeo, SoundCloud, and similar known services."
 msgstr "Afișați și previzualizări pentru YouTube, Vimeo, SoundCloud și servicii cunoscute similare."
@@ -3866,6 +3862,11 @@ msgstr "Dezactivează notificările"
 msgid "Mute or unmute notification sounds"
 msgstr "Activează sau dezactivează sunetele de notificare"
 
+#. placeholder {0}: muted.length
+#: src/components/ui/MentionsInbox.tsx
+msgid "Muted channels ({0})"
+msgstr "Canale dezactivate ({0})"
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Muted text"
 msgstr "Text estompat"
@@ -4166,10 +4167,6 @@ msgstr "Fără sunet, notificare sau punct roșu pentru mesajele acestei persoan
 #: src/components/ui/MuteModal.tsx
 msgid "No sound, notification or red dot from this channel, even when someone mentions you."
 msgstr "Fără sunet, notificare sau punct roșu din acest canal, chiar și atunci când te menționează cineva."
-
-#: src/components/ui/MuteModal.tsx
-msgid "No sound, notification or red dot from this channel, except when someone mentions you."
-msgstr "Fără sunet, notificare sau punct roșu din acest canal, cu excepția cazului în care te menționează cineva."
 
 #: src/components/ui/settings/CallSpeakerField.tsx
 msgid "No speaker detected."

@@ -6,7 +6,6 @@ import {
   muteChat,
   muteServer,
   resetMutesForTests,
-  setChatMuteMentions,
   silencesFor,
   unmuteChat,
   unmuteServer,
@@ -37,24 +36,12 @@ describe("mutes", () => {
     expect(isSilenced("s2", "chan", false)).toBe(false);
   });
 
-  it("a muted channel still lets mentions through", () => {
+  it("a muted channel silences mentions too", () => {
     muteChat("s1", "chan", "channel", null);
     expect(isSilenced("s1", "chan", false)).toBe(true);
-    expect(isSilenced("s1", "chan", true)).toBe(false);
-    expect(isSilenced("s1", "other", false)).toBe(false);
-  });
-
-  it("a channel mute made with mentions silences mentions too", () => {
-    muteChat("s1", "chan", "channel", null, true);
     expect(isSilenced("s1", "chan", true)).toBe(true);
-    expect(isSilenced("s1", "chan", false)).toBe(true);
-    setChatMuteMentions("s1", "chan", false);
-    expect(isSilenced("s1", "chan", true)).toBe(false);
-    setChatMuteMentions("s1", "chan", true);
-    expect(chatMute("s1", "chan")?.mentions).toBe(true);
-    // only an active mute can be changed
-    setChatMuteMentions("s1", "other", true);
-    expect(chatMute("s1", "other")).toBeUndefined();
+    expect(isSilenced("s1", "other", false)).toBe(false);
+    expect(chatMute("s1", "chan")?.kind).toBe("channel");
   });
 
   it("a muted DM is fully silent", () => {
@@ -82,7 +69,7 @@ describe("mutes", () => {
     expect(isSilenced("s1", "chan", false)).toBe(false);
   });
 
-  it("lists the mutes that cover mentions by chat name for the background side", () => {
+  it("lists every mute by chat name for the background side", () => {
     const server = {
       id: "s1",
       channels: [
@@ -92,8 +79,7 @@ describe("mutes", () => {
       privateChats: [{ id: "p-bob", username: "bob" }],
     };
     const now = Date.now();
-    muteChat("s1", "c-dev", "channel", null, true);
-    muteChat("s1", "c-ops", "channel", null, false);
+    muteChat("s1", "c-dev", "channel", null);
     muteChat("s1", "p-bob", "dm", now + HOUR);
     expect(silencesFor(server, now)).toEqual([
       { chat: "#dev", until: null },
@@ -128,10 +114,10 @@ describe("mutes", () => {
     expect(
       shouldPlayNotificationSound(msg("chan", "hi all"), me, settings),
     ).toBe(false);
-    // a mention in a muted channel still sounds
+    // a mention in a muted channel is silent too
     expect(
       shouldPlayNotificationSound(msg("chan", "hi me"), me, settings),
-    ).toBe(true);
+    ).toBe(false);
     muteServer("s1", null);
     expect(
       shouldPlayNotificationSound(msg("chan", "hi me"), me, settings),

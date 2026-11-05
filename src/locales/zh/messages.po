@@ -701,10 +701,6 @@ msgstr "请在系统设置的“录屏”中允许 Obby，然后重新录制。"
 msgid "Already in {0}"
 msgstr "已在 {0}"
 
-#: src/components/ui/MuteModal.tsx
-msgid "Also mute mentions"
-msgstr "同时静音提及"
-
 #: src/components/pages/SettingsPage.tsx
 msgid "Also preview YouTube, Vimeo, SoundCloud, and similar known services."
 msgstr "同时预览 YouTube、Vimeo、SoundCloud 等类似的已知服务。"
@@ -3866,6 +3862,11 @@ msgstr "静音通知"
 msgid "Mute or unmute notification sounds"
 msgstr "开启或关闭通知声音"
 
+#. placeholder {0}: muted.length
+#: src/components/ui/MentionsInbox.tsx
+msgid "Muted channels ({0})"
+msgstr "已静音的频道 ({0})"
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Muted text"
 msgstr "弱化文字"
@@ -4166,10 +4167,6 @@ msgstr "此人的消息不再发出声音、通知或显示红点。"
 #: src/components/ui/MuteModal.tsx
 msgid "No sound, notification or red dot from this channel, even when someone mentions you."
 msgstr "此频道不再发出声音、通知或显示红点，即使有人提及你。"
-
-#: src/components/ui/MuteModal.tsx
-msgid "No sound, notification or red dot from this channel, except when someone mentions you."
-msgstr "此频道不再发出声音、通知或显示红点，有人提及你时除外。"
 
 #: src/components/ui/settings/CallSpeakerField.tsx
 msgid "No speaker detected."
