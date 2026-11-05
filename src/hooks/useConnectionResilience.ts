@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef } from "react";
 import { ircClient } from "../lib/ircClient";
 import { isTauri } from "../lib/platformUtils";
+import useStore from "../store";
+import { catchUpHistory } from "../store/handlers/connection";
 
 // Only treat a visibility gap as a potential sleep if it lasted longer than this.
 // Normal window switching is <1s; sleep is typically minutes.
@@ -16,6 +18,7 @@ export function useConnectionResilience() {
   const triggerWakeReconnect = useCallback(() => {
     for (const server of ircClient.getServers()) {
       ircClient.wakeReconnect(server.id);
+      catchUpHistory(useStore, server.id);
     }
   }, []);
 
