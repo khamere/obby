@@ -45,7 +45,8 @@ reqwest = { version = "0.12", default-features = false, features = ["native-tls"
 tokio-rustls = { version = "0.26", default-features = false }
 tokio-tungstenite = { version = "0.30", features = ["rustls-tls-webpki-roots"] }
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
-webpki-roots = "0.26"
+# 0.6 is the last line on jni 0.21, which the rest of the Android side uses.
+rustls-platform-verifier = "0.6.1"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
 tauri-plugin-dialog = "2"
 jni = { version = "0.21", default-features = false }
