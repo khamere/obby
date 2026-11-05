@@ -6,12 +6,14 @@ import type { PrivateChat } from "../../types";
 import {
   generateDeterministicId,
   getServerSelection,
+  newestMessageTime,
   serverSupportsMetadata,
   setServerSelection,
 } from "../helpers";
 import type { AppState } from "../index";
 import * as storage from "../localStorage";
 import { forgetJoins } from "../pendingJoins";
+import { findConversation } from "./history";
 import { reportServerReply } from "./serverReplies";
 
 // Track which servers have had their ready handler run to prevent duplicate processing
@@ -127,6 +129,9 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
     if (connectionState === "disconnected") {
       readyProcessedServers.delete(serverId);
       forgetJoins(serverId);
+      // A new connection asks its own question; an old answer would measure
+      // against a snapshot this connection never took.
+      forgetQuestions(serverId);
       // e2ee ratchet keys live only in memory and can't survive a dropped
       // connection, so tear the sessions down rather than keep showing a lock
       // that no longer protects anything. Encryption resumes after reconnecting,
@@ -685,34 +690,184 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
       readyServer?.capabilities?.includes("draft/chathistory") &&
       !readyServer.isBouncerControl
     ) {
-      setTimeout(() => {
-        const to = new Date();
-        const from = new Date(to.getTime() - CHATHISTORY_TARGETS_WINDOW_MS);
-        ircClient.sendRaw(
-          serverId,
-          `CHATHISTORY TARGETS timestamp=${from.toISOString()} timestamp=${to.toISOString()} ${CHATHISTORY_TARGETS_LIMIT}`,
-        );
-      }, 50);
+      setTimeout(
+        () =>
+          requestTargets(store, serverId, CHATHISTORY_TARGETS_WINDOW_MS, false),
+        50,
+      );
     }
   });
 
+  // Batch tags are only unique per connection, so the key carries the server.
+  const targetBatches = new Set<string>();
+  ircClient.on("BATCH_START", ({ serverId, batchId, type, parameters }) => {
+    if (type === "draft/chathistory-targets")
+      targetBatches.add(`${serverId}:${batchId}`);
+    if (type === "chathistory" && parameters?.[0])
+      pageBatches.set(`${serverId}:${batchId}`, parameters[0]);
+  });
+  ircClient.on("BATCH_END", ({ serverId, batchId }) => {
+    const pageTarget = pageBatches.get(`${serverId}:${batchId}`);
+    if (pageTarget !== undefined) {
+      pageBatches.delete(`${serverId}:${batchId}`);
+      pagesInFlight.delete(pageKey(serverId, pageTarget));
+    }
+    if (!targetBatches.delete(`${serverId}:${batchId}`)) return;
+    const question = questions.get(serverId);
+    if (!question) return;
+    question.unanswered -= 1;
+    if (question.unanswered <= 0) questions.delete(serverId);
+  });
+
+  // A refused page opens no batch, so the refusal is what releases it. The
+  // context names the subcommand and the target, and only a LATEST is ours.
+  ircClient.on("FAIL", ({ serverId, command, context }) => {
+    if (command !== "CHATHISTORY") return;
+    const [subcommand, target] = context;
+    if (subcommand?.toUpperCase() !== "LATEST" || !target) return;
+    pagesInFlight.delete(pageKey(serverId, target));
+  });
+
   ircClient.on("CHATHISTORY_TARGET", ({ serverId, target, timestamp }) => {
-    if (isChannelTarget(target)) return;
     const self = ircClient.getNick(serverId);
     if (self && self.toLowerCase() === target.toLowerCase()) return;
+    const server = store.getState().servers.find((s) => s.id === serverId);
+    if (!server) return;
+    // A conversation we already show gets the page it is missing. Channels
+    // fetch their page when they are rejoined, so only a wake asks for
+    // theirs; a bouncer replays nothing to a client that can ask.
+    const conversation = findConversation(store, serverId, target);
+    const isChannel = ircClient.isChannel(serverId, target);
+    if (conversation) {
+      const question = outstandingQuestion(serverId);
+      if (isChannel && !question?.isWake) return;
+      // A line that came in live while the answer was on its way says
+      // nothing about earlier ones, so the newest message from before the
+      // question is what the answer is measured against.
+      const newest = question?.baseline.has(conversation.key)
+        ? question.baseline.get(conversation.key)
+        : newestMessageTime(store.getState(), conversation.key);
+      if (newest === undefined || Date.parse(timestamp) > newest)
+        requestPage(serverId, target);
+      return;
+    }
+    if (isChannel) return;
     // The user closed this chat; only bring it back for newer activity.
     const closedAt = storage.closedChats.closedAt(serverId, target);
     if (closedAt && Date.parse(timestamp) <= Date.parse(closedAt)) return;
-    const server = store.getState().servers.find((s) => s.id === serverId);
-    if (!server) return;
-    const exists = server.privateChats?.some(
-      (pc) => pc.username.toLowerCase() === target.toLowerCase(),
-    );
-    if (exists) return;
     // openPrivateChat creates the (unpinned) chat, MONITORs the nick and
     // requests CHATHISTORY LATEST for it.
     store.getState().openPrivateChat(serverId, target);
   });
+}
+
+// The targets a wake asks for cover a day. A question stays open until its
+// answer batch ends, or for this long on a server that answers unbatched.
+const CATCH_UP_WINDOW_MS = 24 * 60 * 60 * 1000;
+const QUESTION_FALLBACK_MS = 5 * 60 * 1000;
+
+interface TargetsQuestion {
+  // The newest message of every conversation when the question went out.
+  baseline: Map<string, number | undefined>;
+  // A wake's question refreshes channels too; a connect's leaves them to
+  // their rejoin.
+  isWake: boolean;
+  askedAt: number;
+  // Questions asked before any answer ended share one record, which lives
+  // until the last of their answers has ended.
+  unanswered: number;
+}
+
+const questions = new Map<string, TargetsQuestion>();
+
+// Overlapping answers name the same conversation more than once; one page
+// covers them all, so a conversation whose page is still coming asks for no
+// second one. The page's batch end releases it, or time on a server that
+// sends its pages unbatched.
+const pagesInFlight = new Map<string, number>();
+const pageBatches = new Map<string, string>();
+
+function pageKey(serverId: string, target: string): string {
+  return `${serverId}:${target.toLowerCase()}`;
+}
+
+function requestPage(serverId: string, target: string): void {
+  const key = pageKey(serverId, target);
+  const sentAt = pagesInFlight.get(key);
+  if (sentAt !== undefined && Date.now() - sentAt <= QUESTION_FALLBACK_MS)
+    return;
+  if (ircClient.loadLatestHistory(serverId, target))
+    pagesInFlight.set(key, Date.now());
+}
+
+function forgetQuestions(serverId: string): void {
+  questions.delete(serverId);
+  for (const key of pagesInFlight.keys())
+    if (key.startsWith(`${serverId}:`)) pagesInFlight.delete(key);
+  for (const key of pageBatches.keys())
+    if (key.startsWith(`${serverId}:`)) pageBatches.delete(key);
+}
+
+export function outstandingQuestion(
+  serverId: string,
+): TargetsQuestion | undefined {
+  const question = questions.get(serverId);
+  if (!question) return undefined;
+  if (Date.now() - question.askedAt > QUESTION_FALLBACK_MS) {
+    questions.delete(serverId);
+    return undefined;
+  }
+  return question;
+}
+
+function requestTargets(
+  store: StoreApi<AppState>,
+  serverId: string,
+  windowMs: number,
+  isWake: boolean,
+): void {
+  const state = store.getState();
+  const server = state.servers.find((s) => s.id === serverId);
+  // A question asked while another is unanswered keeps the older snapshot,
+  // since lines that arrived in between are exactly what may hide a gap.
+  const earlier = outstandingQuestion(serverId);
+  const baseline = new Map(earlier?.baseline ?? []);
+  for (const chat of [
+    ...(server?.channels ?? []),
+    ...(server?.privateChats ?? []),
+  ]) {
+    const key = `${serverId}-${chat.id}`;
+    if (!baseline.has(key)) baseline.set(key, newestMessageTime(state, key));
+  }
+  questions.set(serverId, {
+    baseline,
+    isWake: isWake || !!earlier?.isWake,
+    askedAt: Date.now(),
+    unanswered: (earlier?.unanswered ?? 0) + 1,
+  });
+  const to = new Date();
+  const from = new Date(to.getTime() - windowMs);
+  ircClient.sendRaw(
+    serverId,
+    `CHATHISTORY TARGETS timestamp=${from.toISOString()} timestamp=${to.toISOString()} ${CHATHISTORY_TARGETS_LIMIT}`,
+  );
+}
+
+// A connection that survived the app's sleep may still have missed lines:
+// a phone cuts the network under a live socket. Asking the server what
+// moved since then fills every open conversation that fell behind.
+export function catchUpHistory(
+  store: StoreApi<AppState>,
+  serverId: string,
+): void {
+  const server = store.getState().servers.find((s) => s.id === serverId);
+  if (
+    !server?.isConnected ||
+    server.isBouncerControl ||
+    !server.capabilities?.includes("draft/chathistory")
+  )
+    return;
+  requestTargets(store, serverId, CATCH_UP_WINDOW_MS, true);
 }
 
 // How far back to look for conversations on connect, and how many targets
@@ -720,11 +875,6 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
 // leave room for them.
 const CHATHISTORY_TARGETS_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const CHATHISTORY_TARGETS_LIMIT = 100;
-
-// RFC 1459 / common CHANTYPES; Obby doesn't track ISUPPORT CHANTYPES.
-function isChannelTarget(target: string): boolean {
-  return /^[#&+!]/.test(target);
-}
 
 // The profile fields the settings page edits.
 const OWN_METADATA_KEYS = [
