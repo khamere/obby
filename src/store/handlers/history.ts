@@ -20,6 +20,7 @@ import {
   parkServerHistory,
   pruneToLimit,
   refRowsFor,
+  rowByMsgid,
   savedSenders,
   updateGap,
 } from "../../lib/history/historyDb";
@@ -234,6 +235,25 @@ export function listSavedSenders(
     candidate.nick.toLowerCase(),
   );
   return Promise.resolve([...new Set(nicks)].filter(Boolean).sort());
+}
+
+export interface SavedMessage {
+  nick: string;
+  text: string;
+  time: number;
+}
+
+// The saved copy of a message, for a reply whose original is not loaded.
+export async function findSavedMessage(
+  store: StoreApi<AppState>,
+  serverId: string,
+  target: string,
+  msgid: string,
+): Promise<SavedMessage | null> {
+  if (!isEnabled(store)) return null;
+  const row = await rowByMsgid(serverId, target.toLowerCase(), msgid);
+  if (!row || row.nick === undefined || row.text === undefined) return null;
+  return { nick: row.nick, text: row.text, time: row.time };
 }
 
 export async function hasSavedChat(

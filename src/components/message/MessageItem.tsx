@@ -6,6 +6,7 @@ import { useShallow } from "zustand/react/shallow";
 import { useIsTouchInput } from "../../hooks/useIsTouchInput";
 import { useLongPress } from "../../hooks/useLongPress";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { useSavedReply } from "../../hooks/useSavedReply";
 import { workflowIdFromTags } from "../../lib/botTools";
 import { formatCopyAuthor } from "../../lib/chatMarkdownCopy";
 import { renderWithCustomEmoji, useEmojiResolver } from "../../lib/customEmoji";
@@ -29,6 +30,7 @@ import {
   processMarkdownInText,
   serverFilehosts,
 } from "../../lib/ircUtils";
+import { jumpToReply } from "../../lib/jumpToReply";
 import {
   canShowAvatarUrl,
   canShowMedia,
@@ -892,15 +894,11 @@ export const MessageItem = memo((props: MessageItemProps) => {
     ? null
     : (message.tags?.["+reply"] ?? message.tags?.["+draft/reply"])?.trim() ||
       null;
-  const revealByMsgid = (msgid: string) => {
-    const key = `${message.serverId}-${message.channelId}`;
-    const loaded = useStore
-      .getState()
-      .messages[key]?.find(
-        (m) => m.msgid === msgid || m.multilineMessageIds?.includes(msgid),
-      );
-    if (loaded) useStore.getState().revealMessage(loaded.id);
-  };
+  const savedReply = useSavedReply(
+    message.serverId,
+    message.channelId,
+    unloadedReplyId,
+  );
 
   // Someone said our name, or answered something we said. Either way the row
   // is worth finding again while scrolling past everything else.
@@ -1010,7 +1008,16 @@ export const MessageItem = memo((props: MessageItemProps) => {
               />
             )}
             {unloadedReplyId && (
-              <UnloadedReply onClick={() => revealByMsgid(unloadedReplyId)} />
+              <UnloadedReply
+                saved={savedReply}
+                onClick={() =>
+                  void jumpToReply(
+                    message.serverId,
+                    message.channelId,
+                    unloadedReplyId,
+                  )
+                }
+              />
             )}
 
             {encryptedMedia && (
