@@ -222,7 +222,7 @@ impl<T: AsyncRead + AsyncWrite + Unpin + Send> AsyncStream for T {}
 // directly. The verifier needs the JVM once, which it keeps for the process.
 #[cfg(target_os = "android")]
 fn android_tls_config() -> Result<StdArc<rustls::ClientConfig>, String> {
-    use jni::{objects::JObject, JavaVM};
+    use jni22::{objects::JObject, JavaVM};
     use rustls_platform_verifier::BuilderVerifierExt;
     use std::sync::OnceLock;
 
@@ -232,11 +232,14 @@ fn android_tls_config() -> Result<StdArc<rustls::ClientConfig>, String> {
     }
     let ctx = ndk_context::android_context();
     // SAFETY: pointers come from the Android runtime and are valid for the app lifetime.
-    let vm = unsafe { JavaVM::from_raw(ctx.vm().cast()) }.map_err(|e| e.to_string())?;
-    let mut env = vm.attach_current_thread().map_err(|e| e.to_string())?;
-    let context = unsafe { JObject::from_raw(ctx.context().cast()) };
-    rustls_platform_verifier::android::init_with_env(&mut env, context)
-        .map_err(|e| format!("Failed to reach the Android certificate verifier: {}", e))?;
+    let vm = unsafe { JavaVM::from_raw(ctx.vm().cast()) };
+    vm.attach_current_thread(|env| {
+        let context = unsafe { JObject::from_raw(env, ctx.context().cast()) };
+        rustls_platform_verifier::android::init_with_env(env, context)
+    })
+    .map_err(|e: jni22::errors::Error| {
+        format!("Failed to reach the Android certificate verifier: {}", e)
+    })?;
     let config = rustls::ClientConfig::builder()
         .with_platform_verifier()
         .map_err(|e| format!("Failed to create TLS verifier: {}", e))?
