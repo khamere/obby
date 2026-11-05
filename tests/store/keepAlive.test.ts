@@ -133,7 +133,7 @@ describe("keep-alive service", () => {
   it("follows the connected networks and asks for the battery exemption once", async () => {
     stop = registerKeepAliveHandlers(useStore);
     await settle();
-    expect(lastCall()[0]).toBe(false);
+    expect(lastCall()).toEqual([false, "", ""]);
     useStore.setState({ servers: [server("a", true), server("b", true)] });
     await settle();
     expect(lastCall()).toEqual([true, "Connected to 2 networks", "Connection"]);
@@ -145,7 +145,7 @@ describe("keep-alive service", () => {
       globalSettings: { ...state.globalSettings, keepConnectionAlive: false },
     }));
     await settle();
-    expect(lastCall()[0]).toBe(false);
+    expect(lastCall()).toEqual([false, "", ""]);
     useStore.setState({ servers: [server("a", true), server("c", true)] });
     await settle();
     expect(bridge.requestBatteryExemption).toHaveBeenCalledTimes(1);

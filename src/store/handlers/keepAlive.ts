@@ -35,10 +35,15 @@ export function registerKeepAliveHandlers(
     const count = connectedNetworks(state);
     const enabled =
       state.globalSettings.keepConnectionAlive !== false && count > 0;
-    const status = plural(count, {
-      one: "Connected to # network",
-      other: "Connected to # networks",
-    });
+    // The store is created before the locale is activated, and translating
+    // then throws; a stopped service needs no text, so none is made for it.
+    const status = enabled
+      ? plural(count, {
+          one: "Connected to # network",
+          other: "Connected to # networks",
+        })
+      : "";
+    const channelName = enabled ? t`Connection` : "";
     const wanted = JSON.stringify([enabled, status]);
     // The exemption dialog can only be shown from the foreground, so a hidden
     // app leaves the question for the next look while it is on the screen.
@@ -53,7 +58,7 @@ export function registerKeepAliveHandlers(
     if (wanted === requested) return;
     requested = wanted;
     queue = queue
-      .then(() => setKeepAlive(enabled, status, t`Connection`))
+      .then(() => setKeepAlive(enabled, status, channelName))
       .then(
         () => {
           applied = wanted;
