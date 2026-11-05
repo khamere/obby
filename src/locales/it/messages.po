@@ -701,10 +701,6 @@ msgstr "Consenti Obby in Registrazione schermo nelle Impostazioni di Sistema, po
 msgid "Already in {0}"
 msgstr "Già in {0}"
 
-#: src/components/ui/MuteModal.tsx
-msgid "Also mute mentions"
-msgstr "Silenzia anche le menzioni"
-
 #: src/components/pages/SettingsPage.tsx
 msgid "Also preview YouTube, Vimeo, SoundCloud, and similar known services."
 msgstr "Mostra anche l'anteprima di YouTube, Vimeo, SoundCloud e servizi simili noti."
@@ -3866,6 +3862,11 @@ msgstr "Silenzia notifiche"
 msgid "Mute or unmute notification sounds"
 msgstr "Attiva o disattiva i suoni delle notifiche"
 
+#. placeholder {0}: muted.length
+#: src/components/ui/MentionsInbox.tsx
+msgid "Muted channels ({0})"
+msgstr "Canali silenziati ({0})"
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Muted text"
 msgstr "Testo attenuato"
@@ -4166,10 +4167,6 @@ msgstr "Nessun suono, notifica o punto rosso per i messaggi di questa persona."
 #: src/components/ui/MuteModal.tsx
 msgid "No sound, notification or red dot from this channel, even when someone mentions you."
 msgstr "Nessun suono, notifica o punto rosso da questo canale, nemmeno quando qualcuno ti menziona."
-
-#: src/components/ui/MuteModal.tsx
-msgid "No sound, notification or red dot from this channel, except when someone mentions you."
-msgstr "Nessun suono, notifica o punto rosso da questo canale, tranne quando qualcuno ti menziona."
 
 #: src/components/ui/settings/CallSpeakerField.tsx
 msgid "No speaker detected."

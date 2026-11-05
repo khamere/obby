@@ -701,10 +701,6 @@ msgstr "시스템 설정의 화면 기록에서 Obby를 허용한 다음 다시 
 msgid "Already in {0}"
 msgstr "이미 {0}에 있음"
 
-#: src/components/ui/MuteModal.tsx
-msgid "Also mute mentions"
-msgstr "언급도 음소거"
-
 #: src/components/pages/SettingsPage.tsx
 msgid "Also preview YouTube, Vimeo, SoundCloud, and similar known services."
 msgstr "YouTube, Vimeo, SoundCloud 등 알려진 서비스도 미리 보기합니다."
@@ -3866,6 +3862,11 @@ msgstr "알림 음소거"
 msgid "Mute or unmute notification sounds"
 msgstr "알림 소리 음소거 또는 해제"
 
+#. placeholder {0}: muted.length
+#: src/components/ui/MentionsInbox.tsx
+msgid "Muted channels ({0})"
+msgstr "음소거된 채널 ({0})"
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Muted text"
 msgstr "흐린 텍스트"
@@ -4166,10 +4167,6 @@ msgstr "이 사람의 메시지에 소리, 알림, 빨간 점을 표시하지 �
 #: src/components/ui/MuteModal.tsx
 msgid "No sound, notification or red dot from this channel, even when someone mentions you."
 msgstr "누군가 나를 언급하더라도 이 채널에서 소리, 알림, 빨간 점을 표시하지 않습니다."
-
-#: src/components/ui/MuteModal.tsx
-msgid "No sound, notification or red dot from this channel, except when someone mentions you."
-msgstr "누군가 나를 언급할 때를 제외하고 이 채널에서 소리, 알림, 빨간 점을 표시하지 않습니다."
 
 #: src/components/ui/settings/CallSpeakerField.tsx
 msgid "No speaker detected."

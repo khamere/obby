@@ -701,10 +701,6 @@ msgstr "Autorisez Obby dans Enregistrement de l’écran dans Réglages Système
 msgid "Already in {0}"
 msgstr "Déjà dans {0}"
 
-#: src/components/ui/MuteModal.tsx
-msgid "Also mute mentions"
-msgstr "Couper aussi les mentions"
-
 #: src/components/pages/SettingsPage.tsx
 msgid "Also preview YouTube, Vimeo, SoundCloud, and similar known services."
 msgstr "Prévisualiser aussi YouTube, Vimeo, SoundCloud et services connus similaires."
@@ -3866,6 +3862,11 @@ msgstr "Couper les notifications"
 msgid "Mute or unmute notification sounds"
 msgstr "Activer ou désactiver les sons de notification"
 
+#. placeholder {0}: muted.length
+#: src/components/ui/MentionsInbox.tsx
+msgid "Muted channels ({0})"
+msgstr "Canaux en sourdine ({0})"
+
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Muted text"
 msgstr "Texte atténué"
@@ -4166,10 +4167,6 @@ msgstr "Ni son, ni notification, ni point rouge pour les messages de cette perso
 #: src/components/ui/MuteModal.tsx
 msgid "No sound, notification or red dot from this channel, even when someone mentions you."
 msgstr "Ni son, ni notification, ni point rouge pour ce salon, même quand quelqu'un vous mentionne."
-
-#: src/components/ui/MuteModal.tsx
-msgid "No sound, notification or red dot from this channel, except when someone mentions you."
-msgstr "Ni son, ni notification, ni point rouge pour ce salon, sauf quand quelqu'un vous mentionne."
 
 #: src/components/ui/settings/CallSpeakerField.tsx
 msgid "No speaker detected."
