@@ -688,10 +688,22 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
       !readyServer.isBouncerControl
     ) {
       setTimeout(
-        () => requestTargets(store, serverId, CHATHISTORY_TARGETS_WINDOW_MS),
+        () =>
+          requestTargets(store, serverId, CHATHISTORY_TARGETS_WINDOW_MS, false),
         50,
       );
     }
+  });
+
+  // Batch tags are only unique per connection, so the key carries the server.
+  const targetBatches = new Set<string>();
+  ircClient.on("BATCH_START", ({ serverId, batchId, type }) => {
+    if (type === "draft/chathistory-targets")
+      targetBatches.add(`${serverId}:${batchId}`);
+  });
+  ircClient.on("BATCH_END", ({ serverId, batchId }) => {
+    if (targetBatches.delete(`${serverId}:${batchId}`))
+      questions.delete(serverId);
   });
 
   ircClient.on("CHATHISTORY_TARGET", ({ serverId, target, timestamp }) => {
@@ -705,11 +717,14 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
     const conversation = findConversation(store, serverId, target);
     const isChannel = ircClient.isChannel(serverId, target);
     if (conversation) {
-      if (isChannel && !isCatchingUp(serverId)) return;
+      const question = outstandingQuestion(serverId);
+      if (isChannel && !question?.isWake) return;
       // A line that came in live while the answer was on its way says
       // nothing about earlier ones, so the newest message from before the
       // question is what the answer is measured against.
-      const newest = baselineFor(store, serverId, conversation.key);
+      const newest = question?.baseline.has(conversation.key)
+        ? question.baseline.get(conversation.key)
+        : newestMessageTime(store.getState(), conversation.key);
       if (newest === undefined || Date.parse(timestamp) > newest)
         ircClient.loadLatestHistory(serverId, target);
       return;
@@ -724,46 +739,58 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
   });
 }
 
-// The targets a wake asks for cover a day, and their answer is treated as
-// a catch-up for this long, channels included.
+// The targets a wake asks for cover a day. A question stays open until its
+// answer batch ends, or for this long on a server that answers unbatched.
 const CATCH_UP_WINDOW_MS = 24 * 60 * 60 * 1000;
-const CATCH_UP_ANSWER_MS = 30 * 1000;
-const catchUpUntil = new Map<string, number>();
-// The newest message of every conversation at the moment the question went
-// out, per server.
-const targetsBaseline = new Map<string, Map<string, number | undefined>>();
+const QUESTION_FALLBACK_MS = 5 * 60 * 1000;
 
-function isCatchingUp(serverId: string): boolean {
-  return (catchUpUntil.get(serverId) ?? 0) > Date.now();
+interface TargetsQuestion {
+  // The newest message of every conversation when the question went out.
+  baseline: Map<string, number | undefined>;
+  // A wake's question refreshes channels too; a connect's leaves them to
+  // their rejoin.
+  isWake: boolean;
+  askedAt: number;
 }
 
-function baselineFor(
-  store: StoreApi<AppState>,
+const questions = new Map<string, TargetsQuestion>();
+
+export function outstandingQuestion(
   serverId: string,
-  key: string,
-): number | undefined {
-  const baseline = targetsBaseline.get(serverId);
-  return baseline?.has(key)
-    ? baseline.get(key)
-    : newestMessageTime(store.getState(), key);
+): TargetsQuestion | undefined {
+  const question = questions.get(serverId);
+  if (!question) return undefined;
+  if (Date.now() - question.askedAt > QUESTION_FALLBACK_MS) {
+    questions.delete(serverId);
+    return undefined;
+  }
+  return question;
 }
 
 function requestTargets(
   store: StoreApi<AppState>,
   serverId: string,
   windowMs: number,
+  isWake: boolean,
 ): void {
   const state = store.getState();
   const server = state.servers.find((s) => s.id === serverId);
-  const baseline = new Map<string, number | undefined>();
+  // A question asked while another is unanswered keeps the older snapshot,
+  // since lines that arrived in between are exactly what may hide a gap.
+  const earlier = outstandingQuestion(serverId);
+  const baseline = new Map(earlier?.baseline ?? []);
   for (const chat of [
     ...(server?.channels ?? []),
     ...(server?.privateChats ?? []),
   ]) {
     const key = `${serverId}-${chat.id}`;
-    baseline.set(key, newestMessageTime(state, key));
+    if (!baseline.has(key)) baseline.set(key, newestMessageTime(state, key));
   }
-  targetsBaseline.set(serverId, baseline);
+  questions.set(serverId, {
+    baseline,
+    isWake: isWake || !!earlier?.isWake,
+    askedAt: Date.now(),
+  });
   const to = new Date();
   const from = new Date(to.getTime() - windowMs);
   ircClient.sendRaw(
@@ -786,8 +813,7 @@ export function catchUpHistory(
     !server.capabilities?.includes("draft/chathistory")
   )
     return;
-  catchUpUntil.set(serverId, Date.now() + CATCH_UP_ANSWER_MS);
-  requestTargets(store, serverId, CATCH_UP_WINDOW_MS);
+  requestTargets(store, serverId, CATCH_UP_WINDOW_MS, true);
 }
 
 // How far back to look for conversations on connect, and how many targets

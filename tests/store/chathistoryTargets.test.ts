@@ -343,9 +343,9 @@ describe("catching up after a wake", () => {
         ],
       },
     }));
-    // An earlier wake's window is over; without a wake, a channel named by
-    // the server is left to its rejoin.
-    vi.advanceTimersByTime(31_000);
+    // An earlier test's question is past its fallback; without a wake, a
+    // channel named by the server is left to its rejoin.
+    vi.advanceTimersByTime(6 * 60_000);
     feed(":soju CHATHISTORY TARGETS #lobby 2026-10-14T18:14:46.716Z");
     expect(sent().some((l) => l.startsWith("CHATHISTORY LATEST #lobby"))).toBe(
       false,
@@ -355,7 +355,18 @@ describe("catching up after a wake", () => {
     expect(
       sent().some((l) => l.startsWith("CHATHISTORY TARGETS timestamp=")),
     ).toBe(true);
-    feed(":soju CHATHISTORY TARGETS #lobby 2026-10-14T18:14:46.716Z");
+    // The answer may take longer than any fixed wait.
+    vi.advanceTimersByTime(90_000);
+    feed(
+      ":soju BATCH +w draft/chathistory-targets",
+      "@batch=w :soju CHATHISTORY TARGETS #lobby 2026-10-14T18:14:46.716Z",
+      ":soju BATCH -w",
+    );
     expect(sent()).toContain("CHATHISTORY LATEST #lobby * 50");
+    // Once answered, a later channel report is left to its rejoin again.
+    feed(":soju CHATHISTORY TARGETS #lobby 2026-10-14T18:20:00.000Z");
+    expect(
+      sent().filter((l) => l === "CHATHISTORY LATEST #lobby * 50"),
+    ).toHaveLength(1);
   });
 });
