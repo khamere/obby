@@ -39,6 +39,7 @@ export const MentionsInbox: React.FC = () => {
   // A timed mute ends without a mute change, so the groups are rebuilt
   // when the earliest one runs out.
   const [expired, setExpired] = useState(0);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: nextMuteExpiry reads the mute state that `mutes` tracks, and `expired` re-arms the timer
   useEffect(() => {
     const next = nextMuteExpiry();
     if (next === undefined) return;
