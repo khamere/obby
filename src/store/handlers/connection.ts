@@ -6,12 +6,14 @@ import type { PrivateChat } from "../../types";
 import {
   generateDeterministicId,
   getServerSelection,
+  newestMessageTime,
   serverSupportsMetadata,
   setServerSelection,
 } from "../helpers";
 import type { AppState } from "../index";
 import * as storage from "../localStorage";
 import { forgetJoins } from "../pendingJoins";
+import { findConversation } from "./history";
 import { reportServerReply } from "./serverReplies";
 
 // Track which servers have had their ready handler run to prevent duplicate processing
@@ -685,34 +687,74 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
       readyServer?.capabilities?.includes("draft/chathistory") &&
       !readyServer.isBouncerControl
     ) {
-      setTimeout(() => {
-        const to = new Date();
-        const from = new Date(to.getTime() - CHATHISTORY_TARGETS_WINDOW_MS);
-        ircClient.sendRaw(
-          serverId,
-          `CHATHISTORY TARGETS timestamp=${from.toISOString()} timestamp=${to.toISOString()} ${CHATHISTORY_TARGETS_LIMIT}`,
-        );
-      }, 50);
+      setTimeout(
+        () => requestTargets(serverId, CHATHISTORY_TARGETS_WINDOW_MS),
+        50,
+      );
     }
   });
 
   ircClient.on("CHATHISTORY_TARGET", ({ serverId, target, timestamp }) => {
-    if (isChannelTarget(target)) return;
     const self = ircClient.getNick(serverId);
     if (self && self.toLowerCase() === target.toLowerCase()) return;
+    const server = store.getState().servers.find((s) => s.id === serverId);
+    if (!server) return;
+    // A conversation we already show gets the page it is missing. Channels
+    // fetch their page when they are rejoined, so only a wake asks for
+    // theirs; a bouncer replays nothing to a client that can ask.
+    const conversation = findConversation(store, serverId, target);
+    if (conversation) {
+      if (isChannelTarget(target) && !isCatchingUp(serverId)) return;
+      const newest = newestMessageTime(store.getState(), conversation.key);
+      if (newest === undefined || Date.parse(timestamp) > newest)
+        ircClient.loadLatestHistory(serverId, target);
+      return;
+    }
+    if (isChannelTarget(target)) return;
     // The user closed this chat; only bring it back for newer activity.
     const closedAt = storage.closedChats.closedAt(serverId, target);
     if (closedAt && Date.parse(timestamp) <= Date.parse(closedAt)) return;
-    const server = store.getState().servers.find((s) => s.id === serverId);
-    if (!server) return;
-    const exists = server.privateChats?.some(
-      (pc) => pc.username.toLowerCase() === target.toLowerCase(),
-    );
-    if (exists) return;
     // openPrivateChat creates the (unpinned) chat, MONITORs the nick and
     // requests CHATHISTORY LATEST for it.
     store.getState().openPrivateChat(serverId, target);
   });
+}
+
+// The targets a wake asks for cover a day, and their answer is treated as
+// a catch-up for this long, channels included.
+const CATCH_UP_WINDOW_MS = 24 * 60 * 60 * 1000;
+const CATCH_UP_ANSWER_MS = 30 * 1000;
+const catchUpUntil = new Map<string, number>();
+
+function isCatchingUp(serverId: string): boolean {
+  return (catchUpUntil.get(serverId) ?? 0) > Date.now();
+}
+
+function requestTargets(serverId: string, windowMs: number): void {
+  const to = new Date();
+  const from = new Date(to.getTime() - windowMs);
+  ircClient.sendRaw(
+    serverId,
+    `CHATHISTORY TARGETS timestamp=${from.toISOString()} timestamp=${to.toISOString()} ${CHATHISTORY_TARGETS_LIMIT}`,
+  );
+}
+
+// A connection that survived the app's sleep may still have missed lines:
+// a phone cuts the network under a live socket. Asking the server what
+// moved since then fills every open conversation that fell behind.
+export function catchUpHistory(
+  store: StoreApi<AppState>,
+  serverId: string,
+): void {
+  const server = store.getState().servers.find((s) => s.id === serverId);
+  if (
+    !server?.isConnected ||
+    server.isBouncerControl ||
+    !server.capabilities?.includes("draft/chathistory")
+  )
+    return;
+  catchUpUntil.set(serverId, Date.now() + CATCH_UP_ANSWER_MS);
+  requestTargets(serverId, CATCH_UP_WINDOW_MS);
 }
 
 // How far back to look for conversations on connect, and how many targets

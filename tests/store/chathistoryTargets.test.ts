@@ -7,20 +7,21 @@ const serverId = "s1";
 
 function seed(capabilities: string[] = ["draft/chathistory"]) {
   ircClient.nicks.set(serverId, "me");
+  const server = {
+    id: serverId,
+    name: "soju",
+    host: "bouncer.test",
+    port: 6697,
+    isConnected: true,
+    users: [],
+    channels: [],
+    privateChats: [],
+    capabilities,
+  } as unknown as Server;
+  // The client answers chathistory questions from its own server record.
+  ircClient.servers.set(serverId, { ...server } as never);
   useStore.setState({
-    servers: [
-      {
-        id: serverId,
-        name: "soju",
-        host: "bouncer.test",
-        port: 6697,
-        isConnected: true,
-        users: [],
-        channels: [],
-        privateChats: [],
-        capabilities,
-      } as unknown as Server,
-    ],
+    servers: [server],
     messages: {},
     activeBatches: {},
     processedMessageIds: new Set(),
@@ -65,6 +66,7 @@ describe("CHATHISTORY TARGETS on connect", () => {
     vi.useRealTimers();
     vi.restoreAllMocks();
     ircClient.nicks.delete(serverId);
+    ircClient.servers.delete(serverId);
   });
 
   it("asks the server which conversations had recent activity", () => {
@@ -96,6 +98,7 @@ describe("CHATHISTORY TARGETS replies", () => {
     vi.useRealTimers();
     vi.restoreAllMocks();
     ircClient.nicks.delete(serverId);
+    ircClient.servers.delete(serverId);
   });
 
   it("reopens an unpinned private chat for a nick target", () => {
@@ -132,6 +135,83 @@ describe("CHATHISTORY TARGETS replies", () => {
     expect(pms()).toEqual([{ username: "bob", isPinned: false }]);
   });
 
+  it("fetches the latest page of an open private chat that has newer activity", () => {
+    useStore.setState((state) => ({
+      servers: state.servers.map((s) => ({
+        ...s,
+        privateChats: [
+          {
+            id: "pm-alice",
+            username: "alice",
+            serverId,
+            unreadCount: 0,
+            isMentioned: false,
+            isPinned: true,
+          },
+        ],
+      })),
+      messages: {
+        [`${serverId}-pm-alice`]: [
+          {
+            id: "m1",
+            msgid: "m1",
+            type: "message",
+            content: "hi",
+            timestamp: new Date("2026-10-14T10:00:00.000Z"),
+            userId: "me",
+            channelId: "pm-alice",
+            serverId,
+            reactions: [],
+            replyMessage: null,
+            mentioned: [],
+          },
+        ],
+      },
+    }));
+    feed(":soju CHATHISTORY TARGETS alice 2026-10-14T18:14:42.492Z");
+    vi.runOnlyPendingTimers();
+    expect(sent()).toContain("CHATHISTORY LATEST alice * 50");
+    expect(pms()).toEqual([{ username: "alice", isPinned: true }]);
+  });
+
+  it("leaves an open private chat alone when nothing newer happened", () => {
+    useStore.setState((state) => ({
+      servers: state.servers.map((s) => ({
+        ...s,
+        privateChats: [
+          {
+            id: "pm-alice",
+            username: "alice",
+            serverId,
+            unreadCount: 0,
+            isMentioned: false,
+            isPinned: true,
+          },
+        ],
+      })),
+      messages: {
+        [`${serverId}-pm-alice`]: [
+          {
+            id: "m1",
+            msgid: "m1",
+            type: "message",
+            content: "hi",
+            timestamp: new Date("2026-10-14T19:00:00.000Z"),
+            userId: "alice",
+            channelId: "pm-alice",
+            serverId,
+            reactions: [],
+            replyMessage: null,
+            mentioned: [],
+          },
+        ],
+      },
+    }));
+    feed(":soju CHATHISTORY TARGETS alice 2026-10-14T18:14:42.492Z");
+    vi.runOnlyPendingTimers();
+    expect(sent().some((l) => l.startsWith("CHATHISTORY LATEST"))).toBe(false);
+  });
+
   it("does not duplicate or re-pin an existing private chat", () => {
     useStore.setState((state) => ({
       servers: state.servers.map((s) => ({
@@ -151,5 +231,73 @@ describe("CHATHISTORY TARGETS replies", () => {
     feed(":soju CHATHISTORY TARGETS alice 2026-10-14T18:14:42.492Z");
     vi.runOnlyPendingTimers();
     expect(pms()).toEqual([{ username: "Alice", isPinned: true }]);
+  });
+});
+
+describe("catching up after a wake", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    seed();
+  });
+  afterEach(() => {
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+    ircClient.nicks.delete(serverId);
+    ircClient.servers.delete(serverId);
+  });
+
+  it("asks for a day of activity and refreshes channels that fell behind", async () => {
+    const { catchUpHistory } = await import(
+      "../../src/store/handlers/connection"
+    );
+    useStore.setState((state) => ({
+      servers: state.servers.map((s) => ({
+        ...s,
+        channels: [
+          {
+            id: "ch-lobby",
+            name: "#lobby",
+            serverId,
+            unreadCount: 0,
+            isMentioned: false,
+            messages: [],
+            users: [],
+            topic: "",
+            isPrivate: false,
+          },
+        ],
+      })),
+      messages: {
+        [`${serverId}-ch-lobby`]: [
+          {
+            id: "m1",
+            msgid: "m1",
+            type: "message",
+            content: "old",
+            timestamp: new Date("2026-10-14T10:00:00.000Z"),
+            userId: "bob",
+            channelId: "ch-lobby",
+            serverId,
+            reactions: [],
+            replyMessage: null,
+            mentioned: [],
+          },
+        ],
+      },
+    }));
+    // Without a wake, a channel named by the server is left to its rejoin.
+    feed(":soju CHATHISTORY TARGETS #lobby 2026-10-14T18:14:46.716Z");
+    expect(sent().some((l) => l.startsWith("CHATHISTORY LATEST #lobby"))).toBe(
+      false,
+    );
+
+    catchUpHistory(useStore, serverId);
+    expect(
+      sent().some((l) => l.startsWith("CHATHISTORY TARGETS timestamp=")),
+    ).toBe(true);
+    feed(":soju CHATHISTORY TARGETS #lobby 2026-10-14T18:14:46.716Z");
+    expect(sent()).toContain("CHATHISTORY LATEST #lobby * 50");
   });
 });
