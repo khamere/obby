@@ -43,16 +43,30 @@ function loadedReply(key: string, msgid: string) {
 }
 
 // Resolves once the conversation's oldest loaded message is no longer the
-// given one or loading ends, or on timeout. A page read from disk may have
-// landed before the wait starts.
+// given one, loading ends, the server refuses the page, or on timeout. A
+// page read from disk may have landed before the wait starts.
 function waitForOlderPage(
   key: string,
   serverId: string,
   oldestId: string | undefined,
-): Promise<void> {
+  target: string,
+): Promise<"page" | "refused"> {
   return new Promise((resolve) => {
     if (useStore.getState().messages[key]?.[0]?.id !== oldestId)
-      return resolve();
+      return resolve("page");
+    const onFail: Parameters<typeof ircClient.on<"FAIL">>[1] = (fail) => {
+      if (fail.serverId !== serverId || fail.command !== "CHATHISTORY") return;
+      if (!fail.context.some((p) => p.toLowerCase() === target.toLowerCase()))
+        return;
+      finish("refused");
+    };
+    const finish = (outcome: "page" | "refused") => {
+      stop();
+      ircClient.deleteHook("FAIL", onFail);
+      clearTimeout(timer);
+      resolve(outcome);
+    };
+    ircClient.on("FAIL", onFail);
     const isLoading = () => {
       const server = useStore.getState().servers.find((s) => s.id === serverId);
       return [
@@ -67,14 +81,9 @@ function waitForOlderPage(
       const oldestChanged =
         useStore.getState().messages[key]?.[0]?.id !== oldestId;
       if (!oldestChanged && (loading || !sawLoading)) return;
-      stop();
-      clearTimeout(timer);
-      resolve();
+      finish("page");
     });
-    const timer = setTimeout(() => {
-      stop();
-      resolve();
-    }, OLDER_PAGE_TIMEOUT_MS);
+    const timer = setTimeout(() => finish("page"), OLDER_PAGE_TIMEOUT_MS);
   });
 }
 
@@ -112,6 +121,7 @@ export async function jumpToReply(
       return;
     }
   }
+  let direct = false;
   for (let page = 0; page < MAX_OLDER_PAGES; page++) {
     const oldest = useStore.getState().messages[key]?.[0];
     const oldestTime = oldest
@@ -124,15 +134,20 @@ export async function jumpToReply(
       serverId,
       target,
       oldestTime,
-    ).catch(() =>
-      ircClient.requestChathistoryBefore(
+    ).catch(() => {
+      direct = true;
+      // No loading mark, since a refusal would leave it on with nothing to
+      // clear it.
+      return ircClient.requestChathistoryBefore(
         serverId,
         target,
         new Date(oldestTime).toISOString(),
-      ),
-    );
+        { showLoading: false },
+      );
+    });
     if (!coming) break;
-    await waitForOlderPage(key, serverId, oldest?.id);
+    const outcome = await waitForOlderPage(key, serverId, oldest?.id, target);
+    if (outcome === "refused" && direct) break;
     const found = loadedReply(key, msgid);
     if (found) {
       useStore.getState().revealMessage(found.id);
