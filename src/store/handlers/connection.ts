@@ -719,10 +719,13 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
     if (question.unanswered <= 0) questions.delete(serverId);
   });
 
-  // A refused page opens no batch, so the refusal is what releases it.
+  // A refused page opens no batch, so the refusal is what releases it. The
+  // context names the subcommand and the target, and only a LATEST is ours.
   ircClient.on("FAIL", ({ serverId, command, context }) => {
     if (command !== "CHATHISTORY") return;
-    for (const part of context) pagesInFlight.delete(pageKey(serverId, part));
+    const [subcommand, target] = context;
+    if (subcommand?.toUpperCase() !== "LATEST" || !target) return;
+    pagesInFlight.delete(pageKey(serverId, target));
   });
 
   ircClient.on("CHATHISTORY_TARGET", ({ serverId, target, timestamp }) => {
