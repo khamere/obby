@@ -251,7 +251,15 @@ export async function findSavedMessage(
   msgid: string,
 ): Promise<SavedMessage | null> {
   if (!isEnabled(store)) return null;
-  const row = await rowByMsgid(serverId, target.toLowerCase(), msgid);
+  let row: HistoryRow | undefined;
+  try {
+    row = await rowByMsgid(serverId, target.toLowerCase(), msgid);
+  } catch (error) {
+    // A database another tab holds open counts as no saved copy, so the
+    // server can still be asked.
+    console.warn("saved history unavailable", error);
+    return null;
+  }
   if (!row || row.nick === undefined || row.text === undefined) return null;
   return { nick: row.nick, text: row.text, time: row.time };
 }

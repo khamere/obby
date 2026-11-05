@@ -131,6 +131,23 @@ describe("jumpToReply", () => {
     expect(reportJumpFailure).not.toHaveBeenCalled();
   });
 
+  it("sees a page that landed before the wait, such as one read from disk", async () => {
+    vi.mocked(findSavedMessage).mockResolvedValue(null);
+    vi.mocked(loadOlderMessages).mockImplementation(async () => {
+      useStore.setState((state) => ({
+        messages: {
+          [key]: [
+            line("m0", "id-0", "2026-10-14T09:30:00Z"),
+            ...state.messages[key],
+          ],
+        },
+      }));
+      return true;
+    });
+    await jumpToReply(serverId, "ch-dev", "id-0");
+    expect(useStore.getState().revealMessage).toHaveBeenCalledWith("m0");
+  }, 2000);
+
   it("gives up when the server has nothing older", async () => {
     vi.mocked(findSavedMessage).mockResolvedValue(null);
     vi.mocked(loadOlderMessages).mockResolvedValue(false);

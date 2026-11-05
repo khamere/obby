@@ -200,6 +200,17 @@ export const MessageItem = memo((props: MessageItemProps) => {
   const mediaChannelId = channelId ?? privateChatId;
   const pmUserCache = useRef(new Map<string, User>());
   const isNarrowView = useMediaQuery();
+  // A reply whose original is not loaded still shows as a reply; the msgid
+  // finds the original once history has brought it in.
+  const unloadedReplyId = message.replyMessage
+    ? null
+    : (message.tags?.["+reply"] ?? message.tags?.["+draft/reply"])?.trim() ||
+      null;
+  const savedReply = useSavedReply(
+    message.serverId,
+    message.channelId,
+    unloadedReplyId,
+  );
   const isTouchDevice = useIsTouchInput();
   const messageRowRef = useRef<HTMLDivElement>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -887,18 +898,6 @@ export const MessageItem = memo((props: MessageItemProps) => {
     if (message.replyMessage?.id)
       useStore.getState().revealMessage(message.replyMessage.id);
   };
-
-  // A reply whose original is not loaded still shows as a reply; the msgid
-  // finds the original once history has brought it in.
-  const unloadedReplyId = message.replyMessage
-    ? null
-    : (message.tags?.["+reply"] ?? message.tags?.["+draft/reply"])?.trim() ||
-      null;
-  const savedReply = useSavedReply(
-    message.serverId,
-    message.channelId,
-    unloadedReplyId,
-  );
 
   // Someone said our name, or answered something we said. Either way the row
   // is worth finding again while scrolling past everything else.
