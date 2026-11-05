@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import ircClient from "../../src/lib/ircClient";
 import { jumpToMessage, reportJumpFailure } from "../../src/lib/jumpToMessage";
 import { jumpToReply, savedReply } from "../../src/lib/jumpToReply";
 import useStore from "../../src/store";
@@ -147,6 +148,34 @@ describe("jumpToReply", () => {
     await jumpToReply(serverId, "ch-dev", "id-0");
     expect(useStore.getState().revealMessage).toHaveBeenCalledWith("m0");
   }, 2000);
+
+  it("asks the server directly when saved history is unreachable", async () => {
+    vi.mocked(findSavedMessage).mockResolvedValue(null);
+    vi.mocked(loadOlderMessages).mockRejectedValue(new Error("blocked"));
+    const before = vi
+      .spyOn(ircClient, "requestChathistoryBefore")
+      .mockImplementation(() => {
+        setTimeout(() => {
+          useStore.setState((state) => ({
+            messages: {
+              [key]: [
+                line("m0", "id-0", "2026-10-14T09:30:00Z"),
+                ...state.messages[key],
+              ],
+            },
+          }));
+        }, 0);
+        return true;
+      });
+    await jumpToReply(serverId, "ch-dev", "id-0");
+    expect(before).toHaveBeenCalledWith(
+      serverId,
+      "#dev",
+      "2026-10-14T10:02:00.000Z",
+    );
+    expect(useStore.getState().revealMessage).toHaveBeenCalledWith("m0");
+    before.mockRestore();
+  });
 
   it("gives up when the server has nothing older", async () => {
     vi.mocked(findSavedMessage).mockResolvedValue(null);

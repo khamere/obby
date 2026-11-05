@@ -45,7 +45,11 @@ import {
   searchCandidates,
   searchMessages,
 } from "../../lib/history/historySearch";
-import { containsLink, plainText } from "../../lib/history/searchFields";
+import {
+  containsLink,
+  plainText,
+  searchFieldsOf,
+} from "../../lib/history/searchFields";
 import ircClient from "../../lib/ircClient";
 import { parseMessageTags } from "../../lib/ircUtils";
 import type {
@@ -260,8 +264,12 @@ export async function findSavedMessage(
     console.warn("saved history unavailable", error);
     return null;
   }
-  if (!row || row.nick === undefined || row.text === undefined) return null;
-  return { nick: row.nick, text: row.text, time: row.time };
+  if (!row || row.ref !== undefined) return null;
+  // The row's own nick column is lowercased for search; the line keeps the
+  // casing the person uses.
+  const { nick, text } = searchFieldsOf(row.raw);
+  if (!nick) return null;
+  return { nick, text, time: row.time };
 }
 
 export async function hasSavedChat(
