@@ -5,6 +5,7 @@ import {
   type SavedMessage,
 } from "../store/handlers/history";
 import { findReplyTarget } from "../store/helpers";
+import ircClient from "./ircClient";
 import { jumpToMessage, reportJumpFailure } from "./jumpToMessage";
 
 // A server has no way to look a message up by id, so a reply to one that was
@@ -116,11 +117,19 @@ export async function jumpToReply(
     const oldestTime = oldest
       ? new Date(oldest.timestamp).getTime()
       : Date.now();
+    // Saved history may be unreachable while another tab holds the database;
+    // the server still has the page.
     const coming = await loadOlderMessages(
       useStore,
       serverId,
       target,
       oldestTime,
+    ).catch(() =>
+      ircClient.requestChathistoryBefore(
+        serverId,
+        target,
+        new Date(oldestTime).toISOString(),
+      ),
     );
     if (!coming) break;
     await waitForOlderPage(key, serverId, oldest?.id);
