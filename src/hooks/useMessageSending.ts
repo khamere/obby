@@ -407,6 +407,17 @@ export function useMessageSending({
             localReplyTo,
           );
         }
+      } else if (commandName.toLowerCase() === "topic") {
+        // The topic is the trailing parameter, so a topic with spaces reaches
+        // the server whole.
+        const rest = command.slice(commandName.length).trimStart();
+        const [first = ""] = rest.split(/\s/, 1);
+        const named = ircClient.isChannel(selectedServerId, first);
+        const channelName = named ? first : selectedChannel?.name;
+        if (!channelName) return;
+        const topic = named ? rest.slice(first.length).trimStart() : rest;
+        if (topic) ircClient.setTopic(selectedServerId, channelName, topic);
+        else ircClient.getTopic(selectedServerId, channelName);
       } else if (commandName === "away") {
         const message = args.join(" ");
         if (message) {

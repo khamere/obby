@@ -121,6 +121,24 @@ export function getClientCommands(): ClientCommand[] {
       ],
     },
     {
+      name: "topic",
+      description: t`Show or change a channel's topic`,
+      options: [
+        {
+          name: "channel",
+          type: "channel",
+          required: false,
+          description: t`Channel (defaults to current)`,
+        },
+        {
+          name: "topic",
+          type: "string",
+          required: false,
+          description: t`New topic`,
+        },
+      ],
+    },
+    {
       name: "away",
       description: t`Mark yourself as away`,
       options: [
@@ -149,6 +167,7 @@ export const CLIENT_COMMAND_NAMES: ReadonlySet<string> = new Set([
   "join",
   "part",
   "nick",
+  "topic",
   "away",
   "back",
 ]);
