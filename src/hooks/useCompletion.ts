@@ -24,6 +24,9 @@ export interface CompletionProvider<T> {
   // The first cycle step only fills the input, so Enter still sends; the list
   // appears from the second step on.
   quietFirstStep?: boolean;
+  // Whether the typed token already names what the user wants, so the list
+  // stays closed and Enter goes to the input.
+  isComplete?(query: string, items: readonly T[]): boolean;
   acceptKeys?: readonly string[];
   closeKeys?: readonly string[];
   cycleKeys?: readonly string[];
@@ -91,9 +94,10 @@ export function useCompletion<T = unknown>({
       if (!range) continue;
       const items = provider.getItems(range.query);
       // A token that already names its only suggestion is complete.
-      const isComplete =
-        items.length === 1 &&
-        provider.getKey(items[0]).toLowerCase() === range.query.toLowerCase();
+      const isComplete = provider.isComplete
+        ? provider.isComplete(range.query, items)
+        : items.length === 1 &&
+          provider.getKey(items[0]).toLowerCase() === range.query.toLowerCase();
       return isComplete ? null : { provider, range, items, base: text };
     }
     return null;

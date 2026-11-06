@@ -1209,6 +1209,10 @@ msgstr "將主題更改為：{topic}"
 msgid "channel"
 msgstr "頻道"
 
+#: src/lib/clientCommands.ts
+msgid "Channel (defaults to current)"
+msgstr "頻道（預設為目前頻道）"
+
 #: src/components/layout/MemberList.tsx
 msgid "Channel Admin"
 msgstr "頻道管理員"
@@ -3951,6 +3955,10 @@ msgstr "新密碼"
 msgid "New release {0}"
 msgstr "新版本 {0}"
 
+#: src/lib/clientCommands.ts
+msgid "New topic"
+msgstr "新主題"
+
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Next image"
 msgstr "下一张图片"
@@ -5782,6 +5790,10 @@ msgstr "顯示通知"
 #: src/lib/desktopTray.ts
 msgid "Show Obby"
 msgstr "顯示 Obby"
+
+#: src/lib/clientCommands.ts
+msgid "Show or change a channel's topic"
+msgstr "顯示或變更頻道主題"
 
 #: src/components/ui/QuickActions/uiActionConfig.tsx
 msgid "Show or hide the channel list sidebar"

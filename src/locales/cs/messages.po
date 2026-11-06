@@ -1209,6 +1209,10 @@ msgstr "změnil téma na: {topic}"
 msgid "channel"
 msgstr "kanál"
 
+#: src/lib/clientCommands.ts
+msgid "Channel (defaults to current)"
+msgstr "Kanál (výchozí je aktuální)"
+
 #: src/components/layout/MemberList.tsx
 msgid "Channel Admin"
 msgstr "Správce kanálu"
@@ -3951,6 +3955,10 @@ msgstr "Nové heslo"
 msgid "New release {0}"
 msgstr "Nové vydání {0}"
 
+#: src/lib/clientCommands.ts
+msgid "New topic"
+msgstr "Nové téma"
+
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Next image"
 msgstr "Další obrázek"
@@ -5782,6 +5790,10 @@ msgstr "Zobrazovat oznámení"
 #: src/lib/desktopTray.ts
 msgid "Show Obby"
 msgstr "Zobrazit Obby"
+
+#: src/lib/clientCommands.ts
+msgid "Show or change a channel's topic"
+msgstr "Zobrazit nebo změnit téma kanálu"
 
 #: src/components/ui/QuickActions/uiActionConfig.tsx
 msgid "Show or hide the channel list sidebar"
