@@ -135,6 +135,28 @@ describe("slashProvider", () => {
     expect(complete(provider, "/ro")).toBe("/roll@dice ");
   });
 
+  it("leaves Enter to the input once a command needing nothing more is typed", () => {
+    const provider = slashProvider(
+      [
+        ...commands,
+        { name: "rehash", source: { kind: "server" } },
+        {
+          name: "msg",
+          options: [{ name: "user", required: true }],
+          source: { kind: "client" },
+        },
+      ],
+      vi.fn(),
+    );
+    const isComplete = (query: string) =>
+      provider.isComplete?.(query, provider.getItems(query));
+    expect(isComplete("rehash")).toBe(true);
+    expect(isComplete("roll")).toBe(true);
+    expect(isComplete("reh")).toBe(false);
+    expect(isComplete("msg")).toBe(false);
+    expect(isComplete("forecast")).toBe(false);
+  });
+
   it("hands bot commands with options to the param form", () => {
     const onPickWithOptions = vi.fn();
     const provider = slashProvider(commands, onPickWithOptions);

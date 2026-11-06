@@ -1209,6 +1209,10 @@ msgstr "cambió el tema a: {topic}"
 msgid "channel"
 msgstr "canal"
 
+#: src/lib/clientCommands.ts
+msgid "Channel (defaults to current)"
+msgstr "Canal (por defecto, el actual)"
+
 #: src/components/layout/MemberList.tsx
 msgid "Channel Admin"
 msgstr "Administrador del canal"
@@ -3951,6 +3955,10 @@ msgstr "Nueva contraseña"
 msgid "New release {0}"
 msgstr "Nueva versión {0}"
 
+#: src/lib/clientCommands.ts
+msgid "New topic"
+msgstr "Nuevo tema"
+
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Next image"
 msgstr "Imagen siguiente"
@@ -5782,6 +5790,10 @@ msgstr "Mostrar notificaciones"
 #: src/lib/desktopTray.ts
 msgid "Show Obby"
 msgstr "Mostrar Obby"
+
+#: src/lib/clientCommands.ts
+msgid "Show or change a channel's topic"
+msgstr "Mostrar o cambiar el tema de un canal"
 
 #: src/components/ui/QuickActions/uiActionConfig.tsx
 msgid "Show or hide the channel list sidebar"

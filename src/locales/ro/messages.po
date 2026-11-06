@@ -1209,6 +1209,10 @@ msgstr "a schimbat subiectul la: {topic}"
 msgid "channel"
 msgstr "canal"
 
+#: src/lib/clientCommands.ts
+msgid "Channel (defaults to current)"
+msgstr "Canal (implicit cel curent)"
+
 #: src/components/layout/MemberList.tsx
 msgid "Channel Admin"
 msgstr "Administrator de canal"
@@ -3951,6 +3955,10 @@ msgstr "Parolă nouă"
 msgid "New release {0}"
 msgstr "Versiune nouă {0}"
 
+#: src/lib/clientCommands.ts
+msgid "New topic"
+msgstr "Subiect nou"
+
 #: src/components/ui/MediaViewerModal.tsx
 msgid "Next image"
 msgstr "Imaginea următoare"
@@ -5782,6 +5790,10 @@ msgstr "Afișează notificări"
 #: src/lib/desktopTray.ts
 msgid "Show Obby"
 msgstr "Afișează Obby"
+
+#: src/lib/clientCommands.ts
+msgid "Show or change a channel's topic"
+msgstr "Afișează sau schimbă subiectul unui canal"
 
 #: src/components/ui/QuickActions/uiActionConfig.tsx
 msgid "Show or hide the channel list sidebar"

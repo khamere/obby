@@ -179,3 +179,43 @@ describe("the /nick command", () => {
     expect(changeNick).toHaveBeenCalledWith("s1", "Valware2");
   });
 });
+
+describe("/topic", () => {
+  beforeEach(() => {
+    useStore.setState({ servers: [server] });
+    vi.restoreAllMocks();
+    vi.spyOn(ircClient, "isSocketOpen").mockReturnValue(true);
+  });
+
+  it("sends a topic with spaces as one trailing parameter", () => {
+    const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    runCommand("/topic #other Welcome to  the channel");
+    expect(sendRaw).toHaveBeenCalledWith(
+      "s1",
+      "TOPIC #other :Welcome to  the channel",
+    );
+  });
+
+  it("sets the current channel's topic when no channel is named", () => {
+    const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    runCommand("/topic Hello world");
+    expect(sendRaw).toHaveBeenCalledWith("s1", "TOPIC #lobby :Hello world");
+  });
+
+  it("asks for the topic when none is given", () => {
+    const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    runCommand("/topic #other");
+    expect(sendRaw).toHaveBeenCalledWith("s1", "TOPIC #other");
+  });
+});
+
+describe("/rehash", () => {
+  it("reaches the server", () => {
+    useStore.setState({ servers: [server] });
+    vi.restoreAllMocks();
+    vi.spyOn(ircClient, "isSocketOpen").mockReturnValue(true);
+    const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    runCommand("/rehash");
+    expect(sendRaw).toHaveBeenCalledWith("s1", "rehash");
+  });
+});

@@ -313,6 +313,14 @@ export function slashProvider(
       commands
         .filter((c) => c.name.toLowerCase().startsWith(query))
         .slice(0, MAX_SLASH_COMMANDS),
+    // A name typed in full runs on Enter when it needs nothing more, so
+    // argument-less server commands like REHASH reach the server.
+    isComplete: (query, items) => {
+      const named = items.find((c) => c.name.toLowerCase() === query);
+      if (!named) return false;
+      if (named.source.kind === "bot") return !named.options?.length;
+      return !named.options?.some((o) => o.required);
+    },
     getKey: (cmd) =>
       `${cmd.source.kind}:${cmd.source.kind === "bot" ? cmd.source.botNick : ""}:${cmd.name}`,
     renderItem: (cmd) => {
