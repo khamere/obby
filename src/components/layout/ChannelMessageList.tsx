@@ -20,7 +20,7 @@ import {
 } from "../../hooks/useScrollToBottom";
 import { buildMarkdownFromSelection } from "../../lib/chatMarkdownCopy";
 import { groupConsecutiveEvents } from "../../lib/eventGrouping";
-import { followTarget } from "../../lib/followTarget";
+import { followTarget, isPastUnreadLine } from "../../lib/followTarget";
 import { findMessageRow } from "../../lib/highlightRow";
 import ircClient from "../../lib/ircClient";
 import { isJumping } from "../../lib/jumpToMessage";
@@ -269,6 +269,7 @@ export const ChannelMessageList = forwardRef<
     // getScrollState() reads this instead of the live DOM because React commits display:none
     // before running cleanup effects, collapsing scrollTop/scrollHeight/clientHeight to 0.
     const lastScrollTopRef = useRef(initialScrollState?.scrollTop ?? 0);
+    const hasReadPastLineRef = useRef(false);
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: captureViewAnchor only reads refs, so the listener we attach once never goes stale
     useEffect(() => {
@@ -278,6 +279,14 @@ export const ChannelMessageList = forwardRef<
         if (container.clientHeight > 0) {
           lastScrollTopRef.current = container.scrollTop;
           captureViewAnchor(container);
+          const line = container.querySelector("[data-unread-line]");
+          hasReadPastLineRef.current = isPastUnreadLine(
+            line
+              ? line.getBoundingClientRect().top -
+                  container.getBoundingClientRect().top
+              : null,
+            UNREAD_LINE_MARGIN_PX,
+          );
         }
       };
       container.addEventListener("scroll", onScroll, { passive: true });
@@ -451,9 +460,9 @@ export const ChannelMessageList = forwardRef<
         container.getBoundingClientRect().top +
         container.scrollTop;
       container.scrollTop = followTarget(
-        container.scrollTop,
         lineTop - UNREAD_LINE_MARGIN_PX,
         container.scrollHeight - container.clientHeight,
+        hasReadPastLineRef.current,
       );
     }, []);
     const tracksReadMarker = useStore((state) =>
