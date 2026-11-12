@@ -20,6 +20,7 @@ import {
 } from "../../hooks/useScrollToBottom";
 import { buildMarkdownFromSelection } from "../../lib/chatMarkdownCopy";
 import { groupConsecutiveEvents } from "../../lib/eventGrouping";
+import { followTarget } from "../../lib/followTarget";
 import { findMessageRow } from "../../lib/highlightRow";
 import ircClient from "../../lib/ircClient";
 import { isJumping } from "../../lib/jumpToMessage";
@@ -449,9 +450,10 @@ export const ChannelMessageList = forwardRef<
         line.getBoundingClientRect().top -
         container.getBoundingClientRect().top +
         container.scrollTop;
-      container.scrollTop = Math.min(
+      container.scrollTop = followTarget(
+        container.scrollTop,
+        lineTop - UNREAD_LINE_MARGIN_PX,
         container.scrollHeight - container.clientHeight,
-        Math.max(0, lineTop - UNREAD_LINE_MARGIN_PX),
       );
     }, []);
     const tracksReadMarker = useStore((state) =>
