@@ -491,6 +491,11 @@ export const ChannelMessageList = forwardRef<
           : { step: "open", after: null, hasFetched: false },
       );
     const unreadAfter = opening.step === "marker" ? null : opening.after;
+    // A line placed anew has not been read past yet.
+    // biome-ignore lint/correctness/useExhaustiveDependencies: we reset the flag whenever the line's place changes
+    useEffect(() => {
+      hasReadPastLineRef.current = false;
+    }, [unreadAfter]);
     const isOverdue = opening.step !== "marker" && opening.isOverdue === true;
     const hasGivenUp = opening.step !== "marker" && opening.hasGivenUp === true;
 
