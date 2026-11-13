@@ -25,7 +25,7 @@ export interface CompletionProvider<T> {
   // appears from the second step on.
   quietFirstStep?: boolean;
   // Whether the typed token already names what the user wants, so the list
-  // stays closed and Enter goes to the input.
+  // stays closed and Enter goes to the input until Tab asks for the rest.
   isComplete?(query: string, items: readonly T[]): boolean;
   acceptKeys?: readonly string[];
   closeKeys?: readonly string[];
@@ -59,6 +59,18 @@ export interface CyclingCompletion<T> extends Completion<T> {
   stopCycling: () => void;
 }
 
+// A token that already names its only suggestion is complete.
+function isTypedComplete<T>(
+  provider: CompletionProvider<T>,
+  query: string,
+  items: readonly T[],
+): boolean {
+  return provider.isComplete
+    ? provider.isComplete(query, items)
+    : items.length === 1 &&
+        provider.getKey(items[0]).toLowerCase() === query.toLowerCase();
+}
+
 interface Cycle<T> {
   provider: CompletionProvider<T>;
   range: CompletionRange;
@@ -80,6 +92,7 @@ export function useCompletion<T = unknown>({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [dismissedText, setDismissedText] = useState<string | null>(null);
   const [cycle, setCycle] = useState<Cycle<T> | null>(null);
+  const [revealedText, setRevealedText] = useState<string | null>(null);
   // Any edit we did not write ourselves ends the cycle.
   const liveCycle = cycle?.written === text ? cycle : null;
 
@@ -87,18 +100,18 @@ export function useCompletion<T = unknown>({
     if (cycle && !liveCycle) setCycle(null);
   }, [cycle, liveCycle]);
 
+  useEffect(() => {
+    if (revealedText !== null && revealedText !== text) setRevealedText(null);
+  }, [revealedText, text]);
+
   const typed = useMemo(() => {
     for (const provider of providers) {
       if (provider.manual) continue;
       const range = provider.match(text, caret);
       if (!range) continue;
       const items = provider.getItems(range.query);
-      // A token that already names its only suggestion is complete.
-      const isComplete = provider.isComplete
-        ? provider.isComplete(range.query, items)
-        : items.length === 1 &&
-          provider.getKey(items[0]).toLowerCase() === range.query.toLowerCase();
-      return isComplete ? null : { provider, range, items, base: text };
+      const isComplete = isTypedComplete(provider, range.query, items);
+      return { provider, range, items, base: text, isComplete };
     }
     return null;
   }, [providers, text, caret]);
@@ -108,7 +121,9 @@ export function useCompletion<T = unknown>({
   // biome-ignore lint/correctness/useExhaustiveDependencies: we restart at the top whenever the typed query or its results change
   useEffect(() => setSelectedIndex(0), [query, typedCount]);
 
-  const current = liveCycle ?? typed;
+  const shown =
+    typed && (!typed.isComplete || revealedText === text) ? typed : null;
+  const current = liveCycle ?? shown;
   const items = current?.items ?? [];
   const isOpen =
     items.length > 0 &&
@@ -161,8 +176,24 @@ export function useCompletion<T = unknown>({
     return false;
   };
 
+  // Tab on a complete token opens its list at the first other candidate, so
+  // the rest stay reachable while Enter still sends what was typed.
+  const reveal = (input: string): boolean => {
+    if (!typed?.isComplete || typed.base !== input) return false;
+    const { provider, range, items: found } = typed;
+    const index = found.findIndex(
+      (item) => !isTypedComplete(provider, range.query, [item]),
+    );
+    if (index === -1) return false;
+    setRevealedText(input);
+    setDismissedText(null);
+    setSelectedIndex(index);
+    return true;
+  };
+
   const cycleFrom = (input: string, at: number, step: 1 | -1 = 1) => {
-    if (cycle?.written !== input) return startCycle(input, at, step);
+    if (cycle?.written !== input)
+      return reveal(input) || startCycle(input, at, step);
     const count = cycle.items.length;
     stepTo(cycle, (selectedIndex + step + count) % count);
     return true;

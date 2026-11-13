@@ -4,7 +4,7 @@ import { useMessageSending } from "../../src/hooks/useMessageSending";
 import { base64DecodeUtf8 } from "../../src/lib/base64";
 import ircClient from "../../src/lib/ircClient";
 import useStore from "../../src/store";
-import type { Channel, Server, User } from "../../src/types";
+import type { Channel, PrivateChat, Server, User } from "../../src/types";
 
 const bot = (username: string) => ({
   id: username,
@@ -40,14 +40,30 @@ const server = {
 
 const me = { id: "me", username: "me", isOnline: true };
 
-function runCommand(text: string, currentUser: User | null = null) {
+type Selection = Pick<
+  Parameters<typeof useMessageSending>[0],
+  | "selectedChannelId"
+  | "selectedPrivateChatId"
+  | "selectedChannel"
+  | "selectedPrivateChat"
+>;
+
+const inLobby: Selection = {
+  selectedChannelId: "c1",
+  selectedPrivateChatId: null,
+  selectedChannel: channel,
+  selectedPrivateChat: null,
+};
+
+function runCommand(
+  text: string,
+  currentUser: User | null = null,
+  selection: Selection = inLobby,
+) {
   const { result } = renderHook(() =>
     useMessageSending({
       selectedServerId: "s1",
-      selectedChannelId: "c1",
-      selectedPrivateChatId: null,
-      selectedChannel: channel,
-      selectedPrivateChat: null,
+      ...selection,
       currentUser,
       selectedColor: null,
       selectedFormatting: [],
@@ -207,6 +223,29 @@ describe("/topic", () => {
     runCommand("/topic #other");
     expect(sendRaw).toHaveBeenCalledWith("s1", "TOPIC #other");
   });
+
+  it("sends the command as typed from a private chat so the server can answer", () => {
+    const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    const mara = { id: "p1", username: "mara" } as PrivateChat;
+    runCommand("/topic some text", null, {
+      selectedChannelId: null,
+      selectedPrivateChatId: "p1",
+      selectedChannel: null,
+      selectedPrivateChat: mara,
+    });
+    expect(sendRaw).toHaveBeenCalledWith("s1", "topic some text");
+  });
+
+  it("sends the command as typed from the server notices", () => {
+    const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    runCommand("/topic", null, {
+      selectedChannelId: "server-notices",
+      selectedPrivateChatId: null,
+      selectedChannel: null,
+      selectedPrivateChat: null,
+    });
+    expect(sendRaw).toHaveBeenCalledWith("s1", "topic");
+  });
 });
 
 describe("/rehash", () => {
@@ -217,5 +256,46 @@ describe("/rehash", () => {
     const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
     runCommand("/rehash");
     expect(sendRaw).toHaveBeenCalledWith("s1", "rehash");
+  });
+});
+
+describe("client command names in any case", () => {
+  beforeEach(() => {
+    useStore.setState({ servers: [server] });
+    vi.restoreAllMocks();
+    vi.spyOn(ircClient, "isSocketOpen").mockReturnValue(true);
+    (ircClient as unknown as { servers: Map<string, unknown> }).servers.set(
+      "s1",
+      { channels: [] },
+    );
+  });
+
+  afterEach(() => {
+    (ircClient as unknown as { servers: Map<string, unknown> }).servers.delete(
+      "s1",
+    );
+    vi.restoreAllMocks();
+  });
+
+  it("joins on /JOIN", () => {
+    const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    runCommand("/JOIN #x,#y key");
+    expect(sendRaw).toHaveBeenCalledWith("s1", "JOIN #x key");
+    expect(sendRaw).toHaveBeenCalledWith("s1", "JOIN #y");
+  });
+
+  it("sends /Me as an action", () => {
+    const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    runCommand("/Me waves");
+    expect(sendRaw).toHaveBeenCalledWith(
+      "s1",
+      "PRIVMSG #lobby :\u0001ACTION waves\u0001",
+    );
+  });
+
+  it("sends an unknown command to the server as typed", () => {
+    const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    runCommand("/FOO Bar");
+    expect(sendRaw).toHaveBeenCalledWith("s1", "FOO Bar");
   });
 });
