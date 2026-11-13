@@ -151,4 +151,54 @@ describe("a message aimed at us", () => {
 
     expect(marked(container)).toBe(false);
   });
+
+  // "/me slaps mattf" reaches us as surely as "mattf: hi" does.
+  it("marks an action that names us, and the name in it", () => {
+    const { container } = render(
+      <MessageItem
+        message={makeMessage({
+          content: "\u0001ACTION slaps mattf with a trout\u0001",
+          mentioned: ["mattf"],
+        })}
+        {...baseProps}
+      />,
+    );
+
+    expect(marked(container)).toBe(true);
+    expect(container.querySelector(".addressed-name")?.textContent).toBe(
+      "mattf",
+    );
+    expect(container.querySelector(".obby-mention-self")?.textContent).toBe(
+      "mattf",
+    );
+  });
+
+  it("leaves an action that names somebody else alone", () => {
+    const { container } = render(
+      <MessageItem
+        message={makeMessage({
+          content: "\u0001ACTION slaps bob with a trout\u0001",
+        })}
+        {...baseProps}
+      />,
+    );
+
+    expect(marked(container)).toBe(false);
+    expect(container.querySelector(".addressed-name")).toBeNull();
+  });
+
+  it("leaves our own action alone", () => {
+    const { container } = render(
+      <MessageItem
+        message={makeMessage({
+          userId: currentUser.username,
+          content: "\u0001ACTION waves at mattf\u0001",
+          mentioned: ["mattf"],
+        })}
+        {...baseProps}
+      />,
+    );
+
+    expect(marked(container)).toBe(false);
+  });
 });
