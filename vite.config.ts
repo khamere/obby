@@ -189,6 +189,7 @@ export default defineConfig(({ mode }) => {
       '__APP_RELEASE__': JSON.stringify(process.env.OBBY_RELEASE ?? ""),
       // The GitHub repository whose releases a community build checks for updates.
       '__APP_RELEASES_REPO__': JSON.stringify(process.env.OBBY_RELEASES_REPO ?? ""),
+      '__APP_RELEASES_API__': JSON.stringify(process.env.OBBY_RELEASES_API ?? "https://api.github.com"),
       '__APP_NAME__': JSON.stringify(process.env.npm_package_name),
       '__APP_DESCRIPTION__': JSON.stringify(process.env.npm_package_description),
       '__BUILD_CONFIG__': buildDeploymentConfig(),
