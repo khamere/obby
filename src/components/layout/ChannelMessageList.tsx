@@ -476,8 +476,7 @@ export const ChannelMessageList = forwardRef<
     const [opening, setOpening] = useState<Opening>({ step: "marker" });
     // A request owns this ref only while its result is safe to apply.
     const markerPageRequestRef = useRef<Opening | null>(null);
-    const openingHasGivenUp =
-      opening.step !== "marker" && opening.hasGivenUp;
+    const openingHasGivenUp = opening.step !== "marker" && opening.hasGivenUp;
     // If a read-marker page is still in flight while this kept-alive list is
     // hidden, its completion must not later take over the restored viewport.
     useLayoutEffect(() => {
