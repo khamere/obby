@@ -469,13 +469,33 @@ export const ChannelMessageList = forwardRef<
       serverTracksReadMarker(state, serverId),
     );
     // We keep the marker as it stood on arrival, so the "New messages" line
-    // stays put while the chat is read.
+    // stays put while the chat is read. This also deliberately survives a
+    // keep-alive tab switch: resetting it when a hidden list becomes visible
+    // re-runs unread placement after scroll restoration and pulls the reader
+    // down to the marker on their first return.
     const [opening, setOpening] = useState<Opening>({ step: "marker" });
-    const [wasActive, setWasActive] = useState(isActive);
-    if (wasActive !== isActive) {
-      setWasActive(isActive);
-      if (isActive) setOpening({ step: "marker" });
-    }
+    // A request owns this ref only while its result is safe to apply.
+    const markerPageRequestRef = useRef<Opening | null>(null);
+    const openingHasGivenUp = opening.step !== "marker" && opening.hasGivenUp;
+    // If a read-marker page is still in flight while this kept-alive list is
+    // hidden, its completion must not later take over the restored viewport.
+    useLayoutEffect(() => {
+      if (
+        !isActive &&
+        opening.step !== "marker" &&
+        (opening.step === "placing" ||
+          opening.step === "loading" ||
+          openingHasGivenUp)
+      ) {
+        markerPageRequestRef.current = null;
+        setOpening((o) =>
+          o.step !== "marker" &&
+          (o.step === "placing" || o.step === "loading" || o.hasGivenUp)
+            ? { ...o, step: "open", hasGivenUp: false }
+            : o,
+        );
+      }
+    }, [isActive, opening.step, openingHasGivenUp]);
     // A server without read markers keeps no shared place, so its chats open
     // at the bottom.
     if (isActive && opening.step === "marker" && readMarker !== undefined)
@@ -637,7 +657,6 @@ export const ChannelMessageList = forwardRef<
 
     // We ask once per opening, also when React runs the effect twice, and drop
     // the page if the user has moved on before it arrives.
-    const markerPageRequestRef = useRef<Opening | null>(null);
     // biome-ignore lint/correctness/useExhaustiveDependencies: the marker, the loaded rows and loading decide when to ask
     useEffect(() => {
       if (!needsMarkerPage || !historyTarget) return;
