@@ -320,10 +320,14 @@ export function useMessageSending({
 
       const command = cleanedText.substring(1).trim();
       const [commandName, ...args] = command.split(" ");
+      // IRC commands are case-insensitive, so /JOIN and /Me get the same
+      // client handling as /join and /me. Unknown commands reach the server
+      // as typed.
+      const lowerName = commandName.toLowerCase();
 
-      if (commandName === "nick") {
+      if (lowerName === "nick") {
         if (args[0]) useStore.getState().changeNick(selectedServerId, args[0]);
-      } else if (commandName === "join") {
+      } else if (lowerName === "join") {
         const [channels, keyList] = args.filter(Boolean);
         if (channels) {
           const keys = keyList?.split(",") ?? [];
@@ -334,19 +338,19 @@ export function useMessageSending({
         } else {
           console.error("No channel specified for /join command");
         }
-      } else if (commandName === "part") {
+      } else if (lowerName === "part") {
         const partTarget = args[0] || selectedChannel?.name;
         if (partTarget) {
           useStore.getState().leaveChannel(selectedServerId, partTarget);
         }
-      } else if (commandName === "msg") {
+      } else if (lowerName === "msg") {
         const [target, ...messageParts] = args;
         const message = messageParts.join(" ");
         const routed = routeOutgoingPM(selectedServerId, target, message);
         if (routed === "withheld") return "withheld" as const;
         if (routed === "sent") return;
         ircClient.sendRaw(selectedServerId, `PRIVMSG ${target} :${message}`);
-      } else if (commandName === "whisper") {
+      } else if (lowerName === "whisper") {
         const [targetUser, ...messageParts] = args;
         if (!selectedChannel) {
           console.error("Whispers can only be sent from a channel");
@@ -363,9 +367,9 @@ export function useMessageSending({
           selectedChannel.name,
           message,
         );
-      } else if (commandName === "me" || commandName === "slap") {
+      } else if (lowerName === "me" || lowerName === "slap") {
         const actionMessage =
-          commandName === "slap"
+          lowerName === "slap"
             ? slapAction(args)
             : cleanedText.substring(4).trim();
         if (actionMessage === null) return;
@@ -407,7 +411,7 @@ export function useMessageSending({
             localReplyTo,
           );
         }
-      } else if (commandName.toLowerCase() === "topic") {
+      } else if (lowerName === "topic") {
         // The topic is the trailing parameter, so a topic with spaces reaches
         // the server whole.
         const rest = command.slice(commandName.length).trimStart();
@@ -418,16 +422,16 @@ export function useMessageSending({
         const topic = named ? rest.slice(first.length).trimStart() : rest;
         if (topic) ircClient.setTopic(selectedServerId, channelName, topic);
         else ircClient.getTopic(selectedServerId, channelName);
-      } else if (commandName === "away") {
+      } else if (lowerName === "away") {
         const message = args.join(" ");
         if (message) {
           setAway(selectedServerId, message);
         } else {
           setAway(selectedServerId);
         }
-      } else if (commandName === "back") {
+      } else if (lowerName === "back") {
         clearAway(selectedServerId);
-      } else if (commandName.toLowerCase() === "motd") {
+      } else if (lowerName === "motd") {
         ircClient.requestMotd(selectedServerId, args[0]);
       } else if (
         tryDispatchBotCommand(
