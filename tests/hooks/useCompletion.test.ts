@@ -2,6 +2,10 @@ import { act, renderHook } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import {
+  type SlashSuggestion,
+  slashProvider,
+} from "../../src/components/chat/completionProviders";
+import {
   type CompletionProvider,
   useCompletion,
 } from "../../src/hooks/useCompletion";
@@ -235,5 +239,63 @@ describe("useCompletion cycling", () => {
     });
     expect(wrote).toBe(false);
     expect(result.current.input.text).toBe("al:");
+  });
+});
+
+const slashCommands: SlashSuggestion[] = [
+  { name: "away", source: { kind: "client" } },
+  { name: "awaymsg", source: { kind: "server" } },
+  { name: "rehash", source: { kind: "server" } },
+];
+
+function useChatInput(initial: string) {
+  const [input, setInput] = useState({
+    text: initial,
+    caret: initial.length,
+  });
+  const completion = useCompletion<SlashSuggestion>({
+    providers: [slashProvider(slashCommands, vi.fn())],
+    text: input.text,
+    caret: input.caret,
+    onReplace: (text, caret) => setInput({ text, caret }),
+  });
+  return { completion, input };
+}
+
+describe("useCompletion with a fully typed slash command", () => {
+  // The chat input hands Tab to `cycle` whenever the list leaves it alone.
+  const tab = (result: { current: ReturnType<typeof useChatInput> }) => {
+    if (result.current.completion.isOpen) return press("Tab");
+    return act(() => {
+      const { input, completion } = result.current;
+      completion.cycle(input.text, input.caret);
+    });
+  };
+
+  it("leaves Enter to the input but completes to a longer command on Tab", () => {
+    const { result } = renderHook(() => useChatInput("/away"));
+    expect(result.current.completion.isOpen).toBe(false);
+    press("Enter");
+    expect(result.current.input.text).toBe("/away");
+
+    tab(result);
+    const { completion } = result.current;
+    expect(completion.isOpen).toBe(true);
+    expect(completion.items.map((c) => c.name)).toEqual(["away", "awaymsg"]);
+    expect(completion.items[completion.selectedIndex].name).toBe("awaymsg");
+
+    tab(result);
+    expect(result.current.input.text).toBe("/awaymsg ");
+  });
+
+  it("offers nothing on Tab when the typed command is the only match", () => {
+    const { result } = renderHook(() => useChatInput("/rehash"));
+    let wrote = true;
+    act(() => {
+      wrote = result.current.completion.cycle("/rehash", 7);
+    });
+    expect(wrote).toBe(false);
+    expect(result.current.completion.isOpen).toBe(false);
+    expect(result.current.input.text).toBe("/rehash");
   });
 });
