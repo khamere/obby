@@ -474,6 +474,16 @@ export const ChannelMessageList = forwardRef<
     // re-runs unread placement after scroll restoration and pulls the reader
     // down to the marker on their first return.
     const [opening, setOpening] = useState<Opening>({ step: "marker" });
+    // If a read-marker page is still in flight while this kept-alive list is
+    // hidden, its completion must not later take over the restored viewport.
+    const markerPlacementInterruptedRef = useRef(false);
+    useLayoutEffect(() => {
+      if (
+        !isActive &&
+        (opening.step === "placing" || opening.step === "loading")
+      )
+        markerPlacementInterruptedRef.current = true;
+    }, [isActive, opening.step]);
     // A server without read markers keeps no shared place, so its chats open
     // at the bottom.
     if (isActive && opening.step === "marker" && readMarker !== undefined)
@@ -654,7 +664,14 @@ export const ChannelMessageList = forwardRef<
         () => markerPageRequestRef.current === request && !isJumpTakingOver(),
       ).finally(() =>
         setOpening((o) =>
-          o.step === "loading" ? { ...o, step: "placing" } : o,
+          o.step === "loading"
+            ? {
+                ...o,
+                step: markerPlacementInterruptedRef.current
+                  ? "open"
+                  : "placing",
+              }
+            : o,
         ),
       );
     }, [needsMarkerPage, isLoadingHistory, isOverdue]);
