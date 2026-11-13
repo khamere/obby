@@ -478,14 +478,17 @@ export const ChannelMessageList = forwardRef<
     const markerPageRequestRef = useRef<Opening | null>(null);
     // If a read-marker page is still in flight while this kept-alive list is
     // hidden, its completion must not later take over the restored viewport.
-    const markerPlacementInterruptedRef = useRef(false);
     useLayoutEffect(() => {
       if (
         !isActive &&
         (opening.step === "placing" || opening.step === "loading")
       ) {
-        markerPlacementInterruptedRef.current = true;
         markerPageRequestRef.current = null;
+        setOpening((o) =>
+          o.step === "placing" || o.step === "loading"
+            ? { ...o, step: "open" }
+            : o,
+        );
       }
     }, [isActive, opening.step]);
     // A server without read markers keeps no shared place, so its chats open
@@ -667,14 +670,7 @@ export const ChannelMessageList = forwardRef<
         () => markerPageRequestRef.current === request && !isJumpTakingOver(),
       ).finally(() =>
         setOpening((o) =>
-          o.step === "loading"
-            ? {
-                ...o,
-                step: markerPlacementInterruptedRef.current
-                  ? "open"
-                  : "placing",
-              }
-            : o,
+          o.step === "loading" ? { ...o, step: "placing" } : o,
         ),
       );
     }, [needsMarkerPage, isLoadingHistory, isOverdue]);
