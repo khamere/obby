@@ -138,6 +138,22 @@ describe("a message aimed at us", () => {
     expect(marked(container)).toBe(true);
   });
 
+  // An older line we sent before a case-only nick change is still ours.
+  it("leaves our own action alone when our nick's case changed", () => {
+    const { container } = render(
+      <MessageItem
+        message={makeMessage({
+          userId: "MattF",
+          content: "\u0001ACTION agrees\u0001",
+          replyMessage: makeMessage({ userId: "MattF" }),
+        })}
+        {...baseProps}
+      />,
+    );
+
+    expect(marked(container)).toBe(false);
+  });
+
   it("leaves a reply to somebody else alone", () => {
     const { container } = render(
       <MessageItem

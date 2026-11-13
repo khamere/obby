@@ -256,7 +256,8 @@ export const MessageItem = memo((props: MessageItemProps) => {
   const ircCurrentUser = ircClient.getCurrentUser(message.serverId);
   // A line relayed by a bridge is never ours, even when it carries our nick.
   const isCurrentUser =
-    !message.bridgedVia && ircCurrentUser?.username === message.userId;
+    !message.bridgedVia &&
+    ircCurrentUser?.username.toLowerCase() === message.userId.toLowerCase();
 
   // Get the user key using reactive selector
   const userKey = useStore(
