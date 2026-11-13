@@ -7,6 +7,19 @@ import { useNickColor } from "../../lib/nickColor";
 import useStore from "../../store";
 import type { Message as MessageType, User } from "../../types";
 
+// A nick change marks the new nick as **nick** in every language, and nicks
+// never contain an asterisk, so we show that part bold.
+export function withBoldNick(content: string): React.ReactNode[] {
+  return content.split(/\*\*(.+?)\*\*/).map((part, index) =>
+    index % 2 === 1 ? (
+      // biome-ignore lint/suspicious/noArrayIndexKey: the parts never reorder
+      <strong key={index}>{part}</strong>
+    ) : (
+      part
+    ),
+  );
+}
+
 interface EventMessageProps {
   message: MessageType;
   messageUser?: User;
@@ -118,7 +131,9 @@ export const EventMessage: React.FC<EventMessageProps> = ({
           {displayText}
         </span>{" "}
         <span className="text-sm italic text-discord-text-muted">
-          {message.content}
+          {message.type === "nick"
+            ? withBoldNick(message.content)
+            : message.content}
         </span>
       </div>
 
