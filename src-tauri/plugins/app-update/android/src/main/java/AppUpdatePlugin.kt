@@ -1,10 +1,24 @@
 package world.obby.appupdate
 
 import android.app.Activity
+import android.app.PendingIntent
+import android.content.ActivityNotFoundException
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.IntentSender
+import android.content.pm.PackageInstaller
+import android.net.Uri
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.provider.Settings
 import android.webkit.WebView
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import app.tauri.annotation.Command
 import app.tauri.annotation.InvokeArg
 import app.tauri.annotation.TauriPlugin
@@ -18,6 +32,7 @@ import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
+import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import org.json.JSONObject
@@ -35,6 +50,7 @@ private const val MAX_REDIRECTS = 5
 private const val PROGRESS_INTERVAL_MS = 250L
 private val REDIRECTS = setOf(301, 302, 303, 307, 308)
 private val SHA256_HEX = Regex("^[0-9a-fA-F]{64}$")
+private const val EXTRA_TOKEN = "world.obby.appupdate.TOKEN"
 
 private class UpdateFailure(val code: String) : Exception(code)
 
@@ -66,6 +82,8 @@ private class Job(
 
   @Volatile var isCancelled = false
   @Volatile var isFinished = false
+  @Volatile var isVerified = false
+  @Volatile var sessionId = -1
   @Volatile var connection: HttpURLConnection? = null
 
   fun cancel() {
@@ -91,12 +109,51 @@ class AppUpdatePlugin(private val activity: Activity) : Plugin(activity) {
 
   private val updateDir: File get() = File(activity.cacheDir, "update")
 
+  private val statusAction = "${activity.packageName}.APP_UPDATE_STATUS"
+
+  // Before Android 13 a receiver registered at runtime takes broadcasts from
+  // any app, so we only believe a status that carries this token back.
+  private val token = UUID.randomUUID().toString()
+
+  // An installer prompt that arrived while we were in the background, read and written on the main thread only.
+  private var heldConfirmation: Pair<Job, Intent>? = null
+
+  private val statusReceiver = object : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+      onSessionStatus(intent)
+    }
+  }
+
   // A finished APK is either installed or abandoned by the next start, while a
   // part file is a download the user can still resume.
   override fun load(webView: WebView) {
     super.load(webView)
     worker.execute {
       updateDir.listFiles()?.filter { it.name.endsWith(".apk") }?.forEach { it.delete() }
+    }
+    val filter = IntentFilter(statusAction)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      activity.applicationContext.registerReceiver(statusReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+    } else {
+      activity.applicationContext.registerReceiver(statusReceiver, filter)
+    }
+  }
+
+  override fun onDestroy(activity: AppCompatActivity) {
+    try {
+      activity.applicationContext.unregisterReceiver(statusReceiver)
+    } catch (e: IllegalArgumentException) {
+      // load() never ran, so there is nothing to unregister
+    }
+  }
+
+  // Android shows its install prompt only to an app in front, so a verified
+  // update waits here for the user to come back.
+  override fun onResume(activity: AppCompatActivity) {
+    val (job, phase) = synchronized(lock) { current to status.phase }
+    if (job == null || !job.isVerified) return
+    if (phase == "waiting-foreground" || (phase == "needs-permission" && canInstallPackages())) {
+      offerInstall(job, isInFront = true)
     }
   }
 
@@ -149,6 +206,36 @@ class AppUpdatePlugin(private val activity: Activity) : Plugin(activity) {
     invoke.resolve(synchronized(lock) { status }.toJS())
   }
 
+  @Command
+  fun openInstallSettings(invoke: Invoke) {
+    val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${activity.packageName}"))
+    } else {
+      Intent(Settings.ACTION_SECURITY_SETTINGS)
+    }
+    main.post {
+      try {
+        activity.startActivity(intent)
+        invoke.resolve()
+      } catch (e: ActivityNotFoundException) {
+        invoke.reject("refused")
+      }
+    }
+  }
+
+  @Command
+  fun retryInstall(invoke: Invoke) {
+    main.post {
+      val (job, phase) = synchronized(lock) { current to status.phase }
+      if (job == null || !job.isVerified || !apkOf(job).isFile) {
+        invoke.reject("storage")
+        return@post
+      }
+      if (phase != "installing") offerInstall(job, isInFront())
+      invoke.resolve(synchronized(lock) { status }.toJS())
+    }
+  }
+
   private fun run(job: Job) {
     try {
       val part = prepare(job)
@@ -159,9 +246,9 @@ class AppUpdatePlugin(private val activity: Activity) : Plugin(activity) {
         part.delete()
         throw UpdateFailure("checksum")
       }
-      val apk = File(updateDir, "${job.stem}.apk")
-      if (!part.renameTo(apk)) throw UpdateFailure("storage")
-      publish(job, Status("waiting-foreground", job.size, job.size))
+      if (!part.renameTo(apkOf(job))) throw UpdateFailure("storage")
+      job.isVerified = true
+      main.post { offerInstall(job, isInFront()) }
     } catch (e: Exception) {
       if (job.isCancelled) return
       val code = when (e) {
@@ -182,7 +269,7 @@ class AppUpdatePlugin(private val activity: Activity) : Plugin(activity) {
     if (!dir.isDirectory && !dir.mkdirs()) throw UpdateFailure("storage")
     val part = File(dir, "${job.stem}.apk.part")
     // A finished file for this version goes back through the checksum rather than being trusted or fetched again.
-    val apk = File(dir, "${job.stem}.apk")
+    val apk = apkOf(job)
     if (apk.exists() && !apk.renameTo(part)) apk.delete()
     dir.listFiles()?.filter { it.name != part.name }?.forEach { it.deleteRecursively() }
     if (part.length() > job.size) part.delete()
@@ -295,6 +382,122 @@ class AppUpdatePlugin(private val activity: Activity) : Plugin(activity) {
     }
     return digest.digest().joinToString("") { "%02x".format(it) }
   }
+
+  private fun apkOf(job: Job) = File(updateDir, "${job.stem}.apk")
+
+  private fun canInstallPackages(): Boolean =
+    Build.VERSION.SDK_INT < Build.VERSION_CODES.O || activity.packageManager.canRequestPackageInstalls()
+
+  private fun isInFront(): Boolean =
+    (activity as? LifecycleOwner)?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.RESUMED) ?: false
+
+  /** Moves a verified [job] on to the install, or to whatever the install is still waiting for. Runs on the main thread. */
+  private fun offerInstall(job: Job, isInFront: Boolean) {
+    if (job.isCancelled) return
+    val apk = apkOf(job)
+    val next = when {
+      !apk.isFile -> Status("error", 0, job.size, "storage")
+      !canInstallPackages() -> Status("needs-permission", job.size, job.size)
+      !isInFront -> Status("waiting-foreground", job.size, job.size)
+      else -> Status("installing", job.size, job.size)
+    }
+    publish(job, next)
+    if (next.phase != "installing") return
+    val held = heldConfirmation?.takeIf { it.first === job }?.second
+    heldConfirmation = null
+    if (held != null) openConfirmation(job, held) else worker.execute { install(job, apk) }
+  }
+
+  /** Copies [apk] into an installer session and commits it; the result arrives in [onSessionStatus]. */
+  private fun install(job: Job, apk: File) {
+    val installer = activity.packageManager.packageInstaller
+    val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
+      // Android then refuses an APK that is some other app rather than our own update.
+      setAppPackageName(activity.packageName)
+      setSize(apk.length())
+    }
+    var sessionId = -1
+    try {
+      sessionId = installer.createSession(params)
+      job.sessionId = sessionId
+      installer.openSession(sessionId).use { session ->
+        FileInputStream(apk).use { input ->
+          session.openWrite("base.apk", 0, apk.length()).use { output ->
+            input.copyTo(output, 64 * 1024)
+            session.fsync(output)
+          }
+        }
+        if (job.isCancelled) {
+          session.abandon()
+          return
+        }
+        session.commit(statusSender(sessionId))
+      }
+    } catch (e: Exception) {
+      if (sessionId != -1) {
+        try {
+          installer.abandonSession(sessionId)
+        } catch (ignored: Exception) {
+          // the session is already gone
+        }
+      }
+      publish(job, Status("error", 0, job.size, if (e is IOException) "storage" else "refused"))
+    }
+  }
+
+  private fun statusSender(sessionId: Int): IntentSender {
+    val intent = Intent(statusAction).setPackage(activity.packageName).putExtra(EXTRA_TOKEN, token)
+    // The installer adds the status and its confirmation intent to ours, so the intent has to stay mutable.
+    val mutable = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0
+    return PendingIntent.getBroadcast(activity, sessionId, intent, PendingIntent.FLAG_UPDATE_CURRENT or mutable)
+      .intentSender
+  }
+
+  private fun onSessionStatus(intent: Intent) {
+    if (intent.getStringExtra(EXTRA_TOKEN) != token) return
+    val job = synchronized(lock) { current } ?: return
+    if (intent.getIntExtra(PackageInstaller.EXTRA_SESSION_ID, -1) != job.sessionId) return
+    val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)
+    val outcome = installOutcome(status)
+    if (outcome != InstallOutcome.NeedsUser) heldConfirmation = null
+    when (outcome) {
+      InstallOutcome.NeedsUser -> {
+        val confirm = confirmationOf(intent)
+        when {
+          confirm == null -> publish(job, Status("error", 0, job.size, "refused"))
+          isInFront() -> openConfirmation(job, confirm)
+          // Android drops an activity started from the background without telling us.
+          else -> {
+            heldConfirmation = job to confirm
+            publish(job, Status("waiting-foreground", job.size, job.size))
+          }
+        }
+      }
+      InstallOutcome.Installed -> {
+        apkOf(job).delete()
+        publish(job, Status("idle"))
+      }
+      // The APK stays in the cache, so trying again needs no second download.
+      is InstallOutcome.Failed -> publish(job, Status("error", 0, job.size, outcome.code))
+    }
+  }
+
+  private fun openConfirmation(job: Job, confirm: Intent) {
+    try {
+      activity.startActivity(confirm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+      publish(job, Status("installing", job.size, job.size))
+    } catch (e: RuntimeException) {
+      publish(job, Status("error", 0, job.size, "refused"))
+    }
+  }
+
+  private fun confirmationOf(intent: Intent): Intent? =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+      intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent::class.java)
+    } else {
+      @Suppress("DEPRECATION")
+      intent.getParcelableExtra(Intent.EXTRA_INTENT)
+    }
 
   /** Records [next] as the status, unless [job] has been cancelled or replaced since. */
   private fun publish(job: Job, next: Status) {

@@ -1,5 +1,6 @@
 package world.obby.appupdate
 
+import android.content.pm.PackageInstaller
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -42,5 +43,19 @@ class UpdateRulesTest {
     assertTrue(sha256Matches("ABCD", "abcd"))
     assertFalse(sha256Matches("abcd", "abce"))
     assertFalse(sha256Matches("", ""))
+  }
+
+  @Test
+  fun mapsInstallerStatusesToOutcomes() {
+    assertEquals(InstallOutcome.NeedsUser, installOutcome(PackageInstaller.STATUS_PENDING_USER_ACTION))
+    assertEquals(InstallOutcome.Installed, installOutcome(PackageInstaller.STATUS_SUCCESS))
+    assertEquals(InstallOutcome.Failed("incompatible"), installOutcome(PackageInstaller.STATUS_FAILURE_INCOMPATIBLE))
+    assertEquals(InstallOutcome.Failed("incompatible"), installOutcome(PackageInstaller.STATUS_FAILURE_CONFLICT))
+    assertEquals(InstallOutcome.Failed("refused"), installOutcome(PackageInstaller.STATUS_FAILURE_ABORTED))
+    assertEquals(InstallOutcome.Failed("refused"), installOutcome(PackageInstaller.STATUS_FAILURE))
+    assertEquals(InstallOutcome.Failed("refused"), installOutcome(PackageInstaller.STATUS_FAILURE_BLOCKED))
+    assertEquals(InstallOutcome.Failed("refused"), installOutcome(PackageInstaller.STATUS_FAILURE_INVALID))
+    assertEquals(InstallOutcome.Failed("refused"), installOutcome(PackageInstaller.STATUS_FAILURE_STORAGE))
+    assertEquals(InstallOutcome.Failed("refused"), installOutcome(12345))
   }
 }

@@ -1,5 +1,6 @@
 package world.obby.appupdate
 
+import android.content.pm.PackageInstaller
 import java.util.Locale
 
 /** Whether we may download from [host]: an exact entry, or any host ending in an entry that starts with a dot. */
@@ -34,3 +35,19 @@ fun contentRangeStart(header: String?): Long? =
 
 fun sha256Matches(actualHex: String, expectedHex: String): Boolean =
   expectedHex.isNotEmpty() && actualHex.equals(expectedHex, ignoreCase = true)
+
+sealed class InstallOutcome {
+  object NeedsUser : InstallOutcome()
+  object Installed : InstallOutcome()
+  data class Failed(val code: String) : InstallOutcome()
+}
+
+/** What a PackageInstaller session status means for the update; every failure we cannot name is Android refusing it. */
+fun installOutcome(status: Int): InstallOutcome =
+  when (status) {
+    PackageInstaller.STATUS_PENDING_USER_ACTION -> InstallOutcome.NeedsUser
+    PackageInstaller.STATUS_SUCCESS -> InstallOutcome.Installed
+    PackageInstaller.STATUS_FAILURE_INCOMPATIBLE, PackageInstaller.STATUS_FAILURE_CONFLICT ->
+      InstallOutcome.Failed("incompatible")
+    else -> InstallOutcome.Failed("refused")
+  }
