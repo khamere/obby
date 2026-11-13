@@ -141,6 +141,18 @@ describe("ChannelMessageList opening on the read marker", () => {
     expect(markerPage).toHaveBeenCalledTimes(1);
   });
 
+  it("does not restart unread placement when a kept-alive chat is shown again", () => {
+    const { rerender } = render(<ChannelMessageList {...props} />);
+    expect(markerPage).toHaveBeenCalledTimes(1);
+
+    rerender(<ChannelMessageList {...props} isActive={false} />);
+    rerender(<ChannelMessageList {...props} isActive />);
+
+    // Switching back must restore the preserved reading position, not start a
+    // second read-marker request that later moves the viewport to its line.
+    expect(markerPage).toHaveBeenCalledTimes(1);
+  });
+
   it("stops waiting for a marker page that never lands and leaves the unread messages unread", () => {
     vi.useFakeTimers();
     useStore.setState({ servers: [server(true)] });
