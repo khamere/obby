@@ -123,8 +123,8 @@ Obby running). Android does not let a backgrounded app open the install prompt, 
 ### How it is tested before a real release (decided)
 
 The release key lives only in GitHub secrets, and Android installs an update only when both APKs carry the
-same key. So the end-to-end check uses two locally built APKs signed with one debug key: version N (installed
-on the phone over adb) and version N+1, served from a local stand-in for the GitHub release API that the test
+same key. So the end-to-end check uses two locally built APKs signed with one debug key: version N (installed on the phone from a link, under its own app id so it sits beside the real
+Obby) and version N+1, served from a local stand-in for the GitHub release API that the test
 build points at (the releases API base is overridable at build time for this; community builds keep
 `api.github.com`). That covers the whole flow on a real phone except the release key itself. The first
 community release that carries the feature is installed by hand once; the release after it is the final check
