@@ -469,13 +469,11 @@ export const ChannelMessageList = forwardRef<
       serverTracksReadMarker(state, serverId),
     );
     // We keep the marker as it stood on arrival, so the "New messages" line
-    // stays put while the chat is read.
+    // stays put while the chat is read. This also deliberately survives a
+    // keep-alive tab switch: resetting it when a hidden list becomes visible
+    // re-runs unread placement after scroll restoration and pulls the reader
+    // down to the marker on their first return.
     const [opening, setOpening] = useState<Opening>({ step: "marker" });
-    const [wasActive, setWasActive] = useState(isActive);
-    if (wasActive !== isActive) {
-      setWasActive(isActive);
-      if (isActive) setOpening({ step: "marker" });
-    }
     // A server without read markers keeps no shared place, so its chats open
     // at the bottom.
     if (isActive && opening.step === "marker" && readMarker !== undefined)
