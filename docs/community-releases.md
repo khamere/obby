@@ -9,8 +9,8 @@ where `<version>` is the upstream version in `package.json` and `a.b.c` is the
 community release on top of it: `v0.4.0-cf1.0.0`, then `v0.4.0-cf1.0.1` for a
 small follow-up, `v0.4.0-cf1.1.0` for a round of new fixes, `v0.4.0-cf2.0.0`
 for a larger step, and back to `v0.4.1-cf1.0.0` once upstream ships 0.4.1 and
-it is merged. All three parts are required; `a` goes up to 99 and `b` and `c`
-up to 9. The app reports the same string, `0.4.0-cf1.0.0`, in Settings and in
+it is merged. All three parts are required; `a` and `b` go up to 9 and `c`
+up to 99. The app reports the same string, `0.4.0-cf1.0.0`, in Settings and in
 its CTCP VERSION reply. Pushing the tag runs
 [`publish-community.yaml`](../.github/workflows/publish-community.yaml), which
 builds and attaches to a GitHub release:
@@ -48,7 +48,7 @@ both need accounts the fork does not have.
 
 If the tag is not `v` plus the `package.json` version plus `-cf<a>.<b>.<c>`,
 the run stops in its first job before building anything. The Android version
-code is `major * 100000000 + minor * 1000000 + patch * 10000 + a * 100 + b * 10 + c`,
+code is `major * 100000000 + minor * 1000000 + patch * 10000 + a * 1000 + b * 100 + c`,
 so it rises with every release and every upstream bump as long as the parts
 stay within their limits.
 

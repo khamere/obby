@@ -36,18 +36,20 @@ jobs:
         run: |
           VERSION=$(node -p "require('./package.json').version")
           CF="${GITHUB_REF_NAME#v${VERSION}-cf}"
-          if [ "$GITHUB_REF_NAME" = "$CF" ] || ! [[ "$CF" =~ ^(0|[1-9][0-9]?)\.(0|[1-9])\.(0|[1-9])$ ]]; then
-            echo "Tag $GITHUB_REF_NAME must be v${VERSION}-cf<a>.<b>.<c> for package.json version $VERSION (a up to 99, b and c up to 9)"
+          if [ "$GITHUB_REF_NAME" = "$CF" ] || ! [[ "$CF" =~ ^(0|[1-9])\.(0|[1-9])\.(0|[1-9][0-9]?)$ ]]; then
+            echo "Tag $GITHUB_REF_NAME must be v${VERSION}-cf<a>.<b>.<c> for package.json version $VERSION (a and b up to 9, c up to 99)"
             exit 1
           fi
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
           IFS='.' read -r A B C <<< "$CF"
           # Android needs one rising integer below 2.1 billion; upstream's own
           # scheme leaves no room for a community part, so we spread it out.
+          # C takes two digits and A and B one each, so a later release
+          # always gets a bigger code.
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "release=cf$CF" >> "$GITHUB_OUTPUT"
           echo "label=$VERSION-cf$CF" >> "$GITHUB_OUTPUT"
-          echo "version_code=$((MAJOR * 100000000 + MINOR * 1000000 + PATCH * 10000 + A * 100 + B * 10 + C))" >> "$GITHUB_OUTPUT"
+          echo "version_code=$((MAJOR * 100000000 + MINOR * 1000000 + PATCH * 10000 + A * 1000 + B * 100 + C))" >> "$GITHUB_OUTPUT"
 
       - name: Generate release notes since the previous community release
         id: release-notes
