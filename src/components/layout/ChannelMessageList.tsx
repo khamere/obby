@@ -474,6 +474,8 @@ export const ChannelMessageList = forwardRef<
     // re-runs unread placement after scroll restoration and pulls the reader
     // down to the marker on their first return.
     const [opening, setOpening] = useState<Opening>({ step: "marker" });
+    // A request owns this ref only while its result is safe to apply.
+    const markerPageRequestRef = useRef<Opening | null>(null);
     // If a read-marker page is still in flight while this kept-alive list is
     // hidden, its completion must not later take over the restored viewport.
     const markerPlacementInterruptedRef = useRef(false);
@@ -481,8 +483,10 @@ export const ChannelMessageList = forwardRef<
       if (
         !isActive &&
         (opening.step === "placing" || opening.step === "loading")
-      )
+      ) {
         markerPlacementInterruptedRef.current = true;
+        markerPageRequestRef.current = null;
+      }
     }, [isActive, opening.step]);
     // A server without read markers keeps no shared place, so its chats open
     // at the bottom.
@@ -645,7 +649,6 @@ export const ChannelMessageList = forwardRef<
 
     // We ask once per opening, also when React runs the effect twice, and drop
     // the page if the user has moved on before it arrives.
-    const markerPageRequestRef = useRef<Opening | null>(null);
     // biome-ignore lint/correctness/useExhaustiveDependencies: the marker, the loaded rows and loading decide when to ask
     useEffect(() => {
       if (!needsMarkerPage || !historyTarget) return;

@@ -163,8 +163,10 @@ describe("ChannelMessageList opening on the read marker", () => {
     setGeometry(list, 240);
     fireEvent.scroll(list);
     expect(markerPage).toHaveBeenCalledTimes(1);
+    const isCurrent = markerPage.mock.calls[0][4] as () => boolean;
 
     rerender(<ChannelMessageList {...props} isActive={false} />);
+    expect(isCurrent()).toBe(false);
     rerender(<ChannelMessageList {...props} isActive />);
 
     await act(async () => {
