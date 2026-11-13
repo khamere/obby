@@ -153,6 +153,29 @@ describe("ChannelMessageList opening on the read marker", () => {
     expect(markerPage).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps the restored position when an in-flight marker page settles", async () => {
+    let resolveMarkerPage!: (loaded: boolean) => void;
+    markerPage.mockImplementation(
+      () => new Promise<boolean>((resolve) => (resolveMarkerPage = resolve)),
+    );
+    const { container, rerender } = render(<ChannelMessageList {...props} />);
+    const list = container.firstElementChild as HTMLElement;
+    setGeometry(list, 240);
+    fireEvent.scroll(list);
+    expect(markerPage).toHaveBeenCalledTimes(1);
+
+    rerender(<ChannelMessageList {...props} isActive={false} />);
+    rerender(<ChannelMessageList {...props} isActive />);
+
+    await act(async () => {
+      resolveMarkerPage(true);
+      await Promise.resolve();
+    });
+
+    expect(list.scrollTop).toBe(240);
+    expect(markerPage).toHaveBeenCalledTimes(1);
+  });
+
   it("stops waiting for a marker page that never lands and leaves the unread messages unread", () => {
     vi.useFakeTimers();
     useStore.setState({ servers: [server(true)] });
