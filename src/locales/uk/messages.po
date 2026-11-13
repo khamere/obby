@@ -145,6 +145,10 @@ msgstr "{count}+ результатів"
 msgid "{countLabel} in {scopeName}"
 msgstr "{countLabel} у {scopeName}"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "{done} of {all}"
+msgstr "{done} з {all}"
+
 #: src/components/ui/UploadProgressBar.tsx
 msgid "{failedCount, plural, one {1 upload failed} other {# uploads failed}}"
 msgstr "{failedCount, plural, one {Не вдалося завантажити 1 файл} few {Не вдалося завантажити # файли} many {Не вдалося завантажити # файлів} other {Не вдалося завантажити # файлу}}"
@@ -700,6 +704,10 @@ msgstr "Дозвольте доступ до мікрофона, щоб запи
 msgid "Allow notifications for Obby in your system settings to turn them on"
 msgstr "Дозвольте сповіщення для Obby в налаштуваннях системи, щоб увімкнути їх"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Allow Obby to install updates"
+msgstr "Дозволити Obby встановлювати оновлення"
+
 #: src/components/layout/ChatArea.tsx
 msgid "Allow Obby under Screen Recording in System Settings, then record again."
 msgstr "Дозвольте Obby у розділі «Запис екрана» в Системних параметрах і запишіть знову."
@@ -720,6 +728,14 @@ msgstr "Альтернативний текст (необов'язково)"
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Amount"
 msgstr "Кількість"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Android asks once. Turn on \"Allow from this source\" for Obby, then come back; the update continues by itself."
+msgstr "Android питає лише раз. Увімкніть для Obby «Дозволити з цього джерела» і поверніться; оновлення продовжиться саме."
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Android refused the update because it was signed by someone else. Install it from the release page."
+msgstr "Android відхилив оновлення, бо його підписав хтось інший. Встановіть його зі сторінки випуску."
 
 #: src/components/pages/SettingsPage.tsx
 msgid "Anonymous Analytics:"
@@ -1137,6 +1153,7 @@ msgstr "Не можна видалити останні облікові дан�
 #: src/components/ui/settings/HistoryUsageField.tsx
 #: src/components/ui/TotpStepUpModal.tsx
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
+#: src/components/ui/UpdateSheet.tsx
 #: src/lib/modal/ConfirmDialog.tsx
 msgid "Cancel"
 msgstr "Скасувати"
@@ -1348,8 +1365,20 @@ msgid "Chats and networks"
 msgstr "Чати й мережі"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Check for an update now"
+msgstr "Перевірити оновлення зараз"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Check for new releases"
 msgstr "Перевіряти нові випуски"
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Check now"
+msgstr "Перевірити"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Checking the download"
+msgstr "Перевірка завантаження"
 
 #: src/lib/mediaUpload.ts
 msgid "Choose a different file type. The file host does not accept {ext} files."
@@ -1493,6 +1522,7 @@ msgstr "Ліміт клієнтів (+l)"
 #: src/components/ui/QuickActions.tsx
 #: src/components/ui/QuickActions.tsx
 #: src/components/ui/TicTacToeModal.tsx
+#: src/components/ui/UpdateSheet.tsx
 #: src/lib/modal/BaseModal.tsx
 msgid "Close"
 msgstr "Закрити"
@@ -2232,12 +2262,18 @@ msgstr "Готово"
 
 #: src/components/ui/MediaViewerModal.tsx
 #: src/components/ui/MediaViewerModal.tsx
+#: src/components/ui/UpdateSheet.tsx
 msgid "Download"
 msgstr "Завантажити"
 
 #: src/components/ui/settings/BackupField.tsx
 msgid "Download backup"
 msgstr "Завантажити резервну копію"
+
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Downloading {label}"
+msgstr "Завантаження {label}"
 
 #: src/components/ui/UpdateModal.tsx
 msgid "Downloading…"
@@ -4255,6 +4291,11 @@ msgstr "Не зашифровано"
 msgid "Not in this channel"
 msgstr "Ви не в цьому каналі"
 
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Not now"
+msgstr "Не зараз"
+
 #: src/components/chat/CommandArgHint.tsx
 msgid "Not sent. Reconnect, or use a chat where the bot offers this command"
 msgstr "Не надіслано. Перепідключіться або скористайтеся чатом, де бот пропонує цю команду"
@@ -4295,10 +4336,27 @@ msgstr "Obby"
 msgid "Obby - Bringing IRC to the future"
 msgstr "Obby - Привносимо IRC у майбутнє"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Obby {version}"
+msgstr "Obby {version}"
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Obby {version} is available."
+msgstr "Доступна версія Obby {version}."
+
 #: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Obby downloads this file every time it starts, so everyone using the same link gets updates. This contacts the site the link points to."
 msgstr "Obby завантажує цей файл під час кожного запуску, тож усі, хто використовує те саме посилання, отримують оновлення. При цьому відбувається звернення до сайту, на який веде посилання."
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Obby is up to date."
+msgstr "Obby оновлено."
+
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Obby will close to install the update; open it again afterwards."
+msgstr "Obby закриється, щоб встановити оновлення; потім відкрийте його знову."
 
 #: src/components/pages/SettingsPage.tsx
 msgid "Off"
@@ -4324,8 +4382,8 @@ msgid "on"
 msgstr "увімк"
 
 #: src/lib/settings/definitions/allSettings.ts
-msgid "Once a day, ask the project's release page whether a newer build exists and say so under the version. Nothing is downloaded or installed."
-msgstr "Раз на день запитувати сторінку випусків проєкту, чи є новіша збірка, і показувати це під версією. Нічого не завантажується й не встановлюється."
+msgid "Once a day, ask the project's release page whether a newer build exists and show it above your name. Nothing is downloaded until you tap Update."
+msgstr "Раз на добу питає сторінку випусків проєкту, чи є новіша збірка, і показує її над вашим іменем. Нічого не завантажується, доки ви не натиснете «Оновити»."
 
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/ChatHeader.tsx
@@ -4367,6 +4425,10 @@ msgstr "Відкрити {0}"
 #: src/lib/clientCommands.ts
 msgid "Open a private message to a user"
 msgstr "Відкрити приватне повідомлення з користувачем"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Open Android settings"
+msgstr "Відкрити налаштування Android"
 
 #: src/components/layout/ChannelRow.tsx
 #: src/components/layout/ChannelRow.tsx
@@ -4420,6 +4482,10 @@ msgstr "Відкрийте сповіщення сервера, щоб поба�
 #: src/components/layout/UserPanel.tsx
 msgid "Open settings"
 msgstr "Відкрити налаштування"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Open the release page"
+msgstr "Відкрити сторінку випуску"
 
 #: src/components/message/WorkflowLine.tsx
 msgid "Open workflow"
@@ -4870,6 +4936,10 @@ msgstr "Прочитати всі згадки"
 msgid "Read every message in your own language."
 msgstr "Читайте кожне повідомлення своєю мовою."
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Ready to install. Return to Obby to continue."
+msgstr "Готово до встановлення. Поверніться в Obby, щоб продовжити."
+
 #: src/components/layout/ProfilePane.tsx
 msgid "Real name"
 msgstr "Справжнє ім'я"
@@ -5006,6 +5076,8 @@ msgid "Relaxed - Less aggressive protection"
 msgstr "Розслаблений - менш агресивний захист"
 
 #: src/components/ui/UpdateModal.tsx
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "Примітки до випуску"
 
@@ -6153,6 +6225,14 @@ msgstr "Сервер дзвінків відхилив запит. Спробу�
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
 msgstr "З'єднання з <0>{serverName}</0> має такі проблеми безпеки:"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "The download did not match the release's checksum, so it was thrown away."
+msgstr "Завантажений файл не збігся з контрольною сумою випуску, тому його відкинуто."
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "The download stopped. Check your connection and try again."
+msgstr "Завантаження зупинилося. Перевірте з'єднання й спробуйте ще раз."
+
 #: src/components/ui/settings/BackupField.tsx
 msgid "The file holds your servers with their passwords, upload tokens, encryption keys, settings and layout, locked with the password you choose here. Chat history is not included."
 msgstr "Файл містить ваші сервери з паролями, токени завантаження, ключі шифрування, налаштування та розкладку, захищені вибраним тут паролем. Історія чатів не включена."
@@ -6172,6 +6252,10 @@ msgstr "Шрифт повідомлень, якщо відрізняється �
 #: src/lib/settings/definitions/allSettings.ts
 msgid "The font used for the whole app"
 msgstr "Шрифт для всього застосунку"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "The install was cancelled."
+msgstr "Встановлення скасовано."
 
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The IRC server has reported that its server-to-server links have a low security level. This means that when your messages are relayed between IRC servers in the network, they may not be properly encrypted or the SSL/TLS certificates may not be validated correctly."
@@ -6220,6 +6304,10 @@ msgstr "Назва теми"
 #: src/components/ui/PluginsScreen.tsx
 msgid "Theme Studio"
 msgstr "Студія тем"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "There is not enough free space for the update."
+msgstr "Недостатньо вільного місця для оновлення."
 
 #: src/components/ui/settings/BackupField.tsx
 msgid "This backup was made by a newer Obby. Update first."
@@ -6302,6 +6390,10 @@ msgstr "Ця мережа"
 #: src/components/pages/EmojiPacksPage.tsx
 msgid "This pack has no emoji yet. Add one above."
 msgstr "У цьому наборі ще немає емодзі. Додайте їх вище."
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "This release has no Android app to install."
+msgstr "У цьому випуску немає застосунку для Android."
 
 #: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 msgid "This removes the network from your soju bouncer. To use it again, you'll need to add it back."
@@ -6417,6 +6509,7 @@ msgid "Trusted Sources"
 msgstr "Надійні джерела"
 
 #: src/components/ui/LocationShareModal.tsx
+#: src/components/ui/UpdateSheet.tsx
 msgid "Try again"
 msgstr "Спробувати ще раз"
 
@@ -6526,6 +6619,10 @@ msgstr "Відновити"
 msgid "Until I unmute"
 msgstr "Доки не ввімкну"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Update"
+msgstr "Оновити"
+
 #: src/components/ui/UpdateModal.tsx
 msgid "Update available"
 msgstr "Доступне оновлення"
@@ -6533,6 +6630,10 @@ msgstr "Доступне оновлення"
 #: src/components/ui/UpdateModal.tsx
 msgid "Update failed. Please try again."
 msgstr "Не вдалося оновити. Спробуйте ще раз."
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Update not installed"
+msgstr "Оновлення не встановлено"
 
 #: src/components/layout/UpdateLine.tsx
 msgid "Update Obby to {label}"
@@ -7022,6 +7123,18 @@ msgstr "Ви є IRC-оператором"
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "You are no longer in this channel"
 msgstr "Ви більше не в цьому каналі"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "You can close this and keep chatting."
+msgstr "Це можна закрити й далі спілкуватися."
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "You have {current}"
+msgstr "У вас {current}"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "You have {current} · {size} download"
+msgstr "У вас {current} · завантаження {size}"
 
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "You have a few minutes to choose a new password."

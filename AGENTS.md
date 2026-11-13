@@ -55,7 +55,9 @@ Pushes to `main` produce `-pre` pre-releases. Linux AppImages get zsync update i
 (`gh-releases-zsync`) so AppImageUpdate can self-update.
 
 Mobile updates ship through the App Store / Google Play — do **not** add an in-app updater for
-iOS/Android.
+iOS/Android. Community builds are the exception: they are
+sideloaded, so Android updates itself from the release APK (see
+docs/superpowers/specs/2026-11-13-android-in-app-update-design.md).
 
 Desktop auto-update (macOS/Windows/Linux) is done with the **Tauri updater plugin** backed by
 **CrabNebula Cloud** (CDN + update server with first-class Tauri-updater support; free since

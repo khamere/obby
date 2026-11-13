@@ -81,8 +81,10 @@ stay within their limits.
 
 ## What the builds do not do
 
-- Desktop apps do not update themselves. Their updater is pointed at this
-  repository, where no update manifest exists, so the check stays quiet.
+- Community build of Obby. The Android app updates itself from inside the
+  app; desktop apps do not, so download the next release from here. The desktop
+  updater is pointed at this repository, where no update manifest exists, so
+  the check stays quiet.
   Signed updater artifacts would need a Tauri signing key pair, with the public
   key in `tauri.conf.json` and the private key as a secret.
 - The Android app keeps upstream's application id. A phone with the upstream
