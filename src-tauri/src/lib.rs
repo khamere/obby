@@ -285,6 +285,7 @@ pub fn run() {
     #[cfg(target_os = "android")]
     {
         builder = builder.plugin(tauri_plugin_dialog::init());
+        builder = builder.plugin(tauri_plugin_app_update::init());
     }
 
     builder
