@@ -178,6 +178,45 @@ describe("ChannelMessageList opening on the read marker", () => {
     expect(markerPage).toHaveBeenCalledTimes(1);
   });
 
+  it("returns to the bottom, not the top, when the chat is left before its line is placed", () => {
+    const { container, rerender } = render(<ChannelMessageList {...props} />);
+    const list = container.firstElementChild as HTMLElement;
+    // The list never scrolled while visible, so no position was saved.
+    setGeometry(list, 400);
+    expect(list.dataset.opening).toBe("loading");
+
+    rerender(<ChannelMessageList {...props} isActive={false} />);
+    // A hidden list loses its scroll position.
+    list.scrollTop = 0;
+    rerender(<ChannelMessageList {...props} isActive />);
+
+    expect(list.scrollTop).toBe(1000);
+    expect(list.querySelector("[data-unread-line]")).not.toBeNull();
+    expect(markerPage).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns to the bottom when the marker page lands while the chat is hidden", async () => {
+    let resolveMarkerPage!: (loaded: boolean) => void;
+    markerPage.mockImplementation(
+      () => new Promise<boolean>((resolve) => (resolveMarkerPage = resolve)),
+    );
+    const { container, rerender } = render(<ChannelMessageList {...props} />);
+    const list = container.firstElementChild as HTMLElement;
+    setGeometry(list, 400);
+
+    rerender(<ChannelMessageList {...props} isActive={false} />);
+    list.scrollTop = 0;
+    await act(async () => {
+      resolveMarkerPage(true);
+      await Promise.resolve();
+    });
+    rerender(<ChannelMessageList {...props} isActive />);
+
+    expect(list.scrollTop).toBe(1000);
+    expect(list.dataset.opening).toBe("open");
+    expect(markerPage).toHaveBeenCalledTimes(1);
+  });
+
   it("stops waiting for a marker page that never lands and leaves the unread messages unread", () => {
     vi.useFakeTimers();
     useStore.setState({ servers: [server(true)] });
