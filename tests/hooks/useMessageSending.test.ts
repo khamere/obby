@@ -219,3 +219,44 @@ describe("/rehash", () => {
     expect(sendRaw).toHaveBeenCalledWith("s1", "rehash");
   });
 });
+
+describe("client command names in any case", () => {
+  beforeEach(() => {
+    useStore.setState({ servers: [server] });
+    vi.restoreAllMocks();
+    vi.spyOn(ircClient, "isSocketOpen").mockReturnValue(true);
+    (ircClient as unknown as { servers: Map<string, unknown> }).servers.set(
+      "s1",
+      { channels: [] },
+    );
+  });
+
+  afterEach(() => {
+    (ircClient as unknown as { servers: Map<string, unknown> }).servers.delete(
+      "s1",
+    );
+    vi.restoreAllMocks();
+  });
+
+  it("joins on /JOIN", () => {
+    const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    runCommand("/JOIN #x,#y key");
+    expect(sendRaw).toHaveBeenCalledWith("s1", "JOIN #x key");
+    expect(sendRaw).toHaveBeenCalledWith("s1", "JOIN #y");
+  });
+
+  it("sends /Me as an action", () => {
+    const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    runCommand("/Me waves");
+    expect(sendRaw).toHaveBeenCalledWith(
+      "s1",
+      "PRIVMSG #lobby :\u0001ACTION waves\u0001",
+    );
+  });
+
+  it("sends an unknown command to the server as typed", () => {
+    const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    runCommand("/FOO Bar");
+    expect(sendRaw).toHaveBeenCalledWith("s1", "FOO Bar");
+  });
+});

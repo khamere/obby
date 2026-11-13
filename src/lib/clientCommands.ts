@@ -9,7 +9,7 @@
 //
 // To add a new client-only command:
 //   1. add an entry below
-//   2. add the matching `commandName === "..."` branch to handleCommand
+//   2. add the matching `lowerName === "..."` branch to handleCommand
 //      in src/hooks/useMessageSending.ts
 //   3. that's it — the popover and param hint pick it up automatically
 
