@@ -418,7 +418,11 @@ export function useMessageSending({
         const [first = ""] = rest.split(/\s/, 1);
         const named = ircClient.isChannel(selectedServerId, first);
         const channelName = named ? first : selectedChannel?.name;
-        if (!channelName) return;
+        if (!channelName) {
+          // Outside a channel we send the line as typed, so the server tells the reader why it fails.
+          ircClient.sendRaw(selectedServerId, command);
+          return;
+        }
         const topic = named ? rest.slice(first.length).trimStart() : rest;
         if (topic) ircClient.setTopic(selectedServerId, channelName, topic);
         else ircClient.getTopic(selectedServerId, channelName);
