@@ -557,20 +557,16 @@ export const MessageItem = memo((props: MessageItemProps) => {
   // Our own messages never highlight us; with highlights off our nick is
   // just another member name.
   const highlightSelf = enableHighlights && !isCurrentUser;
-  const { node: highlightedContent, mentionsSelf } = useMemo(
+  const nickMatcher = useMemo(
     () =>
-      highlightNicks(
-        htmlContent,
-        buildNickMatcher(channelUsers, {
-          ownNick: ircCurrentUser?.username,
-          highlightSelf,
-          customMentions,
-          onNickClick: openPrivateChatWith,
-          colorFor: coloredNicknames ? nickColor : undefined,
-        }),
-      ),
+      buildNickMatcher(channelUsers, {
+        ownNick: ircCurrentUser?.username,
+        highlightSelf,
+        customMentions,
+        onNickClick: openPrivateChatWith,
+        colorFor: coloredNicknames ? nickColor : undefined,
+      }),
     [
-      htmlContent,
       channelUsers,
       highlightSelf,
       ircCurrentUser?.username,
@@ -578,6 +574,10 @@ export const MessageItem = memo((props: MessageItemProps) => {
       openPrivateChatWith,
       coloredNicknames,
     ],
+  );
+  const { node: highlightedContent, mentionsSelf } = useMemo(
+    () => highlightNicks(htmlContent, nickMatcher),
+    [htmlContent, nickMatcher],
   );
   // A nick colored letter by letter is split across spans, so the rendered
   // text can't find it; the raw text still can.
@@ -800,8 +800,23 @@ export const MessageItem = memo((props: MessageItemProps) => {
     }
   }
 
+  // Someone said our name, or answered something we said. Either way the row
+  // is worth finding again while scrolling past everything else.
+  const isAimedAtUs =
+    !isCurrentUser &&
+    (message.mentioned.length > 0 ||
+      (!!ircCurrentUser &&
+        message.replyMessage?.userId === ircCurrentUser.username));
+
   // Handle ACTION messages
   if (message.content.substring(0, 7) === "\u0001ACTION") {
+    const actionText = highlightNicks(
+      highlightNames(
+        message.content.substring(7, message.content.length - 1),
+        message.mentioned,
+      ),
+      nickMatcher,
+    ).node;
     return (
       <>
         {showDate && (
@@ -818,6 +833,8 @@ export const MessageItem = memo((props: MessageItemProps) => {
             message={message}
             showDate={false}
             messageUser={messageUser}
+            isAimedAtUs={isAimedAtUs}
+            actionText={actionText}
             onUsernameContextMenu={onUsernameContextMenu}
             setReplyTo={setReplyTo}
             onReactClick={onReactClick}
@@ -898,14 +915,6 @@ export const MessageItem = memo((props: MessageItemProps) => {
     if (message.replyMessage?.id)
       useStore.getState().revealMessage(message.replyMessage.id);
   };
-
-  // Someone said our name, or answered something we said. Either way the row
-  // is worth finding again while scrolling past everything else.
-  const isAimedAtUs =
-    !isCurrentUser &&
-    (message.mentioned.length > 0 ||
-      (!!ircCurrentUser &&
-        message.replyMessage?.userId === ircCurrentUser.username));
 
   const isClickable =
     message.userId !== "system" && ircCurrentUser?.username !== username;
