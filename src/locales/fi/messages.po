@@ -313,6 +313,14 @@ msgstr "#overflow"
 msgid "↑ ↓ to move"
 msgstr "↑ ↓ siirtyäksesi"
 
+#: src/components/layout/UpdateLine.tsx
+msgid "↑ Update"
+msgstr "↑ Päivitä"
+
+#: src/components/layout/UpdateLine.tsx
+msgid "↑ Update to {label}"
+msgstr "↑ Päivitä versioon {label}"
+
 #: src/components/ui/QuickActions.tsx
 msgid "↵ to open"
 msgstr "↵ avataksesi"
@@ -6525,6 +6533,10 @@ msgstr "Päivitys saatavilla"
 #: src/components/ui/UpdateModal.tsx
 msgid "Update failed. Please try again."
 msgstr "Päivitys epäonnistui. Yritä uudelleen."
+
+#: src/components/layout/UpdateLine.tsx
+msgid "Update Obby to {label}"
+msgstr "Päivitä Obby versioon {label}"
 
 #: src/components/pages/SettingsPage.tsx
 msgid "Updates"

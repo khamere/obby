@@ -313,6 +313,14 @@ msgstr "#przepełnienie"
 msgid "↑ ↓ to move"
 msgstr "↑ ↓ przesuń"
 
+#: src/components/layout/UpdateLine.tsx
+msgid "↑ Update"
+msgstr "↑ Aktualizuj"
+
+#: src/components/layout/UpdateLine.tsx
+msgid "↑ Update to {label}"
+msgstr "↑ Aktualizuj do {label}"
+
 #: src/components/ui/QuickActions.tsx
 msgid "↵ to open"
 msgstr "↵ otwórz"
@@ -6525,6 +6533,10 @@ msgstr "Dostępna aktualizacja"
 #: src/components/ui/UpdateModal.tsx
 msgid "Update failed. Please try again."
 msgstr "Aktualizacja nie powiodła się. Spróbuj ponownie."
+
+#: src/components/layout/UpdateLine.tsx
+msgid "Update Obby to {label}"
+msgstr "Zaktualizuj Obby do {label}"
 
 #: src/components/pages/SettingsPage.tsx
 msgid "Updates"

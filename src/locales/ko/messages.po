@@ -313,6 +313,14 @@ msgstr "#overflow"
 msgid "↑ ↓ to move"
 msgstr "↑ ↓ 이동"
 
+#: src/components/layout/UpdateLine.tsx
+msgid "↑ Update"
+msgstr "↑ 업데이트"
+
+#: src/components/layout/UpdateLine.tsx
+msgid "↑ Update to {label}"
+msgstr "↑ {label}(으)로 업데이트"
+
 #: src/components/ui/QuickActions.tsx
 msgid "↵ to open"
 msgstr "↵ 열기"
@@ -6525,6 +6533,10 @@ msgstr "업데이트 사용 가능"
 #: src/components/ui/UpdateModal.tsx
 msgid "Update failed. Please try again."
 msgstr "업데이트에 실패했습니다. 다시 시도해 주세요."
+
+#: src/components/layout/UpdateLine.tsx
+msgid "Update Obby to {label}"
+msgstr "Obby를 {label}(으)로 업데이트"
 
 #: src/components/pages/SettingsPage.tsx
 msgid "Updates"

@@ -313,6 +313,14 @@ msgstr "#přetečení"
 msgid "↑ ↓ to move"
 msgstr "↑ ↓ pro posun"
 
+#: src/components/layout/UpdateLine.tsx
+msgid "↑ Update"
+msgstr "↑ Aktualizovat"
+
+#: src/components/layout/UpdateLine.tsx
+msgid "↑ Update to {label}"
+msgstr "↑ Aktualizovat na {label}"
+
 #: src/components/ui/QuickActions.tsx
 msgid "↵ to open"
 msgstr "↵ pro otevření"
@@ -6525,6 +6533,10 @@ msgstr "Dostupná aktualizace"
 #: src/components/ui/UpdateModal.tsx
 msgid "Update failed. Please try again."
 msgstr "Aktualizace selhala. Zkuste to prosím znovu."
+
+#: src/components/layout/UpdateLine.tsx
+msgid "Update Obby to {label}"
+msgstr "Aktualizovat Obby na {label}"
 
 #: src/components/pages/SettingsPage.tsx
 msgid "Updates"

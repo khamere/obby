@@ -1253,6 +1253,22 @@ html[data-keyboard-open] .chat-input-area {
 .user-panel {
   container-type: inline-size;
 }
+/* The long pill label and the short one swap by the row's own width, so a
+   narrow sidebar never loses the pill, only its words. */
+.update-line {
+  container-type: inline-size;
+}
+.update-line-wide {
+  display: none;
+}
+@container (min-width: 220px) {
+  .update-line-wide {
+    display: inline;
+  }
+  .update-line-narrow {
+    display: none;
+  }
+}
 .user-panel-wide {
   display: none;
 }
