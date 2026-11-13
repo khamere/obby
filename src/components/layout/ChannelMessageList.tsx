@@ -481,12 +481,16 @@ export const ChannelMessageList = forwardRef<
     useLayoutEffect(() => {
       if (
         !isActive &&
-        (opening.step === "placing" || opening.step === "loading")
+        opening.step !== "marker" &&
+        (opening.step === "placing" ||
+          opening.step === "loading" ||
+          opening.hasGivenUp)
       ) {
         markerPageRequestRef.current = null;
         setOpening((o) =>
-          o.step === "placing" || o.step === "loading"
-            ? { ...o, step: "open" }
+          o.step !== "marker" &&
+          (o.step === "placing" || o.step === "loading" || o.hasGivenUp)
+            ? { ...o, step: "open", hasGivenUp: false }
             : o,
         );
       }
