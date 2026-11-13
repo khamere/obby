@@ -123,6 +123,21 @@ describe("a message aimed at us", () => {
     expect(marked(container)).toBe(true);
   });
 
+  // Nicks compare without case, so a reply to "MattF" still reaches "mattf".
+  it("marks an action replying to our nick in another case", () => {
+    const { container } = render(
+      <MessageItem
+        message={makeMessage({
+          content: "\u0001ACTION nods\u0001",
+          replyMessage: makeMessage({ userId: "MattF" }),
+        })}
+        {...baseProps}
+      />,
+    );
+
+    expect(marked(container)).toBe(true);
+  });
+
   it("leaves a reply to somebody else alone", () => {
     const { container } = render(
       <MessageItem

@@ -806,7 +806,8 @@ export const MessageItem = memo((props: MessageItemProps) => {
     !isCurrentUser &&
     (message.mentioned.length > 0 ||
       (!!ircCurrentUser &&
-        message.replyMessage?.userId === ircCurrentUser.username));
+        message.replyMessage?.userId.toLowerCase() ===
+          ircCurrentUser.username.toLowerCase()));
 
   // Handle ACTION messages
   if (message.content.substring(0, 7) === "\u0001ACTION") {
