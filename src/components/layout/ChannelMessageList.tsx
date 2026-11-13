@@ -476,6 +476,8 @@ export const ChannelMessageList = forwardRef<
     const [opening, setOpening] = useState<Opening>({ step: "marker" });
     // A request owns this ref only while its result is safe to apply.
     const markerPageRequestRef = useRef<Opening | null>(null);
+    const openingHasGivenUp =
+      opening.step !== "marker" && opening.hasGivenUp;
     // If a read-marker page is still in flight while this kept-alive list is
     // hidden, its completion must not later take over the restored viewport.
     useLayoutEffect(() => {
@@ -484,7 +486,7 @@ export const ChannelMessageList = forwardRef<
         opening.step !== "marker" &&
         (opening.step === "placing" ||
           opening.step === "loading" ||
-          opening.hasGivenUp)
+          openingHasGivenUp)
       ) {
         markerPageRequestRef.current = null;
         setOpening((o) =>
@@ -494,7 +496,7 @@ export const ChannelMessageList = forwardRef<
             : o,
         );
       }
-    }, [isActive, opening.step]);
+    }, [isActive, opening.step, openingHasGivenUp]);
     // A server without read markers keeps no shared place, so its chats open
     // at the bottom.
     if (isActive && opening.step === "marker" && readMarker !== undefined)
