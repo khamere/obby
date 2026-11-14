@@ -33,8 +33,9 @@ export interface LatestRelease {
 
 /**
  * The APK to install: the one named for the version when a release carries
- * several. An asset without a SHA-256 digest is useless to us, since nothing
- * may install unverified.
+ * several, by its exact name first, since "cf1.2.1" is also the start of
+ * "cf1.2.10". An asset without a SHA-256 digest is useless to us, since
+ * nothing may install unverified.
  */
 export function pickApkAsset(
   assets: unknown,
@@ -65,7 +66,13 @@ export function pickApkAsset(
       url: browser_download_url,
     });
   }
-  return found.find((a) => a.name.includes(version)) ?? found[0] ?? null;
+  const exact = `obby-${version}.apk`.toLowerCase();
+  return (
+    found.find((a) => a.name.toLowerCase() === exact) ??
+    found.find((a) => a.name.includes(version)) ??
+    found[0] ??
+    null
+  );
 }
 
 /** "0.4.0-cf1.2.1" becomes "cf1.2.1"; anything else is shown as it is. */
@@ -75,6 +82,7 @@ export function shortReleaseLabel(version: string): string {
 
 interface Remembered {
   repo: string;
+  api: string;
   checkedAt: number;
   latest: LatestRelease | null;
 }
@@ -188,12 +196,13 @@ export async function newerRelease({
   if (!repo || !parseReleaseVersion(current)) return null;
   const known = remembered();
   let latest: LatestRelease | null;
-  // The answer is kept a day, for the repository it came from: a build from
-  // another repository served on the same origin asks afresh.
+  // The answer is kept a day, for the repository and the API it came from:
+  // a build that asks elsewhere and is served on the same origin asks afresh.
   if (
     !force &&
     known &&
     known.repo === repo &&
+    known.api === api &&
     now - known.checkedAt < RELEASE_CHECK_INTERVAL_MS
   ) {
     latest = known.latest;
@@ -201,7 +210,7 @@ export async function newerRelease({
     // A request that fails throws here, before anything is remembered, so
     // only a real answer is kept for the day.
     latest = await fetchLatestRelease(repo, fetchImpl, api);
-    remember({ repo, checkedAt: now, latest });
+    remember({ repo, api, checkedAt: now, latest });
   }
   return latest && isNewerRelease(latest.version, current) ? latest : null;
 }

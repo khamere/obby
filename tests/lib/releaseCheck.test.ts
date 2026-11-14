@@ -75,6 +75,18 @@ describe("pickApkAsset", () => {
     );
   });
 
+  it("takes the exact file over another version that contains this one", () => {
+    const named = "Obby-0.4.0-cf1.2.1.apk";
+    for (const other of [
+      "Obby-0.4.0-cf1.2.10.apk",
+      "Obby-0.4.0-cf1.2.1-debug.apk",
+    ]) {
+      expect(
+        pickApkAsset([asset(other), asset(named)], "0.4.0-cf1.2.1")?.name,
+      ).toBe(named);
+    }
+  });
+
   it("gives nothing without an APK or a SHA-256 digest", () => {
     expect(pickApkAsset([], "1")).toBeNull();
     expect(pickApkAsset(undefined, "1")).toBeNull();
@@ -118,7 +130,7 @@ describe("fetchLatestRelease", () => {
   it("returns the tag without its v and the page", async () => {
     const fetchImpl = fetching(async () => release("v0.4.0-cf1.0.2"));
     await expect(
-      fetchLatestRelease("khamere/obby", fetchImpl),
+      fetchLatestRelease("khamere/obby", fetchImpl, "https://api.github.com"),
     ).resolves.toEqual({
       version: "0.4.0-cf1.0.2",
       url: "https://example.test/releases/v0.4.0-cf1.0.2",
@@ -212,6 +224,19 @@ describe("newerRelease", () => {
       fetchImpl,
       now: 2,
     });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it("asks again when the build asks another API", async () => {
+    const fetchImpl = fetching(async () => release("v0.4.0-cf1.0.2"));
+    const args = { repo: "o/r", current: "0.4.0-cf1.0.1", fetchImpl };
+    await newerRelease({ ...args, api: "https://a.example", now: 1 });
+    await newerRelease({ ...args, api: "https://b.example", now: 2 });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(fetchImpl.mock.calls[1][0]).toBe(
+      "https://b.example/repos/o/r/releases/latest",
+    );
+    await newerRelease({ ...args, api: "https://b.example", now: 3 });
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
