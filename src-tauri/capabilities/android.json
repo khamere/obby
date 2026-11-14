@@ -1,0 +1,12 @@
+{
+  "$schema": "../gen/schemas/mobile-schema.json",
+  "identifier": "android",
+  "description": "Android-only permissions: in-app updates of community builds",
+  "windows": [
+    "main"
+  ],
+  "platforms": ["android"],
+  "permissions": [
+    "app-update:default"
+  ]
+}

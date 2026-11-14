@@ -145,6 +145,10 @@ msgstr "{count}+ resultaten"
 msgid "{countLabel} in {scopeName}"
 msgstr "{countLabel} in {scopeName}"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "{done} of {all}"
+msgstr "{done} van {all}"
+
 #: src/components/ui/UploadProgressBar.tsx
 msgid "{failedCount, plural, one {1 upload failed} other {# uploads failed}}"
 msgstr "{failedCount, plural, one {1 upload mislukt} other {# uploads mislukt}}"
@@ -312,6 +316,14 @@ msgstr "#overflow"
 #: src/components/ui/QuickActions.tsx
 msgid "↑ ↓ to move"
 msgstr "↑ ↓ om te verplaatsen"
+
+#: src/components/layout/UpdateLine.tsx
+msgid "↑ Update"
+msgstr "↑ Bijwerken"
+
+#: src/components/layout/UpdateLine.tsx
+msgid "↑ Update to {label}"
+msgstr "↑ Bijwerken naar {label}"
 
 #: src/components/ui/QuickActions.tsx
 msgid "↵ to open"
@@ -692,6 +704,10 @@ msgstr "Sta microfoontoegang toe om geluid op te nemen."
 msgid "Allow notifications for Obby in your system settings to turn them on"
 msgstr "Sta meldingen voor Obby toe in je systeeminstellingen om ze aan te zetten"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Allow Obby to install updates"
+msgstr "Obby toestaan updates te installeren"
+
 #: src/components/layout/ChatArea.tsx
 msgid "Allow Obby under Screen Recording in System Settings, then record again."
 msgstr "Sta Obby toe onder Schermopname in Systeeminstellingen en neem daarna opnieuw op."
@@ -712,6 +728,14 @@ msgstr "Alternatieve tekst (optioneel)"
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Amount"
 msgstr "Aantal"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Android asks once. Turn on \"Allow from this source\" for Obby, then come back; the update continues by itself."
+msgstr "Android vraagt dit maar één keer. Zet \"Toestaan vanaf deze bron\" aan voor Obby en kom dan terug; de update gaat vanzelf verder."
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Android refused the update because it was signed by someone else. Install it from the release page."
+msgstr "Android weigerde de update omdat die door iemand anders is ondertekend. Installeer hem vanaf de releasepagina."
 
 #: src/components/pages/SettingsPage.tsx
 msgid "Anonymous Analytics:"
@@ -1129,6 +1153,8 @@ msgstr "Je laatste 2FA-inloggegevens kunnen niet worden verwijderd"
 #: src/components/ui/settings/HistoryUsageField.tsx
 #: src/components/ui/TotpStepUpModal.tsx
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
 #: src/lib/modal/ConfirmDialog.tsx
 msgid "Cancel"
 msgstr "Annuleren"
@@ -1340,8 +1366,20 @@ msgid "Chats and networks"
 msgstr "Chats en netwerken"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Check for an update now"
+msgstr "Nu naar een update zoeken"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Check for new releases"
 msgstr "Controleren op nieuwe versies"
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Check now"
+msgstr "Nu controleren"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Checking the download"
+msgstr "De download wordt gecontroleerd"
 
 #: src/lib/mediaUpload.ts
 msgid "Choose a different file type. The file host does not accept {ext} files."
@@ -1485,6 +1523,7 @@ msgstr "Clientlimiet (+l)"
 #: src/components/ui/QuickActions.tsx
 #: src/components/ui/QuickActions.tsx
 #: src/components/ui/TicTacToeModal.tsx
+#: src/components/ui/UpdateSheet.tsx
 #: src/lib/modal/BaseModal.tsx
 msgid "Close"
 msgstr "Sluiten"
@@ -1800,6 +1839,10 @@ msgstr "Ruim toont avatars en ruimte tussen berichten; Compact zet ze dicht op e
 #: src/lib/mediaDevices.ts
 msgid "Could not access the device."
 msgstr "Kan geen toegang krijgen tot het apparaat."
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Could not check. Try again later."
+msgstr "Controleren is mislukt. Probeer het later opnieuw."
 
 #: src/components/ui/GlobalNotifications.tsx
 msgid "Could not find this message"
@@ -2224,12 +2267,18 @@ msgstr "Klaar"
 
 #: src/components/ui/MediaViewerModal.tsx
 #: src/components/ui/MediaViewerModal.tsx
+#: src/components/ui/UpdateSheet.tsx
 msgid "Download"
 msgstr "Downloaden"
 
 #: src/components/ui/settings/BackupField.tsx
 msgid "Download backup"
 msgstr "Back-up downloaden"
+
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Downloading {label}"
+msgstr "{label} wordt gedownload"
 
 #: src/components/ui/UpdateModal.tsx
 msgid "Downloading…"
@@ -4247,6 +4296,11 @@ msgstr "Niet versleuteld"
 msgid "Not in this channel"
 msgstr "Niet in dit kanaal"
 
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Not now"
+msgstr "Niet nu"
+
 #: src/components/chat/CommandArgHint.tsx
 msgid "Not sent. Reconnect, or use a chat where the bot offers this command"
 msgstr "Niet verzonden. Maak opnieuw verbinding of gebruik een chat waar de bot deze opdracht aanbiedt"
@@ -4287,10 +4341,27 @@ msgstr "Obby"
 msgid "Obby - Bringing IRC to the future"
 msgstr "Obby — IRC de toekomst in"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Obby {version}"
+msgstr "Obby {version}"
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Obby {version} is available."
+msgstr "Obby {version} is beschikbaar."
+
 #: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Obby downloads this file every time it starts, so everyone using the same link gets updates. This contacts the site the link points to."
 msgstr "Obby downloadt dit bestand bij elke start, zodat iedereen met dezelfde link updates krijgt. Hiermee wordt de site benaderd waar de link naar wijst."
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Obby is up to date."
+msgstr "Obby is up-to-date."
+
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Obby will close to install the update; open it again afterwards."
+msgstr "Obby sluit af om de update te installeren; open het daarna opnieuw."
 
 #: src/components/pages/SettingsPage.tsx
 msgid "Off"
@@ -4316,8 +4387,8 @@ msgid "on"
 msgstr "aan"
 
 #: src/lib/settings/definitions/allSettings.ts
-msgid "Once a day, ask the project's release page whether a newer build exists and say so under the version. Nothing is downloaded or installed."
-msgstr "Eén keer per dag op de releasepagina van het project kijken of er een nieuwere build is en dat onder de versie tonen. Er wordt niets gedownload of geïnstalleerd."
+msgid "Once a day, ask the project's release page whether a newer build exists and show it above your name. Nothing is downloaded until you tap Update."
+msgstr "Vraagt één keer per dag aan de releasepagina van het project of er een nieuwere build is en toont die boven je naam. Er wordt niets gedownload tot je op Updaten tikt."
 
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/ChatHeader.tsx
@@ -4359,6 +4430,10 @@ msgstr "Open {0}"
 #: src/lib/clientCommands.ts
 msgid "Open a private message to a user"
 msgstr "Open een privébericht naar een gebruiker"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Open Android settings"
+msgstr "Android-instellingen openen"
 
 #: src/components/layout/ChannelRow.tsx
 #: src/components/layout/ChannelRow.tsx
@@ -4412,6 +4487,10 @@ msgstr "Open Servermeldingen om te zien wat er misging"
 #: src/components/layout/UserPanel.tsx
 msgid "Open settings"
 msgstr "Instellingen openen"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Open the release page"
+msgstr "De releasepagina openen"
 
 #: src/components/message/WorkflowLine.tsx
 msgid "Open workflow"
@@ -4862,6 +4941,10 @@ msgstr "Alle vermeldingen gelezen"
 msgid "Read every message in your own language."
 msgstr "Lees elk bericht in je eigen taal."
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Ready to install. Return to Obby to continue."
+msgstr "Klaar om te installeren. Ga terug naar Obby om door te gaan."
+
 #: src/components/layout/ProfilePane.tsx
 msgid "Real name"
 msgstr "Echte naam"
@@ -4998,6 +5081,8 @@ msgid "Relaxed - Less aggressive protection"
 msgstr "Ontspannen — Minder agressieve beveiliging"
 
 #: src/components/ui/UpdateModal.tsx
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "Release-opmerkingen"
 
@@ -5820,6 +5905,10 @@ msgstr "Servernamen tonen"
 msgid "Show server replies"
 msgstr "Serverantwoorden tonen"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Show the install prompt again"
+msgstr "Installatievraag opnieuw tonen"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"
 msgstr "Toon het bericht van de dag"
@@ -6145,6 +6234,14 @@ msgstr "De gespreksserver heeft het verzoek geweigerd. Probeer het zo meteen opn
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
 msgstr "De verbinding met <0>{serverName}</0> heeft de volgende beveiligingsproblemen:"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "The download did not match the release's checksum, so it was thrown away."
+msgstr "De download kwam niet overeen met de controlesom van de release en is weggegooid."
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "The download stopped. Check your connection and try again."
+msgstr "De download is gestopt. Controleer je verbinding en probeer het opnieuw."
+
 #: src/components/ui/settings/BackupField.tsx
 msgid "The file holds your servers with their passwords, upload tokens, encryption keys, settings and layout, locked with the password you choose here. Chat history is not included."
 msgstr "Het bestand bevat je servers met hun wachtwoorden, uploadtokens, versleutelingssleutels, instellingen en indeling, vergrendeld met het wachtwoord dat je hier kiest. Chatgeschiedenis zit er niet in."
@@ -6164,6 +6261,10 @@ msgstr "Het lettertype voor berichten, als het afwijkt van het app-lettertype"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "The font used for the whole app"
 msgstr "Het lettertype voor de hele app"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "The install was cancelled."
+msgstr "De installatie is geannuleerd."
 
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The IRC server has reported that its server-to-server links have a low security level. This means that when your messages are relayed between IRC servers in the network, they may not be properly encrypted or the SSL/TLS certificates may not be validated correctly."
@@ -6193,6 +6294,10 @@ msgstr "De opname kon niet worden gemaakt."
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "De server heeft je deelname geweigerd. Controleer de kanaalmodi en probeer het opnieuw."
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "The update could not start. Try again."
+msgstr "De update kon niet starten. Probeer het opnieuw."
+
 #: src/components/ui/InviteUserModal.tsx
 msgid "The user will receive an invitation to join {channelName}."
 msgstr "De gebruiker ontvangt een uitnodiging om deel te nemen aan {channelName}."
@@ -6212,6 +6317,10 @@ msgstr "Themanaam"
 #: src/components/ui/PluginsScreen.tsx
 msgid "Theme Studio"
 msgstr "Themastudio"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "There is not enough free space for the update."
+msgstr "Er is niet genoeg vrije ruimte voor de update."
 
 #: src/components/ui/settings/BackupField.tsx
 msgid "This backup was made by a newer Obby. Update first."
@@ -6294,6 +6403,10 @@ msgstr "Dit netwerk"
 #: src/components/pages/EmojiPacksPage.tsx
 msgid "This pack has no emoji yet. Add one above."
 msgstr "Dit pakket bevat nog geen emoji. Voeg er hierboven een toe."
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "This release has no Android app to install."
+msgstr "Deze release heeft geen Android-app om te installeren."
 
 #: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 msgid "This removes the network from your soju bouncer. To use it again, you'll need to add it back."
@@ -6409,6 +6522,7 @@ msgid "Trusted Sources"
 msgstr "Vertrouwde bronnen"
 
 #: src/components/ui/LocationShareModal.tsx
+#: src/components/ui/UpdateSheet.tsx
 msgid "Try again"
 msgstr "Opnieuw proberen"
 
@@ -6518,6 +6632,11 @@ msgstr "Opschorting opheffen"
 msgid "Until I unmute"
 msgstr "Tot ik het ophef"
 
+#: src/components/ui/settings/UpdateCheckField.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Update"
+msgstr "Updaten"
+
 #: src/components/ui/UpdateModal.tsx
 msgid "Update available"
 msgstr "Update beschikbaar"
@@ -6525,6 +6644,14 @@ msgstr "Update beschikbaar"
 #: src/components/ui/UpdateModal.tsx
 msgid "Update failed. Please try again."
 msgstr "Update mislukt. Probeer het opnieuw."
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Update not installed"
+msgstr "Update niet geïnstalleerd"
+
+#: src/components/layout/UpdateLine.tsx
+msgid "Update Obby to {label}"
+msgstr "Obby bijwerken naar {label}"
 
 #: src/components/pages/SettingsPage.tsx
 msgid "Updates"
@@ -7010,6 +7137,18 @@ msgstr "Je bent een IRC Operator"
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "You are no longer in this channel"
 msgstr "Je bent niet meer in dit kanaal"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "You can close this and keep chatting."
+msgstr "Je kunt dit sluiten en gewoon doorchatten."
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "You have {current}"
+msgstr "Je hebt {current}"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "You have {current} · {size} download"
+msgstr "Je hebt {current} · download van {size}"
 
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "You have a few minutes to choose a new password."

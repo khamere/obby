@@ -52,6 +52,7 @@ reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"
 tauri-plugin-dialog = "2"
 jni = { version = "0.21", default-features = false }
 ndk-context = "0.1"
+tauri-plugin-app-update = { path = "plugins/app-update" }
 
 [target."cfg(any(target_os = \"macos\", windows, target_os = \"linux\"))".dependencies]
 tauri-plugin-single-instance = { version = "2.4.2", features = ["deep-link"] }

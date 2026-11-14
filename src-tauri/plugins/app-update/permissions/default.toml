@@ -1,0 +1,10 @@
+[default]
+description = "Lets the app download a release APK, follow its progress, cancel it and hand it to Android's installer."
+permissions = [
+  "allow-start-download",
+  "allow-cancel-download",
+  "allow-download-status",
+  "allow-open-install-settings",
+  "allow-retry-install",
+  "allow-register-listener",
+]
