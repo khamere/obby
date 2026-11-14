@@ -41,12 +41,22 @@ export function useAutoAway(): void {
       for (const id of clearAway) ircClient.clearAway(id);
     };
 
-    // We check at most once a second on input so pointer movement stays cheap.
+    // We check at most once a second on input so pointer movement stays cheap, and once more after the last input.
     let lastInputCheck = 0;
+    let trailingCheck = 0;
     const onActivity = () => {
       lastActivity = Date.now();
       if (autoAwayRecord().size === 0) return;
-      if (lastActivity - lastInputCheck < INPUT_CHECK_MS) return;
+      const wait = INPUT_CHECK_MS - (lastActivity - lastInputCheck);
+      if (wait > 0) {
+        if (!trailingCheck)
+          trailingCheck = window.setTimeout(() => {
+            trailingCheck = 0;
+            lastInputCheck = Date.now();
+            check();
+          }, wait);
+        return;
+      }
       lastInputCheck = lastActivity;
       check();
     };
@@ -77,6 +87,7 @@ export function useAutoAway(): void {
         window.removeEventListener(type, onActivity, { capture: true });
       document.removeEventListener("visibilitychange", onVisibility);
       window.clearInterval(timer);
+      window.clearTimeout(trailingCheck);
     };
   }, []);
 }

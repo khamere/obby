@@ -81,6 +81,20 @@ describe("useAutoAway", () => {
     expect(clearAway).toHaveBeenCalledWith("s1");
   });
 
+  it("marks the user back after the last of two quick inputs", () => {
+    renderHook(() => useAutoAway());
+    vi.advanceTimersByTime(10 * MIN + 30_000);
+
+    window.dispatchEvent(new KeyboardEvent("keydown"));
+    setServer(true);
+    vi.advanceTimersByTime(300);
+    window.dispatchEvent(new KeyboardEvent("keydown"));
+    expect(clearAway).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(1_000);
+    expect(clearAway).toHaveBeenCalledWith("s1");
+  });
+
   it("never marks the user back from an away they set themselves", () => {
     renderHook(() => useAutoAway());
     setServer(true);
