@@ -1,4 +1,5 @@
 import type { IRCClientContext } from "../IRCClientContext";
+import { splitStandardReply } from "./auth";
 
 export function handleMetadata(
   ctx: IRCClientContext,
@@ -147,121 +148,28 @@ export function handleMetadataSyncLater(
   ctx.triggerEvent("METADATA_SYNCLATER", { serverId, target, retryAfter });
 }
 
-export function handleMetadataEnd(
-  ctx: IRCClientContext,
-  serverId: string,
-  _source: string,
-  parv: string[],
-  _mtags: Record<string, string> | undefined,
-): void {
-  const target = parv.length > 1 ? parv[1] : parv[0] || "";
-  ctx.triggerEvent("METADATA_END", { serverId, target });
-}
-
-const METADATA_SUBCOMMANDS = new Set([
-  "GET",
-  "SET",
-  "LIST",
-  "SUB",
-  "UNSUB",
-  "SUBS",
-  "SYNC",
-  "CLEAR",
-]);
-
 export function handleMetadataFail(
   ctx: IRCClientContext,
   serverId: string,
   _source: string,
   parv: string[],
   _mtags: Record<string, string> | undefined,
-  trailing?: string,
+  trailing = "",
 ): void {
-  if (parv.length < 2) return;
-
-  let subcommand: string | undefined;
-  let code: string;
-  let target: string | undefined;
-  let key: string | undefined;
-  let retryAfter: number | undefined;
-
-  let offset = 1;
-  if (METADATA_SUBCOMMANDS.has(parv[1]?.toUpperCase()) && parv.length > 2) {
-    subcommand = parv[1].toUpperCase();
-    code = parv[2];
-    offset = 3;
-  } else {
-    code = parv[1];
-    offset = 2;
-  }
-
-  const description =
-    trailing ?? (parv.length > offset ? parv[parv.length - 1] : undefined);
-  const contextCount =
-    parv.length > offset
-      ? parv.length -
-        offset -
-        (description && parv[parv.length - 1] === description ? 1 : 0)
-      : 0;
-  const context = parv.slice(offset, offset + contextCount);
-
-  if (subcommand) {
-    if (context.length === 1) {
-      key = context[0];
-    } else if (context.length >= 2) {
-      target = context[0];
-      key = context[1];
-      if (
-        code === "RATE_LIMITED" &&
-        context[2] &&
-        !Number.isNaN(Number.parseInt(context[2], 10))
-      ) {
-        retryAfter = Number.parseInt(context[2], 10);
-      }
-    }
-  } else {
-    switch (code) {
-      case "KEY_INVALID":
-      case "TOO_MANY_SUBS":
-        key = context[0];
-        break;
-      case "INVALID_TARGET":
-      case "LIMIT_REACHED":
-        target = context[0];
-        break;
-      case "SUBCOMMAND_INVALID":
-        subcommand = context[0];
-        break;
-      case "KEY_NO_PERMISSION":
-      case "KEY_NOT_SET":
-        target = context[0];
-        key = context[1];
-        break;
-      case "RATE_LIMITED":
-        target = context[0];
-        key = context[1];
-        if (context[2] && !Number.isNaN(Number.parseInt(context[2], 10))) {
-          retryAfter = Number.parseInt(context[2], 10);
-        }
-        break;
-      default:
-        if (context.length === 1) {
-          key = context[0];
-        } else if (context.length >= 2) {
-          target = context[0];
-          key = context[1];
-        }
-        break;
-    }
-  }
+  const { code, context } = splitStandardReply(parv, trailing);
+  const keyOnly = code === "KEY_INVALID" || code === "TOO_MANY_SUBS";
+  const target = keyOnly ? undefined : context[0];
+  const key = keyOnly ? context[0] : context[1];
+  const retryAfter =
+    code === "RATE_LIMITED" && context[2]
+      ? Number.parseInt(context[2], 10)
+      : undefined;
 
   ctx.triggerEvent("METADATA_FAIL", {
     serverId,
-    subcommand,
     code,
     target,
     key,
     retryAfter,
-    description,
   });
 }

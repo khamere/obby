@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { isGestureClaimed } from "../lib/gestures";
 
 interface SwipeNavigationConfig {
   currentPage: number;
@@ -25,6 +26,7 @@ interface TouchState {
   isDragging: boolean;
   isHorizontal: boolean | null;
   target: HTMLElement | null;
+  ignored: boolean;
 }
 
 export function useSwipeNavigation({
@@ -46,6 +48,7 @@ export function useSwipeNavigation({
     isDragging: false,
     isHorizontal: null,
     target: null,
+    ignored: false,
   });
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -62,12 +65,13 @@ export function useSwipeNavigation({
       isDragging: false,
       isHorizontal: null,
       target: e.target as HTMLElement,
+      ignored: isGestureClaimed(e.target),
     };
   }, []);
 
   const handleTouchMove = useCallback(
     (e: React.TouchEvent) => {
-      if (isTransitioning) return;
+      if (isTransitioning || touchState.current.ignored) return;
 
       const touch = e.touches[0];
       const deltaX = touch.clientX - touchState.current.startX;
@@ -156,6 +160,7 @@ export function useSwipeNavigation({
       isDragging: false,
       isHorizontal: null,
       target: null,
+      ignored: false,
     };
 
     if (newPage !== currentPage) {

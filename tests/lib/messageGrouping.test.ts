@@ -22,6 +22,29 @@ const unprotected = (extra: Partial<Message> = {}) =>
   msg({ tags: { "e2ee-unprotected": "1" }, ...extra });
 
 describe("shouldShowMessageHeader", () => {
+  it("never groups a bridged person with an IRC user of the same nick, and groups a bridged run", () => {
+    expect(shouldShowMessageHeader(msg(), msg({ bridgedVia: "Bot" }))).toBe(
+      true,
+    );
+    expect(shouldShowMessageHeader(msg({ bridgedVia: "Bot" }), msg())).toBe(
+      true,
+    );
+    expect(
+      shouldShowMessageHeader(
+        msg({ bridgedVia: "Bot" }),
+        msg({
+          bridgedVia: "Bot",
+          timestamp: new Date("2026-01-01T12:01:00.000Z"),
+        }),
+      ),
+    ).toBe(false);
+  });
+
+  it("gives every whisper its own header, even in a run from one sender", () => {
+    const whisper = { tags: { "+draft/channel-context": "#qa" } };
+    expect(shouldShowMessageHeader(msg(whisper), msg(whisper))).toBe(true);
+  });
+
   it("shows a header for the first message", () => {
     expect(shouldShowMessageHeader(undefined, msg())).toBe(true);
   });
@@ -44,6 +67,12 @@ describe("shouldShowMessageHeader", () => {
 
   it("breaks the group when a non-message precedes", () => {
     expect(shouldShowMessageHeader(msg({ type: "system" }), msg())).toBe(true);
+  });
+
+  it("groups a run of notices from one sender, like a server welcome", () => {
+    const first = msg({ type: "notice" });
+    expect(shouldShowMessageHeader(first, msg({ type: "notice" }))).toBe(false);
+    expect(shouldShowMessageHeader(first, msg())).toBe(true);
   });
 
   it("breaks the group when encryption protection changes either way", () => {

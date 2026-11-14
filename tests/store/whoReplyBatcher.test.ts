@@ -174,30 +174,16 @@ describe("whoReplyBatcher", () => {
     expect(snap.servers[0].channels[1].users[0].username).toBe("bob");
   });
 
-  test("populates user metadata from storage when creating users via WHO", () => {
+  test("new members take metadata already fetched for them", () => {
     const store = makeMockStore();
     storage.metadata.save({
-      s1: {
-        charlie: {
-          avatar: {
-            value: "https://example.com/charlie.png",
-            visibility: "public",
-          },
-        },
-      },
+      s1: { mattf: { "display-name": { value: "Matt", visibility: "*" } } },
     });
-
-    bufferWhoReply(store, "s1", "#room", {
-      nick: "Charlie",
-      host: "c.example",
-      realname: "Charlie Brown",
+    bufferWhoReply(store, "s1", "#room", { nick: "mattf" });
+    flushWhoReplies(store, "s1", "#room");
+    expect(store.snapshot().servers[0].channels[0].users[0].metadata).toEqual({
+      "display-name": { value: "Matt", visibility: "*" },
     });
-    vi.advanceTimersByTime(70);
-
-    const user = store.snapshot().servers[0].channels[0].users[0];
-    expect(user.username).toBe("Charlie");
-    expect(
-      (user.metadata?.avatar as { value?: string } | undefined)?.value,
-    ).toBe("https://example.com/charlie.png");
+    storage.metadata.save({});
   });
 });

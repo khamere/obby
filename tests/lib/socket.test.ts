@@ -1,65 +1,59 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: vi.fn(() => Promise.resolve()),
-}));
-
+const invoke = vi.hoisted(() => vi.fn(() => Promise.resolve()));
+vi.mock("@tauri-apps/api/core", () => ({ invoke }));
 vi.mock("@tauri-apps/api/event", () => ({
   listen: vi.fn(() => Promise.resolve(() => {})),
 }));
+const platform = vi.hoisted(() => ({ isTauri: vi.fn(() => false) }));
+vi.mock("../../src/lib/platformUtils", () => platform);
 
-import { createSocket, TCPSocket } from "../../src/lib/socket";
+import {
+  createSocket,
+  TCPSocket,
+  WebSocketWrapper,
+} from "../../src/lib/socket";
 
 describe("createSocket", () => {
-  afterEach(() => {
-    delete window.__TAURI__;
+  beforeEach(() => {
+    invoke.mockClear();
+    platform.isTauri.mockReturnValue(false);
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("uses the browser WebSocket for wss on the web", () => {
+    const sockets: string[] = [];
+    vi.stubGlobal(
+      "WebSocket",
+      class {
+        constructor(url: string) {
+          sockets.push(url);
+        }
+      },
+    );
+    const socket = createSocket("wss://bouncer.example:443/socket");
+    expect(socket).toBeInstanceOf(WebSocketWrapper);
+    expect(sockets).toEqual(["wss://bouncer.example:443/socket"]);
   });
 
-  it("uses the native transport for plaintext WebSockets on Android", () => {
-    const userAgent = Object.getOwnPropertyDescriptor(
-      window.navigator,
-      "userAgent",
+  it("hands wss to the native socket in the apps, path included", () => {
+    platform.isTauri.mockReturnValue(true);
+    const socket = createSocket("wss://bouncer.example:443/socket?x=1");
+    expect(socket).toBeInstanceOf(TCPSocket);
+    expect(invoke).toHaveBeenCalledWith(
+      "connect",
+      expect.objectContaining({
+        address: "wss://bouncer.example:443/socket?x=1",
+      }),
     );
-    Object.defineProperty(window.navigator, "userAgent", {
-      configurable: true,
-      value: "Mozilla/5.0 (Linux; Android 16)",
-    });
-    window.__TAURI__ = {};
-
-    try {
-      expect(createSocket("ws://irc.example.com:80/socket")).toBeInstanceOf(
-        TCPSocket,
-      );
-    } finally {
-      if (userAgent) {
-        Object.defineProperty(window.navigator, "userAgent", userAgent);
-      } else {
-        Reflect.deleteProperty(window.navigator, "userAgent");
-      }
-    }
   });
 
-  it("uses the native transport for WSS on Android Tauri", () => {
-    const userAgent = Object.getOwnPropertyDescriptor(
-      window.navigator,
-      "userAgent",
-    );
-    Object.defineProperty(window.navigator, "userAgent", {
-      configurable: true,
-      value: "Mozilla/5.0 (Linux; Android 16)",
-    });
-    window.__TAURI__ = {};
+  it("always uses the native socket for plain IRC addresses", () => {
+    const socket = createSocket("ircs://irc.example:6697");
+    expect(socket).toBeInstanceOf(TCPSocket);
+  });
 
-    try {
-      expect(createSocket("wss://irc.example.com/socket")).toBeInstanceOf(
-        TCPSocket,
-      );
-    } finally {
-      if (userAgent) {
-        Object.defineProperty(window.navigator, "userAgent", userAgent);
-      } else {
-        Reflect.deleteProperty(window.navigator, "userAgent");
-      }
-    }
+  it("refuses an unknown scheme", () => {
+    expect(() => createSocket("http://irc.example")).toThrow(/Unsupported/);
   });
 });

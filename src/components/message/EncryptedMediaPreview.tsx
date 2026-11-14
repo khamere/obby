@@ -48,7 +48,7 @@ export const EncryptedMediaPreview: React.FC<{
         <FaLock className="flex-shrink-0" />
         {failure === "tampered" ? (
           <Trans>
-            {safeName} was changed on the server, so it no longer decrypts.
+            {safeName} was changed on the server, so it cannot be decrypted.
           </Trans>
         ) : (
           <Trans>{safeName} is no longer available on the server.</Trans>
@@ -94,7 +94,7 @@ export const EncryptedMediaPreview: React.FC<{
     <a
       href={objectUrl}
       download={safeName}
-      className="text-discord-blue hover:underline"
+      className="text-discord-primary hover:underline"
       title={t`Save the decrypted file`}
     >
       {safeName}

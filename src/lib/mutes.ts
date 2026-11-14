@@ -1,10 +1,9 @@
 import { useSyncExternalStore } from "react";
 
-// Muting, kept in this browser. A muted server is silent: no sound, no
-// desktop notification and no red dot from anything in it. A muted chat is
-// silent too, except that a message mentioning us in a muted *channel* still
-// notifies unless the mute was made with `mentions` (a muted DM never does).
-// Mutes either last until a given time or until the user unmutes.
+// Muting, kept in this browser. A muted server or chat is silent: no sound,
+// no notification and no red dot from anything in it, mentions included; a
+// mention from a muted channel is kept in the inbox, already seen. Mutes
+// either last until a given time or until the user unmutes.
 
 export type ChatKind = "channel" | "dm";
 
@@ -15,7 +14,7 @@ interface MuteEntry {
 
 interface ChatMuteEntry extends MuteEntry {
   kind: ChatKind;
-  // channel only: true also silences messages that mention us
+  // Older mutes carried a flag for mentions; every mute covers them now.
   mentions?: boolean;
 }
 
@@ -87,31 +86,13 @@ export function muteChat(
   chatId: string,
   kind: ChatKind,
   until: number | null,
-  mentions = false,
 ): void {
   load();
   save({
     ...state,
     chats: {
       ...state.chats,
-      [chatKey(serverId, chatId)]: { until, kind, mentions },
-    },
-  });
-}
-
-/** Change whether an active channel mute also silences mentions. */
-export function setChatMuteMentions(
-  serverId: string,
-  chatId: string,
-  mentions: boolean,
-): void {
-  const entry = chatMute(serverId, chatId);
-  if (!entry) return;
-  save({
-    ...state,
-    chats: {
-      ...state.chats,
-      [chatKey(serverId, chatId)]: { ...entry, mentions },
+      [chatKey(serverId, chatId)]: { until, kind },
     },
   });
 }
@@ -148,25 +129,71 @@ export function isServerMuted(serverId: string, now?: number): boolean {
 
 /**
  * Whether a notification (sound, desktop notification, red dot) for a
- * message in this chat should be suppressed.
+ * message in this chat should be suppressed. A mention changes nothing: a
+ * mute is a mute.
  */
 export function isSilenced(
   serverId: string | undefined,
   chatId: string | undefined,
-  mentionsMe: boolean,
+  _mentionsMe: boolean,
   now: number = Date.now(),
 ): boolean {
   if (!serverId) return false;
   if (isServerMuted(serverId, now)) return true;
   if (!chatId) return false;
-  const mute = chatMute(serverId, chatId, now);
-  if (!mute) return false;
-  return mute.kind === "dm" || !mentionsMe || !!mute.mentions;
+  return !!chatMute(serverId, chatId, now);
 }
 
-function subscribe(listener: () => void): () => void {
+export function subscribeMutes(listener: () => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);
+}
+
+/** A chat, by name, whose notifications are off until `until` (null: until unmuted);
+ *  the name `*` stands for the whole server. */
+export interface Silence {
+  chat: string;
+  until: number | null;
+}
+
+// The native side and the push worker notify while the page is closed, so
+// they get the mutes as chat names, since ids mean nothing to them.
+export function silencesFor(
+  server: {
+    id: string;
+    channels: { id: string; name: string }[];
+    privateChats: { id: string; username: string }[];
+  },
+  now: number = Date.now(),
+): Silence[] {
+  load();
+  const silences: Silence[] = [];
+  const whole = serverMute(server.id, now);
+  if (whole) silences.push({ chat: "*", until: whole.until });
+  const nameOf = new Map<string, string>();
+  for (const channel of server.channels) nameOf.set(channel.id, channel.name);
+  for (const chat of server.privateChats) nameOf.set(chat.id, chat.username);
+  const prefix = `${server.id}/`;
+  for (const [key, entry] of Object.entries(state.chats)) {
+    if (!key.startsWith(prefix) || !active(entry, now)) continue;
+    const name = nameOf.get(key.slice(prefix.length));
+    if (name) silences.push({ chat: name, until: entry.until });
+  }
+  return silences;
+}
+
+/** When the earliest timed mute runs out, so a view can refresh then. */
+export function nextMuteExpiry(now: number = Date.now()): number | undefined {
+  load();
+  let next: number | undefined;
+  for (const entry of [
+    ...Object.values(state.servers),
+    ...Object.values(state.chats),
+  ]) {
+    if (!active(entry, now) || entry.until === null) continue;
+    if (next === undefined || entry.until < next) next = entry.until;
+  }
+  return next;
 }
 
 function snapshot(): MuteState {
@@ -176,7 +203,7 @@ function snapshot(): MuteState {
 
 /** Re-renders when mutes change (expiry is checked by the reader). */
 export function useMutes(): MuteState {
-  return useSyncExternalStore(subscribe, snapshot);
+  return useSyncExternalStore(subscribeMutes, snapshot);
 }
 
 // test hook

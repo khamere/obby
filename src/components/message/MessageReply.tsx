@@ -1,4 +1,4 @@
-import { useLingui } from "@lingui/react/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import type React from "react";
 import {
   FaFileAlt,
@@ -6,7 +6,6 @@ import {
   FaFilm,
   FaImage,
   FaLock,
-  FaTimes,
   FaVolumeUp,
 } from "react-icons/fa";
 
@@ -29,12 +28,14 @@ import { canShowImageUrl } from "../../lib/imageUtils";
 import { serverFilehosts } from "../../lib/ircUtils";
 import {
   type AttachmentKind,
+  bodyWithoutAttachmentLinks,
   describeAttachment,
 } from "../../lib/messageAttachments";
 import { stripIrcFormatting } from "../../lib/messageFormatter";
 import { useNickColor } from "../../lib/nickColor";
 import useStore from "../../store";
 import type { MessageType } from "../../types";
+import { CloseButton } from "../ui/CloseButton";
 
 const KIND_ICONS = {
   image: FaImage,
@@ -66,7 +67,8 @@ export const MessageReply: React.FC<MessageReplyProps> = ({
   onClose,
 }) => {
   const { t } = useLingui();
-  const replyUsername = replyMessage.userId;
+  const replyUsername = replyMessage.displayNick ?? replyMessage.userId;
+  const via = replyMessage.bridgedVia;
   const replyColor = useNickColor(replyUsername);
 
   const mediaVisibilityLevel = useStore(
@@ -81,11 +83,15 @@ export const MessageReply: React.FC<MessageReplyProps> = ({
     onUsernameClick?.(e);
   };
 
-  const plainContent = stripIrcFormatting(replyMessage.content)
+  const attachment = describeAttachment(replyMessage);
+  const plainContent = stripIrcFormatting(
+    attachment
+      ? bodyWithoutAttachmentLinks(replyMessage)
+      : replyMessage.content,
+  )
     .replace(/\n+/g, " ")
     .trim();
 
-  const attachment = describeAttachment(replyMessage);
   const thumbnailUrl =
     attachment?.thumbnailUrl &&
     canShowImageUrl(
@@ -100,6 +106,9 @@ export const MessageReply: React.FC<MessageReplyProps> = ({
 
   return (
     <div
+      // The quote sits on a translucent ground, so a tinted row would otherwise
+      // show straight through it. This lets the row paint an opaque one.
+      data-reply-quote={onClose ? undefined : ""}
       className={`flex min-w-0 w-full overflow-hidden transition-colors
         ${
           onClose
@@ -121,6 +130,14 @@ export const MessageReply: React.FC<MessageReplyProps> = ({
           >
             {replyUsername}
           </span>
+          {replyMessage.bridgedVia && (
+            <span
+              className={`text-[10px] text-${theme}-text-muted flex-shrink-0`}
+              data-bridged-via={replyMessage.bridgedVia}
+            >
+              <Trans>via {via}</Trans>
+            </span>
+          )}
         </div>
         {plainContent && (
           <div
@@ -150,20 +167,49 @@ export const MessageReply: React.FC<MessageReplyProps> = ({
           draggable={false}
         />
       )}
-      {onClose && (
-        <button
-          type="button"
-          className="flex-shrink-0 self-center p-3 mr-1 rounded-lg hover:bg-discord-text-strong/10 text-discord-text-muted hover:text-discord-text-normal transition-colors"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={(e) => {
-            e.stopPropagation();
-            onClose();
-          }}
-          aria-label={t`Cancel reply`}
-        >
-          <FaTimes className="text-base" />
-        </button>
-      )}
+      {onClose && <CloseButton label={t`Cancel reply`} onClick={onClose} />}
     </div>
+  );
+};
+
+// A reply whose original is older than the loaded history: draft/reply
+// carries only the msgid, so the author and text come from the saved copy,
+// and a click pages back to the original.
+export const UnloadedReply: React.FC<{
+  saved: { nick: string; text: string } | null;
+  onClick: () => void;
+}> = ({ saved, onClick }) => {
+  const { t } = useLingui();
+  return (
+    <button
+      type="button"
+      className="flex min-w-0 w-full overflow-hidden text-left bg-black/[0.22] mb-2 rounded-md border border-discord-text-strong/[0.04] cursor-pointer hover:bg-black/[0.32] transition-colors"
+      onClick={onClick}
+      title={t`Load older messages and jump to the original`}
+    >
+      <div className="w-0.5 flex-shrink-0 bg-discord-reply/70 rounded-l" />
+      {saved ? (
+        <div className="flex-1 min-w-0 py-1.5 px-2.5 overflow-hidden">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <RiReplyFill className="text-[11px] flex-shrink-0 text-discord-reply/70" />
+            <span className="text-xs font-semibold text-discord-reply truncate">
+              {saved.nick}
+            </span>
+          </div>
+          {saved.text && (
+            <div className="text-xs text-discord-text-muted opacity-80 truncate">
+              {saved.text}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="flex items-center gap-1.5 py-1.5 px-2.5 min-w-0">
+          <RiReplyFill className="text-[11px] flex-shrink-0 text-discord-reply/70" />
+          <span className="text-xs italic text-discord-text-muted opacity-80 truncate">
+            {t`Reply to an earlier message`}
+          </span>
+        </div>
+      )}
+    </button>
   );
 };

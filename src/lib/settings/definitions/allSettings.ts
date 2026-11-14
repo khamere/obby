@@ -1,13 +1,21 @@
 import { msg } from "@lingui/core/macro";
 import { AccentColorField } from "../../../components/ui/settings/AccentColorField";
+import { BackupField } from "../../../components/ui/settings/BackupField";
+import { BridgeRulesField } from "../../../components/ui/settings/BridgeRulesField";
+import { CallCameraField } from "../../../components/ui/settings/CallCameraField";
+import { CallMicrophoneField } from "../../../components/ui/settings/CallMicrophoneField";
+import { CallSpeakerField } from "../../../components/ui/settings/CallSpeakerField";
 import { ChatBackgroundField } from "../../../components/ui/settings/ChatBackgroundField";
 import { CustomCssField } from "../../../components/ui/settings/CustomCssField";
 import { CustomMentionsField } from "../../../components/ui/settings/CustomMentionsField";
+import { HistoryUsageField } from "../../../components/ui/settings/HistoryUsageField";
 import { IgnoreListField } from "../../../components/ui/settings/IgnoreListField";
+import { PushMethodField } from "../../../components/ui/settings/PushMethodField";
 import { ThemeEditorField } from "../../../components/ui/settings/ThemeEditorField";
 import { ThemeField } from "../../../components/ui/settings/ThemeField";
 import { ThemeLinkField } from "../../../components/ui/settings/ThemeLinkField";
 import { UserFilehostField } from "../../../components/ui/settings/UserFilehostField";
+import { isTauriAndroid, isTauriIOS } from "../../platformUtils";
 import { FONT_SIZE_MAX, FONT_SIZE_MIN } from "../../typography";
 import settingsRegistry from "../registry";
 import type { SettingDefinition } from "../types";
@@ -184,13 +192,62 @@ const notificationSettings: SettingDefinition[] = [
     id: "notifications.enable",
     key: "enableNotifications",
     category: "notifications",
-    subcategory: "Mentions",
-    title: msg`Notifications`,
-    description: msg`Toggle Notifications`,
+    subcategory: "Alerts",
+    title: msg`Show Notifications`,
+    description: isTauriIOS()
+      ? msg`For private messages and mentions. They stop when you swipe Obby away.`
+      : msg`For private messages and mentions`,
+    type: "toggle",
+    defaultValue: false,
+    searchKeywords: ["notification", "alert", "desktop", "push", "banner"],
+    priority: 0,
+  },
+  {
+    id: "notifications.keepConnectionAlive",
+    key: "keepConnectionAlive",
+    category: "notifications",
+    subcategory: "Alerts",
+    title: msg`Stay connected in the background`,
+    description: msg`Keep the IRC connections open while Obby is off the screen, behind a quiet "Connected" notification, so messages and mentions arrive at once and nothing reloads when you come back. Android may ask to exempt Obby from battery optimisation.`,
     type: "toggle",
     defaultValue: true,
-    searchKeywords: ["push", "notification", "alert", "desktop", "mobile"],
-    priority: 0,
+    searchKeywords: [
+      "background",
+      "connection",
+      "foreground",
+      "battery",
+      "keep",
+    ],
+    priority: 2,
+    hidden: !isTauriAndroid(),
+  },
+  {
+    id: "notifications.pushMethod",
+    key: "pushMethod",
+    category: "notifications",
+    subcategory: "Alerts",
+    title: msg`Notifications Source`,
+    type: "custom",
+    defaultValue: "fcm",
+    hidden: !isTauriAndroid(),
+    searchKeywords: [
+      "push",
+      "unifiedpush",
+      "ntfy",
+      "fcm",
+      "google",
+      "background",
+      "closed",
+      "distributor",
+    ],
+    priority: 4,
+    customComponent: PushMethodField,
+    dependencies: [
+      {
+        settingId: "notifications.enable",
+        condition: (value) => value === true,
+      },
+    ],
   },
   {
     id: "notifications.enableSounds",
@@ -533,6 +590,37 @@ const preferenceSettings: SettingDefinition[] = [
     priority: 4,
   },
   {
+    id: "preferences.showMotd",
+    key: "showMotd",
+    category: "preferences",
+    subcategory: "Chat",
+    title: msg`Show the message of the day`,
+    description: msg`Post each server's message of the day to Server Notices and its welcome page`,
+    type: "toggle",
+    defaultValue: true,
+    searchKeywords: ["motd", "message of the day", "rules", "welcome"],
+    priority: 3,
+  },
+  {
+    id: "preferences.showServerReplies",
+    key: "showServerReplies",
+    category: "preferences",
+    subcategory: "Chat",
+    title: msg`Show server replies`,
+    description: msg`Post the replies a classic client shows in its status window to Server Notices: the welcome lines, user counts and anything else Obby has no special handling for`,
+    type: "toggle",
+    defaultValue: true,
+    searchKeywords: [
+      "server",
+      "replies",
+      "numerics",
+      "status window",
+      "log",
+      "notices",
+    ],
+    priority: 4,
+  },
+  {
     id: "preferences.showEvents",
     key: "showEvents",
     category: "preferences",
@@ -692,6 +780,32 @@ const preferenceSettings: SettingDefinition[] = [
     customComponent: CustomCssField,
   },
   {
+    id: "preferences.bridgedUsers",
+    key: "bridgedUsers",
+    category: "preferences",
+    subcategory: "Bridged users",
+    title: msg`Show bridged users as themselves`,
+    description: msg`Lines a tracker's shoutbox bot relays into IRC are shown as the person who wrote them, marked "via" the bot.`,
+    type: "toggle",
+    defaultValue: true,
+    searchKeywords: ["bridge", "shoutbox", "bot", "chatbox"],
+    priority: 13,
+  },
+  {
+    id: "preferences.bridgeRules",
+    key: "bridgeRules",
+    category: "preferences",
+    subcategory: "Bridged users",
+    title: msg`Bridge rules`,
+    description: msg`Which bot speaks for which network and how it wraps the name. From a shared link and/or your own JSON. Kept in this browser.`,
+    type: "custom",
+    // Display-only: the rules live in lib/bridgeRules, not in settings.
+    defaultValue: "",
+    searchKeywords: ["bridge", "shoutbox", "bot", "chatbox", "rules"],
+    priority: 14,
+    customComponent: BridgeRulesField,
+  },
+  {
     id: "preferences.userFilehost",
     key: "userFilehost",
     category: "preferences",
@@ -712,6 +826,117 @@ const preferenceSettings: SettingDefinition[] = [
     ],
     priority: 13,
     customComponent: UserFilehostField,
+  },
+  {
+    id: "preferences.stripImageMetadata",
+    key: "stripImageMetadata",
+    category: "preferences",
+    subcategory: "File uploads",
+    title: msg`Remove metadata from images`,
+    description: msg`Before an image is uploaded, remove EXIF, GPS, camera, comment and screenshot details from PNG, JPEG and WebP files. The picture itself is not changed.`,
+    type: "toggle",
+    defaultValue: true,
+    searchKeywords: [
+      "metadata",
+      "exif",
+      "gps",
+      "location",
+      "privacy",
+      "strip",
+      "upload",
+      "screenshot",
+    ],
+    priority: 14,
+  },
+  {
+    id: "preferences.keepHistory",
+    key: "keepHistory",
+    category: "preferences",
+    subcategory: "History",
+    title: msg`Keep chat history on this device`,
+    description: msg`Save messages on this device so you can scroll back further than the server's history. Turning this off stops saving new messages and keeps the ones already saved. Encrypted private messages are never saved.`,
+    type: "toggle",
+    defaultValue: true,
+    searchKeywords: [
+      "history",
+      "log",
+      "scrollback",
+      "offline",
+      "storage",
+      "disk",
+    ],
+    priority: 12,
+  },
+  {
+    id: "preferences.historyLimitMb",
+    key: "historyLimitMb",
+    category: "preferences",
+    subcategory: "History",
+    title: msg`History disk limit`,
+    description: msg`Set how much disk space saved history can use. The oldest messages are deleted first when the limit is reached.`,
+    type: "select",
+    defaultValue: 500,
+    options: [
+      { value: 100, label: "100 MB" },
+      { value: 250, label: "250 MB" },
+      { value: 500, label: "500 MB" },
+      { value: 1000, label: "1 GB" },
+      { value: 2000, label: "2 GB" },
+      { value: 5000, label: "5 GB" },
+    ],
+    searchKeywords: ["history", "limit", "storage", "disk", "size"],
+    priority: 13,
+    dependencies: [
+      {
+        settingId: "preferences.keepHistory",
+        condition: (value) => value === true,
+      },
+    ],
+  },
+  {
+    id: "preferences.historyUsage",
+    key: "historyUsage",
+    category: "preferences",
+    subcategory: "History",
+    title: msg`Saved history`,
+    type: "custom",
+    defaultValue: null,
+    searchKeywords: ["history", "clear", "delete", "storage", "disk"],
+    priority: 14,
+    customComponent: HistoryUsageField,
+  },
+  {
+    id: "preferences.checkForReleases",
+    key: "checkForReleases",
+    category: "preferences",
+    subcategory: "Updates",
+    title: msg`Check for new releases`,
+    description: msg`Once a day, ask the project's release page whether a newer build exists and say so under the version. Nothing is downloaded or installed.`,
+    type: "toggle",
+    defaultValue: true,
+    searchKeywords: ["update", "release", "version", "new"],
+    priority: 16,
+  },
+  {
+    id: "preferences.backup",
+    key: "backup",
+    category: "preferences",
+    subcategory: "Backup",
+    title: msg`Backup and restore`,
+    description: msg`Save everything Obby keeps in this browser to a password-protected file, or put a saved file back.`,
+    type: "custom",
+    defaultValue: null,
+    searchKeywords: [
+      "backup",
+      "restore",
+      "export",
+      "import",
+      "transfer",
+      "migrate",
+      "password",
+    ],
+    priority: 15,
+    customComponent: BackupField,
   },
 ];
 
@@ -748,6 +973,87 @@ const mediaSettings: SettingDefinition[] = [
 ];
 
 /**
+ * Call Settings
+ */
+const callSettings: SettingDefinition[] = [
+  {
+    id: "calls.microphone",
+    key: "callMicrophoneDevice",
+    category: "calls",
+    subcategory: "Devices",
+    title: msg`Microphone`,
+    description: msg`Choose your microphone and preview its input level`,
+    type: "custom",
+    defaultValue: null,
+    searchKeywords: ["microphone", "mic", "audio", "input", "call", "voice"],
+    priority: 1,
+    customComponent: CallMicrophoneField,
+  },
+  {
+    id: "calls.camera",
+    key: "callCameraDevice",
+    category: "calls",
+    subcategory: "Devices",
+    title: msg`Camera`,
+    description: msg`Choose your camera and preview what it sees`,
+    type: "custom",
+    defaultValue: null,
+    searchKeywords: ["camera", "webcam", "video", "call"],
+    priority: 2,
+    customComponent: CallCameraField,
+  },
+  {
+    id: "calls.speaker",
+    key: "callSpeakerDevice",
+    category: "calls",
+    subcategory: "Devices",
+    title: msg`Speaker`,
+    description: msg`Choose which speaker calls play through`,
+    type: "custom",
+    defaultValue: null,
+    searchKeywords: ["speaker", "audio", "output", "call"],
+    priority: 3,
+    customComponent: CallSpeakerField,
+  },
+  {
+    id: "calls.echoCancellation",
+    key: "callEchoCancellation",
+    category: "calls",
+    subcategory: "Audio Processing",
+    title: msg`Echo Cancellation`,
+    description: msg`Reduce echo from your speakers picked up by your microphone`,
+    type: "toggle",
+    defaultValue: true,
+    searchKeywords: ["echo", "cancellation", "audio", "call"],
+    priority: 2,
+  },
+  {
+    id: "calls.noiseSuppression",
+    key: "callNoiseSuppression",
+    category: "calls",
+    subcategory: "Audio Processing",
+    title: msg`Noise Suppression`,
+    description: msg`Reduce background noise on your microphone`,
+    type: "toggle",
+    defaultValue: true,
+    searchKeywords: ["noise", "suppression", "audio", "call"],
+    priority: 3,
+  },
+  {
+    id: "calls.autoGainControl",
+    key: "callAutoGainControl",
+    category: "calls",
+    subcategory: "Audio Processing",
+    title: msg`Auto Gain Control`,
+    description: msg`Automatically adjust your microphone volume`,
+    type: "toggle",
+    defaultValue: true,
+    searchKeywords: ["gain", "volume", "audio", "call"],
+    priority: 4,
+  },
+];
+
+/**
  * Account Settings (Hosted Chat Mode)
  */
 const accountSettings: SettingDefinition[] = [
@@ -763,6 +1069,7 @@ const accountSettings: SettingDefinition[] = [
     placeholder: msg`Enter default nickname...`,
     searchKeywords: ["nick", "default", "account"],
     priority: 1,
+    hidden: true,
   },
   {
     id: "account.name",
@@ -776,6 +1083,7 @@ const accountSettings: SettingDefinition[] = [
     placeholder: msg`Enter account name...`,
     searchKeywords: ["account", "login", "username", "auth"],
     priority: 2,
+    hidden: true,
   },
   {
     id: "account.password",
@@ -789,6 +1097,7 @@ const accountSettings: SettingDefinition[] = [
     placeholder: msg`Enter password...`,
     searchKeywords: ["password", "auth", "login"],
     priority: 3,
+    hidden: true,
   },
   {
     id: "account.operName",
@@ -850,6 +1159,7 @@ export const registerAllSettings = () => {
     ...notificationSettings,
     ...preferenceSettings,
     ...mediaSettings,
+    ...callSettings,
     ...accountSettings,
   ]);
 };
@@ -857,6 +1167,7 @@ export const registerAllSettings = () => {
 // Export individual categories for use in components
 export {
   accountSettings,
+  callSettings,
   mediaSettings,
   notificationSettings,
   preferenceSettings,

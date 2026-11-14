@@ -1,5 +1,6 @@
 import { t } from "@lingui/core/macro";
 import type React from "react";
+import type { ReactNode } from "react";
 import ircClient from "../../lib/ircClient";
 import type { MessageType, User } from "../../types";
 import { BotInvocationChip } from "./BotInvocationChip";
@@ -11,6 +12,10 @@ interface ActionMessageProps {
   message: MessageType;
   showDate: boolean;
   messageUser?: User;
+  /** Someone named us or answered us, so the row carries the mention tint. */
+  isAimedAtUs?: boolean;
+  /** What the sender did, with names marked the way a regular message marks them. */
+  actionText?: ReactNode;
   onUsernameContextMenu: (
     e: React.MouseEvent,
     username: string,
@@ -28,6 +33,8 @@ export const ActionMessage: React.FC<ActionMessageProps> = ({
   message,
   showDate,
   messageUser,
+  isAimedAtUs = false,
+  actionText,
   onUsernameContextMenu,
   setReplyTo,
   onReactClick,
@@ -58,7 +65,12 @@ export const ActionMessage: React.FC<ActionMessageProps> = ({
     message.tags?.bot === "";
 
   return (
-    <div className="px-4 py-1 hover:bg-discord-message-hover group relative">
+    <div
+      data-message-id={message.id}
+      className={`px-4 py-1 hover:bg-discord-message-hover group relative${
+        isAimedAtUs ? " message-aimed-at-us" : ""
+      }`}
+    >
       {showDate && (
         <div className="flex items-center text-xs text-discord-text-muted mb-2">
           <div className="flex-grow border-t border-discord-dark-400" />
@@ -93,17 +105,26 @@ export const ActionMessage: React.FC<ActionMessageProps> = ({
             </span>
           </div>
           {isBot && (
-            <BotInvocationChip tagValue={message.tags?.["+draft/invoked-by"]} />
+            <BotInvocationChip
+              tagValue={message.tags?.["+draft/invoked-by"]}
+              serverId={message.serverId}
+              botNick={message.userId}
+            />
           )}
           {message.replyMessage && (
             <MessageReply replyMessage={message.replyMessage} theme="discord" />
           )}
           <span className="italic text-discord-text-strong">
-            {message.userId === "system"
-              ? t`System`
-              : (displayName || username) +
-                (displayName ? ` (${username})` : "") +
-                message.content.substring(7, message.content.length - 1)}
+            {message.userId === "system" ? (
+              t`System`
+            ) : (
+              <>
+                {(displayName || username) +
+                  (displayName ? ` (${username})` : "")}
+                {actionText ??
+                  message.content.substring(7, message.content.length - 1)}
+              </>
+            )}
           </span>
           <ReactionsWithActions
             message={message}
