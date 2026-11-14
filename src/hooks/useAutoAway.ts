@@ -3,6 +3,7 @@ import {
   autoAwayRecord,
   autoAwaySeenAway,
   decideAutoAway,
+  holdsAutoAway,
   setAutoAwayRecord,
   setAutoAwaySeenAway,
 } from "../lib/autoAway";
@@ -65,7 +66,7 @@ export function useAutoAway(): void {
     const onTick = () => {
       const now = Date.now();
       // An away we already set stays until real input.
-      if (now - lastTick > RESUME_GAP_MS && autoAwayRecord().size === 0)
+      if (now - lastTick > RESUME_GAP_MS && !holdsAutoAway())
         lastActivity = now;
       lastTick = now;
       check();

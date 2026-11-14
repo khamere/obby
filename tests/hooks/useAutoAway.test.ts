@@ -222,6 +222,50 @@ describe("useAutoAway", () => {
     expect(clearAway).not.toHaveBeenCalled();
   });
 
+  it("leaves a server alone when an away from elsewhere came and went between checks", () => {
+    renderHook(() => useAutoAway());
+    vi.advanceTimersByTime(9 * MIN + 40_000);
+
+    setServer(true);
+    vi.advanceTimersByTime(10_000);
+    ircClient.triggerEvent("RPL_UNAWAY", { serverId: "s1", message: "" });
+    setServer(false);
+    vi.advanceTimersByTime(5 * MIN);
+    expect(setAway).not.toHaveBeenCalled();
+
+    window.dispatchEvent(new KeyboardEvent("keydown"));
+    vi.advanceTimersByTime(10 * MIN + 30_000);
+    expect(setAway).toHaveBeenCalledTimes(1);
+  });
+
+  it("gives a server that logs in during sleep a full idle time beside a released one", () => {
+    const second = (isRegistered: boolean) =>
+      useStore.setState((state) => ({
+        servers: [
+          state.servers[0],
+          {
+            ...state.servers[0],
+            id: "s2",
+            isAway: false,
+            isRegistered,
+          } as Server,
+        ],
+      }));
+    second(false);
+    renderHook(() => useAutoAway());
+    vi.advanceTimersByTime(10 * MIN + 30_000);
+    expect(setAway).toHaveBeenCalledTimes(1);
+    ircClient.triggerEvent("RPL_UNAWAY", { serverId: "s1", message: "" });
+
+    vi.setSystemTime(Date.now() + 60 * MIN);
+    second(true);
+    vi.advanceTimersByTime(30_000);
+    expect(setAway).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(10 * MIN);
+    expect(setAway).toHaveBeenCalledWith("s2", "gone fishing");
+  });
+
   it("keeps an away it set through a late timer tick", () => {
     renderHook(() => useAutoAway());
     vi.advanceTimersByTime(10 * MIN + 30_000);

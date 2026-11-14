@@ -84,7 +84,13 @@ export function setAutoAwaySeenAway(seen: ReadonlySet<string>): void {
 
 // A back we did not send ended the away from elsewhere, so we wait for the user.
 export function releaseAutoAway(serverId: string): void {
-  if (ours.has(serverId)) ours.set(serverId, "released");
+  ours.set(serverId, "released");
+}
+
+// A released server holds no away of ours, so only the other records need the user's input to end.
+export function holdsAutoAway(): boolean {
+  for (const state of ours.values()) if (state !== "released") return true;
+  return false;
 }
 
 export function autoAwayRecord(): ReadonlyMap<string, AutoAwayState> {
