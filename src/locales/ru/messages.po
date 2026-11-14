@@ -1154,6 +1154,7 @@ msgstr "Нельзя удалить последние учётные данны
 #: src/components/ui/TotpStepUpModal.tsx
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 #: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
 #: src/lib/modal/ConfirmDialog.tsx
 msgid "Cancel"
 msgstr "Отмена"
@@ -5903,6 +5904,10 @@ msgstr "Показать названия серверов"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show server replies"
 msgstr "Показывать ответы сервера"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Show the install prompt again"
+msgstr "Показать запрос на установку ещё раз"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"

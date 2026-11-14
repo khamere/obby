@@ -1154,6 +1154,7 @@ msgstr "最後の 2FA 認証情報は削除できません"
 #: src/components/ui/TotpStepUpModal.tsx
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 #: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
 #: src/lib/modal/ConfirmDialog.tsx
 msgid "Cancel"
 msgstr "キャンセル"
@@ -5903,6 +5904,10 @@ msgstr "サーバー名を表示"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show server replies"
 msgstr "サーバーの応答を表示"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Show the install prompt again"
+msgstr "インストールの確認をもう一度表示"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"

@@ -1154,6 +1154,7 @@ msgstr "마지막 2FA 인증 수단은 삭제할 수 없습니다"
 #: src/components/ui/TotpStepUpModal.tsx
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 #: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
 #: src/lib/modal/ConfirmDialog.tsx
 msgid "Cancel"
 msgstr "취소"
@@ -5903,6 +5904,10 @@ msgstr "서버 이름 표시"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show server replies"
 msgstr "서버 응답 표시"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Show the install prompt again"
+msgstr "설치 확인 창 다시 표시"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"

@@ -37,8 +37,13 @@ export const UpdateSheet: React.FC = () => {
 
   if (!isOpen || !latest) return null;
 
-  const { closeSheet, startUpdate, cancelUpdate, continueAfterPermission } =
-    useAppUpdate.getState();
+  const {
+    closeSheet,
+    startUpdate,
+    cancelUpdate,
+    continueAfterPermission,
+    showInstallPrompt,
+  } = useAppUpdate.getState();
   const retry = () => void useAppUpdate.getState().retry();
   const label = shortReleaseLabel(latest.version);
   const version = latest.version;
@@ -165,6 +170,18 @@ export const UpdateSheet: React.FC = () => {
         </Trans>
       </p>
     );
+    // Android's prompt can be left without an answer, and nothing tells us,
+    // so the way back to it and the way out both stay on the sheet.
+    actions = (
+      <>
+        <Button variant="secondary" onClick={() => void cancelUpdate()}>
+          <Trans>Cancel</Trans>
+        </Button>
+        <Button onClick={() => void showInstallPrompt()}>
+          <Trans>Show the install prompt again</Trans>
+        </Button>
+      </>
+    );
   } else {
     const size = latest.apk ? `${megabytes(latest.apk.size)} MB` : "";
     body = (
@@ -223,7 +240,9 @@ export const UpdateSheet: React.FC = () => {
     <>
       <div className="flex flex-col gap-3 px-5 py-3">{body}</div>
       {actions && (
-        <div className="flex justify-end gap-2 px-5 pb-4">{actions}</div>
+        <div className="flex flex-wrap justify-end gap-2 px-5 pb-4">
+          {actions}
+        </div>
       )}
     </>
   );

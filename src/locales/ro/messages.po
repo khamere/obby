@@ -1154,6 +1154,7 @@ msgstr "Nu poți elimina ultima credențială 2FA"
 #: src/components/ui/TotpStepUpModal.tsx
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 #: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
 #: src/lib/modal/ConfirmDialog.tsx
 msgid "Cancel"
 msgstr "Anulează"
@@ -5903,6 +5904,10 @@ msgstr "Afișează numele serverelor"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show server replies"
 msgstr "Afișează răspunsurile serverului"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Show the install prompt again"
+msgstr "Arată din nou solicitarea de instalare"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"

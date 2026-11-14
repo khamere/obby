@@ -1154,6 +1154,7 @@ msgstr "Je laatste 2FA-inloggegevens kunnen niet worden verwijderd"
 #: src/components/ui/TotpStepUpModal.tsx
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 #: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
 #: src/lib/modal/ConfirmDialog.tsx
 msgid "Cancel"
 msgstr "Annuleren"
@@ -5903,6 +5904,10 @@ msgstr "Servernamen tonen"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show server replies"
 msgstr "Serverantwoorden tonen"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Show the install prompt again"
+msgstr "Installatievraag opnieuw tonen"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"

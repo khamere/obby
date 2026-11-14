@@ -31,6 +31,7 @@ interface AppUpdateState {
   cancelUpdate: () => Promise<void>;
   continueAfterPermission: () => Promise<void>;
   retry: () => Promise<void>;
+  showInstallPrompt: () => Promise<void>;
   applyNative: (e: NativeUpdateEvent) => void;
 }
 
@@ -155,16 +156,23 @@ export const useAppUpdate = create<AppUpdateState>((set, get) => {
     retry: async () => {
       if (!isTauriAndroid()) return;
       if (get().error === "refused") {
-        try {
-          get().applyNative(await retryInstall());
-        } catch (e) {
-          fail(errorCode(e));
-        }
+        await get().showInstallPrompt();
         return;
       }
       // The part file is kept, so this resumes rather than starts over.
       set({ phase: "idle", error: null });
       await get().startUpdate();
+    },
+
+    // Android's prompt lives outside the app and can be left behind, so
+    // the plugin brings it back for the file it already verified.
+    showInstallPrompt: async () => {
+      if (!isTauriAndroid()) return;
+      try {
+        get().applyNative(await retryInstall());
+      } catch (e) {
+        fail(errorCode(e));
+      }
     },
 
     applyNative: (e) =>

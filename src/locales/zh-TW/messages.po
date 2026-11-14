@@ -1154,6 +1154,7 @@ msgstr "無法移除你的最後一個 2FA 憑證"
 #: src/components/ui/TotpStepUpModal.tsx
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 #: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
 #: src/lib/modal/ConfirmDialog.tsx
 msgid "Cancel"
 msgstr "取消"
@@ -5903,6 +5904,10 @@ msgstr "顯示伺服器名稱"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show server replies"
 msgstr "顯示伺服器回覆"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Show the install prompt again"
+msgstr "再次顯示安裝提示"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"

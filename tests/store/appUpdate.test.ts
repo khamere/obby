@@ -138,6 +138,34 @@ describe("app update store", () => {
     expect(useAppUpdate.getState().phase).toBe("idle");
   });
 
+  it("showInstallPrompt asks the plugin for the prompt and takes its status", async () => {
+    const installing = {
+      phase: "installing",
+      received: 100,
+      total: 100,
+      error: null,
+    };
+    native.retryInstall.mockResolvedValueOnce(installing);
+    useAppUpdate.setState(installing as never);
+    await useAppUpdate.getState().showInstallPrompt();
+    expect(native.retryInstall).toHaveBeenCalledTimes(1);
+    expect(native.startDownload).not.toHaveBeenCalled();
+    expect(useAppUpdate.getState().phase).toBe("installing");
+    native.retryInstall.mockRejectedValueOnce("storage");
+    await useAppUpdate.getState().showInstallPrompt();
+    expect(useAppUpdate.getState()).toMatchObject({
+      phase: "error",
+      error: "storage",
+    });
+  });
+
+  it("cancelling during the install tells the plugin and returns to idle", async () => {
+    useAppUpdate.setState({ phase: "installing", received: 100, total: 100 });
+    await useAppUpdate.getState().cancelUpdate();
+    expect(native.cancelDownload).toHaveBeenCalledTimes(1);
+    expect(useAppUpdate.getState().phase).toBe("idle");
+  });
+
   it("retry reinstalls after a refusal and resumes after any other error", async () => {
     native.retryInstall.mockResolvedValue({
       phase: "installing",

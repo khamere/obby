@@ -38,6 +38,7 @@ const fns = {
   cancelUpdate: vi.fn(async () => {}),
   continueAfterPermission: vi.fn(async () => {}),
   retry: vi.fn(async () => {}),
+  showInstallPrompt: vi.fn(async () => {}),
   closeSheet: vi.fn(),
 };
 
@@ -100,6 +101,17 @@ describe("UpdateSheet", () => {
       screen.getByRole("button", { name: "Open Android settings" }),
     );
     expect(fns.continueAfterPermission).toHaveBeenCalled();
+  });
+
+  it("while Android's prompt is open, offers to show it again or to cancel", () => {
+    seed({ phase: "installing", received: 79 * MB, total: 79 * MB });
+    render(<UpdateSheet />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Show the install prompt again" }),
+    );
+    expect(fns.showInstallPrompt).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(fns.cancelUpdate).toHaveBeenCalledTimes(1);
   });
 
   const messages: [string, string][] = [

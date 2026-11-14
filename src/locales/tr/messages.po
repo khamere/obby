@@ -1154,6 +1154,7 @@ msgstr "Son 2FA kimlik bilgisi kaldırılamaz"
 #: src/components/ui/TotpStepUpModal.tsx
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 #: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
 #: src/lib/modal/ConfirmDialog.tsx
 msgid "Cancel"
 msgstr "İptal"
@@ -5903,6 +5904,10 @@ msgstr "Sunucu adlarını göster"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show server replies"
 msgstr "Sunucu yanıtlarını göster"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Show the install prompt again"
+msgstr "Yükleme istemini yeniden göster"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"

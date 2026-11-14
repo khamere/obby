@@ -1154,6 +1154,7 @@ msgstr "Не можна видалити останні облікові дан�
 #: src/components/ui/TotpStepUpModal.tsx
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 #: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
 #: src/lib/modal/ConfirmDialog.tsx
 msgid "Cancel"
 msgstr "Скасувати"
@@ -5903,6 +5904,10 @@ msgstr "Показати назви серверів"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show server replies"
 msgstr "Показувати відповіді сервера"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Show the install prompt again"
+msgstr "Показати запит на встановлення ще раз"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"

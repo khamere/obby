@@ -1154,6 +1154,7 @@ msgstr "Viimeistä 2FA-tunnistetta ei voi poistaa"
 #: src/components/ui/TotpStepUpModal.tsx
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 #: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
 #: src/lib/modal/ConfirmDialog.tsx
 msgid "Cancel"
 msgstr "Peruuta"
@@ -5903,6 +5904,10 @@ msgstr "Näytä palvelinten nimet"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show server replies"
 msgstr "Näytä palvelimen vastaukset"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Show the install prompt again"
+msgstr "Näytä asennuskehote uudelleen"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"

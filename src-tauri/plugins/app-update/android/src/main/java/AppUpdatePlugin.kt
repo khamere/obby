@@ -84,7 +84,11 @@ private class Job(
   @Volatile var isFinished = false
   @Volatile var isVerified = false
   @Volatile var sessionId = -1
+  @Volatile var isWritingSession = false
   @Volatile var connection: HttpURLConnection? = null
+
+  // Android's prompt for the committed session, read and written on the main thread only.
+  var confirmation: Intent? = null
 
   fun cancel() {
     isCancelled = true
@@ -114,9 +118,6 @@ class AppUpdatePlugin(private val activity: Activity) : Plugin(activity) {
   // Before Android 13 a receiver registered at runtime takes broadcasts from
   // any app, so we only believe a status that carries this token back.
   private val token = UUID.randomUUID().toString()
-
-  // An installer prompt that arrived while we were in the background, read and written on the main thread only.
-  private var heldConfirmation: Pair<Job, Intent>? = null
 
   private val statusReceiver = object : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -193,6 +194,8 @@ class AppUpdatePlugin(private val activity: Activity) : Plugin(activity) {
       running
     }
     job?.cancel()
+    // A committed session would otherwise keep its prompt and install the update the user just cancelled.
+    if (job != null) main.post { abandonSession(job) }
     // The worker runs one task at a time, so this waits for the cancelled download to let go of its file.
     worker.execute {
       updateDir.listFiles()?.filter { it.name.endsWith(".apk.part") }?.forEach { it.delete() }
@@ -231,7 +234,7 @@ class AppUpdatePlugin(private val activity: Activity) : Plugin(activity) {
         invoke.reject("storage")
         return@post
       }
-      if (phase != "installing") offerInstall(job, isInFront())
+      if (phase == "installing") showPromptAgain(job) else offerInstall(job, isInFront())
       invoke.resolve(synchronized(lock) { status }.toJS())
     }
   }
@@ -403,9 +406,41 @@ class AppUpdatePlugin(private val activity: Activity) : Plugin(activity) {
     }
     publish(job, next)
     if (next.phase != "installing") return
-    val held = heldConfirmation?.takeIf { it.first === job }?.second
-    heldConfirmation = null
-    if (held != null) openConfirmation(job, held) else worker.execute { install(job, apk) }
+    val held = job.confirmation
+    if (held != null) {
+      openConfirmation(job, held)
+    } else {
+      job.isWritingSession = true
+      worker.execute { install(job, apk) }
+    }
+  }
+
+  /**
+   * Brings Android's prompt back after the user left it unanswered. The prompt lives in the installer's own task, so
+   * returning to the app does not show it and only the user can ask for it. Runs on the main thread.
+   */
+  private fun showPromptAgain(job: Job) {
+    when (promptRetry(job.confirmation != null, job.isWritingSession)) {
+      PromptRetry.Reopen -> job.confirmation?.let { openConfirmation(job, it) }
+      PromptRetry.Wait -> Unit
+      PromptRetry.Restart -> {
+        abandonSession(job)
+        offerInstall(job, isInFront())
+      }
+    }
+  }
+
+  /** Gives up the installer session of [job], so Android can no longer install from it. Runs on the main thread. */
+  private fun abandonSession(job: Job) {
+    val sessionId = job.sessionId
+    job.sessionId = -1
+    job.confirmation = null
+    if (sessionId == -1) return
+    try {
+      activity.packageManager.packageInstaller.abandonSession(sessionId)
+    } catch (e: Exception) {
+      // the session is already gone
+    }
   }
 
   /** Copies [apk] into an installer session and commits it; the result arrives in [onSessionStatus]. */
@@ -442,6 +477,8 @@ class AppUpdatePlugin(private val activity: Activity) : Plugin(activity) {
         }
       }
       publish(job, Status("error", 0, job.size, if (e is IOException) "storage" else "refused"))
+    } finally {
+      job.isWritingSession = false
     }
   }
 
@@ -456,21 +493,21 @@ class AppUpdatePlugin(private val activity: Activity) : Plugin(activity) {
   private fun onSessionStatus(intent: Intent) {
     if (intent.getStringExtra(EXTRA_TOKEN) != token) return
     val job = synchronized(lock) { current } ?: return
-    if (intent.getIntExtra(PackageInstaller.EXTRA_SESSION_ID, -1) != job.sessionId) return
+    // An abandoned session still reports its end, and that end says nothing about the job.
+    val sessionId = intent.getIntExtra(PackageInstaller.EXTRA_SESSION_ID, -1)
+    if (sessionId == -1 || sessionId != job.sessionId) return
     val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)
     val outcome = installOutcome(status)
-    if (outcome != InstallOutcome.NeedsUser) heldConfirmation = null
+    if (outcome != InstallOutcome.NeedsUser) job.confirmation = null
     when (outcome) {
       InstallOutcome.NeedsUser -> {
         val confirm = confirmationOf(intent)
+        job.confirmation = confirm
         when {
           confirm == null -> publish(job, Status("error", 0, job.size, "refused"))
           isInFront() -> openConfirmation(job, confirm)
           // Android drops an activity started from the background without telling us.
-          else -> {
-            heldConfirmation = job to confirm
-            publish(job, Status("waiting-foreground", job.size, job.size))
-          }
+          else -> publish(job, Status("waiting-foreground", job.size, job.size))
         }
       }
       InstallOutcome.Installed -> {
@@ -487,6 +524,8 @@ class AppUpdatePlugin(private val activity: Activity) : Plugin(activity) {
       activity.startActivity(confirm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
       publish(job, Status("installing", job.size, job.size))
     } catch (e: RuntimeException) {
+      // A prompt that will not open is of no use a second time, so trying again starts a new session.
+      abandonSession(job)
       publish(job, Status("error", 0, job.size, "refused"))
     }
   }

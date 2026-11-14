@@ -51,3 +51,16 @@ fun installOutcome(status: Int): InstallOutcome =
       InstallOutcome.Failed("incompatible")
     else -> InstallOutcome.Failed("refused")
   }
+
+enum class PromptRetry { Reopen, Wait, Restart }
+
+/**
+ * What asking for the install prompt again does: we reopen the one Android handed us, leave a session we are still
+ * writing to finish, and otherwise start the install over, since a committed session that never asked cannot be shown.
+ */
+fun promptRetry(hasConfirmation: Boolean, isWritingSession: Boolean): PromptRetry =
+  when {
+    hasConfirmation -> PromptRetry.Reopen
+    isWritingSession -> PromptRetry.Wait
+    else -> PromptRetry.Restart
+  }

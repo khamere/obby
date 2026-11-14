@@ -1153,6 +1153,7 @@ msgstr "Can't remove your last 2FA credential"
 #: src/components/ui/TotpStepUpModal.tsx
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 #: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
 #: src/lib/modal/ConfirmDialog.tsx
 msgid "Cancel"
 msgstr "Cancel"
@@ -5902,6 +5903,10 @@ msgstr "Show server names"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show server replies"
 msgstr "Show server replies"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Show the install prompt again"
+msgstr "Show the install prompt again"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"

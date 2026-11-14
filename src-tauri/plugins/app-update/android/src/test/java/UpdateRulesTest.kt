@@ -58,4 +58,20 @@ class UpdateRulesTest {
     assertEquals(InstallOutcome.Failed("refused"), installOutcome(PackageInstaller.STATUS_FAILURE_STORAGE))
     assertEquals(InstallOutcome.Failed("refused"), installOutcome(12345))
   }
+
+  @Test
+  fun showsAPromptAgainOnlyWhenAndroidHandedUsOne() {
+    assertEquals(PromptRetry.Reopen, promptRetry(hasConfirmation = true, isWritingSession = false))
+    assertEquals(PromptRetry.Reopen, promptRetry(hasConfirmation = true, isWritingSession = true))
+  }
+
+  @Test
+  fun leavesASessionAloneWhileItIsStillBeingWritten() {
+    assertEquals(PromptRetry.Wait, promptRetry(hasConfirmation = false, isWritingSession = true))
+  }
+
+  @Test
+  fun startsTheInstallOverWhenACommittedSessionNeverAsked() {
+    assertEquals(PromptRetry.Restart, promptRetry(hasConfirmation = false, isWritingSession = false))
+  }
 }
