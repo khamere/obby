@@ -49,7 +49,8 @@ export function decideAutoAway({
   if (!isIdle) {
     const clearAway: string[] = [];
     for (const [id, state] of next) {
-      if (state === "pending") continue;
+      // A released server waits for the user's input, which a short idle time alone does not prove.
+      if (state === "pending" || ours.get(id) === "released") continue;
       if (state === "confirmed") clearAway.push(id);
       next.delete(id);
     }
@@ -82,9 +83,22 @@ export function setAutoAwaySeenAway(seen: ReadonlySet<string>): void {
   lastSeenAway = seen;
 }
 
+const expectedBack = new Set<string>();
+
+// The server answers a back we send ourselves, and that answer says nothing about other clients.
+export function expectAutoBack(serverId: string): void {
+  expectedBack.add(serverId);
+}
+
 // A back we did not send ended the away from elsewhere, so we wait for the user.
 export function releaseAutoAway(serverId: string): void {
+  if (expectedBack.delete(serverId)) return;
   ours.set(serverId, "released");
+}
+
+// Input here is the user returning, which ends the wait on every released server.
+export function dropReleasedAutoAway(): void {
+  for (const [id, state] of ours) if (state === "released") ours.delete(id);
 }
 
 // A released server holds no away of ours, so only the other records need the user's input to end.
@@ -104,6 +118,7 @@ export function setAutoAwayRecord(next: Map<string, AutoAwayState>): void {
 // The user's own away or back on a server takes it out of our hands.
 export function forgetAutoAway(serverId: string): void {
   ours.delete(serverId);
+  expectedBack.delete(serverId);
   if (lastSeenAway.has(serverId))
     lastSeenAway = new Set([...lastSeenAway].filter((id) => id !== serverId));
 }

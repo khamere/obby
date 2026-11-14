@@ -3,6 +3,8 @@ import {
   autoAwayRecord,
   autoAwaySeenAway,
   decideAutoAway,
+  dropReleasedAutoAway,
+  expectAutoBack,
   holdsAutoAway,
   setAutoAwayRecord,
   setAutoAwaySeenAway,
@@ -39,7 +41,10 @@ export function useAutoAway(): void {
       setAutoAwaySeenAway(seenAway);
       const message = state.globalSettings.awayMessage || "Away";
       for (const id of setAway) ircClient.setAway(id, message);
-      for (const id of clearAway) ircClient.clearAway(id);
+      for (const id of clearAway) {
+        expectAutoBack(id);
+        ircClient.clearAway(id);
+      }
     };
 
     // We check at most once a second on input so pointer movement stays cheap, and once more after the last input.
@@ -47,6 +52,7 @@ export function useAutoAway(): void {
     let trailingCheck = 0;
     const onActivity = () => {
       lastActivity = Date.now();
+      dropReleasedAutoAway();
       if (autoAwayRecord().size === 0) return;
       const wait = INPUT_CHECK_MS - (lastActivity - lastInputCheck);
       if (wait > 0) {

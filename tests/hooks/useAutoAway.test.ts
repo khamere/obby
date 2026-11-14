@@ -224,13 +224,13 @@ describe("useAutoAway", () => {
 
   it("leaves a server alone when an away from elsewhere came and went between checks", () => {
     renderHook(() => useAutoAway());
-    vi.advanceTimersByTime(9 * MIN + 40_000);
+    vi.advanceTimersByTime(8 * MIN + 40_000);
 
     setServer(true);
     vi.advanceTimersByTime(10_000);
     ircClient.triggerEvent("RPL_UNAWAY", { serverId: "s1", message: "" });
     setServer(false);
-    vi.advanceTimersByTime(5 * MIN);
+    vi.advanceTimersByTime(6 * MIN);
     expect(setAway).not.toHaveBeenCalled();
 
     window.dispatchEvent(new KeyboardEvent("keydown"));
@@ -255,6 +255,10 @@ describe("useAutoAway", () => {
     renderHook(() => useAutoAway());
     vi.advanceTimersByTime(10 * MIN + 30_000);
     expect(setAway).toHaveBeenCalledTimes(1);
+    useStore.setState((state) => ({
+      servers: [{ ...state.servers[0], isAway: true }, state.servers[1]],
+    }));
+    vi.advanceTimersByTime(30_000);
     ircClient.triggerEvent("RPL_UNAWAY", { serverId: "s1", message: "" });
 
     vi.setSystemTime(Date.now() + 60 * MIN);
@@ -263,7 +267,49 @@ describe("useAutoAway", () => {
     expect(setAway).toHaveBeenCalledTimes(1);
 
     vi.advanceTimersByTime(10 * MIN);
-    expect(setAway).toHaveBeenCalledWith("s2", "gone fishing");
+    expect(setAway).toHaveBeenCalledTimes(2);
+    expect(setAway).toHaveBeenLastCalledWith("s2", "gone fishing");
+  });
+
+  it("leaves a server brought back from elsewhere alone through sleep", () => {
+    renderHook(() => useAutoAway());
+    vi.advanceTimersByTime(10 * MIN + 30_000);
+    setServer(true);
+    vi.advanceTimersByTime(30_000);
+    ircClient.triggerEvent("RPL_UNAWAY", { serverId: "s1", message: "" });
+
+    vi.setSystemTime(Date.now() + 60 * MIN);
+    vi.advanceTimersByTime(20 * MIN);
+    expect(setAway).toHaveBeenCalledTimes(1);
+
+    window.dispatchEvent(new KeyboardEvent("keydown"));
+    vi.advanceTimersByTime(10 * MIN + 30_000);
+    expect(setAway).toHaveBeenCalledTimes(2);
+    expect(clearAway).not.toHaveBeenCalled();
+  });
+
+  it("sends away again after its own back and a new idle time", () => {
+    renderHook(() => useAutoAway());
+    vi.advanceTimersByTime(10 * MIN + 30_000);
+    setServer(true);
+    vi.advanceTimersByTime(30_000);
+
+    window.dispatchEvent(new KeyboardEvent("keydown"));
+    expect(clearAway).toHaveBeenCalledTimes(1);
+    ircClient.triggerEvent("RPL_UNAWAY", { serverId: "s1", message: "" });
+
+    vi.advanceTimersByTime(10 * MIN + 30_000);
+    expect(setAway).toHaveBeenCalledTimes(2);
+  });
+
+  it("sends away again after the user's own back and a new idle time", () => {
+    renderHook(() => useAutoAway());
+    setServer(true);
+    useStore.getState().clearAway("s1");
+    ircClient.triggerEvent("RPL_UNAWAY", { serverId: "s1", message: "" });
+
+    vi.advanceTimersByTime(10 * MIN + 30_000);
+    expect(setAway).toHaveBeenCalledTimes(1);
   });
 
   it("keeps an away it set through a late timer tick", () => {

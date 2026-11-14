@@ -1,6 +1,6 @@
 import { v4 as uuidv4, v5 as uuidv5 } from "uuid";
 import { create } from "zustand";
-import { forgetAutoAway } from "../lib/autoAway";
+import { expectAutoBack, forgetAutoAway } from "../lib/autoAway";
 import { BOT_TOOLS_TAG, encodeBotToolsValue } from "../lib/botTools";
 import { encodeBouncerAttrs } from "../lib/bouncerAttrs";
 import { getSelectionHistory, recordSelection } from "../lib/channelHistory";
@@ -2071,6 +2071,7 @@ const useStore = create<AppState>((set, get) => ({
 
   clearAway: (serverId) => {
     forgetAutoAway(serverId);
+    expectAutoBack(serverId);
     ircClient.clearAway(serverId);
   },
 
