@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import type { StoreApi } from "zustand";
 import { voiceDisplayName } from "../../lib/channelMentions";
 import ircClient from "../../lib/ircClient";
+import { moveChatMute } from "../../lib/mutes";
 import type { Message, User } from "../../types";
 import {
   generateDeterministicId,
@@ -382,6 +383,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
       }
     }
     saveConfirmedNick(store, serverId, newNick);
+    moveChatMute(serverId, "dm", oldNick, newNick);
     store.setState((state) => {
       const updatedServers = state.servers.map((server) => {
         if (server.id === serverId) {
@@ -394,7 +396,19 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
             });
             return { ...channel, users: updatedUsers };
           });
-          return { ...server, channels: updatedChannels };
+          // The open DM takes the new nick whether or not nick changes are
+          // shown: its mute has moved to that nick, and the person's next
+          // message arrives under it.
+          const updatedPrivateChats = server.privateChats?.map((pc) =>
+            pc.username.toLowerCase() === oldNick.toLowerCase()
+              ? { ...pc, username: newNick }
+              : pc,
+          );
+          return {
+            ...server,
+            channels: updatedChannels,
+            privateChats: updatedPrivateChats,
+          };
         }
         return server;
       });
@@ -458,27 +472,9 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
       });
 
       const privateChat = server.privateChats?.find(
-        (pc) =>
-          pc.username.toLowerCase() === oldNick.toLowerCase() ||
-          pc.username.toLowerCase() === newNick.toLowerCase(),
+        (pc) => pc.username.toLowerCase() === newNick.toLowerCase(),
       );
       if (privateChat) {
-        store.setState((state) => {
-          const updatedServers = state.servers.map((s) => {
-            if (s.id === serverId) {
-              const updatedPrivateChats = s.privateChats?.map((pc) => {
-                if (pc.username.toLowerCase() === oldNick.toLowerCase()) {
-                  return { ...pc, username: newNick };
-                }
-                return pc;
-              });
-              return { ...s, privateChats: updatedPrivateChats };
-            }
-            return s;
-          });
-          return { servers: updatedServers };
-        });
-
         appendMessage(
           store,
           serverId,
@@ -1044,10 +1040,10 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
       const server = state.servers.find((s) => s.id === serverId);
       if (!server) return {};
 
-      const channel = server.channels.find((c) => c.name === oldName);
+      const channel = server.channels.find(
+        (c) => c.name.toLowerCase() === oldName.toLowerCase(),
+      );
       if (!channel) return {};
-
-      channel.name = newName;
 
       const renameMessage: Message = {
         id: `rename-${Date.now()}`,
@@ -1065,12 +1061,32 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
       const channelKey = `${serverId}-${channel.id}`;
       const currentMessages = state.messages[channelKey] || [];
       return {
+        servers: state.servers.map((s) =>
+          s.id === serverId
+            ? {
+                ...s,
+                channels: s.channels.map((c) =>
+                  c.id === channel.id ? { ...c, name: newName } : c,
+                ),
+              }
+            : s,
+        ),
+        // Logged mentions are matched to a mute by channel name, so they
+        // take the new name along with the channel.
+        mentionLog: state.mentionLog.map((m) =>
+          m.serverId === serverId && m.channelId === channel.id
+            ? { ...m, channelName: newName }
+            : m,
+        ),
         messages: {
           ...state.messages,
           [channelKey]: [...currentMessages, renameMessage],
         },
       };
     });
+    // The channel keeps its id and its mute is kept by name, so the mute
+    // moves once the channel carries the new name.
+    moveChatMute(serverId, "channel", oldName, newName);
   });
 
   ircClient.on("SETNAME", ({ serverId, user, realname, ident, host }) => {

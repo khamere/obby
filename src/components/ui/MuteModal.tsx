@@ -3,7 +3,7 @@ import type React from "react";
 import BaseModal from "../../lib/modal/BaseModal";
 import { ModalBody } from "../../lib/modal/components";
 import {
-  type ChatKind,
+  type ChatRef,
   chatMute,
   muteChat,
   muteServer,
@@ -20,7 +20,7 @@ interface MuteModalProps {
   onClose: () => void;
   serverId: string;
   serverName: string;
-  chat?: { id: string; name: string; kind: ChatKind };
+  chat?: ChatRef;
   soundsOn: boolean;
   onToggleSounds: () => void;
 }
@@ -111,7 +111,7 @@ export const MuteModal: React.FC<MuteModalProps> = ({
   const { t } = useLingui();
   useMutes(); // re-render when mutes change
   const server = serverMute(serverId);
-  const chatEntry = chat ? chatMute(serverId, chat.id) : undefined;
+  const chatEntry = chat ? chatMute(serverId, chat) : undefined;
   return (
     <BaseModal
       isOpen={isOpen}
@@ -138,8 +138,8 @@ export const MuteModal: React.FC<MuteModalProps> = ({
                 )
               }
               until={chatEntry ? chatEntry.until : undefined}
-              onMute={(until) => muteChat(serverId, chat.id, chat.kind, until)}
-              onUnmute={() => unmuteChat(serverId, chat.id)}
+              onMute={(until) => muteChat(serverId, chat, until)}
+              onUnmute={() => unmuteChat(serverId, chat)}
             />
           )}
           <MuteSection

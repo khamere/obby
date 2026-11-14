@@ -57,10 +57,12 @@ export const MentionsInbox: React.FC = () => {
     const entries: MentionEntry[] = [];
     const muted: MentionEntry[] = [];
     for (const entry of [...mentionLog].reverse()) {
-      (isSilenced(entry.serverId, entry.channelId, true)
-        ? muted
-        : entries
-      ).push(entry);
+      const channel = {
+        id: entry.channelId,
+        kind: "channel" as const,
+        name: entry.channelName,
+      };
+      (isSilenced(entry.serverId, channel, true) ? muted : entries).push(entry);
     }
     return { entries, muted };
   }, [mentionLog, mutes, expired]);

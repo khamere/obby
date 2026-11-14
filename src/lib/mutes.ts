@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { generateDeterministicId } from "../store/helpers";
 
 // Muting, kept in this browser. A muted server or chat is silent: no sound,
 // no notification and no red dot from anything in it, mentions included; a
@@ -7,6 +8,13 @@ import { useSyncExternalStore } from "react";
 
 export type ChatKind = "channel" | "dm";
 
+/** A chat as a mute sees it: its kind and its name, in any spelling. */
+export interface ChatRef {
+  id?: string;
+  kind: ChatKind;
+  name: string;
+}
+
 interface MuteEntry {
   // epoch ms when the mute ends; null = until unmuted
   until: number | null;
@@ -14,15 +22,26 @@ interface MuteEntry {
 
 interface ChatMuteEntry extends MuteEntry {
   kind: ChatKind;
+  // The chat's name as last seen, for the background side. An entry without
+  // one sits under its chat id, waiting for that chat to be loaded.
+  name?: string;
   // Older mutes carried a flag for mentions; every mute covers them now.
   mentions?: boolean;
 }
 
 interface MuteState {
   servers: Record<string, MuteEntry>;
-  // keyed by `${serverId}/${chatId}`; channel and PM ids are deterministic
-  // (serverId + name), so keys stay valid across reloads
+  // keyed by `${serverId}/${kind}:${name}` with the name in lower case. A
+  // chat id is made from the name as first seen, so the same conversation
+  // gets another id when it comes back under another spelling, while its
+  // name still compares equal.
   chats: Record<string, ChatMuteEntry>;
+}
+
+interface LoadedServer {
+  id: string;
+  channels: { id: string; name: string }[];
+  privateChats?: { id: string; username: string }[];
 }
 
 const STORAGE_KEY = "obby.mutes";
@@ -31,8 +50,59 @@ let state: MuteState = { servers: {}, chats: {} };
 let loaded = false;
 const listeners = new Set<() => void>();
 
-function chatKey(serverId: string, chatId: string): string {
+// We name a chat id through the servers the app has loaded. The store hands
+// them in, since it imports this module.
+let loadedServers: () => LoadedServer[] = () => [];
+
+export function setMuteChatSource(source: () => LoadedServer[]): void {
+  loadedServers = source;
+}
+
+function nameKey(serverId: string, chat: ChatRef): string {
+  return `${serverId}/${chat.kind}:${chat.name.toLowerCase()}`;
+}
+
+function idKey(serverId: string, chatId: string): string {
   return `${serverId}/${chatId}`;
+}
+
+function chatsOf(server: LoadedServer): (ChatRef & { id: string })[] {
+  return [
+    ...server.channels.map(({ id, name }) => ({
+      id,
+      kind: "channel" as const,
+      name,
+    })),
+    ...(server.privateChats ?? []).map(({ id, username }) => ({
+      id,
+      kind: "dm" as const,
+      name: username,
+    })),
+  ];
+}
+
+// The keys a chat's mute can sit under: its name, and its id for an entry
+// that has no name yet.
+function keysOf(serverId: string, chat: string | ChatRef): string[] {
+  const id = typeof chat === "string" ? chat : chat.id;
+  const server =
+    typeof chat === "string"
+      ? loadedServers().find((s) => s.id === serverId)
+      : undefined;
+  const ref =
+    typeof chat === "string"
+      ? server && chatsOf(server).find((c) => c.id === chat)
+      : chat;
+  return [
+    ...(ref ? [nameKey(serverId, ref)] : []),
+    ...(id ? [idKey(serverId, id)] : []),
+  ];
+}
+
+function without<T>(map: Record<string, T>, keys: string[]): Record<string, T> {
+  return Object.fromEntries(
+    Object.entries(map).filter(([key]) => !keys.includes(key)),
+  );
 }
 
 function active(entry: MuteEntry | undefined, now: number): boolean {
@@ -83,24 +153,103 @@ export function unmuteServer(serverId: string): void {
 
 export function muteChat(
   serverId: string,
-  chatId: string,
-  kind: ChatKind,
+  chat: ChatRef,
   until: number | null,
 ): void {
   load();
   save({
     ...state,
     chats: {
-      ...state.chats,
-      [chatKey(serverId, chatId)]: { until, kind },
+      ...without(state.chats, keysOf(serverId, chat)),
+      [nameKey(serverId, chat)]: { until, kind: chat.kind, name: chat.name },
     },
   });
 }
 
-export function unmuteChat(serverId: string, chatId: string): void {
+/** `chat`: the chat itself, or the id of one that is loaded. */
+export function unmuteChat(serverId: string, chat: string | ChatRef): void {
   load();
-  const { [chatKey(serverId, chatId)]: _, ...chats } = state.chats;
-  save({ ...state, chats });
+  save({ ...state, chats: without(state.chats, keysOf(serverId, chat)) });
+}
+
+// We move a mute along with a nick change or a channel rename, so the chat
+// stays muted under its new name. A mute that has run out stays behind, or
+// it would replace a running one under the new name.
+export function moveChatMute(
+  serverId: string,
+  kind: ChatKind,
+  oldName: string,
+  newName: string,
+): void {
+  load();
+  const from = nameKey(serverId, { kind, name: oldName });
+  const entry = state.chats[from];
+  if (!active(entry, Date.now())) return;
+  save({
+    ...state,
+    chats: {
+      ...without(state.chats, [from]),
+      [nameKey(serverId, { kind, name: newName })]: { ...entry, name: newName },
+    },
+  });
+}
+
+// The ids a chat gets under its name as it is and in lower case. Each one is
+// a SHA-1 hash, and a mute can wait for good for a chat that never comes
+// back, so we work them out once per name.
+const derivedIds = new Map<string, string[]>();
+
+function derivedIdsOf(serverId: string, name: string): string[] {
+  const cacheKey = `${serverId}:${name}`;
+  let ids = derivedIds.get(cacheKey);
+  if (!ids) {
+    ids = [
+      generateDeterministicId(serverId, name),
+      generateDeterministicId(serverId, name.toLowerCase()),
+    ];
+    derivedIds.set(cacheKey, ids);
+  }
+  return ids;
+}
+
+// We move an entry under a chat id to the chat's name as soon as that chat
+// is loaded. The id may be the one the chat gets under the lower-case
+// spelling of its name, so we look for that one too. This runs on every
+// change of the loaded servers, so the chats' own ids come first: they cost
+// no hash, and most entries are found through them. A running mute under
+// the name stays, since it was set after the one under the id; one that has
+// run out gives way, or saving would drop both.
+export function adoptIdKeyedMutes(): void {
+  load();
+  const now = Date.now();
+  const unnamed = Object.entries(state.chats)
+    .filter(([, entry]) => entry.name === undefined)
+    .map(([key]) => key);
+  if (unnamed.length === 0) return;
+  let chats = state.chats;
+  for (const server of loadedServers()) {
+    const prefix = `${server.id}/`;
+    let waiting = unnamed.filter((key) => key.startsWith(prefix)).length;
+    if (waiting === 0) continue;
+    const loadedChats = chatsOf(server);
+    const adopt = (chat: ChatRef, id: string) => {
+      const key = idKey(server.id, id);
+      const entry = chats[key];
+      if (!entry || entry.name !== undefined) return;
+      const named = nameKey(server.id, chat);
+      const rest = without(chats, [key]);
+      chats = active(rest[named], now)
+        ? rest
+        : { ...rest, [named]: { ...entry, kind: chat.kind, name: chat.name } };
+      waiting--;
+    };
+    for (const chat of loadedChats) adopt(chat, chat.id);
+    for (const chat of loadedChats) {
+      if (waiting === 0) break;
+      for (const id of derivedIdsOf(server.id, chat.name)) adopt(chat, id);
+    }
+  }
+  if (chats !== state.chats) save({ ...state, chats });
 }
 
 /** The mute on a server, if active: `until` is epoch ms or null (forever). */
@@ -113,14 +262,16 @@ export function serverMute(
   return active(entry, now) ? entry : undefined;
 }
 
+/** `chat`: the chat itself, or the id of one that is loaded. */
 export function chatMute(
   serverId: string,
-  chatId: string,
+  chat: string | ChatRef,
   now: number = Date.now(),
 ): ChatMuteEntry | undefined {
   load();
-  const entry = state.chats[chatKey(serverId, chatId)];
-  return active(entry, now) ? entry : undefined;
+  return keysOf(serverId, chat)
+    .map((key) => state.chats[key])
+    .find((entry) => active(entry, now));
 }
 
 export function isServerMuted(serverId: string, now?: number): boolean {
@@ -134,14 +285,14 @@ export function isServerMuted(serverId: string, now?: number): boolean {
  */
 export function isSilenced(
   serverId: string | undefined,
-  chatId: string | undefined,
+  chat: string | ChatRef | undefined,
   _mentionsMe: boolean,
   now: number = Date.now(),
 ): boolean {
   if (!serverId) return false;
   if (isServerMuted(serverId, now)) return true;
-  if (!chatId) return false;
-  return !!chatMute(serverId, chatId, now);
+  if (!chat) return false;
+  return !!chatMute(serverId, chat, now);
 }
 
 export function subscribeMutes(listener: () => void): () => void {
@@ -157,7 +308,8 @@ export interface Silence {
 }
 
 // The native side and the push worker notify while the page is closed, so
-// they get the mutes as chat names, since ids mean nothing to them.
+// they get the mutes as chat names, since ids mean nothing to them. They get
+// every mute, since they also notify for chats the page has not loaded.
 export function silencesFor(
   server: {
     id: string;
@@ -176,7 +328,7 @@ export function silencesFor(
   const prefix = `${server.id}/`;
   for (const [key, entry] of Object.entries(state.chats)) {
     if (!key.startsWith(prefix) || !active(entry, now)) continue;
-    const name = nameOf.get(key.slice(prefix.length));
+    const name = entry.name ?? nameOf.get(key.slice(prefix.length));
     if (name) silences.push({ chat: name, until: entry.until });
   }
   return silences;
@@ -210,4 +362,5 @@ export function useMutes(): MuteState {
 export function resetMutesForTests(): void {
   state = { servers: {}, chats: {} };
   loaded = false;
+  derivedIds.clear();
 }

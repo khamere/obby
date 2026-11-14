@@ -88,7 +88,7 @@ describe("history poll config", () => {
   it("carries the mutes by chat name", () => {
     resetMutesForTests();
     vi.mocked(localStorage.getItem).mockReturnValue(null);
-    muteChat("s1", "c-dev", "channel", null);
+    muteChat("s1", { kind: "channel", name: "#dev" }, null);
     const config = historyPollConfigFor(
       [
         server({
