@@ -19,7 +19,11 @@ const CID = "c1";
 const KEY = `${SID}-${CID}`;
 
 const file = (rules: unknown[]) => JSON.stringify({ version: 1, rules });
-const ALDER = { host: "irc.alder.example", bot: "Bot", formats: ["[{nick}] {text}"] };
+const ALDER = {
+  host: "irc.alder.example",
+  bot: "Bot",
+  formats: ["[{nick}] {text}"],
+};
 const LANTERN = {
   host: "irc.lantern.example",
   nickFormat: "({nick})",

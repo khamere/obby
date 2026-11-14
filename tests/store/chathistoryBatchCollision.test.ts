@@ -85,8 +85,6 @@ describe("chathistory batches with the same id on different servers", () => {
     feed("netB", ":soju BATCH -6");
 
     expect(contents("netA")).toEqual(["first network line"]);
-    expect(contents("netB")).toEqual([
-      "[tamsin] second network line",
-    ]);
+    expect(contents("netB")).toEqual(["[tamsin] second network line"]);
   });
 });

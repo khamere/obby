@@ -15,7 +15,11 @@ import {
 const file = (rules: unknown[]) => JSON.stringify({ version: 1, rules });
 const compiled = (rules: unknown[]) =>
   compileBridgeRules(parseBridgeRules(file(rules)).rules);
-const ALDER = { host: "irc.alder.example", bot: "Bot", formats: ["[{nick}] {text}"] };
+const ALDER = {
+  host: "irc.alder.example",
+  bot: "Bot",
+  formats: ["[{nick}] {text}"],
+};
 const CINDER = {
   host: "irc.cinder.example",
   bot: "ChatRelay",
@@ -88,7 +92,13 @@ describe("applyBridgeRules", () => {
 
   it("rewrites a bot line on the right network", () => {
     expect(
-      applyBridgeRules(rules, "irc.alder.example", "#general", "Bot", "[mara] hi"),
+      applyBridgeRules(
+        rules,
+        "irc.alder.example",
+        "#general",
+        "Bot",
+        "[mara] hi",
+      ),
     ).toEqual({ kind: "bot", nick: "mara", text: "hi", via: "Bot" });
   });
 
@@ -98,17 +108,34 @@ describe("applyBridgeRules", () => {
       { ...ALDER, label: "Bot (matrix)", formats: ["[{nick}] (MTX): {text}"] },
     ]);
     expect(
-      applyBridgeRules(rules, "irc.alder.example", "#alder", "Bot", "[mara] (MTX): hi"),
+      applyBridgeRules(
+        rules,
+        "irc.alder.example",
+        "#alder",
+        "Bot",
+        "[mara] (MTX): hi",
+      ),
     ).toEqual({ kind: "bot", nick: "mara", text: "hi", via: "Bot (matrix)" });
     expect(
-      applyBridgeRules(rules, "irc.alder.example", "#alder", "Bot", "[mara] (WEB): hi"),
+      applyBridgeRules(
+        rules,
+        "irc.alder.example",
+        "#alder",
+        "Bot",
+        "[mara] (WEB): hi",
+      ),
     ).toEqual({ kind: "bot", nick: "mara", text: "hi", via: "Bot (site)" });
   });
 
   it("ignores case and mode prefixes on the sender and host", () => {
     expect(
-      applyBridgeRules(rules, "IRC.ALDER.EXAMPLE", "#general", "@bot", "[mara] hi")
-        ?.kind,
+      applyBridgeRules(
+        rules,
+        "IRC.ALDER.EXAMPLE",
+        "#general",
+        "@bot",
+        "[mara] hi",
+      )?.kind,
     ).toBe("bot");
   });
 
@@ -126,10 +153,22 @@ describe("applyBridgeRules", () => {
 
   it("returns null for another network, another nick, a non-matching line, or the wrong channel", () => {
     expect(
-      applyBridgeRules(rules, "irc.zephyr.example", "#general", "Bot", "[mara] hi"),
+      applyBridgeRules(
+        rules,
+        "irc.zephyr.example",
+        "#general",
+        "Bot",
+        "[mara] hi",
+      ),
     ).toBeNull();
     expect(
-      applyBridgeRules(rules, "irc.alder.example", "#general", "alice", "[mara] hi"),
+      applyBridgeRules(
+        rules,
+        "irc.alder.example",
+        "#general",
+        "alice",
+        "[mara] hi",
+      ),
     ).toBeNull();
     expect(
       applyBridgeRules(

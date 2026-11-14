@@ -106,7 +106,11 @@ describe("isValidCssLink", () => {
 });
 
 describe("networkHost (data-network-host)", () => {
-  const server = { name: "n", host: "ircs://IRC.Uplink.Example:6697", port: 6697 };
+  const server = {
+    name: "n",
+    host: "ircs://IRC.Uplink.Example:6697",
+    port: 6697,
+  };
   it("is the upstream host, from soju for bound networks", () => {
     expect(networkHost(server as Server)).toBe("irc.uplink.example");
     expect(

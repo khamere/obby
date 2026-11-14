@@ -61,9 +61,7 @@ describe("MessageHeader", () => {
     const nick = screen.getByText("Tobias");
     expect(nick).toBeInTheDocument();
     expect(screen.getByText("via web")).toBeInTheDocument();
-    expect(nick.closest("span[title]")?.getAttribute("title")).toBe(
-      "(Tobias)",
-    );
+    expect(nick.closest("span[title]")?.getAttribute("title")).toBe("(Tobias)");
   });
 
   it("shows no marker for an ordinary line", () => {
