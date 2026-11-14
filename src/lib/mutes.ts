@@ -172,8 +172,9 @@ export function unmuteChat(serverId: string, chat: string | ChatRef): void {
   save({ ...state, chats: without(state.chats, keysOf(serverId, chat)) });
 }
 
-// We move a mute along with a nick change, so the person stays muted under
-// the new nick.
+// We move a mute along with a nick change or a channel rename, so the chat
+// stays muted under its new name. A mute that has run out stays behind, or
+// it would replace a running one under the new name.
 export function moveChatMute(
   serverId: string,
   kind: ChatKind,
@@ -183,7 +184,7 @@ export function moveChatMute(
   load();
   const from = nameKey(serverId, { kind, name: oldName });
   const entry = state.chats[from];
-  if (!entry) return;
+  if (!active(entry, Date.now())) return;
   save({
     ...state,
     chats: {
@@ -215,9 +216,12 @@ function derivedIdsOf(serverId: string, name: string): string[] {
 // is loaded. The id may be the one the chat gets under the lower-case
 // spelling of its name, so we look for that one too. This runs on every
 // change of the loaded servers, so the chats' own ids come first: they cost
-// no hash, and most entries are found through them.
+// no hash, and most entries are found through them. A running mute under
+// the name stays, since it was set after the one under the id; one that has
+// run out gives way, or saving would drop both.
 export function adoptIdKeyedMutes(): void {
   load();
+  const now = Date.now();
   const unnamed = Object.entries(state.chats)
     .filter(([, entry]) => entry.name === undefined)
     .map(([key]) => key);
@@ -232,14 +236,11 @@ export function adoptIdKeyedMutes(): void {
       const key = idKey(server.id, id);
       const entry = chats[key];
       if (!entry || entry.name !== undefined) return;
-      chats = {
-        [nameKey(server.id, chat)]: {
-          ...entry,
-          kind: chat.kind,
-          name: chat.name,
-        },
-        ...without(chats, [key]),
-      };
+      const named = nameKey(server.id, chat);
+      const rest = without(chats, [key]);
+      chats = active(rest[named], now)
+        ? rest
+        : { ...rest, [named]: { ...entry, kind: chat.kind, name: chat.name } };
       waiting--;
     };
     for (const chat of loadedChats) adopt(chat, chat.id);

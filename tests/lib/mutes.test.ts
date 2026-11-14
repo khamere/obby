@@ -61,6 +61,7 @@ describe("mutes", () => {
     vi.mocked(localStorage.getItem).mockImplementation(
       (k) => backing.get(k) ?? null,
     );
+    vi.mocked(localStorage.setItem).mockClear();
     vi.mocked(localStorage.setItem).mockImplementation((k, v) => {
       backing.set(k, v);
     });
@@ -228,6 +229,34 @@ describe("mutes", () => {
       moveChatMute("s1", "dm", "alice", "alice_afk");
       expect(localStorage.setItem).not.toHaveBeenCalled();
     });
+
+    it("moves a channel's mute to the channel's new name", () => {
+      muteChat("s1", { kind: "channel", name: "#general" }, null);
+      moveChatMute("s1", "channel", "#General", "#lounge");
+      expect(chatMute("s1", { kind: "channel", name: "#general" })).toBe(
+        undefined,
+      );
+      expect(silencesFor(nothingLoaded)).toEqual([
+        { chat: "#lounge", until: null },
+      ]);
+    });
+
+    it("keeps the mute under the new name when the one that moves has run out", () => {
+      const now = Date.now();
+      backing.set(
+        "obby.mutes",
+        JSON.stringify({
+          servers: {},
+          chats: {
+            "s1/dm:mara": { until: now - 1, kind: "dm", name: "mara" },
+            "s1/dm:alice": { until: null, kind: "dm", name: "alice" },
+          },
+        }),
+      );
+      resetMutesForTests();
+      moveChatMute("s1", "dm", "mara", "alice");
+      expect(chatMute("s1", dm("alice"))?.until).toBeNull();
+    });
   });
 
   describe("a mute stored under a chat id, with no name", () => {
@@ -346,6 +375,48 @@ describe("mutes", () => {
       adoptIdKeyedMutes();
       expect(saved()).toEqual({
         "s1/dm:bob": { until: now + HOUR, kind: "dm", name: "bob" },
+      });
+    });
+
+    it("replaces a named mute that has run out", () => {
+      const now = Date.now();
+      stored({
+        "s1/dm:bob": { until: now - 1, kind: "dm", name: "bob" },
+        "s1/p-bob": { until: null, kind: "dm" },
+      });
+      setMuteChatSource(() => loaded(bob));
+      adoptIdKeyedMutes();
+      expect(saved()).toEqual({
+        "s1/dm:bob": { until: null, kind: "dm", name: "bob" },
+      });
+    });
+
+    it("leaves a named mute that is still running", () => {
+      const now = Date.now();
+      stored({
+        "s1/dm:bob": { until: now + HOUR, kind: "dm", name: "bob" },
+        "s1/p-bob": { until: null, kind: "dm" },
+      });
+      setMuteChatSource(() => loaded(bob));
+      adoptIdKeyedMutes();
+      expect(saved()).toEqual({
+        "s1/dm:bob": { until: now + HOUR, kind: "dm", name: "bob" },
+      });
+    });
+
+    it("keeps the running mute of a chat whose other id holds one that has run out", () => {
+      const now = Date.now();
+      stored({
+        "s1/p-bob": { until: now - 1, kind: "dm" },
+        [`s1/${generateDeterministicId("s1", "bob")}`]: {
+          until: null,
+          kind: "dm",
+        },
+      });
+      setMuteChatSource(() => loaded(bob));
+      adoptIdKeyedMutes();
+      expect(saved()).toEqual({
+        "s1/dm:bob": { until: null, kind: "dm", name: "bob" },
       });
     });
 

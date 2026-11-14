@@ -188,6 +188,79 @@ describe("a muted chat that is created again", () => {
     expect(chatMute(serverId, ref("mara_afk"))).toBeDefined();
   });
 
+  it.each(["showEvents", "showNickChanges"] as const)(
+    "renames the open DM and keeps it muted with %s off",
+    (flag) => {
+      useStore.setState((state) => ({
+        globalSettings: {
+          ...state.globalSettings,
+          showEvents: true,
+          showNickChanges: true,
+          [flag]: false,
+        },
+      }));
+      feed(":mara!u@h PRIVMSG me :hi");
+      const before = ref("mara");
+      muteChat(serverId, before, null);
+      const key = `${serverId}-${before.id}`;
+      const lines = useStore.getState().messages[key]?.length;
+
+      feed(":mara!u@h NICK mara_afk");
+
+      // The header and the bell look the chat up by its id.
+      expect(dm("mara")).toBeUndefined();
+      expect(ref("mara_afk").id).toBe(before.id);
+      expect(chatMute(serverId, before.id ?? "")?.until).toBeNull();
+      expect(useStore.getState().messages[key]?.length).toBe(lines);
+      shown.fn.mockClear();
+      feed(":mara_afk!u@h PRIVMSG me :still here");
+      expect(shown.fn).not.toHaveBeenCalled();
+      expect(server().privateChats).toHaveLength(1);
+    },
+  );
+
+  it("still tells of the nick change in the DM when those events are shown", () => {
+    useStore.setState((state) => ({
+      globalSettings: {
+        ...state.globalSettings,
+        showEvents: true,
+        showNickChanges: true,
+      },
+    }));
+    feed(":mara!u@h PRIVMSG me :hi");
+    const chat = ref("mara");
+    feed(":mara!u@h NICK mara_afk");
+    expect(ref("mara_afk").id).toBe(chat.id);
+    const lines = useStore.getState().messages[`${serverId}-${chat.id}`] ?? [];
+    expect(lines.at(-1)?.type).toBe("nick");
+  });
+
+  it("keeps a channel muted when the channel is renamed", () => {
+    useStore.setState((state) => ({
+      servers: state.servers.map((s) => ({
+        ...s,
+        channels: [
+          { id: "c-general", name: "#general", users: [] },
+        ] as unknown as Server["channels"],
+      })),
+    }));
+    muteChat(
+      serverId,
+      { id: "c-general", kind: "channel", name: "#general" },
+      null,
+    );
+
+    feed(":bob!u@h RENAME #General #lounge :tidying up");
+
+    const channel = server().channels[0];
+    expect(channel).toMatchObject({ id: "c-general", name: "#lounge" });
+    expect(isSilenced(serverId, "c-general", true)).toBe(true);
+    expect(silencesFor(server())).toEqual([{ chat: "#lounge", until: null }]);
+
+    restartApp();
+    expect(silencesFor(server())).toEqual([{ chat: "#lounge", until: null }]);
+  });
+
   it("notifies again once the recreated chat is unmuted", () => {
     feed(":Mara!u@h PRIVMSG me :hi");
     const live = ref("Mara");

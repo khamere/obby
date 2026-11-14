@@ -396,7 +396,19 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
             });
             return { ...channel, users: updatedUsers };
           });
-          return { ...server, channels: updatedChannels };
+          // The open DM takes the new nick whether or not nick changes are
+          // shown: its mute has moved to that nick, and the person's next
+          // message arrives under it.
+          const updatedPrivateChats = server.privateChats?.map((pc) =>
+            pc.username.toLowerCase() === oldNick.toLowerCase()
+              ? { ...pc, username: newNick }
+              : pc,
+          );
+          return {
+            ...server,
+            channels: updatedChannels,
+            privateChats: updatedPrivateChats,
+          };
         }
         return server;
       });
@@ -460,27 +472,9 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
       });
 
       const privateChat = server.privateChats?.find(
-        (pc) =>
-          pc.username.toLowerCase() === oldNick.toLowerCase() ||
-          pc.username.toLowerCase() === newNick.toLowerCase(),
+        (pc) => pc.username.toLowerCase() === newNick.toLowerCase(),
       );
       if (privateChat) {
-        store.setState((state) => {
-          const updatedServers = state.servers.map((s) => {
-            if (s.id === serverId) {
-              const updatedPrivateChats = s.privateChats?.map((pc) => {
-                if (pc.username.toLowerCase() === oldNick.toLowerCase()) {
-                  return { ...pc, username: newNick };
-                }
-                return pc;
-              });
-              return { ...s, privateChats: updatedPrivateChats };
-            }
-            return s;
-          });
-          return { servers: updatedServers };
-        });
-
         appendMessage(
           store,
           serverId,
@@ -1046,7 +1040,9 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
       const server = state.servers.find((s) => s.id === serverId);
       if (!server) return {};
 
-      const channel = server.channels.find((c) => c.name === oldName);
+      const channel = server.channels.find(
+        (c) => c.name.toLowerCase() === oldName.toLowerCase(),
+      );
       if (!channel) return {};
 
       channel.name = newName;
@@ -1073,6 +1069,9 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
         },
       };
     });
+    // The channel keeps its id and its mute is kept by name, so the mute
+    // moves once the channel carries the new name.
+    moveChatMute(serverId, "channel", oldName, newName);
   });
 
   ircClient.on("SETNAME", ({ serverId, user, realname, ident, host }) => {
