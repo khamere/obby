@@ -6,6 +6,10 @@ vi.mock("../../../src/store", () => ({
   default: (sel: (s: unknown) => unknown) =>
     sel({ globalSettings: { checkForReleases: settings.checkForReleases } }),
 }));
+const env = vi.hoisted(() => ({ touch: false }));
+vi.mock("../../../src/hooks/useIsTouchInput", () => ({
+  useIsTouchInput: () => env.touch,
+}));
 vi.mock("../../../src/lib/appVersion", () => ({
   APP_VERSION: "0.4.0-cf1.2.0",
 }));
@@ -101,30 +105,43 @@ describe("UpdateLine", () => {
     expect(check).toHaveBeenCalledTimes(2);
   });
 
-  // The pill's text is 16px high and a finger needs 44px. On a touch screen
-  // the row itself grows to 44px while the pill shows, so the touch area
-  // stays inside the row and takes nothing from the list above or the user
-  // panel below.
-  it("the pill takes touches inside its own row", () => {
+  // The pill's text is 16px high and a finger needs 44px. On touch input the
+  // row itself grows to 44px while the pill shows, so the touch area stays
+  // inside the row and takes nothing from the list above or the user panel
+  // below.
+  it("the pill takes touches inside its own row on touch input", () => {
+    env.touch = true;
+    setState({ latest: release });
+    const { container } = render(<UpdateLine />);
+    const row = container.querySelector(".update-line") as HTMLElement;
+    const classes = screen.getByRole("button").className.split(" ");
+    expect(row.className.split(" ")).toContain("h-11");
+    expect(row.className.split(" ")).not.toContain("h-5");
+    expect(classes).toContain("after:-inset-x-3.5");
+    expect(classes).toContain("after:-inset-y-3.5");
+    env.touch = false;
+  });
+
+  it("keeps the row and the pill at their usual size with a mouse", () => {
+    env.touch = false;
     setState({ latest: release });
     const { container } = render(<UpdateLine />);
     const row = container.querySelector(".update-line") as HTMLElement;
     const classes = screen.getByRole("button").className;
-    expect(row.className).toContain("update-line-with-pill");
-    expect(row.className).toContain("[@media(pointer:coarse)]:h-11");
-    expect(classes).toContain("after:-inset-x-3.5");
-    expect(classes).toContain("after:-inset-y-3.5");
-    expect(classes).not.toContain("after:-top-6");
-    expect(classes).not.toContain("after:-bottom-1");
-    expect(classes).toContain("[@media(pointer:coarse)]:after:block");
+    expect(row.className.split(" ")).toContain("h-5");
+    expect(row.className).not.toContain("h-11");
+    expect(classes).not.toContain("after:");
+    expect(classes).not.toContain("pointer:coarse");
   });
 
-  it("keeps the row at its usual height when there is no pill", () => {
+  it("keeps the row at its usual height on touch input when there is no pill", () => {
+    env.touch = true;
     setState({ latest: null });
     const { container } = render(<UpdateLine />);
     const row = container.querySelector(".update-line") as HTMLElement;
-    expect(row.className).toContain("h-5");
+    expect(row.className.split(" ")).toContain("h-5");
     expect(row.className).not.toContain("h-11");
+    env.touch = false;
   });
 
   it("the pill never shrinks and the version gives way first", () => {

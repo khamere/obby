@@ -2,6 +2,7 @@ import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type React from "react";
 import { useEffect } from "react";
+import { useIsTouchInput } from "../../hooks/useIsTouchInput";
 import { APP_VERSION } from "../../lib/appVersion";
 import { shortReleaseLabel } from "../../lib/releaseCheck";
 import useStore from "../../store";
@@ -36,6 +37,8 @@ export const UpdateLine: React.FC = () => {
   }, [checkForReleases]);
 
   const showPill = checkForReleases && latest !== null;
+  const isTouch = useIsTouchInput();
+  const roomForFinger = showPill && isTouch;
   const downloading = phase === "downloading" && total > 0;
   const percent = Math.min(100, Math.floor((received / total) * 100));
   const label = latest ? shortReleaseLabel(latest.version) : "";
@@ -45,7 +48,7 @@ export const UpdateLine: React.FC = () => {
 
   return (
     <div
-      className={`update-line mx-2 h-5 flex items-center gap-1.5 px-1 ${showPill ? "update-line-with-pill [@media(pointer:coarse)]:h-11" : ""}`}
+      className={`update-line mx-2 flex items-center gap-1.5 px-1 ${roomForFinger ? "h-11" : "h-5"} ${showPill ? "update-line-with-pill" : ""}`}
     >
       <span
         title={full}
@@ -57,7 +60,7 @@ export const UpdateLine: React.FC = () => {
           {shortReleaseLabel(APP_VERSION)}
         </span>
       </span>
-      {/* A finger needs 44px around the 16px pill. On a touch screen the row
+      {/* A finger needs 44px around the 16px pill. On touch input the row
           grows to that height while the pill shows, so the touch area stays
           inside the row and takes nothing from its neighbours. */}
       {showPill && (
@@ -65,7 +68,7 @@ export const UpdateLine: React.FC = () => {
           type="button"
           onClick={openSheet}
           aria-label={t`Update Obby to ${label}`}
-          className="relative shrink-0 whitespace-nowrap bg-discord-green text-white rounded-full px-2 text-[11px] font-semibold leading-4 after:absolute after:-inset-x-3.5 after:-inset-y-3.5 after:content-[''] after:hidden [@media(pointer:coarse)]:after:block"
+          className={`relative shrink-0 whitespace-nowrap bg-discord-green text-white rounded-full px-2 text-[11px] font-semibold leading-4 ${isTouch ? "after:absolute after:-inset-x-3.5 after:-inset-y-3.5 after:content-['']" : ""}`}
         >
           {downloading ? (
             <span>↓ {percent}%</span>
