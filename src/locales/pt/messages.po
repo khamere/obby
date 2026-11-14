@@ -649,6 +649,26 @@ msgstr "Avançado"
 msgid "After"
 msgstr "Depois"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 1 hour"
+msgstr "Após 1 hora"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 10 minutes"
+msgstr "Após 10 minutos"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 15 minutes"
+msgstr "Após 15 minutos"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 30 minutes"
+msgstr "Após 30 minutos"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 5 minutes"
+msgstr "Após 5 minutos"
+
 #: src/components/ui/MediaCommentsSidebar.tsx
 msgid "Album"
 msgstr "Álbum"
@@ -844,6 +864,10 @@ msgstr "Aplicativo autenticador"
 #: src/components/pages/TwoFactorPage.tsx
 msgid "Authenticator app (TOTP)"
 msgstr "Aplicação de autenticação (TOTP)"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Auto away"
+msgstr "Ausência automática"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Auto Fallback to Single Line"
@@ -3640,6 +3664,10 @@ msgstr "Marcar-se como ausente"
 msgid "Mark yourself as back"
 msgstr "Marcar-se como de volta"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Mark yourself away after this long without using Obby, and back when you return"
+msgstr "Marcar-se como ausente após este tempo sem usar o Obby, e de volta quando regressar"
+
 #: src/components/layout/UserPanel.tsx
 msgid "Mark yourself back"
 msgstr "Marcar-se como de volta"
@@ -4364,6 +4392,7 @@ msgid "Obby will close to install the update; open it again afterwards."
 msgstr "O Obby vai fechar para instalar a atualização; abra-o de novo depois."
 
 #: src/components/pages/SettingsPage.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Off"
 msgstr "Desligado"
 

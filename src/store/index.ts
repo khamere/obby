@@ -1,5 +1,6 @@
 import { v4 as uuidv4, v5 as uuidv5 } from "uuid";
 import { create } from "zustand";
+import { expectAutoBack, forgetAutoAway } from "../lib/autoAway";
 import { BOT_TOOLS_TAG, encodeBotToolsValue } from "../lib/botTools";
 import { encodeBouncerAttrs } from "../lib/bouncerAttrs";
 import { getSelectionHistory, recordSelection } from "../lib/channelHistory";
@@ -1424,6 +1425,7 @@ const useStore = create<AppState>((set, get) => ({
     showServerReplies: true,
     // Status messages
     awayMessage: "",
+    autoAwayMinutes: 0,
     quitMessage: "",
     // Theme and typography
     ...DEFAULT_THEME_SETTINGS,
@@ -2062,11 +2064,14 @@ const useStore = create<AppState>((set, get) => ({
   closeChannelKeyPrompt: () => set({ channelKeyPrompt: null }),
 
   setAway: (serverId, message) => {
+    forgetAutoAway(serverId);
     const awayMsg = message || get().globalSettings.awayMessage || "Away";
     ircClient.setAway(serverId, awayMsg);
   },
 
   clearAway: (serverId) => {
+    forgetAutoAway(serverId);
+    expectAutoBack(serverId);
     ircClient.clearAway(serverId);
   },
 

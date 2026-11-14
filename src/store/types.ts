@@ -114,6 +114,7 @@ export interface GlobalSettings {
   showMotd: boolean;
   showServerReplies: boolean;
   awayMessage: string;
+  autoAwayMinutes: number;
   quitMessage: string;
   callAudioInput: SavedDevice | null;
   callVideoInput: SavedDevice | null;

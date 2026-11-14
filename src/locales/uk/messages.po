@@ -649,6 +649,26 @@ msgstr "Додаткові"
 msgid "After"
 msgstr "Після"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 1 hour"
+msgstr "Через 1 годину"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 10 minutes"
+msgstr "Через 10 хвилин"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 15 minutes"
+msgstr "Через 15 хвилин"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 30 minutes"
+msgstr "Через 30 хвилин"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 5 minutes"
+msgstr "Через 5 хвилин"
+
 #: src/components/ui/MediaCommentsSidebar.tsx
 msgid "Album"
 msgstr "Альбом"
@@ -844,6 +864,10 @@ msgstr "Застосунок-автентифікатор"
 #: src/components/pages/TwoFactorPage.tsx
 msgid "Authenticator app (TOTP)"
 msgstr "Застосунок-автентифікатор (TOTP)"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Auto away"
+msgstr "Автоматично відійшов"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Auto Fallback to Single Line"
@@ -3640,6 +3664,10 @@ msgstr "Позначити себе як відсутнього"
 msgid "Mark yourself as back"
 msgstr "Позначити себе як повернувся"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Mark yourself away after this long without using Obby, and back when you return"
+msgstr "Позначати вас відсутнім після такого часу без використання Obby і повертати статус, коли ви повернетеся"
+
 #: src/components/layout/UserPanel.tsx
 msgid "Mark yourself back"
 msgstr "Позначити себе як повернувся"
@@ -4364,6 +4392,7 @@ msgid "Obby will close to install the update; open it again afterwards."
 msgstr "Obby закриється, щоб встановити оновлення; потім відкрийте його знову."
 
 #: src/components/pages/SettingsPage.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Off"
 msgstr "Вимк"
 

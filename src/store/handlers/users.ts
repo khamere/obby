@@ -1,6 +1,7 @@
 import { t } from "@lingui/core/macro";
 import { v4 as uuidv4 } from "uuid";
 import type { StoreApi } from "zustand";
+import { releaseAutoAway } from "../../lib/autoAway";
 import { voiceDisplayName } from "../../lib/channelMentions";
 import ircClient from "../../lib/ircClient";
 import { moveChatMute } from "../../lib/mutes";
@@ -1389,6 +1390,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
 
   // Handle 305 numeric - we are no longer marked as away
   ircClient.on("RPL_UNAWAY", ({ serverId, message }) => {
+    releaseAutoAway(serverId);
     store.setState((state) => {
       const updatedServers = state.servers.map((s) => {
         if (s.id === serverId) {
