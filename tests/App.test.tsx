@@ -27,6 +27,7 @@ const mockStoreState = {
   servers: [],
   currentUser: { id: "user1", username: "testuser", isOnline: true },
   isConnecting: false,
+  isAddingNewServer: false,
   selectedServerId: null,
   connectionError: null,
   messages: {},
@@ -112,6 +113,8 @@ describe("App", () => {
     // Reset mock state between tests
     mockStoreState.ui.isAddServerModalOpen = false;
     mockStoreState.ui.page = null;
+    mockStoreState.isConnecting = false;
+    mockStoreState.isAddingNewServer = false;
   });
 
   afterEach(() => {
@@ -141,6 +144,28 @@ describe("App", () => {
       pressCmdK();
       expect(mockStoreState.toggleQuickActions).toHaveBeenCalledTimes(1);
       now.mockRestore();
+    });
+  });
+
+  describe("Connecting", () => {
+    const renderApp = () =>
+      render(
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>,
+      );
+
+    it("stays usable while saved servers connect at startup", () => {
+      mockStoreState.isConnecting = true;
+      renderApp();
+      expect(screen.queryByTestId("connecting-overlay")).toBeNull();
+    });
+
+    it("waits behind a spinner while a newly added server connects", () => {
+      mockStoreState.isConnecting = true;
+      mockStoreState.isAddingNewServer = true;
+      renderApp();
+      expect(screen.getByTestId("connecting-overlay")).toBeInTheDocument();
     });
   });
 
