@@ -21,7 +21,6 @@ import {
   chunkSaslPayload,
 } from "../../lib/saslFrames";
 import type { Message, ServerConfig, ServerOAuthConfig } from "../../types";
-import { normalizeHost } from "../helpers";
 import type { AppState } from "../index";
 import * as storage from "../localStorage";
 
@@ -121,7 +120,43 @@ function clearSession(serverId: string) {
 }
 
 export function registerAuthHandlers(store: StoreApi<AppState>): void {
+  // The networks bound through a bouncer log in as the bouncer's account,
+  // which the bouncer answers with no 900 of their own, so they take the
+  // control connection's.
+  const setAccount = (serverId: string, account: string | undefined) =>
+    store.setState((state) => ({
+      servers: state.servers.map((server) =>
+        server.id === serverId || server.bouncerServerId === serverId
+          ? { ...server, account }
+          : server,
+      ),
+    }));
+  ircClient.on("LOGGED_IN", ({ serverId, account }) =>
+    setAccount(serverId, account),
+  );
+  ircClient.on("LOGGED_OUT", ({ serverId }) => setAccount(serverId, undefined));
+
   ircClient.on("CAP_ACKNOWLEDGED", ({ serverId, key, capabilities }) => {
+    if (capabilities?.startsWith("draft/metadata")) {
+      const currentSubs =
+        store.getState().metadataSubscriptions[serverId] || [];
+      if (currentSubs.length === 0) {
+        const defaultKeys = [
+          "url",
+          "website",
+          "status",
+          "location",
+          "avatar",
+          "color",
+          "display-name",
+          "bot",
+          // draft/custom-emoji: channel-scoped pack URL.  Subscribing
+          // here so we get notified when a channel ops sets a new pack.
+          "draft/emoji",
+        ];
+        store.getState().metadataSub(serverId, defaultKeys);
+      }
+    }
     if (key !== "sasl") return;
 
     // Pick mechanism up-front so the AUTHENTICATE event handler knows what
@@ -522,11 +557,7 @@ export function registerAuthHandlers(store: StoreApi<AppState>): void {
         const hasLowLinkSecurity = linkSecurityValue < 2;
         const savedServers = storage.servers.load();
         const serverConfig = currentServer
-          ? savedServers.find(
-              (s) =>
-                normalizeHost(s.host) === normalizeHost(currentServer.host) &&
-                s.port === currentServer.port,
-            )
+          ? savedServers.find((s) => s.id === serverId)
           : undefined;
         const shouldWarnLinkSecurity =
           hasLowLinkSecurity && !serverConfig?.skipLinkSecurityWarning;
@@ -794,23 +825,25 @@ export function registerAuthHandlers(store: StoreApi<AppState>): void {
     }));
   });
 
-  // After CAP ACK we know whether the server supports draft/persistence.
-  // Issue an initial PERSISTENCE GET so the settings panel has fresh
-  // state by the time the user opens it.  We only do this once per
-  // (serverId, account) login -- the spec gates the command on
-  // IsLoggedIn, so we wait for the SASL success path to mark the
-  // session complete.
-  ircClient.on("CAP_ACKNOWLEDGED", ({ serverId, key }) => {
-    if (key !== "draft/persistence") return;
-    // Defer the GET until a tick later so SASL has had a chance to
-    // complete; the server returns ACCOUNT_REQUIRED otherwise and
-    // we'd just have to retry.
-    setTimeout(() => {
-      const state = store.getState();
-      const server = state.servers.find((s) => s.id === serverId);
-      if (!server?.isConnected) return;
+  // Persistence needs an account, so we ask once registration is done and the
+  // connection is logged in, whichever comes last.
+  const registeredServers = new Set<string>();
+  const askPersistence = (serverId: string) => {
+    const server = store.getState().servers.find((s) => s.id === serverId);
+    if (
+      server?.account &&
+      registeredServers.has(serverId) &&
+      ircClient.hasCapability(serverId, "draft/persistence")
+    )
       ircClient.persistenceGet(serverId);
-    }, 1500);
+  };
+  ircClient.on("ready", ({ serverId }) => {
+    registeredServers.add(serverId);
+    askPersistence(serverId);
+  });
+  ircClient.on("LOGGED_IN", ({ serverId }) => askPersistence(serverId));
+  ircClient.on("connectionStateChange", ({ serverId, connectionState }) => {
+    if (connectionState !== "connected") registeredServers.delete(serverId);
   });
   // obsidianirc/cmdslist: maintain a lowercase set of invocable
   // commands per server.  Additions and removals can arrive in the

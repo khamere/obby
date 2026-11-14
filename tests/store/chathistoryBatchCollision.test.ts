@@ -3,7 +3,7 @@ import ircClient from "../../src/lib/ircClient";
 import useStore from "../../src/store";
 import {
   chathistoryBuffers,
-  reactionBuffers,
+  historyEditBuffers,
 } from "../../src/store/handlers/batches";
 import type { Server } from "../../src/types";
 
@@ -54,7 +54,7 @@ describe("chathistory batches with the same id on different servers", () => {
     ircClient.nicks.set("mns", "me");
     ircClient.nicks.set("aither", "me");
     chathistoryBuffers.clear();
-    reactionBuffers.clear();
+    historyEditBuffers.clear();
     useStore.setState({
       servers: [server("mns"), server("aither")],
       messages: {},

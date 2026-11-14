@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { metadata, ownMetadata, settings } from "../../src/store/localStorage";
+import { settings, uiSelections } from "../../src/store/localStorage";
 
 describe("settings.load migration", () => {
   beforeEach(() => {
@@ -79,71 +79,39 @@ describe("settings.load migration", () => {
   });
 });
 
-describe("ownMetadata", () => {
+describe("uiSelections.load", () => {
   beforeEach(() => {
     vi.resetAllMocks();
   });
 
-  test("loads empty object when nothing stored", () => {
-    vi.mocked(window.localStorage.getItem).mockReturnValue(null);
-    expect(ownMetadata.load()).toEqual({});
-  });
-
-  test("saveKey persists metadata and synchronizes in-memory cache", () => {
-    const store: Record<string, string> = {};
-    vi.mocked(window.localStorage.getItem).mockImplementation(
-      (k) => store[k] ?? null,
-    );
-    vi.mocked(window.localStorage.setItem).mockImplementation((k, v) => {
-      store[k] = v;
-    });
-
-    ownMetadata.saveKey(
-      "srv-1",
-      "alice",
-      "avatar",
-      "https://example.com/avatar.png",
-      "public",
-    );
-
-    expect(window.localStorage.setItem).toHaveBeenCalledWith(
-      "ownUserMetadata",
-      expect.stringContaining("https://example.com/avatar.png"),
+  test("never restores a voice or stream channel, so a call does not rejoin at startup", () => {
+    vi.mocked(window.localStorage.getItem).mockReturnValue(
+      JSON.stringify({
+        selectedServerId: "s1",
+        perServerSelections: {
+          s1: {
+            selectedChannelId: "id-tv",
+            selectedChannelName: "$tv",
+            selectedPrivateChatId: null,
+          },
+          s2: {
+            selectedChannelId: "id-dev",
+            selectedChannelName: "#dev",
+            selectedPrivateChatId: null,
+          },
+        },
+        lastSelection: {
+          serverHost: "irc.example.com",
+          channelName: "^voice",
+          privateChatUsername: null,
+        },
+      }),
     );
 
-    const loaded = ownMetadata.getForServer("srv-1", "Alice");
-    expect(loaded.avatar).toEqual({
-      value: "https://example.com/avatar.png",
-      visibility: "public",
-    });
+    const loaded = uiSelections.load();
 
-    // In-memory cache is also synced
-    const memCache = metadata.load();
-    expect(memCache["srv-1"]?.alice?.avatar).toEqual({
-      value: "https://example.com/avatar.png",
-      visibility: "public",
-    });
-  });
-
-  test("saveKey deletes key when value is undefined or empty", () => {
-    const store: Record<string, string> = {};
-    vi.mocked(window.localStorage.getItem).mockImplementation(
-      (k) => store[k] ?? null,
-    );
-    vi.mocked(window.localStorage.setItem).mockImplementation((k, v) => {
-      store[k] = v;
-    });
-
-    ownMetadata.saveKey(
-      "srv-1",
-      "bob",
-      "avatar",
-      "https://example.com/b.png",
-      "public",
-    );
-    expect(ownMetadata.getForServer("srv-1", "bob").avatar).toBeDefined();
-
-    ownMetadata.saveKey("srv-1", "bob", "avatar", undefined);
-    expect(ownMetadata.getForServer("srv-1", "bob").avatar).toBeUndefined();
+    expect(loaded.perServerSelections.s1.selectedChannelId).toBeNull();
+    expect(loaded.perServerSelections.s2.selectedChannelId).toBe("id-dev");
+    expect(loaded.lastSelection?.channelName).toBeNull();
   });
 });

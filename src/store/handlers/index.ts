@@ -5,18 +5,24 @@ import { registerBatchHandlers } from "./batches";
 import { registerBotToolsHandlers } from "./botTools";
 import { registerBouncerHandlers } from "./bouncer";
 import { registerChannelHandlers } from "./channels";
+import { registerNotificationPermission } from "./chatNotifications";
 import { registerConnectionHandlers } from "./connection";
 import { registerE2EEHandlers } from "./e2ee";
+import { registerHistoryHandlers } from "./history";
 import { registerInvitelinkHandlers } from "./invitelink";
+import { registerKeepAliveHandlers } from "./keepAlive";
 import { registerMessageHandlers } from "./messages";
 import { registerMetadataHandlers } from "./metadata";
-import { registerMotdHandlers } from "./motd";
+import { registerMuteHandlers } from "./mutes";
 import { registerNamedModesHandlers } from "./named-modes";
+import { registerNativePushHandlers } from "./nativePush";
 import { registerPushBotHandlers } from "./pushbot";
 import { registerReadMarkerHandlers } from "./readMarker";
+import { registerServerReplyHandlers } from "./serverReplies";
 import { registerTicTacToeHandlers } from "./tictactoe";
 import { registerTitleAlertHandlers } from "./titleAlert";
 import { registerUserHandlers } from "./users";
+import { registerWebPushHandlers } from "./webPush";
 import { registerWhoisHandlers } from "./whois";
 
 export function registerAllHandlers(store: StoreApi<AppState>): void {
@@ -30,7 +36,6 @@ export function registerAllHandlers(store: StoreApi<AppState>): void {
   registerUserHandlers(store);
   registerChannelHandlers(store);
   registerWhoisHandlers(store);
-  registerMotdHandlers(store);
   registerMetadataHandlers(store);
   registerInvitelinkHandlers(store);
   registerBatchHandlers(store);
@@ -42,4 +47,11 @@ export function registerAllHandlers(store: StoreApi<AppState>): void {
   registerPushBotHandlers(store);
   registerE2EEHandlers(store);
   registerTitleAlertHandlers(store);
+  registerServerReplyHandlers(store);
+  registerHistoryHandlers(store);
+  registerKeepAliveHandlers(store);
+  registerNotificationPermission(store);
+  registerWebPushHandlers(store);
+  registerNativePushHandlers(store);
+  registerMuteHandlers(store);
 }

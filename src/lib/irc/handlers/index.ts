@@ -14,6 +14,7 @@ import {
 } from "./auth";
 import { handleBouncer, handleBouncerFail } from "./bouncer";
 import {
+  handleJoinRefused,
   handleListChannel,
   handleListEnd,
   handleMode,
@@ -37,17 +38,24 @@ import {
   handleCap,
   handleError,
   handleIsupport,
+  handleLoggedIn,
+  handleLoggedOut,
   handlePing,
   handlePong,
+  handleRplEndOfMotd,
+  handleRplMotd,
+  handleRplMotdStart,
   handleRplWelcome,
   handleRplYoureOper,
   handleRplYourHost,
   handleSaslFailure,
+  handleSaslRejected,
   handleSaslSuccess,
 } from "./connection";
 import { handleInvitelink } from "./invitelink";
 import {
   handleBatch,
+  handleCannotSendToChan,
   handleNotice,
   handlePrivmsg,
   handleRedact,
@@ -55,7 +63,6 @@ import {
 } from "./messages";
 import {
   handleMetadata,
-  handleMetadataEnd,
   handleMetadataFail,
   handleMetadataKeyNotSet,
   handleMetadataKeyValue,
@@ -72,12 +79,6 @@ import {
   handleMonOffline,
   handleMonOnline,
 } from "./monitoring";
-import {
-  handleEndOfMotd,
-  handleMotd,
-  handleMotdStart,
-  handleNoMotd,
-} from "./motd";
 import {
   handleProp,
   handleRplChmodelist,
@@ -138,6 +139,17 @@ export type HandlerFn = (
   trailing: string,
 ) => void;
 
+const AUTOMATIC_COMMANDS = new Set([
+  "TAGMSG",
+  "MONITOR",
+  "MARKREAD",
+  "CHATHISTORY",
+  "METADATA",
+  "SETNAME",
+  "BATCH",
+  "BOUNCER",
+]);
+
 export const IRC_DISPATCH: Record<string, HandlerFn> = {
   PING: (ctx, serverId, source, parv, mtags, trailing) =>
     handlePing(ctx, serverId, source, parv),
@@ -151,29 +163,58 @@ export const IRC_DISPATCH: Record<string, HandlerFn> = {
     handleRplYourHost(ctx, serverId, source, parv),
   "005": (ctx, serverId, source, parv, _mtags, trailing) =>
     handleIsupport(ctx, serverId, source, parv, trailing),
-  "375": (_ctx, serverId) => handleMotdStart(serverId),
-  "372": (_ctx, serverId, _source, _parv, _mtags, trailing) =>
-    handleMotd(serverId, trailing),
-  "376": (ctx, serverId, source) => handleEndOfMotd(ctx, serverId, source),
-  "422": (ctx, serverId, source, _parv, _mtags, trailing) =>
-    handleNoMotd(ctx, serverId, source, trailing),
+  "375": (ctx, serverId) => handleRplMotdStart(ctx, serverId),
+  "372": (ctx, serverId, source, parv) =>
+    handleRplMotd(ctx, serverId, source, parv),
+  "376": (ctx, serverId) => handleRplEndOfMotd(ctx, serverId),
+  // ERR_UNKNOWNCOMMAND: only a command the user could have typed is worth a
+  // line; the ones Obby sends on its own (typing notices, presence, history,
+  // metadata) just mean the network lacks that extension.
+  "421": (ctx, serverId, source, parv) => {
+    const verb = (parv[1] ?? "").toUpperCase();
+    if (verb === "TAGMSG") ctx.noteTagmsgRefused(serverId);
+    if (AUTOMATIC_COMMANDS.has(verb)) return;
+    ctx.triggerEvent("SERVER_REPLY", {
+      serverId,
+      source,
+      numeric: "421",
+      text: parv.slice(1).join(" "),
+    });
+  },
+  // ERR_NOMOTD: soju sends one on every connect ("Use /motd ..."), so only an
+  // answer to our own /motd is worth showing.
+  "422": (ctx, serverId, source, parv) => {
+    ctx.finishRegistration(serverId);
+    if (!ctx.takeMotdRequest(serverId)) {
+      ctx.triggerEvent("MOTD_UNSOLICITED", { serverId });
+      return;
+    }
+    ctx.triggerEvent("SERVER_REPLY", {
+      serverId,
+      source,
+      numeric: "422",
+      text: parv.slice(1).join(" "),
+    });
+  },
   CAP: (ctx, serverId, source, parv, mtags, trailing) =>
     handleCap(ctx, serverId, source, parv, mtags, trailing),
   "381": (ctx, serverId, source, parv) =>
     handleRplYoureOper(ctx, serverId, source, parv),
 
-  // SASL authentication successful (901, 902, 903): finish CAP negotiation
+  "900": (ctx, serverId, source, parv) =>
+    handleLoggedIn(ctx, serverId, source, parv),
   "901": (ctx, serverId, source, parv) =>
-    handleSaslSuccess(ctx, serverId, source, parv),
+    handleLoggedOut(ctx, serverId, source, parv),
+  // SASL authentication successful (902, 903): finish CAP negotiation
   "902": (ctx, serverId, source, parv) =>
     handleSaslSuccess(ctx, serverId, source, parv),
   "903": (ctx, serverId, source, parv) =>
     handleSaslSuccess(ctx, serverId, source, parv),
   // SASL failure: 904-907
   "904": (ctx, serverId, source, parv) =>
-    handleSaslFailure(ctx, serverId, source, parv),
+    handleSaslRejected(ctx, serverId, source, parv),
   "905": (ctx, serverId, source, parv) =>
-    handleSaslFailure(ctx, serverId, source, parv),
+    handleSaslRejected(ctx, serverId, source, parv),
   "906": (ctx, serverId, source, parv) =>
     handleSaslFailure(ctx, serverId, source, parv),
   "907": (ctx, serverId, source, parv) =>
@@ -200,6 +241,28 @@ export const IRC_DISPATCH: Record<string, HandlerFn> = {
     handleChghost(ctx, serverId, source, parv, mtags),
   JOIN: (ctx, serverId, source, parv, mtags) =>
     handleJoin(ctx, serverId, source, parv, mtags),
+  ...Object.fromEntries(
+    [
+      "500",
+      "403",
+      "405",
+      "471",
+      "473",
+      "474",
+      "475",
+      "476",
+      "477",
+      "479",
+      "489",
+      "520",
+    ].map((code) => [
+      code,
+      ((ctx, serverId, _source, parv) =>
+        handleJoinRefused(ctx, serverId, parv, code)) satisfies HandlerFn,
+    ]),
+  ),
+  "404": (ctx, serverId, source, parv, mtags) =>
+    handleCannotSendToChan(ctx, serverId, source, parv, mtags),
   PART: (ctx, serverId, source, parv, mtags) =>
     handlePart(ctx, serverId, source, parv, mtags),
   KICK: (ctx, serverId, source, parv, mtags) =>
@@ -239,6 +302,9 @@ export const IRC_DISPATCH: Record<string, HandlerFn> = {
     handleRename(ctx, serverId, source, parv, mtags),
   "353": (ctx, serverId, source, parv, mtags) =>
     handleNames(ctx, serverId, source, parv, mtags),
+  // RPL_LISTSTART is only the column header ("Channel Users Name") of the
+  // channel list we asked for; the rows and the end are what we use.
+  "321": () => {},
   "322": (ctx, serverId, source, parv, mtags) =>
     handleListChannel(ctx, serverId, source, parv, mtags),
   "323": (ctx, serverId, source, parv, mtags) =>
@@ -270,6 +336,17 @@ export const IRC_DISPATCH: Record<string, HandlerFn> = {
     handleWhoisChannels(ctx, serverId, source, parv, mtags),
   "320": (ctx, serverId, source, parv, mtags) =>
     handleWhoisSpecial(ctx, serverId, source, parv, mtags),
+  // Free-text WHOIS lines ("is a registered nick", "is an IRC Operator",
+  // "is available for help", "is actually using host") belong to the
+  // profile like 320, so none of them reach the server log.
+  "307": (ctx, serverId, source, parv, mtags) =>
+    handleWhoisSpecial(ctx, serverId, source, parv, mtags),
+  "310": (ctx, serverId, source, parv, mtags) =>
+    handleWhoisSpecial(ctx, serverId, source, parv, mtags),
+  "313": (ctx, serverId, source, parv, mtags) =>
+    handleWhoisSpecial(ctx, serverId, source, parv, mtags),
+  "338": (ctx, serverId, source, parv, mtags) =>
+    handleWhoisSpecial(ctx, serverId, source, parv, mtags),
   "276": (ctx, serverId, source, parv, mtags) =>
     handleWhoisCertfp(ctx, serverId, source, parv, mtags),
   "378": (ctx, serverId, source, parv, mtags) =>
@@ -299,8 +376,6 @@ export const IRC_DISPATCH: Record<string, HandlerFn> = {
     handleMetadataWhoisKeyValue(ctx, serverId, source, parv, mtags),
   "761": (ctx, serverId, source, parv, mtags) =>
     handleMetadataKeyValue(ctx, serverId, source, parv, mtags),
-  "762": (ctx, serverId, source, parv, mtags) =>
-    handleMetadataEnd(ctx, serverId, source, parv, mtags),
   "766": (ctx, serverId, source, parv, mtags) =>
     handleMetadataKeyNotSet(ctx, serverId, source, parv, mtags),
   "770": (ctx, serverId, source, parv, mtags) =>

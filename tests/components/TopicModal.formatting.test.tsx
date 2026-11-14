@@ -39,7 +39,7 @@ describe("TopicModal formatting", () => {
       />,
     );
 
-    const section = document.body.querySelector('[aria-label="Channel topic"]');
+    const section = document.body.querySelector('[aria-label="Channel Topic"]');
     expect(section).not.toBeNull();
     // The digits of the colour code must not leak into the visible text.
     expect(section?.textContent).not.toContain("44Check");
@@ -50,7 +50,9 @@ describe("TopicModal formatting", () => {
     );
     expect(coloured).toBeDefined();
     // The URL is still a security-wrapped link.
-    const link = screen.getByText("https://idlerpg.darkpeers.org");
+    // Links show their compact label but keep the full URL as the href.
+    const link = screen.getByText("idlerpg.darkpeers.org");
+    expect(link.getAttribute("href")).toBe("https://idlerpg.darkpeers.org");
     expect(link.tagName).toBe("A");
     expect(link.className).toContain("external-link-security");
   });
@@ -70,16 +72,18 @@ describe("TopicModal with topic formatting disabled", () => {
         currentUser={viewer}
       />,
     );
-    const section = document.body.querySelector('[aria-label="Channel topic"]');
+    const section = document.body.querySelector('[aria-label="Channel Topic"]');
     expect(section?.textContent).toBe(
-      "Check the IdleRPG site for info and stats - https://idlerpg.darkpeers.org",
+      "Check the IdleRPG site for info and stats - idlerpg.darkpeers.org",
     );
     const coloured = Array.from(section?.querySelectorAll("span") ?? []).find(
       (el) => (el as HTMLElement).style.color !== "",
     );
     expect(coloured).toBeUndefined();
     // Links still work in the plain view.
-    const link = screen.getByText("https://idlerpg.darkpeers.org");
+    // Links show their compact label but keep the full URL as the href.
+    const link = screen.getByText("idlerpg.darkpeers.org");
+    expect(link.getAttribute("href")).toBe("https://idlerpg.darkpeers.org");
     expect(link.tagName).toBe("A");
     useStore.setState((s) => ({
       globalSettings: { ...s.globalSettings, formatTopics: true },
@@ -92,7 +96,7 @@ describe("mircToHtml linkify option", () => {
     const { mircToHtml } = await import("../../src/lib/ircUtils");
     const { renderToStaticMarkup } = await import("react-dom/server");
     const html = renderToStaticMarkup(
-      mircToHtml(RAW_TOPIC, "k-", { linkify: false }),
+      mircToHtml(RAW_TOPIC, "k-", undefined, { linkify: false }),
     );
     expect(html).not.toContain("<a");
     expect(html).toContain("https://idlerpg.darkpeers.org");

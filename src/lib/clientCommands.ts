@@ -1,6 +1,6 @@
 // Canonical list of slash commands the client itself handles before
 // (or instead of) sending them on the wire.  Kept centralized so the
-// suggestion popover (src/components/ui/SlashCommandPopover.tsx) and
+// slash command completion (src/components/chat/completionProviders.tsx) and
 // the dispatcher (src/hooks/useMessageSending.ts) can't drift apart.
 //
 // Each entry mirrors the fields a draft/bot-cmds schema would publish,
@@ -9,7 +9,7 @@
 //
 // To add a new client-only command:
 //   1. add an entry below
-//   2. add the matching `commandName === "..."` branch to handleCommand
+//   2. add the matching `lowerName === "..."` branch to handleCommand
 //      in src/hooks/useMessageSending.ts
 //   3. that's it — the popover and param hint pick it up automatically
 
@@ -121,6 +121,24 @@ export function getClientCommands(): ClientCommand[] {
       ],
     },
     {
+      name: "topic",
+      description: t`Show or change a channel's topic`,
+      options: [
+        {
+          name: "channel",
+          type: "channel",
+          required: false,
+          description: t`Channel (defaults to current)`,
+        },
+        {
+          name: "topic",
+          type: "string",
+          required: false,
+          description: t`New topic`,
+        },
+      ],
+    },
+    {
       name: "away",
       description: t`Mark yourself as away`,
       options: [
@@ -149,6 +167,7 @@ export const CLIENT_COMMAND_NAMES: ReadonlySet<string> = new Set([
   "join",
   "part",
   "nick",
+  "topic",
   "away",
   "back",
 ]);

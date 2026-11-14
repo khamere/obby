@@ -1,7 +1,13 @@
 import type { WhoisSession } from "../../../types";
-import { isChannelTarget } from "../../ircUtils";
+import { chantypesOf, isChannelTarget } from "../../ircUtils";
 import type { IRCClientContext } from "../IRCClientContext";
 import { getNickFromNuh, getTimestampFromTags } from "../utils";
+
+const isChannelOn = (
+  ctx: IRCClientContext,
+  serverId: string,
+  name: string | undefined,
+) => isChannelTarget(name, chantypesOf(ctx.isupportValues.get(serverId)));
 
 // Labeled-response wraps every multi-line server reply (e.g. PRIVMSG-to-away,
 // where the server emits both 301 RPL_AWAY and the echo) in a batch whose
@@ -21,6 +27,25 @@ function inheritLabelFromBatch(
   return { ...mtags, label };
 }
 
+/** ERR_CANNOTSENDTOCHAN (404): "<target> :Cannot send to channel" */
+export function handleCannotSendToChan(
+  ctx: IRCClientContext,
+  serverId: string,
+  _source: string,
+  parv: string[],
+  mtags: Record<string, string> | undefined,
+): void {
+  const target = parv[1];
+  if (!target) return;
+  const label = inheritLabelFromBatch(mtags, ctx, serverId)?.label;
+  ctx.triggerEvent("SEND_REFUSED", {
+    serverId,
+    target,
+    reason: parv.slice(2).join(" "),
+    label,
+  });
+}
+
 export function handlePrivmsg(
   ctx: IRCClientContext,
   serverId: string,
@@ -29,7 +54,7 @@ export function handlePrivmsg(
   mtags: Record<string, string> | undefined,
 ): void {
   const target = parv[0];
-  const isChannel = isChannelTarget(target);
+  const isChannel = isChannelOn(ctx, serverId, target);
   const sender = getNickFromNuh(source);
   const message = parv.slice(1).join(" ");
 
@@ -97,7 +122,7 @@ export function handleNotice(
   mtags: Record<string, string> | undefined,
 ): void {
   const target = parv[0];
-  const isChannel = isChannelTarget(target);
+  const isChannel = isChannelOn(ctx, serverId, target);
   const sender = getNickFromNuh(source);
   const message = parv.slice(1).join(" ");
 
@@ -150,7 +175,7 @@ export function handleRedact(
 ): void {
   const target = parv[0];
   const msgid = parv[1];
-  const reason = parv[2] ? parv[2].substring(1) : "";
+  const reason = parv[2] ?? "";
   const sender = getNickFromNuh(source);
   ctx.triggerEvent("REDACT", {
     serverId,
@@ -268,7 +293,7 @@ export function handleBatch(
           batch.batchTags ||
           (batch.batchMsgId ? { msgid: batch.batchMsgId } : undefined),
         sender,
-        channelName: isChannelTarget(target) ? target : undefined,
+        channelName: isChannelOn(ctx, serverId, target) ? target : undefined,
         target,
         message: combinedMessage,
         lines: batch.messages,

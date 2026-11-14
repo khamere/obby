@@ -104,6 +104,16 @@ describe("detectMediaType", () => {
   test("strips query string before extension check", () => {
     expect(detectMediaType("https://example.com/video.mp4?t=10")).toBe("video");
   });
+  test("returns 'map' for an OpenStreetMap location link", () => {
+    expect(
+      detectMediaType(
+        "https://www.openstreetmap.org/?mlat=51.5&mlon=-0.12#map=14/51.5/-0.12",
+      ),
+    ).toBe("map");
+  });
+  test("returns null for an openstreetmap.org link with no position", () => {
+    expect(detectMediaType("https://www.openstreetmap.org/about")).toBeNull();
+  });
 });
 
 describe("extractMediaFromMessage", () => {
@@ -336,6 +346,32 @@ describe("canShowMedia", () => {
     expect(
       canShowMedia(
         "https://cdn.youtube.com/watch?v=x",
+        {
+          showSafeMedia: false,
+          showTrustedSourcesMedia: true,
+          showExternalContent: false,
+        },
+        null,
+      ),
+    ).toBe(true);
+  });
+  test("an OpenStreetMap location link previews under trusted sources, not external content", () => {
+    const url =
+      "https://www.openstreetmap.org/?mlat=51.5&mlon=-0.12#map=14/51.5/-0.12";
+    expect(
+      canShowMedia(
+        url,
+        {
+          showSafeMedia: true,
+          showTrustedSourcesMedia: false,
+          showExternalContent: false,
+        },
+        null,
+      ),
+    ).toBe(false);
+    expect(
+      canShowMedia(
+        url,
         {
           showSafeMedia: false,
           showTrustedSourcesMedia: true,
@@ -591,14 +627,14 @@ describe("canShowAvatarUrl", () => {
   });
 
   // Browsers normalize scheme case and strip leading whitespace before fetching.
-  test.each([
-    ["HTTPS://evil.com/x.png"],
-    [" \thttps://evil.com/x.png"],
-  ])("level 1 blocks normalized-but-untrusted URL %s", (url) => {
-    expect(canShowAvatarUrl(url, filehost, mediaLevelToSettings(1))).toBe(
-      false,
-    );
-  });
+  test.each([["HTTPS://evil.com/x.png"], [" \thttps://evil.com/x.png"]])(
+    "level 1 blocks normalized-but-untrusted URL %s",
+    (url) => {
+      expect(canShowAvatarUrl(url, filehost, mediaLevelToSettings(1))).toBe(
+        false,
+      );
+    },
+  );
 });
 
 describe("TRUSTED_EMBED_DOMAINS", () => {

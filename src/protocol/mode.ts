@@ -1,6 +1,5 @@
 import { t } from "@lingui/core/macro";
 import type { IRCClient } from "../lib/ircClient";
-import { isChannelTarget } from "../lib/ircUtils";
 import type AppState from "../store/";
 import type { Channel, Message, Server } from "../types/";
 
@@ -15,7 +14,7 @@ export function registerModeHandler(
       const server = state.servers.find((s: Server) => s.id === serverId);
       if (!server) return;
 
-      if (isChannelTarget(target)) {
+      if (ircClient.isChannel(serverId, target)) {
         // A MODE replayed from chathistory (draft/event-playback) describes the
         // past: show it at its own time, but don't apply it to the live channel.
         const batch = mtags?.batch
@@ -34,9 +33,6 @@ export function registerModeHandler(
           historic,
           useStore,
         );
-      } else {
-        // User mode - for now, just log
-        console.log(`User mode change: ${target} ${modestring}`, modeargs);
       }
     },
   );

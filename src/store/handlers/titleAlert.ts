@@ -1,10 +1,10 @@
 import type { StoreApi } from "zustand";
 import { syncTitleAlert } from "../../lib/titleAlert";
-import { getCurrentSelection } from "../helpers";
+import { getViewedSelection } from "../helpers";
 import type { AppState } from "../index";
 
 function visibleConversation(state: AppState): [string | null, string | null] {
-  const selection = getCurrentSelection(state);
+  const selection = getViewedSelection(state);
   return [
     state.ui.selectedServerId,
     selection.selectedPrivateChatId ?? selection.selectedChannelId,

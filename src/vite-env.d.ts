@@ -1,8 +1,11 @@
 /// <reference types="vite/client" />
 declare const __APP_VERSION__: string;
 declare const __APP_COMMIT__: string;
+declare const __APP_RELEASE__: string;
+declare const __APP_RELEASES_REPO__: string;
 declare const __APP_NAME__: string;
 declare const __APP_DESCRIPTION__: string;
+declare const __BUILD_CONFIG__: Record<string, unknown>;
 declare const __DEFAULT_IRC_SERVER__: string;
 declare const __DEFAULT_IRC_SERVER_NAME__: string;
 declare const __DEFAULT_IRC_CHANNELS__: string[];
@@ -21,6 +24,11 @@ declare const __TRUSTED_MEDIA_URLS__: string[];
 
 // Build-time slimmed emoji-datasource (see emojiSlimPlugin in vite.config.ts).
 declare module "virtual:emoji-slim" {
-  const data: { unified: string; short_names: string[]; category: string }[];
+  const data: {
+    unified: string;
+    short_names: string[];
+    category: string;
+    keywords: string[];
+  }[];
   export default data;
 }

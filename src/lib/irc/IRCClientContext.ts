@@ -47,6 +47,14 @@ export interface IRCClientContext {
    *  concatenation across calls and emit the cumulative total to
    *  downstream consumers. */
   isupportValues: Map<string, Map<string, string>>;
+  /** MOTD lines received so far, between RPL_MOTDSTART and RPL_ENDOFMOTD. */
+  motdLines: Map<string, string[]>;
+  // Whether a MOTD reply answers our own request (true once per request).
+  takeMotdRequest(serverId: string): boolean;
+  // The registration burst ended: ISUPPORT is known, queued MONITORs go out.
+  finishRegistration(serverId: string): void;
+  // The server answered TAGMSG with "Unknown command"; no more go out.
+  noteTagmsgRefused(serverId: string): void;
   activeBatches: Map<
     string,
     Map<

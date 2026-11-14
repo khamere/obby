@@ -67,10 +67,10 @@ class MockWebSocket extends EventTarget {
 // vitest 4 rejects `mockReturnValue` on a mock invoked with `new`; a plain
 // function that returns a prebuilt instance is the supported replacement.
 function returnsSocket(socket: MockWebSocket): () => WebSocket {
-  function Ctor() {
+  function construct() {
     return socket;
   }
-  return Ctor as unknown as () => WebSocket;
+  return construct as unknown as () => WebSocket;
 }
 
 // Mock WebSocket globally
@@ -297,24 +297,51 @@ describe("IRCClient", () => {
       expect(mockSocket.sentMessages).toContain("CAP LS 302");
     });
 
-    test("preserves ws URLs instead of upgrading them to wss", async () => {
-      const mockSocket = new MockWebSocket(
-        "ws://irc.example.com:80/socket?token=abc",
-      );
+    test("asks for its nick only once capabilities and SASL are done", async () => {
+      const mockSocket = new MockWebSocket("ws://irc.example.com:443");
       MockWebSocketSpy.mockImplementation(returnsSocket(mockSocket));
-
-      const connectionPromise = client.connect(
+      const connecting = client.connect(
         "Test Server",
-        "ws://irc.example.com:80/socket?token=abc",
-        80,
+        "irc.example.com",
+        443,
         "testuser",
       );
       mockSocket.simulateOpen();
-
-      await connectionPromise;
-      expect(MockWebSocketSpy).toHaveBeenCalledWith(
-        "ws://irc.example.com:80/socket?token=abc",
+      await connecting;
+      expect(mockSocket.sentMessages.some((m) => m.startsWith("NICK"))).toBe(
+        false,
       );
+
+      mockSocket.simulateMessage(":irc.example.com CAP * LS :multi-prefix\r\n");
+      mockSocket.simulateMessage(
+        ":irc.example.com CAP * ACK :multi-prefix\r\n",
+      );
+      const sent = mockSocket.sentMessages;
+      const capEnd = sent.indexOf("CAP END");
+      expect(capEnd).toBeGreaterThan(-1);
+      expect(sent.slice(capEnd + 1)).toEqual([
+        "NICK testuser",
+        "USER testuser 0 * :testuser",
+      ]);
+    });
+
+    test("leaves a drop on a live connection to the reconnect path", async () => {
+      const mockSocket = new MockWebSocket("ws://irc.example.com:443");
+      MockWebSocketSpy.mockImplementation(returnsSocket(mockSocket));
+      const connectionPromise = client.connect(
+        "Test Server",
+        "irc.example.com",
+        443,
+        "testuser",
+      );
+      mockSocket.simulateOpen();
+      await connectionPromise;
+      const onServerError = vi.fn();
+      client.on("serverError", onServerError);
+
+      mockSocket.onerror?.(new Event("error"));
+
+      expect(onServerError).not.toHaveBeenCalled();
     });
 
     test.skip("should handle connection errors", async () => {
@@ -454,7 +481,7 @@ describe("IRCClient", () => {
 
       expect(receivedMode).toEqual({
         serverId: server.id,
-        mtags: undefined,
+        mtags: { time: expect.any(String) },
         sender: "ircuser",
         target: "#testchannel",
         modestring: "+o",
@@ -494,7 +521,7 @@ describe("IRCClient", () => {
 
       expect(receivedMode).toEqual({
         serverId: server.id,
-        mtags: undefined,
+        mtags: { time: expect.any(String) },
         sender: "ircuser",
         target: "#testchannel",
         modestring: "+ov-v",
@@ -532,7 +559,7 @@ describe("IRCClient", () => {
 
       expect(receivedMode).toEqual({
         serverId: server.id,
-        mtags: undefined,
+        mtags: { time: expect.any(String) },
         sender: "testuser",
         target: "testuser",
         modestring: "+i",

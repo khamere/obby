@@ -99,7 +99,7 @@ describe("highlightNicks", () => {
 
   it("leaves link text untouched", () => {
     const r = html("see https://example.com/bob for bob", "me");
-    expect(r.html).toContain(">https://example.com/bob</a>");
+    expect(r.html).toContain(">example.com/bob</a>");
     expect(r.html).toContain(
       '<span class="font-bold text-discord-text-strong">bob</span>',
     );
@@ -161,28 +161,21 @@ describe("whole-word mentions (sound, red dot, highlight agree)", () => {
     notificationSound: "",
   } as unknown as GlobalSettings;
 
-  it.each([
-    "bob!",
-    "hey bob",
-    "@bob",
-    "bob: hi",
-    "BOB?",
-    "(bob)",
-  ])("%s mentions bob", (text) => {
-    expect(containsWholeWord(text, "bob")).toBe(true);
-    expect(checkForMention(text, me, settings)).toBe(true);
-  });
+  it.each(["bob!", "hey bob", "@bob", "bob: hi", "BOB?", "(bob)"])(
+    "%s mentions bob",
+    (text) => {
+      expect(containsWholeWord(text, "bob")).toBe(true);
+      expect(checkForMention(text, me, settings)).toBe(true);
+    },
+  );
 
-  it.each([
-    "bobby",
-    "kebob",
-    "bob_",
-    "bob2",
-    "[bob]x",
-  ])("%s does not mention bob", (text) => {
-    expect(containsWholeWord(text, "bob")).toBe(false);
-    expect(checkForMention(text, me, settings)).toBe(false);
-  });
+  it.each(["bobby", "kebob", "bob_", "bob2", "[bob]x"])(
+    "%s does not mention bob",
+    (text) => {
+      expect(containsWholeWord(text, "bob")).toBe(false);
+      expect(checkForMention(text, me, settings)).toBe(false);
+    },
+  );
 
   it("ignores colors and formatting around and inside the word", () => {
     // colored letter by letter, as rainbow scripts do

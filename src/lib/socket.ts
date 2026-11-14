@@ -2,7 +2,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { isTauriAndroid } from "./platformUtils";
+import { isTauri } from "./platformUtils";
 
 export interface ISocket {
   onopen: (() => void) | null;
@@ -13,6 +13,18 @@ export interface ISocket {
   send(data: string): void;
   close(): void;
   readyState: number;
+}
+
+// Errors from the native side arrive as strings, Error objects or plain
+// objects; a plain object would otherwise print as "[object Object]".
+function describe(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
 }
 
 export class TCPSocket implements ISocket {
@@ -69,7 +81,9 @@ export class TCPSocket implements ISocket {
       })
       .catch((error: unknown) => {
         this.onerror?.(
-          new Error(`Failed to register tcp-message listener: ${error}`),
+          new Error(
+            `Failed to register tcp-message listener: ${describe(error)}`,
+          ),
         );
       });
 
@@ -84,7 +98,7 @@ export class TCPSocket implements ISocket {
       })
       .catch((error: unknown) => {
         this._readyState = 3; // CLOSED
-        this.onerror?.(new Error(`Failed to connect: ${error}`));
+        this.onerror?.(new Error(`Failed to connect: ${describe(error)}`));
       });
   }
 
@@ -99,7 +113,7 @@ export class TCPSocket implements ISocket {
 
     invoke("send", { clientId: this.clientId, data }).catch(
       (error: unknown) => {
-        this.onerror?.(new Error(`Failed to send data: ${error}`));
+        this.onerror?.(new Error(`Failed to send data: ${describe(error)}`));
       },
     );
   }
@@ -116,7 +130,7 @@ export class TCPSocket implements ISocket {
           this.unlisten = undefined;
         })
         .catch((error: unknown) => {
-          this.onerror?.(new Error(`Failed to disconnect: ${error}`));
+          this.onerror?.(new Error(`Failed to disconnect: ${describe(error)}`));
         });
     }
   }
@@ -141,8 +155,10 @@ export class WebSocketWrapper implements ISocket {
       this.onmessage?.({ data: event.data });
     };
 
-    this.socket.onerror = (event) => {
-      this.onerror?.(new Error(`WebSocket error: ${event}`));
+    // The browser tells a page nothing about why a WebSocket failed, so the
+    // address is the only useful detail we can give.
+    this.socket.onerror = () => {
+      this.onerror?.(new Error(`WebSocket connection to ${url} failed`));
     };
 
     this.socket.onclose = () => {
@@ -162,18 +178,12 @@ export class WebSocketWrapper implements ISocket {
   }
 }
 
+// In the native apps every connection goes through the Rust side: a phone
+// suspends the web view, and a socket held by it, as soon as the app leaves
+// the screen, while a socket in the app process stays open.
 export function createSocket(url: string): ISocket {
-  if (url.startsWith("ws://")) {
-    if (isTauriAndroid()) {
-      return new TCPSocket(url);
-    }
-    return new WebSocketWrapper(url);
-  }
   if (url.startsWith("wss://")) {
-    if (isTauriAndroid()) {
-      return new TCPSocket(url);
-    }
-    return new WebSocketWrapper(url);
+    return isTauri() ? new TCPSocket(url) : new WebSocketWrapper(url);
   }
   if (url.startsWith("irc://") || url.startsWith("ircs://")) {
     return new TCPSocket(url);

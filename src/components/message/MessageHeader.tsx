@@ -1,6 +1,9 @@
-import { useLingui } from "@lingui/react/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import type React from "react";
+import { FaHdd } from "react-icons/fa";
 import { getColorStyle } from "../../lib/ircUtils";
+import { HoverTooltip } from "../ui/HoverTooltip";
+import OperatorKey from "../ui/OperatorKey";
 import { E2EEUnprotectedBadge } from "./E2EEUnprotectedBadge";
 
 interface MessageHeaderProps {
@@ -15,6 +18,13 @@ interface MessageHeaderProps {
   isVerified?: boolean;
   isIrcOp?: boolean;
   unprotected?: boolean;
+  isSavedLocally?: boolean;
+  // A line relayed by a shoutbox bridge: the bot nick or the rule label shown
+  // after the time, the unwrapped name for web users, and the original line
+  // for the hover.
+  bridgedVia?: string;
+  displayNick?: string;
+  originalLine?: string;
 }
 
 export const MessageHeader: React.FC<MessageHeaderProps> = ({
@@ -29,9 +39,14 @@ export const MessageHeader: React.FC<MessageHeaderProps> = ({
   isVerified = false,
   isIrcOp = false,
   unprotected = false,
+  isSavedLocally = false,
+  bridgedVia,
+  displayNick,
+  originalLine,
 }) => {
   const { t } = useLingui();
   const username = userId;
+  const via = bridgedVia;
   const isSystem = userId === "system";
 
   const formatTime = (date: Date) => {
@@ -47,8 +62,9 @@ export const MessageHeader: React.FC<MessageHeaderProps> = ({
         className={`font-bold text-discord-text-strong ${isClickable ? "cursor-pointer" : ""}`}
         style={getColorStyle(userColor)}
         onClick={onClick}
+        title={originalLine}
       >
-        {isSystem ? "System" : displayName || username}
+        {isSystem ? "System" : displayName || displayNick || username}
         {isBot && <span className="ml-1 text-xs">🤖</span>}
         {isVerified && (
           <span
@@ -58,14 +74,7 @@ export const MessageHeader: React.FC<MessageHeaderProps> = ({
             ✓
           </span>
         )}
-        {isIrcOp && (
-          <span
-            className="ml-1 inline-flex items-center justify-center w-4 h-4 text-xs text-white bg-blue-500 rounded"
-            title={t`IRC Operator`}
-          >
-            🔑
-          </span>
-        )}
+        {isIrcOp && <OperatorKey className="ml-0.5" />}
         {displayName && (
           <span className="ml-2 text-xs bg-discord-dark-600 px-1 py-0.5 rounded">
             {username}
@@ -75,6 +84,23 @@ export const MessageHeader: React.FC<MessageHeaderProps> = ({
       <span className={`ml-2 text-xs text-${theme}-text-muted`}>
         {formatTime(timestamp)}
       </span>
+      {bridgedVia && (
+        <span
+          className={`ml-2 text-xs text-${theme}-text-muted`}
+          data-bridged-via={bridgedVia}
+        >
+          <Trans>via {via}</Trans>
+        </span>
+      )}
+      {isSavedLocally && (
+        <HoverTooltip content={t`Saved on this device`} className="ml-1">
+          <FaHdd
+            role="img"
+            aria-label={t`Saved on this device`}
+            className={`w-3 h-3 text-${theme}-text-muted`}
+          />
+        </HoverTooltip>
+      )}
       {unprotected && <E2EEUnprotectedBadge />}
     </div>
   );

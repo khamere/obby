@@ -10,19 +10,24 @@ import {
   FaTrash,
 } from "react-icons/fa";
 import { GiGlassShot } from "react-icons/gi";
+import { useShallow } from "zustand/react/shallow";
+import { useIsTouchInput } from "../../hooks/useIsTouchInput";
 import { useLongPress } from "../../hooks/useLongPress";
-import { useMediaQuery } from "../../hooks/useMediaQuery";
 import ircClient from "../../lib/ircClient";
 import { serverFilehosts } from "../../lib/ircUtils";
 import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
 import { isServerMuted, useMutes } from "../../lib/mutes";
 import { networkHost } from "../../lib/networkHost";
 import { serverDisplayName } from "../../lib/serverDisplayName";
+import { serverHasUnreadMention } from "../../lib/unreadMentions";
 import useStore from "../../store";
 import type { Server } from "../../types";
 import ServerBottomSheet from "../mobile/ServerBottomSheet";
 import { BouncerServerGroup } from "./BouncerServerGroup";
 import "./obby-readable-sidebar.css";
+
+const CONNECTION_BADGE_CLASS =
+  "absolute -bottom-1 -right-1 z-10 w-5 h-5 rounded-full bg-discord-dark-500 ring-2 ring-discord-dark-300 flex items-center justify-center";
 
 interface ServerIconProps {
   server: Server;
@@ -61,9 +66,8 @@ const ServerIcon: React.FC<ServerIconProps> = ({
 
   useMutes(); // re-render when mutes change
   const hasMentions =
-    !isServerMuted(server.id) &&
-    (server.channels.some((ch) => ch.isMentioned) ||
-      server.privateChats?.some((pc) => pc.isMentioned));
+    !isServerMuted(server.id) && serverHasUnreadMention(server);
+  const hasAlerts = useStore((s) => (s.serverAlerts[server.id] ?? 0) > 0);
 
   const iconUrl = server.icon;
   const showIcon = canShowAvatarUrl(
@@ -132,18 +136,24 @@ const ServerIcon: React.FC<ServerIconProps> = ({
 
         {(server.connectionState === "connecting" ||
           server.connectionState === "reconnecting") && (
-          <FaRedo className="absolute inset-0 m-auto text-discord-text-strong animate-spin text-lg" />
+          <span className={CONNECTION_BADGE_CLASS}>
+            <FaRedo className="text-discord-text-strong text-[10px] animate-spin" />
+          </span>
         )}
 
         {server.connectionState === "disconnected" && (
-          <FaRedo
-            className="absolute inset-0 m-auto text-discord-text-strong text-lg cursor-pointer hover:text-discord-text-soft transition-colors"
+          <button
+            type="button"
+            className={`${CONNECTION_BADGE_CLASS} text-discord-text-strong hover:bg-discord-primary transition-colors after:absolute after:-inset-3 after:content-['']`}
             onClick={(e) => {
               e.stopPropagation();
               onReconnect();
             }}
             title={t`Reconnect to server`}
-          />
+            aria-label={t`Reconnect to server`}
+          >
+            <FaRedo className="text-[10px]" />
+          </button>
         )}
 
         <div
@@ -184,6 +194,13 @@ const ServerIcon: React.FC<ServerIconProps> = ({
         )}
 
         <span className="obby-server-name">{displayName}</span>
+
+        {hasAlerts && (
+          <div
+            className="absolute -top-1 -left-1 w-3.5 h-3.5 bg-discord-red rounded-full border-2 border-discord-dark-600"
+            title={t`Open Server Notices to see what went wrong`}
+          />
+        )}
 
         {hasMentions && !isSelected && (
           <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-discord-dark-600" />
@@ -239,20 +256,30 @@ export const ServerList: React.FC<{
   const { t } = useLingui();
   const {
     servers,
-    ui: { selectedServerId },
+    selectedServerId,
     selectServer,
     toggleAddServerModal,
-    toggleChannelListModal,
     reconnectServer,
-    toggleEditServerModal,
+    openPage,
     editBouncerNetwork,
     requestDeleteServer,
-  } = useStore();
+  } = useStore(
+    useShallow((state) => ({
+      servers: state.servers,
+      selectedServerId: state.ui.selectedServerId,
+      selectServer: state.selectServer,
+      toggleAddServerModal: state.toggleAddServerModal,
+      reconnectServer: state.reconnectServer,
+      openPage: state.openPage,
+      editBouncerNetwork: state.editBouncerNetwork,
+      requestDeleteServer: state.requestDeleteServer,
+    })),
+  );
 
   const [shimmeringServers, setShimmeringServers] = useState<Set<string>>(
     new Set(),
   );
-  const isTouchDevice = useMediaQuery("(pointer: coarse)");
+  const isTouchDevice = useIsTouchInput();
 
   useEffect(() => {
     const handleServerReady = ({ serverId }: { serverId: string }) => {
@@ -272,7 +299,7 @@ export const ServerList: React.FC<{
 
   return (
     <div
-      className="obby-server-rail pt-3 pb-3 flex flex-col items-center h-full relative"
+      className="obby-server-rail pt-3 pb-[max(1.5rem,var(--safe-area-inset-bottom))] md:pb-3 flex flex-col items-center h-full relative"
       data-expanded={expanded}
     >
       <button
@@ -280,8 +307,8 @@ export const ServerList: React.FC<{
         className="obby-server-toggle"
         onClick={onToggleExpanded}
         aria-expanded={expanded}
-        aria-label={expanded ? "Collapse server names" : "Show server names"}
-        title={expanded ? "Collapse server names" : "Show server names"}
+        aria-label={expanded ? t`Collapse server names` : t`Show server names`}
+        title={expanded ? t`Collapse server names` : t`Show server names`}
       >
         {expanded ? "Servers  ‹" : "☰"}
       </button>
@@ -321,7 +348,7 @@ export const ServerList: React.FC<{
           onClick={() => toggleAddServerModal(true)}
           data-testid="server-list-add-button"
         >
-          <FaPlus className="group-hover:text-white text-2xl font-extrabold transition-colors duration-200" />
+          <FaPlus className="group-hover:text-discord-text-strong text-2xl font-extrabold transition-colors duration-200" />
           <div className="absolute top-0 left-16 bg-black text-white p-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-40 pointer-events-none">
             {t`Add Server`}
           </div>
@@ -348,7 +375,7 @@ export const ServerList: React.FC<{
           const handleEdit = (id: string) => {
             const target = servers.find((s) => s.id === id);
             if (target?.bouncerNetid) editBouncerNetwork(id);
-            else toggleEditServerModal(true, id);
+            else openPage({ kind: "serverSettings", serverId: id });
           };
           const handleDelete = (id: string) => requestDeleteServer(id);
           const handleReconnect = (id: string) => reconnectServer(id);

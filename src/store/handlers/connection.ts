@@ -1,65 +1,113 @@
+import { v4 as uuidv4 } from "uuid";
 import type { StoreApi } from "zustand";
+import { isLiveChannel } from "../../lib/channelFolders";
 import ircClient from "../../lib/ircClient";
-import {
-  clearWebPushRetry,
-  collectAllSelfNicks,
-  syncServerWebPush,
-  syncTauriNotificationSettings,
-} from "../../lib/notifications";
 import type { PrivateChat } from "../../types";
 import {
   generateDeterministicId,
   getServerSelection,
-  resolveUserMetadata,
+  newestMessageTime,
   serverSupportsMetadata,
   setServerSelection,
 } from "../helpers";
 import type { AppState } from "../index";
 import * as storage from "../localStorage";
-import { isMetadataKeySupported } from "./metadata";
+import { forgetJoins } from "../pendingJoins";
+import { findConversation } from "./history";
+import { reportServerReply } from "./serverReplies";
 
 // Track which servers have had their ready handler run to prevent duplicate processing
 export const readyProcessedServers = new Set<string>();
 
 export function registerConnectionHandlers(store: StoreApi<AppState>): void {
-  ircClient.on("rateLimited", ({ serverId, message }) => {
-    const server = store.getState().servers.find((s) => s.id === serverId);
-    store.getState().addGlobalNotification({
+  ircClient.on("MOTD", ({ serverId, lines }) => {
+    store.setState((state) => ({
+      servers: state.servers.map((server) =>
+        server.id === serverId ? { ...server, motd: lines } : server,
+      ),
+    }));
+    const { globalSettings, servers, addMessage } = store.getState();
+    if (!globalSettings.showMotd) return;
+    addMessage({
+      id: uuidv4(),
+      type: "notice",
+      content: lines.join("\n"),
+      timestamp: new Date(),
+      userId: servers.find((s) => s.id === serverId)?.name ?? "MOTD",
+      channelId: "server-notices",
+      serverId,
+      reactions: [],
+      replyMessage: null,
+      mentioned: [],
+      preformatted: true,
+    });
+  });
+
+  // Numerics without a handler go to Server Notices, the way a classic
+  // client's status window shows them. A few that follow routine requests
+  // would only repeat themselves.
+  const QUIET_NUMERICS = new Set(["004", "221", "329", "366", "369"]);
+
+  // A bouncer answers registration with "use /motd" instead of the
+  // network's MOTD, so that line is our cue to ask for the real one, once
+  // per connection.
+  const motdAsked = new Set<string>();
+  ircClient.on("MOTD_UNSOLICITED", ({ serverId }) => {
+    const { globalSettings, servers } = store.getState();
+    if (!globalSettings.showMotd || motdAsked.has(serverId)) return;
+    if (!servers.find((s) => s.id === serverId)?.bouncerNetid) return;
+    motdAsked.add(serverId);
+    ircClient.requestMotd(serverId);
+  });
+  ircClient.on("connectionStateChange", ({ serverId, connectionState }) => {
+    if (connectionState !== "connected") motdAsked.delete(serverId);
+  });
+  ircClient.on("SERVER_REPLY", ({ serverId, source, numeric, text }) => {
+    const { globalSettings, addMessage } = store.getState();
+    if (!globalSettings.showServerReplies || QUIET_NUMERICS.has(numeric))
+      return;
+    if (!text.trim()) return;
+    addMessage({
+      id: uuidv4(),
+      type: "notice",
+      content: text,
+      timestamp: new Date(),
+      userId: source || "server",
+      channelId: "server-notices",
+      serverId,
+      reactions: [],
+      replyMessage: null,
+      mentioned: [],
+      preformatted: true,
+    });
+  });
+
+  ircClient.on("rateLimited", ({ serverId, message }) =>
+    reportServerReply(store, {
+      serverId,
       type: "warn",
       command: "ERROR",
       code: "RATE_LIMITED",
       message,
-      target: server?.host ?? serverId,
-      serverId,
-    });
-  });
+    }),
+  );
 
-  ircClient.on("serverError", ({ serverId, message }) => {
-    const server = store.getState().servers.find((s) => s.id === serverId);
-    store.getState().addGlobalNotification({
-      type: "fail",
+  // A dropped link reconnects on its own and the connection strip shows it, so we file it as a note.
+  ircClient.on("serverError", ({ serverId, message }) =>
+    reportServerReply(store, {
+      serverId,
+      type: "note",
       command: "ERROR",
       code: "SERVER_ERROR",
       message,
-      target: server?.host ?? serverId,
-      serverId,
-    });
-  });
+    }),
+  );
 
   ircClient.on("rawLine", ({ serverId, direction, line }) => {
     store.getState().appendRawLogLine({ serverId, direction, line });
   });
 
   ircClient.on("ISUPPORT", ({ serverId, key, value }) => {
-    if (key === "VAPID" && value) {
-      void syncServerWebPush(
-        serverId,
-        value,
-        store.getState().globalSettings.enableNotifications,
-        (srvId, line) => ircClient.sendRaw(srvId, line),
-      );
-      return;
-    }
     if (key !== "NETWORK" || !value) return;
     store.setState((state) => ({
       servers: state.servers.map((s) =>
@@ -68,11 +116,22 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
     }));
   });
 
+  ircClient.on("saslFailed", ({ serverId }) => {
+    store.setState((state) => ({
+      servers: state.servers.map((s) =>
+        s.id === serverId ? { ...s, saslFailed: true } : s,
+      ),
+    }));
+  });
+
   ircClient.on("connectionStateChange", ({ serverId, connectionState }) => {
     // Allow the ready handler to re-run metadata restoration after reconnect
     if (connectionState === "disconnected") {
       readyProcessedServers.delete(serverId);
-      clearWebPushRetry(serverId);
+      forgetJoins(serverId);
+      // A new connection asks its own question; an old answer would measure
+      // against a snapshot this connection never took.
+      forgetQuestions(serverId);
       // e2ee ratchet keys live only in memory and can't survive a dropped
       // connection, so tear the sessions down rather than keep showing a lock
       // that no longer protects anything. Encryption resumes after reconnecting,
@@ -99,6 +158,11 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
           channels,
           connectionState,
           isConnected: connectionState === "connected",
+          isRegistered: false,
+          webPushFailure: undefined,
+          account: connectionState === "connected" ? server.account : undefined,
+          saslFailed:
+            connectionState === "connected" ? server.saslFailed : false,
         };
       });
 
@@ -132,18 +196,16 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
   });
 
   ircClient.on("ready", ({ serverId, serverName, nickname }) => {
+    store.setState((state) => ({
+      servers: state.servers.map((server) =>
+        server.id === serverId ? { ...server, isRegistered: true } : server,
+      ),
+    }));
     // Prevent processing the same server's ready event multiple times
     if (readyProcessedServers.has(serverId)) {
       return;
     }
     readyProcessedServers.add(serverId);
-
-    const readyState = store.getState();
-    syncTauriNotificationSettings(
-      readyState.globalSettings.enableNotifications,
-      readyState.globalSettings.customMentions,
-      collectAllSelfNicks(readyState),
-    );
 
     // Restore metadata for this server (inlined from restoreServerMetadata)
     const savedMetadata = storage.metadata.load();
@@ -161,13 +223,8 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
             // Restore user metadata in channels
             const updatedChannels = server.channels.map((channel) => {
               const updatedUsers = channel.users.map((user) => {
-                const userMetadata = resolveUserMetadata(
-                  user.username,
-                  serverMetadata,
-                  server.channels,
-                  channel.name,
-                );
-                if (Object.keys(userMetadata).length > 0) {
+                const userMetadata = serverMetadata[user.username];
+                if (userMetadata) {
                   return {
                     ...user,
                     metadata: { ...user.metadata, ...userMetadata },
@@ -201,29 +258,21 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
 
         // Restore current user metadata
         let updatedCurrentUser = state.currentUser;
-        if (state.currentUser) {
-          const ownMetadata = resolveUserMetadata(
-            state.currentUser.username,
-            serverMetadata,
-            [],
-          );
-          if (Object.keys(ownMetadata).length > 0) {
-            updatedCurrentUser = {
-              ...state.currentUser,
-              metadata: {
-                ...state.currentUser.metadata,
-                ...ownMetadata,
-              },
-            };
-          }
+        if (state.currentUser && serverMetadata[state.currentUser.username]) {
+          updatedCurrentUser = {
+            ...state.currentUser,
+            metadata: {
+              ...state.currentUser.metadata,
+              ...serverMetadata[state.currentUser.username],
+            },
+          };
         }
 
         return { servers: updatedServers, currentUser: updatedCurrentUser };
       });
     }
 
-    // Sync our own metadata in the background -- don't await so channel
-    // joins happen immediately.
+    // We read our metadata from the server, which keeps it.
     //
     // We deliberately do NOT send METADATA SUB any more. The server's
     // join-time push of every subscribed key for every existing channel
@@ -236,42 +285,9 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
     // we'd be paying the firehose cost twice (once for SUB push, once
     // for our own GETs). Live updates after the initial GET are not
     // visible to us, but display-name / avatar don't change often and
+    // the profile modal re-GETs anyway.
     if (serverSupportsMetadata(store.getState(), serverId)) {
-      const pushLocalMetadataIfMissingOnServer = (serverKeys: Set<string>) => {
-        const ourNick =
-          ircClient.getNick(serverId) || store.getState().currentUser?.username;
-        const ownMeta = storage.ownMetadata.getForServer(serverId, ourNick);
-        const savedMeta = storage.metadata.load();
-        const serverMeta = savedMeta[serverId];
-        let ourMetadata: Record<
-          string,
-          { value?: string; visibility?: string }
-        > = { ...ownMeta };
-        if (serverMeta && ourNick) {
-          const matchKey = Object.keys(serverMeta).find(
-            (k) => k.toLowerCase() === ourNick.toLowerCase(),
-          );
-          if (matchKey && serverMeta[matchKey]) {
-            ourMetadata = { ...ourMetadata, ...serverMeta[matchKey] };
-          }
-        }
-        Object.entries(ourMetadata).forEach(([key, { value, visibility }]) => {
-          if (
-            value !== undefined &&
-            !serverKeys.has(key) &&
-            isMetadataKeySupported(serverId, key)
-          ) {
-            store.getState().metadataSet(serverId, "*", key, value, visibility);
-          }
-        });
-      };
-
-      // Query server for upstream changes first. If the server already has keys
-      // (e.g. set from mobile APK or another device), we adopt the server's values
-      // without pushing stale local cache over them.
-      fetchAndMergeOwnMetadata(store, serverId).then((serverKeys) => {
-        pushLocalMetadataIfMissingOnServer(serverKeys);
-      });
+      ircClient.metadataGet(serverId, "*", OWN_METADATA_KEYS);
     }
 
     store.setState((state) => {
@@ -289,11 +305,7 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
         // Get saved metadata for this user on this server
         const savedMeta = storage.metadata.load();
         const serverMeta = savedMeta[serverId];
-        const userMetadata = resolveUserMetadata(
-          ircCurrentUser.username,
-          serverMeta,
-          [],
-        );
+        const userMetadata = serverMeta?.[ircCurrentUser.username] || {};
 
         // Create current user with IRC data and any saved metadata
         updatedCurrentUser = {
@@ -365,7 +377,9 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
       if (!isBouncerSession) {
         for (const channelName of channelsToJoin) {
           if (channelName) {
-            store.getState().joinChannel(serverId, channelName);
+            store.getState().joinChannel(serverId, channelName, undefined, {
+              isAutomatic: true,
+            });
           }
         }
       }
@@ -380,9 +394,8 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
         if (!reconnectedServer) return;
         if (reconnectedServer.isBouncerControl) return;
         for (const ch of reconnectedServer.channels) {
-          if (!ch.chathistoryRequested) {
-            ircClient.sendRaw(serverId, `CHATHISTORY LATEST ${ch.name} * 50`);
-          }
+          if (!ch.chathistoryRequested && !ch.needsKey)
+            ircClient.loadLatestHistory(serverId, ch.name);
         }
       }, 50);
 
@@ -399,18 +412,22 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
         const savedPrivateChatId = serverSelection?.selectedPrivateChatId;
         const server = currentState.servers.find((s) => s.id === serverId);
 
-        if (server && savedChannelId) {
-          const channelExists = server.channels.some(
-            (c) => c.id === savedChannelId,
-          );
+        const savedChannel = server?.channels.find(
+          (c) => c.id === savedChannelId,
+        );
+        if (savedChannel && isLiveChannel(savedChannel.name)) {
+          store.getState().selectChannel(null);
+        } else if (server && savedChannelId) {
+          const channelExists = !!savedChannel;
           if (!channelExists) {
             // ID mismatch - try to restore by name
             const savedName = serverSelection?.selectedChannelName;
-            const matchedByName = savedName
-              ? server.channels.find(
-                  (c) => c.name.toLowerCase() === savedName.toLowerCase(),
-                )
-              : null;
+            const matchedByName =
+              savedName && !isLiveChannel(savedName)
+                ? server.channels.find(
+                    (c) => c.name.toLowerCase() === savedName.toLowerCase(),
+                  )
+                : null;
 
             if (matchedByName) {
               console.log(
@@ -603,7 +620,7 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
       // Request chathistory for each pinned PM
       setTimeout(() => {
         for (const { username } of sortedPinnedChats) {
-          ircClient.sendRaw(serverId, `CHATHISTORY LATEST ${username} * 50`);
+          ircClient.requestChathistoryLatest(serverId, username);
         }
       }, 50);
 
@@ -673,34 +690,184 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
       readyServer?.capabilities?.includes("draft/chathistory") &&
       !readyServer.isBouncerControl
     ) {
-      setTimeout(() => {
-        const to = new Date();
-        const from = new Date(to.getTime() - CHATHISTORY_TARGETS_WINDOW_MS);
-        ircClient.sendRaw(
-          serverId,
-          `CHATHISTORY TARGETS timestamp=${from.toISOString()} timestamp=${to.toISOString()} ${CHATHISTORY_TARGETS_LIMIT}`,
-        );
-      }, 50);
+      setTimeout(
+        () =>
+          requestTargets(store, serverId, CHATHISTORY_TARGETS_WINDOW_MS, false),
+        50,
+      );
     }
   });
 
+  // Batch tags are only unique per connection, so the key carries the server.
+  const targetBatches = new Set<string>();
+  ircClient.on("BATCH_START", ({ serverId, batchId, type, parameters }) => {
+    if (type === "draft/chathistory-targets")
+      targetBatches.add(`${serverId}:${batchId}`);
+    if (type === "chathistory" && parameters?.[0])
+      pageBatches.set(`${serverId}:${batchId}`, parameters[0]);
+  });
+  ircClient.on("BATCH_END", ({ serverId, batchId }) => {
+    const pageTarget = pageBatches.get(`${serverId}:${batchId}`);
+    if (pageTarget !== undefined) {
+      pageBatches.delete(`${serverId}:${batchId}`);
+      pagesInFlight.delete(pageKey(serverId, pageTarget));
+    }
+    if (!targetBatches.delete(`${serverId}:${batchId}`)) return;
+    const question = questions.get(serverId);
+    if (!question) return;
+    question.unanswered -= 1;
+    if (question.unanswered <= 0) questions.delete(serverId);
+  });
+
+  // A refused page opens no batch, so the refusal is what releases it. The
+  // context names the subcommand and the target, and only a LATEST is ours.
+  ircClient.on("FAIL", ({ serverId, command, context }) => {
+    if (command !== "CHATHISTORY") return;
+    const [subcommand, target] = context;
+    if (subcommand?.toUpperCase() !== "LATEST" || !target) return;
+    pagesInFlight.delete(pageKey(serverId, target));
+  });
+
   ircClient.on("CHATHISTORY_TARGET", ({ serverId, target, timestamp }) => {
-    if (isChannelTarget(target)) return;
     const self = ircClient.getNick(serverId);
     if (self && self.toLowerCase() === target.toLowerCase()) return;
+    const server = store.getState().servers.find((s) => s.id === serverId);
+    if (!server) return;
+    // A conversation we already show gets the page it is missing. Channels
+    // fetch their page when they are rejoined, so only a wake asks for
+    // theirs; a bouncer replays nothing to a client that can ask.
+    const conversation = findConversation(store, serverId, target);
+    const isChannel = ircClient.isChannel(serverId, target);
+    if (conversation) {
+      const question = outstandingQuestion(serverId);
+      if (isChannel && !question?.isWake) return;
+      // A line that came in live while the answer was on its way says
+      // nothing about earlier ones, so the newest message from before the
+      // question is what the answer is measured against.
+      const newest = question?.baseline.has(conversation.key)
+        ? question.baseline.get(conversation.key)
+        : newestMessageTime(store.getState(), conversation.key);
+      if (newest === undefined || Date.parse(timestamp) > newest)
+        requestPage(serverId, target);
+      return;
+    }
+    if (isChannel) return;
     // The user closed this chat; only bring it back for newer activity.
     const closedAt = storage.closedChats.closedAt(serverId, target);
     if (closedAt && Date.parse(timestamp) <= Date.parse(closedAt)) return;
-    const server = store.getState().servers.find((s) => s.id === serverId);
-    if (!server) return;
-    const exists = server.privateChats?.some(
-      (pc) => pc.username.toLowerCase() === target.toLowerCase(),
-    );
-    if (exists) return;
     // openPrivateChat creates the (unpinned) chat, MONITORs the nick and
     // requests CHATHISTORY LATEST for it.
     store.getState().openPrivateChat(serverId, target);
   });
+}
+
+// The targets a wake asks for cover a day. A question stays open until its
+// answer batch ends, or for this long on a server that answers unbatched.
+const CATCH_UP_WINDOW_MS = 24 * 60 * 60 * 1000;
+const QUESTION_FALLBACK_MS = 5 * 60 * 1000;
+
+interface TargetsQuestion {
+  // The newest message of every conversation when the question went out.
+  baseline: Map<string, number | undefined>;
+  // A wake's question refreshes channels too; a connect's leaves them to
+  // their rejoin.
+  isWake: boolean;
+  askedAt: number;
+  // Questions asked before any answer ended share one record, which lives
+  // until the last of their answers has ended.
+  unanswered: number;
+}
+
+const questions = new Map<string, TargetsQuestion>();
+
+// Overlapping answers name the same conversation more than once; one page
+// covers them all, so a conversation whose page is still coming asks for no
+// second one. The page's batch end releases it, or time on a server that
+// sends its pages unbatched.
+const pagesInFlight = new Map<string, number>();
+const pageBatches = new Map<string, string>();
+
+function pageKey(serverId: string, target: string): string {
+  return `${serverId}:${target.toLowerCase()}`;
+}
+
+function requestPage(serverId: string, target: string): void {
+  const key = pageKey(serverId, target);
+  const sentAt = pagesInFlight.get(key);
+  if (sentAt !== undefined && Date.now() - sentAt <= QUESTION_FALLBACK_MS)
+    return;
+  if (ircClient.loadLatestHistory(serverId, target))
+    pagesInFlight.set(key, Date.now());
+}
+
+function forgetQuestions(serverId: string): void {
+  questions.delete(serverId);
+  for (const key of pagesInFlight.keys())
+    if (key.startsWith(`${serverId}:`)) pagesInFlight.delete(key);
+  for (const key of pageBatches.keys())
+    if (key.startsWith(`${serverId}:`)) pageBatches.delete(key);
+}
+
+export function outstandingQuestion(
+  serverId: string,
+): TargetsQuestion | undefined {
+  const question = questions.get(serverId);
+  if (!question) return undefined;
+  if (Date.now() - question.askedAt > QUESTION_FALLBACK_MS) {
+    questions.delete(serverId);
+    return undefined;
+  }
+  return question;
+}
+
+function requestTargets(
+  store: StoreApi<AppState>,
+  serverId: string,
+  windowMs: number,
+  isWake: boolean,
+): void {
+  const state = store.getState();
+  const server = state.servers.find((s) => s.id === serverId);
+  // A question asked while another is unanswered keeps the older snapshot,
+  // since lines that arrived in between are exactly what may hide a gap.
+  const earlier = outstandingQuestion(serverId);
+  const baseline = new Map(earlier?.baseline ?? []);
+  for (const chat of [
+    ...(server?.channels ?? []),
+    ...(server?.privateChats ?? []),
+  ]) {
+    const key = `${serverId}-${chat.id}`;
+    if (!baseline.has(key)) baseline.set(key, newestMessageTime(state, key));
+  }
+  questions.set(serverId, {
+    baseline,
+    isWake: isWake || !!earlier?.isWake,
+    askedAt: Date.now(),
+    unanswered: (earlier?.unanswered ?? 0) + 1,
+  });
+  const to = new Date();
+  const from = new Date(to.getTime() - windowMs);
+  ircClient.sendRaw(
+    serverId,
+    `CHATHISTORY TARGETS timestamp=${from.toISOString()} timestamp=${to.toISOString()} ${CHATHISTORY_TARGETS_LIMIT}`,
+  );
+}
+
+// A connection that survived the app's sleep may still have missed lines:
+// a phone cuts the network under a live socket. Asking the server what
+// moved since then fills every open conversation that fell behind.
+export function catchUpHistory(
+  store: StoreApi<AppState>,
+  serverId: string,
+): void {
+  const server = store.getState().servers.find((s) => s.id === serverId);
+  if (
+    !server?.isConnected ||
+    server.isBouncerControl ||
+    !server.capabilities?.includes("draft/chathistory")
+  )
+    return;
+  requestTargets(store, serverId, CATCH_UP_WINDOW_MS, true);
 }
 
 // How far back to look for conversations on connect, and how many targets
@@ -709,107 +876,13 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
 const CHATHISTORY_TARGETS_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const CHATHISTORY_TARGETS_LIMIT = 100;
 
-// RFC 1459 / common CHANTYPES; Obby doesn't track ISUPPORT CHANTYPES.
-function isChannelTarget(target: string): boolean {
-  return /^[#&+!]/.test(target);
-}
-
-// Inlined from fetchAndMergeOwnMetadata in index.ts — uses store instead of useStore
-async function fetchAndMergeOwnMetadata(
-  store: StoreApi<AppState>,
-  serverId: string,
-): Promise<Set<string>> {
-  return new Promise((resolve) => {
-    const nickname = ircClient.getNick(serverId);
-    if (!nickname) {
-      resolve(new Set());
-      return;
-    }
-
-    const serverReceivedKeys = new Set<string>();
-
-    // Mark as fetching
-    store.setState((state) => ({
-      metadataFetchInProgress: {
-        ...state.metadataFetchInProgress,
-        [serverId]: true,
-      },
-    }));
-
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-    const cleanup = () => {
-      ircClient.deleteHook("METADATA_KEYVALUE", onKeyValue);
-      ircClient.deleteHook("METADATA_END", onEnd);
-      ircClient.deleteHook("METADATA_FAIL", onFail);
-      store.setState((state) => ({
-        metadataFetchInProgress: {
-          ...state.metadataFetchInProgress,
-          [serverId]: false,
-        },
-      }));
-    };
-
-    const finish = () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        timeoutId = null;
-      }
-      cleanup();
-      resolve(serverReceivedKeys);
-    };
-
-    const ourNick = nickname.toLowerCase();
-    const isTargetSelf = (t?: string) =>
-      !t || t === "*" || t.toLowerCase() === ourNick;
-
-    const onKeyValue = (data: {
-      serverId: string;
-      target: string;
-      key: string;
-      value: string;
-    }) => {
-      if (data.serverId === serverId && isTargetSelf(data.target)) {
-        if (
-          data.value !== null &&
-          data.value !== undefined &&
-          data.value !== ""
-        ) {
-          serverReceivedKeys.add(data.key);
-        }
-      }
-    };
-
-    const onEnd = (data: { serverId: string; target: string }) => {
-      if (data.serverId === serverId && isTargetSelf(data.target)) {
-        finish();
-      }
-    };
-
-    const onFail = (data: {
-      serverId: string;
-      target?: string;
-      code?: string;
-    }) => {
-      if (
-        data.serverId === serverId &&
-        isTargetSelf(data.target) &&
-        data.code !== "KEY_INVALID"
-      ) {
-        finish();
-      }
-    };
-
-    ircClient.on("METADATA_KEYVALUE", onKeyValue);
-    ircClient.on("METADATA_END", onEnd);
-    ircClient.on("METADATA_FAIL", onFail);
-
-    // Request our metadata from the server using LIST so only supported and set keys are returned
-    ircClient.metadataList(serverId, "*");
-
-    // Fallback timeout in case the server does not send METADATA_END
-    timeoutId = setTimeout(() => {
-      finish();
-    }, 1000);
-  });
-}
+// The profile fields the settings page edits.
+const OWN_METADATA_KEYS = [
+  "display-name",
+  "avatar",
+  "homepage",
+  "status",
+  "color",
+  "bot",
+  "pronouns",
+];

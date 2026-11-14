@@ -177,3 +177,14 @@ describe("DOM selection → markdown", () => {
     expect(buildMarkdownFromSelection(sel, root)).toBeNull();
   });
 });
+
+describe("formatCopyAuthor for bridged lines", () => {
+  it("names the bridge so a copied transcript never claims a bare nick", () => {
+    expect(formatCopyAuthor(undefined, "mara", false, "Bot")).toBe(
+      "mara (via Bot)",
+    );
+    expect(formatCopyAuthor("Jed", "Jeditwo", false, "web")).toBe(
+      "Jed (Jeditwo) (via web)",
+    );
+  });
+});

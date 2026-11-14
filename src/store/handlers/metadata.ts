@@ -1,6 +1,5 @@
 import type { StoreApi } from "zustand";
 import ircClient from "../../lib/ircClient";
-import { isChannelTarget } from "../../lib/ircUtils";
 import type { AppState } from "../index";
 import * as storage from "../localStorage";
 
@@ -19,9 +18,7 @@ export function registerMetadataHandlers(store: StoreApi<AppState>): void {
           // Update metadata for users in channels
           const updatedChannels = server.channels.map((channel) => {
             const updatedUsers = channel.users.map((user) => {
-              if (
-                user.username.toLowerCase() === resolvedTarget.toLowerCase()
-              ) {
+              if (user.username === resolvedTarget) {
                 const metadata = { ...(user.metadata || {}) };
                 if (value) {
                   metadata[key] = { value, visibility };
@@ -84,51 +81,6 @@ export function registerMetadataHandlers(store: StoreApi<AppState>): void {
         return server;
       });
 
-      // Update current user metadata if the target matches any connected user
-      let updatedCurrentUser = state.currentUser;
-      const currentUserForServer = ircClient.getCurrentUser(serverId);
-      const ourNick =
-        ircClient.getNick(serverId) ||
-        currentUserForServer?.username ||
-        state.currentUser?.username ||
-        "";
-      const isSelf =
-        target === "*" ||
-        (ourNick !== "" &&
-          resolvedTarget.toLowerCase() === ourNick.toLowerCase());
-
-      if (isSelf) {
-        const baseUser = (state.ui.selectedServerId === serverId
-          ? currentUserForServer || updatedCurrentUser
-          : updatedCurrentUser || currentUserForServer) || {
-          id: resolvedTarget,
-          username: resolvedTarget,
-          isOnline: true,
-        };
-        const metadata = { ...(baseUser.metadata || {}) };
-        if (value) {
-          metadata[key] = { value, visibility };
-        } else {
-          delete metadata[key];
-        }
-        updatedCurrentUser = {
-          ...baseUser,
-          metadata,
-          isIrcOp: state.currentUser?.isIrcOp ?? baseUser.isIrcOp,
-          modes: state.currentUser?.modes ?? baseUser.modes,
-        };
-
-        // Persist own metadata across page reloads
-        storage.ownMetadata.saveKey(
-          serverId,
-          resolvedTarget,
-          key,
-          value || undefined,
-          visibility,
-        );
-      }
-
-      // Save metadata to localStorage
       const savedMetadata = storage.metadata.load();
       if (!savedMetadata[serverId]) {
         savedMetadata[serverId] = {};
@@ -143,8 +95,26 @@ export function registerMetadataHandlers(store: StoreApi<AppState>): void {
       }
       storage.metadata.save(savedMetadata);
 
+      // We copy our whole profile from the server's metadata cache, since one METADATA line carries one key.
+      let updatedCurrentUser = state.currentUser;
+      const currentUserForServer = ircClient.getCurrentUser(serverId);
+      const isSameUser = state.currentUser?.username === resolvedTarget;
+      if (
+        currentUserForServer?.username === resolvedTarget &&
+        (isSameUser ||
+          !state.currentUser ||
+          state.ui.selectedServerId === serverId)
+      ) {
+        updatedCurrentUser = {
+          ...((isSameUser && state.currentUser) || currentUserForServer),
+          metadata: { ...savedMetadata[serverId][resolvedTarget] },
+          isIrcOp: state.currentUser?.isIrcOp,
+          modes: state.currentUser?.modes,
+        };
+      }
+
       // Update channel metadata cache if this is for a channel
-      if (isChannelTarget(resolvedTarget)) {
+      if (ircClient.isChannel(serverId, resolvedTarget)) {
         const cache = state.channelMetadataCache[serverId] || {};
         const channelCache = cache[resolvedTarget] || { fetchedAt: Date.now() };
 
@@ -199,9 +169,6 @@ export function registerMetadataHandlers(store: StoreApi<AppState>): void {
   ircClient.on(
     "METADATA_KEYVALUE",
     ({ serverId, target, key, visibility, value }) => {
-      const state = store.getState();
-      const isFetchingOwn = state.metadataFetchInProgress[serverId];
-
       // Handle individual key-value responses (similar to METADATA)
       store.setState((state) => {
         // Resolve the target - if it's "*", it refers to the current user
@@ -212,47 +179,6 @@ export function registerMetadataHandlers(store: StoreApi<AppState>): void {
               target
             : target.split("!")[0]; // Extract nickname from mask
 
-        const ourNick =
-          ircClient.getNick(serverId) || state.currentUser?.username || "";
-        const isSelf =
-          target === "*" ||
-          (ourNick !== "" &&
-            resolvedTarget.toLowerCase() === ourNick.toLowerCase());
-
-        // If this is our own metadata, persist it across page reloads
-        if (isSelf) {
-          if (value !== null && value !== undefined && value !== "") {
-            storage.ownMetadata.saveKey(
-              serverId,
-              resolvedTarget,
-              key,
-              value,
-              visibility,
-            );
-          }
-        }
-
-        // If we're fetching our own metadata, update saved values
-        if (isFetchingOwn && isSelf) {
-          const savedMetadata = storage.metadata.load();
-          if (!savedMetadata[serverId]) {
-            savedMetadata[serverId] = {};
-          }
-          if (!savedMetadata[serverId][resolvedTarget]) {
-            savedMetadata[serverId][resolvedTarget] = {};
-          }
-          // Only overwrite saved value with server value if server actually has a value
-          // Empty/null values from server mean "not set", so keep our local value
-          if (value !== null && value !== undefined && value !== "") {
-            savedMetadata[serverId][resolvedTarget][key] = {
-              value,
-              visibility,
-            };
-            storage.metadata.save(savedMetadata);
-          }
-          // If server has the key but no value, and we have a local value, we'll send ours later
-        }
-
         let hasChanges = false;
 
         const updatedServers = state.servers.map((server) => {
@@ -260,9 +186,7 @@ export function registerMetadataHandlers(store: StoreApi<AppState>): void {
             // Update metadata for users in channels
             const updatedChannels = server.channels.map((channel) => {
               const updatedUsers = channel.users.map((user) => {
-                if (
-                  user.username.toLowerCase() === resolvedTarget.toLowerCase()
-                ) {
+                if (user.username === resolvedTarget) {
                   const existingValue = user.metadata?.[key]?.value;
                   const existingVisibility = user.metadata?.[key]?.visibility;
 
@@ -279,10 +203,7 @@ export function registerMetadataHandlers(store: StoreApi<AppState>): void {
                     }
                   } else {
                     // Deleting key
-                    if (
-                      (!isFetchingOwn || !isSelf) &&
-                      existingValue !== undefined
-                    ) {
+                    if (existingValue !== undefined) {
                       hasChanges = true;
                       const metadata = { ...(user.metadata || {}) };
                       delete metadata[key];
@@ -346,7 +267,7 @@ export function registerMetadataHandlers(store: StoreApi<AppState>): void {
 
         // Update current user metadata
         let updatedCurrentUser = state.currentUser;
-        if (isSelf && state.currentUser) {
+        if (state.currentUser?.username === resolvedTarget) {
           const existingValue = state.currentUser.metadata?.[key]?.value;
           const existingVisibility =
             state.currentUser.metadata?.[key]?.visibility;
@@ -359,7 +280,7 @@ export function registerMetadataHandlers(store: StoreApi<AppState>): void {
               updatedCurrentUser = { ...state.currentUser, metadata };
             }
           } else {
-            if ((!isFetchingOwn || !isSelf) && existingValue !== undefined) {
+            if (existingValue !== undefined) {
               hasChanges = true;
               const metadata = { ...(state.currentUser.metadata || {}) };
               delete metadata[key];
@@ -370,32 +291,29 @@ export function registerMetadataHandlers(store: StoreApi<AppState>): void {
 
         // Save valid metadata for any user, not just channel members.
         // Also marks hasChanges so metadataChangeCounter increments for DM re-renders.
-        if (!isFetchingOwn || !isSelf) {
-          const savedMetadata = storage.metadata.load();
-          if (value !== null && value !== undefined && value !== "") {
-            if (!savedMetadata[serverId]) {
-              savedMetadata[serverId] = {};
-            }
-            if (!savedMetadata[serverId][resolvedTarget]) {
-              savedMetadata[serverId][resolvedTarget] = {};
-            }
-            if (savedMetadata[serverId][resolvedTarget][key]?.value !== value) {
-              savedMetadata[serverId][resolvedTarget][key] = {
-                value,
-                visibility,
-              };
-              storage.metadata.save(savedMetadata);
-              hasChanges = true;
-            }
-          } else if (savedMetadata[serverId]?.[resolvedTarget]?.[key]) {
-            // Key was deleted on server — remove from localStorage too
-            delete savedMetadata[serverId][resolvedTarget][key];
-            storage.metadata.save(savedMetadata);
+        const savedMetadata = storage.metadata.load();
+        if (value !== null && value !== undefined && value !== "") {
+          if (!savedMetadata[serverId]) {
+            savedMetadata[serverId] = {};
           }
+          if (!savedMetadata[serverId][resolvedTarget]) {
+            savedMetadata[serverId][resolvedTarget] = {};
+          }
+          if (savedMetadata[serverId][resolvedTarget][key]?.value !== value) {
+            savedMetadata[serverId][resolvedTarget][key] = {
+              value,
+              visibility,
+            };
+            storage.metadata.save(savedMetadata);
+            hasChanges = true;
+          }
+        } else if (savedMetadata[serverId]?.[resolvedTarget]?.[key]) {
+          delete savedMetadata[serverId][resolvedTarget][key];
+          storage.metadata.save(savedMetadata);
         }
 
         // Update channel metadata cache if this is for a channel
-        if (isChannelTarget(resolvedTarget)) {
+        if (ircClient.isChannel(serverId, resolvedTarget)) {
           const cache = state.channelMetadataCache[serverId] || {};
           const channelCache = cache[resolvedTarget] || {
             fetchedAt: Date.now(),
@@ -469,7 +387,6 @@ export function registerMetadataHandlers(store: StoreApi<AppState>): void {
 
   ircClient.on("METADATA_KEYNOTSET", ({ serverId, target, key }) => {
     const state = store.getState();
-    const isFetchingOwn = state.metadataFetchInProgress[serverId];
 
     // Resolve the target - if it's "*", it refers to the current user
     const resolvedTarget =
@@ -477,14 +394,10 @@ export function registerMetadataHandlers(store: StoreApi<AppState>): void {
         ? ircClient.getNick(serverId) || state.currentUser?.username || target
         : target.split("!")[0]; // Extract nickname from mask
 
-    // Skip on reconnect GET responses — server lacking the key doesn't mean we should erase it;
-    // the sync that follows will push our local copy back up.
-    if (!isFetchingOwn) {
-      const savedMetadata = storage.metadata.load();
-      if (savedMetadata[serverId]?.[resolvedTarget]?.[key]) {
-        delete savedMetadata[serverId][resolvedTarget][key];
-        storage.metadata.save(savedMetadata);
-      }
+    const savedMetadata = storage.metadata.load();
+    if (savedMetadata[serverId]?.[resolvedTarget]?.[key]) {
+      delete savedMetadata[serverId][resolvedTarget][key];
+      storage.metadata.save(savedMetadata);
     }
 
     // Handle key not set responses — only update state if the key actually exists
@@ -537,7 +450,7 @@ export function registerMetadataHandlers(store: StoreApi<AppState>): void {
       }
 
       let updatedChannelMetadataCache = state.channelMetadataCache;
-      if (isChannelTarget(resolvedTarget)) {
+      if (ircClient.isChannel(serverId, resolvedTarget)) {
         const serverCache = state.channelMetadataCache[serverId];
         if (serverCache?.[resolvedTarget]) {
           const channelCache = { ...serverCache[resolvedTarget] };
@@ -599,88 +512,7 @@ export function registerMetadataHandlers(store: StoreApi<AppState>): void {
     }));
   });
 
-  ircClient.on("METADATA_END", ({ serverId, target }) => {
-    if (!target) return;
-    store.setState((state) => {
-      if (isChannelTarget(target)) {
-        const cache = state.channelMetadataCache[serverId] || {};
-        const channelCache = cache[target] || { fetchedAt: Date.now() };
-        channelCache.fetchedAt = Date.now();
-
-        const queue = state.channelMetadataFetchQueue[serverId];
-        let newQueue = queue;
-        if (queue?.has(target)) {
-          newQueue = new Set(queue);
-          newQueue.delete(target);
-        }
-
-        return {
-          channelMetadataCache: {
-            ...state.channelMetadataCache,
-            [serverId]: {
-              ...cache,
-              [target]: channelCache,
-            },
-          },
-          ...(newQueue !== queue && {
-            channelMetadataFetchQueue: {
-              ...state.channelMetadataFetchQueue,
-              [serverId]: newQueue,
-            },
-          }),
-        };
-      }
-      return {};
-    });
+  ircClient.on("METADATA_FAIL", ({ code, target, key, retryAfter }) => {
+    console.error(`METADATA failed: ${code}`, { target, key, retryAfter });
   });
-
-  ircClient.on(
-    "METADATA_FAIL",
-    ({ serverId, subcommand, code, target, key, retryAfter, description }) => {
-      // Record keys the server explicitly rejects as unsupported
-      if (code === "KEY_INVALID" && key) {
-        let set = unsupportedMetadataKeys.get(serverId);
-        if (!set) {
-          set = new Set();
-          unsupportedMetadataKeys.set(serverId, set);
-        }
-        set.add(key);
-      }
-
-      // Remove failed channel target from fetch queue
-      if (target && isChannelTarget(target)) {
-        store.setState((state) => {
-          const queue = state.channelMetadataFetchQueue[serverId];
-          if (!queue?.has(target)) return {};
-          const newQueue = new Set(queue);
-          newQueue.delete(target);
-          return {
-            channelMetadataFetchQueue: {
-              ...state.channelMetadataFetchQueue,
-              [serverId]: newQueue,
-            },
-          };
-        });
-      }
-
-      console.debug(
-        `[metadata] FAIL ${code}${key ? ` for key '${key}'` : ""}${target ? ` on '${target}'` : ""}`,
-        {
-          serverId,
-          subcommand,
-          code,
-          target,
-          key,
-          retryAfter,
-          description,
-        },
-      );
-    },
-  );
-}
-
-export const unsupportedMetadataKeys = new Map<string, Set<string>>();
-
-export function isMetadataKeySupported(serverId: string, key: string): boolean {
-  return !unsupportedMetadataKeys.get(serverId)?.has(key);
 }

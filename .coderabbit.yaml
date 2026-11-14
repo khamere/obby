@@ -1,0 +1,46 @@
+# CodeRabbit reviews pull requests on this repository. Docs: https://docs.coderabbit.ai
+language: en-US
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: true
+  suggested_reviewers: false
+  # The codebase explains why in comments, not what in docstrings (CLAUDE.md).
+  pre_merge_checks:
+    docstrings:
+      mode: "off"
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - community-fixes
+      - community-fixes-release
+    # A label to skip the review on a pull request, for one-line fixes.
+    ignore_title_keywords: []
+    labels:
+      - "!skip-review"
+  path_filters:
+    - "!src/locales/**"
+    - "!src-tauri/gen/**"
+    - "!src-tauri/Cargo.lock"
+    - "!package-lock.json"
+    - "!**/*.mjs"
+  path_instructions:
+    - path: "src/**/*.{ts,tsx}"
+      instructions: >-
+        Follow CLAUDE.md in the repository root: user-visible strings use Lingui
+        macros, store actions never go into effect dependency arrays, no HTTP
+        request may be made to an untrusted URL, external links open only
+        through the warning modal, comments explain why rather than what.
+    - path: "src-tauri/**/*.rs"
+      instructions: >-
+        The crate pins an MSRV in Cargo.toml; flag APIs newer than it. TLS
+        verification must never be disabled.
+    - path: ".github/workflows/**"
+      instructions: >-
+        Third-party actions are pinned to a full commit SHA.
+chat:
+  auto_reply: true
