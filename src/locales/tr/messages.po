@@ -3666,7 +3666,7 @@ msgstr "Kendinizi geri dönmüş olarak işaretleyin"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Mark yourself away after this long without using Obby, and back when you return"
-msgstr "Obby'yi bu kadar süre kullanmadığında seni uzakta olarak işaretle, döndüğünde tekrar burada olarak işaretle"
+msgstr "Obby'yi bu kadar süre kullanmadığınızda sizi uzakta olarak işaretler, döndüğünüzde tekrar burada olarak işaretler"
 
 #: src/components/layout/UserPanel.tsx
 msgid "Mark yourself back"

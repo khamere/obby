@@ -90,6 +90,72 @@ describe("useAutoAway", () => {
     expect(clearAway).not.toHaveBeenCalled();
   });
 
+  it("hands the server back when the user sets away or back themselves", () => {
+    renderHook(() => useAutoAway());
+    vi.advanceTimersByTime(10 * MIN + 30_000);
+    setServer(true);
+    vi.advanceTimersByTime(30_000);
+
+    useStore.getState().setAway("s1", "lunch");
+    expect(setAway).toHaveBeenLastCalledWith("s1", "lunch");
+    window.dispatchEvent(new KeyboardEvent("keydown"));
+    vi.advanceTimersByTime(60_000);
+    expect(clearAway).not.toHaveBeenCalled();
+
+    useStore.getState().clearAway("s1");
+    expect(clearAway).toHaveBeenCalledTimes(1);
+    setServer(false);
+    window.dispatchEvent(new KeyboardEvent("keydown"));
+    vi.advanceTimersByTime(60_000);
+    expect(clearAway).toHaveBeenCalledTimes(1);
+  });
+
+  it("counts waking from sleep as the user returning", () => {
+    renderHook(() => useAutoAway());
+    vi.advanceTimersByTime(60_000);
+
+    vi.setSystemTime(Date.now() + 8 * 60 * MIN);
+    vi.advanceTimersByTime(30_000);
+    expect(setAway).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(10 * MIN);
+    expect(setAway).toHaveBeenCalledTimes(1);
+  });
+
+  it("counts the page becoming visible as activity", () => {
+    renderHook(() => useAutoAway());
+    vi.advanceTimersByTime(9 * MIN);
+
+    document.dispatchEvent(new Event("visibilitychange"));
+    vi.advanceTimersByTime(2 * MIN);
+    expect(setAway).not.toHaveBeenCalled();
+  });
+
+  it("marks the user back when the setting is switched off while away", () => {
+    renderHook(() => useAutoAway());
+    vi.advanceTimersByTime(10 * MIN + 30_000);
+    setServer(true);
+    vi.advanceTimersByTime(30_000);
+
+    useStore.setState((state) => ({
+      globalSettings: { ...state.globalSettings, autoAwayMinutes: 0 },
+    }));
+    vi.advanceTimersByTime(30_000);
+    expect(clearAway).toHaveBeenCalledWith("s1");
+  });
+
+  it.each(["pointerdown", "pointermove", "wheel", "touchstart"])(
+    "takes %s as activity",
+    (type) => {
+      renderHook(() => useAutoAway());
+      vi.advanceTimersByTime(9 * MIN);
+
+      window.dispatchEvent(new Event(type));
+      vi.advanceTimersByTime(2 * MIN);
+      expect(setAway).not.toHaveBeenCalled();
+    },
+  );
+
   it("does nothing while switched off", () => {
     useStore.setState((state) => ({
       globalSettings: { ...state.globalSettings, autoAwayMinutes: 0 },

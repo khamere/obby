@@ -159,6 +159,10 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
           connectionState,
           isConnected: connectionState === "connected",
           isRegistered: false,
+          // A new connection starts present, whatever the last one was.
+          ...(connectionState === "connected"
+            ? { isAway: false, awayMessage: undefined }
+            : {}),
           webPushFailure: undefined,
           account: connectionState === "connected" ? server.account : undefined,
           saslFailed:
@@ -188,9 +192,22 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
         }
       }
 
+      const isOwnPanelAway =
+        connectionState === "connected" &&
+        state.ui.selectedServerId === serverId &&
+        state.currentUser?.isAway;
       return {
         servers: updatedServers,
         ui: newUi,
+        ...(isOwnPanelAway && state.currentUser
+          ? {
+              currentUser: {
+                ...state.currentUser,
+                isAway: false,
+                awayMessage: undefined,
+              },
+            }
+          : {}),
       };
     });
   });

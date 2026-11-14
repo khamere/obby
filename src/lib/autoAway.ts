@@ -1,6 +1,4 @@
-// Auto away marks the user away on every connected server after a stretch
-// without input, and back on their next input. We only ever undo an away we
-// set ourselves, so an away the user chose stays until they end it.
+// We only ever end an away we set ourselves, so an away the user chose stays until they end it.
 
 export interface AutoAwayServer {
   id: string;
@@ -10,13 +8,12 @@ export interface AutoAwayServer {
   isBouncerControl?: boolean;
 }
 
-export type AutoAwayState = "pending" | "confirmed";
+// pending: sent, not yet confirmed; confirmed: the server marked us away; released: ended from elsewhere, so we wait for the user.
+export type AutoAwayState = "pending" | "confirmed" | "released";
 
 export interface AutoAwayDecision {
   setAway: string[];
   clearAway: string[];
-  // Our record after this pass: a server's own reply confirms an away we
-  // sent, and an away ended some other way is no longer ours.
   next: Map<string, AutoAwayState>;
 }
 
@@ -37,15 +34,18 @@ export function decideAutoAway({
   for (const [id, state] of ours) {
     const server = servers.find((s) => s.id === id);
     if (!server || !isReady(server)) continue;
-    if (server.isAway) next.set(id, "confirmed");
-    else if (state === "pending") next.set(id, "pending");
+    if (state === "released") next.set(id, "released");
+    else if (server.isAway) next.set(id, "confirmed");
+    else next.set(id, state === "pending" ? "pending" : "released");
   }
   const isIdle = minutes > 0 && idleMs >= minutes * 60_000;
   if (!isIdle) {
-    const clearAway = [...next]
-      .filter(([, state]) => state === "confirmed")
-      .map(([id]) => id);
-    for (const id of clearAway) next.delete(id);
+    const clearAway: string[] = [];
+    for (const [id, state] of next) {
+      if (state === "pending") continue;
+      if (state === "confirmed") clearAway.push(id);
+      next.delete(id);
+    }
     return { setAway: [], clearAway, next };
   }
   const setAway = servers

@@ -9,6 +9,8 @@ import useStore from "../store";
 
 const CHECK_INTERVAL_MS = 30_000;
 const INPUT_CHECK_MS = 1_000;
+// A tick this late means the device slept or the app was paused, which says nothing about the user.
+const RESUME_GAP_MS = 3 * CHECK_INTERVAL_MS;
 const ACTIVITY_EVENTS = [
   "pointerdown",
   "pointermove",
@@ -35,8 +37,7 @@ export function useAutoAway(): void {
       for (const id of clearAway) ircClient.clearAway(id);
     };
 
-    // Input brings the user back at once from an away we set, checked at
-    // most once a second so pointer movement stays cheap.
+    // We check at most once a second on input so pointer movement stays cheap.
     let lastInputCheck = 0;
     const onActivity = () => {
       lastActivity = Date.now();
@@ -46,15 +47,29 @@ export function useAutoAway(): void {
       check();
     };
 
+    let lastTick = Date.now();
+    const onTick = () => {
+      const now = Date.now();
+      if (now - lastTick > RESUME_GAP_MS) lastActivity = now;
+      lastTick = now;
+      check();
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") onActivity();
+    };
+
     for (const type of ACTIVITY_EVENTS)
       window.addEventListener(type, onActivity, {
         capture: true,
         passive: true,
       });
-    const timer = window.setInterval(check, CHECK_INTERVAL_MS);
+    document.addEventListener("visibilitychange", onVisibility);
+    const timer = window.setInterval(onTick, CHECK_INTERVAL_MS);
     return () => {
       for (const type of ACTIVITY_EVENTS)
         window.removeEventListener(type, onActivity, { capture: true });
+      document.removeEventListener("visibilitychange", onVisibility);
       window.clearInterval(timer);
     };
   }, []);
