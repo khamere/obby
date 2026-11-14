@@ -1839,6 +1839,10 @@ msgstr "Уютный показывает аватары и отступы ме�
 msgid "Could not access the device."
 msgstr "Не удалось получить доступ к устройству."
 
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Could not check. Try again later."
+msgstr "Не удалось проверить. Повторите попытку позже."
+
 #: src/components/ui/GlobalNotifications.tsx
 msgid "Could not find this message"
 msgstr "Не удалось найти это сообщение"

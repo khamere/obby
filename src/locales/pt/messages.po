@@ -1839,6 +1839,10 @@ msgstr "Confortável mostra avatares e espaço entre mensagens; Compacto junta-a
 msgid "Could not access the device."
 msgstr "Não foi possível acessar o dispositivo."
 
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Could not check. Try again later."
+msgstr "Não foi possível verificar. Tente novamente mais tarde."
+
 #: src/components/ui/GlobalNotifications.tsx
 msgid "Could not find this message"
 msgstr "Não foi possível encontrar esta mensagem"

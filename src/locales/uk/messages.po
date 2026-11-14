@@ -1839,6 +1839,10 @@ msgstr "Затишний показує аватари та відступи м�
 msgid "Could not access the device."
 msgstr "Не вдалося отримати доступ до пристрою."
 
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Could not check. Try again later."
+msgstr "Не вдалося перевірити. Спробуйте пізніше."
+
 #: src/components/ui/GlobalNotifications.tsx
 msgid "Could not find this message"
 msgstr "Не вдалося знайти це повідомлення"

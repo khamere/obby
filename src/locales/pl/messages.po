@@ -1839,6 +1839,10 @@ msgstr "Przytulny pokazuje awatary i odstępy między wiadomościami; Kompaktowy
 msgid "Could not access the device."
 msgstr "Nie udało się uzyskać dostępu do urządzenia."
 
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Could not check. Try again later."
+msgstr "Nie udało się sprawdzić. Spróbuj ponownie później."
+
 #: src/components/ui/GlobalNotifications.tsx
 msgid "Could not find this message"
 msgstr "Nie znaleziono tej wiadomości"

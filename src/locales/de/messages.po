@@ -1839,6 +1839,10 @@ msgstr "Gemütlich zeigt Avatare und Abstände zwischen Nachrichten; Kompakt pac
 msgid "Could not access the device."
 msgstr "Auf das Gerät konnte nicht zugegriffen werden."
 
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Could not check. Try again later."
+msgstr "Prüfung fehlgeschlagen. Versuche es später erneut."
+
 #: src/components/ui/GlobalNotifications.tsx
 msgid "Could not find this message"
 msgstr "Diese Nachricht wurde nicht gefunden"

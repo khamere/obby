@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { SettingComponentProps } from "../../../lib/settings/types";
 import { useAppUpdate } from "../../../store/appUpdate";
 
-type Result = "idle" | "upToDate" | "available";
+type Result = "idle" | "upToDate" | "available" | "failed";
 
 /** Asks now instead of waiting for the daily check, and says what it found. */
 export const UpdateCheckField: React.FC<SettingComponentProps> = ({
@@ -16,7 +16,9 @@ export const UpdateCheckField: React.FC<SettingComponentProps> = ({
 
   const handleCheck = async () => {
     await useAppUpdate.getState().check({ force: true });
-    setResult(useAppUpdate.getState().latest ? "available" : "upToDate");
+    const { latest, checkFailed } = useAppUpdate.getState();
+    if (checkFailed) setResult("failed");
+    else setResult(latest ? "available" : "upToDate");
   };
 
   const version = latest?.version ?? "";
@@ -25,6 +27,9 @@ export const UpdateCheckField: React.FC<SettingComponentProps> = ({
       <span className="text-sm text-discord-text-muted" aria-live="polite">
         {result === "upToDate" && <Trans>Obby is up to date.</Trans>}
         {result === "available" && <Trans>Obby {version} is available.</Trans>}
+        {result === "failed" && (
+          <Trans>Could not check. Try again later.</Trans>
+        )}
       </span>
       <button
         type="button"

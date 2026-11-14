@@ -1839,6 +1839,10 @@ msgstr "舒适模式显示头像和消息间距；紧凑模式像传统 IRC 客�
 msgid "Could not access the device."
 msgstr "无法访问该设备。"
 
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Could not check. Try again later."
+msgstr "无法检查。请稍后重试。"
+
 #: src/components/ui/GlobalNotifications.tsx
 msgid "Could not find this message"
 msgstr "找不到这条消息"

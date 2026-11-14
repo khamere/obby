@@ -52,6 +52,7 @@ beforeEach(() => {
     isOpen: false,
     ...idle,
     isChecking: false,
+    checkFailed: false,
   });
 });
 
@@ -64,6 +65,26 @@ describe("app update store", () => {
     releases.newerRelease.mockResolvedValueOnce(null);
     await useAppUpdate.getState().check();
     expect(useAppUpdate.getState().latest).toBeNull();
+  });
+
+  it("a failed check keeps the known release and says it failed", async () => {
+    releases.newerRelease.mockRejectedValueOnce(new Error("offline"));
+    await useAppUpdate.getState().check({ force: true });
+    expect(useAppUpdate.getState()).toMatchObject({
+      latest: release,
+      checkFailed: true,
+      isChecking: false,
+    });
+    releases.newerRelease.mockResolvedValueOnce(release);
+    await useAppUpdate.getState().check({ force: true });
+    expect(useAppUpdate.getState().checkFailed).toBe(false);
+  });
+
+  it("a check during a download leaves the release being installed alone", async () => {
+    useAppUpdate.setState({ phase: "downloading", received: 10, total: 100 });
+    releases.newerRelease.mockResolvedValueOnce(null);
+    await useAppUpdate.getState().check();
+    expect(useAppUpdate.getState().latest).toEqual(release);
   });
 
   it("startUpdate on Android asks the plugin once, even when tapped twice", async () => {

@@ -1839,6 +1839,10 @@ msgstr "Rahat, avatarları ve mesajlar arasındaki boşlukları gösterir; Sık�
 msgid "Could not access the device."
 msgstr "Cihaza erişilemedi."
 
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Could not check. Try again later."
+msgstr "Denetlenemedi. Daha sonra tekrar dene."
+
 #: src/components/ui/GlobalNotifications.tsx
 msgid "Could not find this message"
 msgstr "Bu mesaj bulunamadı"

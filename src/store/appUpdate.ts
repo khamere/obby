@@ -22,6 +22,8 @@ interface AppUpdateState {
   total: number;
   error: UpdateError | null;
   isChecking: boolean;
+  /** The last check got no answer, so `latest` is what we knew before it. */
+  checkFailed: boolean;
   check: (opts?: { force?: boolean }) => Promise<void>;
   openSheet: () => void;
   closeSheet: () => void;
@@ -76,6 +78,7 @@ export const useAppUpdate = create<AppUpdateState>((set, get) => {
     total: 0,
     error: null,
     isChecking: false,
+    checkFailed: false,
 
     check: async (opts) => {
       if (get().isChecking) return;
@@ -83,7 +86,15 @@ export const useAppUpdate = create<AppUpdateState>((set, get) => {
       try {
         await ensureNative();
         const latest = await newerRelease({ force: opts?.force });
-        set({ latest });
+        // The sheet and the pill show the release being downloaded or
+        // installed, so we swap it only while nothing is under way.
+        set(
+          get().phase === "idle"
+            ? { latest, checkFailed: false }
+            : { checkFailed: false },
+        );
+      } catch {
+        set({ checkFailed: true });
       } finally {
         set({ isChecking: false });
       }

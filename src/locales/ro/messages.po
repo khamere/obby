@@ -1839,6 +1839,10 @@ msgstr "Confortabil afișează avatare și spațiu între mesaje; Compact le în
 msgid "Could not access the device."
 msgstr "Dispozitivul nu a putut fi accesat."
 
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Could not check. Try again later."
+msgstr "Verificarea nu a reușit. Încearcă din nou mai târziu."
+
 #: src/components/ui/GlobalNotifications.tsx
 msgid "Could not find this message"
 msgstr "Mesajul nu a fost găsit"

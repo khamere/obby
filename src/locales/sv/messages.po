@@ -1839,6 +1839,10 @@ msgstr "Luftig visar avatarer och mellanrum mellan meddelanden; Kompakt packar d
 msgid "Could not access the device."
 msgstr "Det gick inte att komma åt enheten."
 
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Could not check. Try again later."
+msgstr "Det gick inte att kontrollera. Försök igen senare."
+
 #: src/components/ui/GlobalNotifications.tsx
 msgid "Could not find this message"
 msgstr "Meddelandet hittades inte"

@@ -7,6 +7,7 @@ import {
   parseReleaseVersion,
   pickApkAsset,
   RELEASE_CHECK_INTERVAL_MS,
+  ReleaseCheckFailed,
   shortReleaseLabel,
 } from "../../src/lib/releaseCheck";
 
@@ -129,14 +130,24 @@ describe("fetchLatestRelease", () => {
     );
   });
 
-  it("answers null when there is no published release or the request fails", async () => {
-    const notFound = { ok: false } as Response;
+  it("answers null when the repository has no published release", async () => {
+    const notFound = { ok: false, status: 404 } as Response;
     await expect(
       fetchLatestRelease(
         "x/y",
         fetching(async () => notFound),
       ),
     ).resolves.toBeNull();
+  });
+
+  it("fails when the request brings no answer", async () => {
+    const limited = { ok: false, status: 403 } as Response;
+    await expect(
+      fetchLatestRelease(
+        "x/y",
+        fetching(async () => limited),
+      ),
+    ).rejects.toBeInstanceOf(ReleaseCheckFailed);
     await expect(
       fetchLatestRelease(
         "x/y",
@@ -144,7 +155,16 @@ describe("fetchLatestRelease", () => {
           throw new TypeError("offline");
         }),
       ),
-    ).resolves.toBeNull();
+    ).rejects.toBeInstanceOf(ReleaseCheckFailed);
+    await expect(
+      fetchLatestRelease(
+        "x/y",
+        fetching(
+          async () =>
+            ({ ok: true, json: async () => ({}) }) as unknown as Response,
+        ),
+      ),
+    ).rejects.toBeInstanceOf(ReleaseCheckFailed);
   });
 });
 
@@ -220,6 +240,32 @@ describe("newerRelease", () => {
     await newerRelease({ ...args, now: 1 });
     await newerRelease({ ...args, now: 2, force: true });
     expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it("a failed request is not remembered and keeps the last answer", async () => {
+    const fetchImpl = fetching(async () => release("v0.4.0-cf1.0.2"));
+    const args = { repo: "o/r", current: "0.4.0-cf1.0.1", fetchImpl };
+    await newerRelease({ ...args, now: 1 });
+    fetchImpl.mockRejectedValueOnce(new TypeError("offline"));
+    await expect(
+      newerRelease({ ...args, now: 2, force: true }),
+    ).rejects.toBeInstanceOf(ReleaseCheckFailed);
+    await expect(newerRelease({ ...args, now: 3 })).resolves.toMatchObject({
+      version: "0.4.0-cf1.0.2",
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it("asks again after a failed first request", async () => {
+    const fetchImpl = fetching(async () => release("v0.4.0-cf1.0.2"));
+    const args = { repo: "o/r", current: "0.4.0-cf1.0.1", fetchImpl };
+    fetchImpl.mockRejectedValueOnce(new TypeError("offline"));
+    await expect(newerRelease({ ...args, now: 1 })).rejects.toBeInstanceOf(
+      ReleaseCheckFailed,
+    );
+    await expect(newerRelease({ ...args, now: 2 })).resolves.toMatchObject({
+      version: "0.4.0-cf1.0.2",
+    });
   });
 
   it("asks the configured API", async () => {

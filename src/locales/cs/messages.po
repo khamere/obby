@@ -1839,6 +1839,10 @@ msgstr "Útulné zobrazuje avatary a mezery mezi zprávami; Kompaktní je sklád
 msgid "Could not access the device."
 msgstr "Nepodařilo se získat přístup k zařízení."
 
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Could not check. Try again later."
+msgstr "Kontrola se nezdařila. Zkuste to později."
+
 #: src/components/ui/GlobalNotifications.tsx
 msgid "Could not find this message"
 msgstr "Tuto zprávu se nepodařilo najít"

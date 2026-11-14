@@ -1839,6 +1839,10 @@ msgstr "Comodo mostra avatar e spazio tra i messaggi; Compatto li compatta come 
 msgid "Could not access the device."
 msgstr "Impossibile accedere al dispositivo."
 
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Could not check. Try again later."
+msgstr "Controllo non riuscito. Riprova più tardi."
+
 #: src/components/ui/GlobalNotifications.tsx
 msgid "Could not find this message"
 msgstr "Impossibile trovare questo messaggio"

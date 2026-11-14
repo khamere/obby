@@ -1839,6 +1839,10 @@ msgstr "Väljä näyttää avatarit ja välit viestien välillä; Tiivis pakkaa 
 msgid "Could not access the device."
 msgstr "Laitteeseen ei saatu yhteyttä."
 
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Could not check. Try again later."
+msgstr "Tarkistus epäonnistui. Yritä myöhemmin uudelleen."
+
 #: src/components/ui/GlobalNotifications.tsx
 msgid "Could not find this message"
 msgstr "Tätä viestiä ei löytynyt"

@@ -1838,6 +1838,10 @@ msgstr "Cosy shows avatars and spacing between messages; Compact packs them like
 msgid "Could not access the device."
 msgstr "Could not access the device."
 
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Could not check. Try again later."
+msgstr "Could not check. Try again later."
+
 #: src/components/ui/GlobalNotifications.tsx
 msgid "Could not find this message"
 msgstr "Could not find this message"

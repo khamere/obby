@@ -1839,6 +1839,10 @@ msgstr "Acogedor muestra avatares y espacio entre mensajes; Compacto los junta c
 msgid "Could not access the device."
 msgstr "No se pudo acceder al dispositivo."
 
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Could not check. Try again later."
+msgstr "No se pudo comprobar. Inténtalo más tarde."
+
 #: src/components/ui/GlobalNotifications.tsx
 msgid "Could not find this message"
 msgstr "No se encontró este mensaje"

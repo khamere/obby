@@ -1839,6 +1839,10 @@ msgstr "「ゆったり」はアバターとメッセージ間の余白を表示
 msgid "Could not access the device."
 msgstr "デバイスにアクセスできませんでした。"
 
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Could not check. Try again later."
+msgstr "確認できませんでした。後でもう一度お試しください。"
+
 #: src/components/ui/GlobalNotifications.tsx
 msgid "Could not find this message"
 msgstr "このメッセージが見つかりません"

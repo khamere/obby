@@ -1839,6 +1839,10 @@ msgstr "Confortable affiche les avatars et des espaces entre les messages ; Comp
 msgid "Could not access the device."
 msgstr "Impossible d'accéder à l'appareil."
 
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Could not check. Try again later."
+msgstr "Vérification impossible. Réessayez plus tard."
+
 #: src/components/ui/GlobalNotifications.tsx
 msgid "Could not find this message"
 msgstr "Impossible de trouver ce message"

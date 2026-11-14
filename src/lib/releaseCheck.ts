@@ -107,6 +107,10 @@ export function isNewerRelease(
   return !!next && !!now && compareReleases(next, now) > 0;
 }
 
+/** The request brought no usable answer, which says nothing about releases. */
+export class ReleaseCheckFailed extends Error {}
+
+/** The newest release, or null when the repository has published none. */
 export async function fetchLatestRelease(
   repo: string,
   fetchImpl: typeof fetch = fetch,
@@ -119,7 +123,8 @@ export async function fetchLatestRelease(
       headers: { Accept: "application/vnd.github+json" },
       signal: controller.signal,
     });
-    if (!response.ok) return null;
+    if (response.status === 404) return null;
+    if (!response.ok) throw new ReleaseCheckFailed(`HTTP ${response.status}`);
     const body = (await response.json()) as {
       tag_name?: unknown;
       html_url?: unknown;
@@ -127,7 +132,7 @@ export async function fetchLatestRelease(
       assets?: unknown;
     };
     if (typeof body.tag_name !== "string" || typeof body.html_url !== "string")
-      return null;
+      throw new ReleaseCheckFailed("unreadable answer");
     const version = body.tag_name.replace(/^v/, "");
     return {
       version,
@@ -135,8 +140,9 @@ export async function fetchLatestRelease(
       notes: typeof body.body === "string" ? body.body : "",
       apk: pickApkAsset(body.assets, version),
     };
-  } catch {
-    return null;
+  } catch (e) {
+    if (e instanceof ReleaseCheckFailed) throw e;
+    throw new ReleaseCheckFailed(e instanceof Error ? e.message : String(e));
   } finally {
     clearTimeout(timer);
   }
@@ -159,7 +165,10 @@ function remember(entry: Remembered): void {
   }
 }
 
-/** The newer release, if the repository has one, asked at most once a day. */
+/**
+ * The newer release, if the repository has one, asked at most once a day.
+ * Throws ReleaseCheckFailed when the repository could not be asked.
+ */
 export async function newerRelease({
   repo = __APP_RELEASES_REPO__,
   api = RELEASES_API,
@@ -189,6 +198,8 @@ export async function newerRelease({
   ) {
     latest = known.latest;
   } else {
+    // A request that fails throws here, before anything is remembered, so
+    // only a real answer is kept for the day.
     latest = await fetchLatestRelease(repo, fetchImpl, api);
     remember({ repo, checkedAt: now, latest });
   }

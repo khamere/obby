@@ -1839,6 +1839,10 @@ msgstr "Ruim toont avatars en ruimte tussen berichten; Compact zet ze dicht op e
 msgid "Could not access the device."
 msgstr "Kan geen toegang krijgen tot het apparaat."
 
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Could not check. Try again later."
+msgstr "Controleren is mislukt. Probeer het later opnieuw."
+
 #: src/components/ui/GlobalNotifications.tsx
 msgid "Could not find this message"
 msgstr "Dit bericht is niet gevonden"
