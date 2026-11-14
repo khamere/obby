@@ -250,7 +250,37 @@ describe("a muted chat that is created again", () => {
       null,
     );
 
+    useStore.setState({
+      mentionLog: [
+        {
+          serverId,
+          channelId: "c-general",
+          channelName: "#general",
+          messageId: "m1",
+        },
+      ] as unknown as ReturnType<typeof useStore.getState>["mentionLog"],
+    });
+    const before = useStore.getState();
+    const oldServer = server();
+    const oldChannel = oldServer.channels[0];
+
     feed(":bob!u@h RENAME #General #lounge :tidying up");
+
+    // Views compare references, so a rename has to hand them new ones.
+    expect(useStore.getState().servers).not.toBe(before.servers);
+    expect(server()).not.toBe(oldServer);
+    expect(server().channels[0]).not.toBe(oldChannel);
+    expect(oldChannel.name).toBe("#general");
+
+    const logged = useStore.getState().mentionLog[0];
+    expect(logged.channelName).toBe("#lounge");
+    expect(
+      isSilenced(
+        serverId,
+        { id: logged.channelId, kind: "channel", name: logged.channelName },
+        true,
+      ),
+    ).toBe(true);
 
     const channel = server().channels[0];
     expect(channel).toMatchObject({ id: "c-general", name: "#lounge" });

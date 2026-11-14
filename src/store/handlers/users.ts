@@ -1045,8 +1045,6 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
       );
       if (!channel) return {};
 
-      channel.name = newName;
-
       const renameMessage: Message = {
         id: `rename-${Date.now()}`,
         content: t`Channel has been renamed from ${oldName} to ${newName} by ${user}${reason ? ` (${reason})` : ""}`,
@@ -1063,6 +1061,23 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
       const channelKey = `${serverId}-${channel.id}`;
       const currentMessages = state.messages[channelKey] || [];
       return {
+        servers: state.servers.map((s) =>
+          s.id === serverId
+            ? {
+                ...s,
+                channels: s.channels.map((c) =>
+                  c.id === channel.id ? { ...c, name: newName } : c,
+                ),
+              }
+            : s,
+        ),
+        // Logged mentions are matched to a mute by channel name, so they
+        // take the new name along with the channel.
+        mentionLog: state.mentionLog.map((m) =>
+          m.serverId === serverId && m.channelId === channel.id
+            ? { ...m, channelName: newName }
+            : m,
+        ),
         messages: {
           ...state.messages,
           [channelKey]: [...currentMessages, renameMessage],
