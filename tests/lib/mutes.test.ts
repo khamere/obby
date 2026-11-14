@@ -18,6 +18,21 @@ import {
 import { shouldPlayNotificationSound } from "../../src/lib/notificationSounds";
 import { generateDeterministicId } from "../../src/store/helpers";
 
+// We count how often a chat id is derived: each one is a SHA-1 hash, and the
+// app looks for mutes to name on every change of its servers.
+const hashes = vi.hoisted(() => ({ count: 0 }));
+vi.mock("../../src/store/helpers", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../../src/store/helpers")>();
+  return {
+    ...actual,
+    generateDeterministicId: (serverId: string, name: string) => {
+      hashes.count++;
+      return actual.generateDeterministicId(serverId, name);
+    },
+  };
+});
+
 const HOUR = 60 * 60 * 1000;
 
 const chan: ChatRef = { id: "chan", kind: "channel", name: "#chan" };
@@ -288,6 +303,49 @@ describe("mutes", () => {
       expect(isSilenced("s1", mara.id, true)).toBe(true);
       expect(saved()).toEqual({
         "s1/dm:mara": { until: null, kind: "dm", name: "Mara" },
+      });
+    });
+
+    it("is named through the chat's own id without deriving any", () => {
+      stored({ "s1/p-bob": { until: null, kind: "dm" } });
+      setMuteChatSource(() => loaded(chan, dev, bob));
+      hashes.count = 0;
+      adoptIdKeyedMutes();
+      expect(saved()).toEqual({
+        "s1/dm:bob": { until: null, kind: "dm", name: "bob" },
+      });
+      expect(hashes.count).toBe(0);
+    });
+
+    it("derives a chat's ids once, however often we look while it waits", () => {
+      stored({ "s1/gone": { until: null, kind: "channel" } });
+      setMuteChatSource(() => loaded(chan, dev, bob));
+      adoptIdKeyedMutes();
+      hashes.count = 0;
+      for (let i = 0; i < 5; i++) adoptIdKeyedMutes();
+      expect(hashes.count).toBe(0);
+      expect(isSilenced("s1", "gone", true)).toBe(true);
+
+      const alice: ChatRef = { id: "p-alice", kind: "dm", name: "alice" };
+      setMuteChatSource(() => loaded(chan, dev, bob, alice));
+      adoptIdKeyedMutes();
+      adoptIdKeyedMutes();
+      expect(hashes.count).toBe(2);
+    });
+
+    it("names every entry of a chat that sits under more than one id", () => {
+      const now = Date.now();
+      stored({
+        "s1/p-bob": { until: now + HOUR, kind: "dm" },
+        [`s1/${generateDeterministicId("s1", "bob")}`]: {
+          until: now + HOUR,
+          kind: "dm",
+        },
+      });
+      setMuteChatSource(() => loaded(bob));
+      adoptIdKeyedMutes();
+      expect(saved()).toEqual({
+        "s1/dm:bob": { until: now + HOUR, kind: "dm", name: "bob" },
       });
     });
 

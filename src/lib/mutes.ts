@@ -193,9 +193,29 @@ export function moveChatMute(
   });
 }
 
+// The ids a chat gets under its name as it is and in lower case. Each one is
+// a SHA-1 hash, and a mute can wait for good for a chat that never comes
+// back, so we work them out once per name.
+const derivedIds = new Map<string, string[]>();
+
+function derivedIdsOf(serverId: string, name: string): string[] {
+  const cacheKey = `${serverId}:${name}`;
+  let ids = derivedIds.get(cacheKey);
+  if (!ids) {
+    ids = [
+      generateDeterministicId(serverId, name),
+      generateDeterministicId(serverId, name.toLowerCase()),
+    ];
+    derivedIds.set(cacheKey, ids);
+  }
+  return ids;
+}
+
 // We move an entry under a chat id to the chat's name as soon as that chat
 // is loaded. The id may be the one the chat gets under the lower-case
-// spelling of its name, so we look for that one too.
+// spelling of its name, so we look for that one too. This runs on every
+// change of the loaded servers, so the chats' own ids come first: they cost
+// no hash, and most entries are found through them.
 export function adoptIdKeyedMutes(): void {
   load();
   const unnamed = Object.entries(state.chats)
@@ -204,22 +224,28 @@ export function adoptIdKeyedMutes(): void {
   if (unnamed.length === 0) return;
   let chats = state.chats;
   for (const server of loadedServers()) {
-    if (!unnamed.some((key) => key.startsWith(`${server.id}/`))) continue;
-    for (const chat of chatsOf(server)) {
-      const ids = [
-        chat.id,
-        generateDeterministicId(server.id, chat.name),
-        generateDeterministicId(server.id, chat.name.toLowerCase()),
-      ];
-      for (const key of ids.map((id) => idKey(server.id, id))) {
-        const entry = chats[key];
-        if (!entry || entry.name !== undefined) continue;
-        const named = nameKey(server.id, chat);
-        chats = {
-          [named]: { ...entry, kind: chat.kind, name: chat.name },
-          ...without(chats, [key]),
-        };
-      }
+    const prefix = `${server.id}/`;
+    let waiting = unnamed.filter((key) => key.startsWith(prefix)).length;
+    if (waiting === 0) continue;
+    const loadedChats = chatsOf(server);
+    const adopt = (chat: ChatRef, id: string) => {
+      const key = idKey(server.id, id);
+      const entry = chats[key];
+      if (!entry || entry.name !== undefined) return;
+      chats = {
+        [nameKey(server.id, chat)]: {
+          ...entry,
+          kind: chat.kind,
+          name: chat.name,
+        },
+        ...without(chats, [key]),
+      };
+      waiting--;
+    };
+    for (const chat of loadedChats) adopt(chat, chat.id);
+    for (const chat of loadedChats) {
+      if (waiting === 0) break;
+      for (const id of derivedIdsOf(server.id, chat.name)) adopt(chat, id);
     }
   }
   if (chats !== state.chats) save({ ...state, chats });
@@ -335,4 +361,5 @@ export function useMutes(): MuteState {
 export function resetMutesForTests(): void {
   state = { servers: {}, chats: {} };
   loaded = false;
+  derivedIds.clear();
 }
