@@ -93,6 +93,8 @@ export function expectAutoBack(serverId: string): void {
 // A back we did not send ended the away from elsewhere, so we wait for the user.
 export function releaseAutoAway(serverId: string): void {
   if (expectedBack.delete(serverId)) return;
+  // Replies come in order, so a back that arrives before our away is confirmed ended an earlier away.
+  if (ours.get(serverId) === "pending") return;
   ours.set(serverId, "released");
 }
 

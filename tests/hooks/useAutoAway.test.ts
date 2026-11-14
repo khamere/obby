@@ -288,6 +288,36 @@ describe("useAutoAway", () => {
     expect(clearAway).not.toHaveBeenCalled();
   });
 
+  it("still ends its away when a back from elsewhere arrives before the confirmation", () => {
+    renderHook(() => useAutoAway());
+    vi.advanceTimersByTime(10 * MIN + 30_000);
+    expect(setAway).toHaveBeenCalledTimes(1);
+
+    ircClient.triggerEvent("RPL_UNAWAY", { serverId: "s1", message: "" });
+    setServer(true);
+    vi.advanceTimersByTime(30_000);
+
+    window.dispatchEvent(new KeyboardEvent("keydown"));
+    expect(clearAway).toHaveBeenCalledWith("s1");
+  });
+
+  it("leaves the back to the user when they send it during an auto away", () => {
+    renderHook(() => useAutoAway());
+    vi.advanceTimersByTime(10 * MIN + 30_000);
+    setServer(true);
+    vi.advanceTimersByTime(30_000);
+
+    useStore.getState().clearAway("s1");
+    expect(clearAway).toHaveBeenCalledTimes(1);
+    ircClient.triggerEvent("RPL_UNAWAY", { serverId: "s1", message: "" });
+    window.dispatchEvent(new KeyboardEvent("keydown"));
+    vi.advanceTimersByTime(60_000);
+    expect(clearAway).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(10 * MIN);
+    expect(setAway).toHaveBeenCalledTimes(2);
+  });
+
   it("sends away again after its own back and a new idle time", () => {
     renderHook(() => useAutoAway());
     vi.advanceTimersByTime(10 * MIN + 30_000);
