@@ -11,6 +11,7 @@ import { networkHost } from "../../lib/networkHost";
 import { serverDisplayName } from "../../lib/serverDisplayName";
 import { serverHasUnreadMention } from "../../lib/unreadMentions";
 import useStore from "../../store";
+import { isServerConnecting } from "../../store/helpers";
 import type { Server } from "../../types";
 import ServerBottomSheet from "../mobile/ServerBottomSheet";
 
@@ -259,13 +260,11 @@ const GroupedAvatar: React.FC<GroupedAvatarProps> = ({
           : {})}
       >
         {(server.connectionState === "disconnected" ||
-          server.connectionState === "connecting" ||
-          server.connectionState === "reconnecting") && (
+          isServerConnecting(server)) && (
           <div className="absolute inset-0 bg-black/40 rounded-full" />
         )}
 
-        {(server.connectionState === "connecting" ||
-          server.connectionState === "reconnecting") && (
+        {isServerConnecting(server) && (
           <FaRedo className="absolute inset-0 m-auto text-discord-text-strong animate-spin text-sm z-10" />
         )}
 

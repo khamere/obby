@@ -45,8 +45,9 @@ import { isTauriDesktop, isTauriMobile } from "../../lib/platformUtils";
 import { getLiveVoiceCalls, subscribeLiveVoiceCalls } from "../../lib/voice";
 import useStore, { type AppState } from "../../store";
 import { useChannelFolders } from "../../store/channelFolders";
+import { isServerConnecting } from "../../store/helpers";
 import type { ChannelFolder } from "../../store/types";
-import type { Channel, User } from "../../types";
+import type { Channel, Server, User } from "../../types";
 import InviteUserModal from "../ui/InviteUserModal";
 import Menu from "../ui/Menu";
 import AddChannelRow from "./AddChannelRow";
@@ -59,6 +60,12 @@ import PrivateChatRow from "./PrivateChatRow";
 import StartPrivateChatRow from "./StartPrivateChatRow";
 import { UpdateLine } from "./UpdateLine";
 import UserPanel, { type PresenceStatus } from "./UserPanel";
+
+export function presenceOf(server: Server | undefined): PresenceStatus {
+  if (isServerConnecting(server)) return "connecting";
+  if (!server?.isConnected) return "offline";
+  return server.isAway ? "away" : "online";
+}
 
 // The store keeps one currentUser for whichever server updated it last, so we
 // use it only when it carries our nick on the selected server.
@@ -194,16 +201,10 @@ export const ChannelList: React.FC = () => {
     return undefined;
   });
 
-  // Get user status based on server connection and away status
-  const userStatus = useMemo((): PresenceStatus => {
-    if (!selectedServer?.isConnected) {
-      return "offline";
-    }
-    if (selectedServer.isAway) {
-      return "away";
-    }
-    return "online";
-  }, [selectedServer]);
+  const userStatus = useMemo(
+    () => presenceOf(selectedServer),
+    [selectedServer],
+  );
 
   // Check if current user is an IRC operator
   // Check both the computed currentUser and the store's currentUser for IRC operator status

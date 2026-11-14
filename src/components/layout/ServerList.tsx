@@ -21,6 +21,7 @@ import { networkHost } from "../../lib/networkHost";
 import { serverDisplayName } from "../../lib/serverDisplayName";
 import { serverHasUnreadMention } from "../../lib/unreadMentions";
 import useStore from "../../store";
+import { isServerConnecting } from "../../store/helpers";
 import type { Server } from "../../types";
 import ServerBottomSheet from "../mobile/ServerBottomSheet";
 import { BouncerServerGroup } from "./BouncerServerGroup";
@@ -129,13 +130,11 @@ const ServerIcon: React.FC<ServerIconProps> = ({
           : {})}
       >
         {(server.connectionState === "disconnected" ||
-          server.connectionState === "connecting" ||
-          server.connectionState === "reconnecting") && (
+          isServerConnecting(server)) && (
           <div className="absolute inset-0 bg-discord-text-faint bg-opacity-50 rounded-lg" />
         )}
 
-        {(server.connectionState === "connecting" ||
-          server.connectionState === "reconnecting") && (
+        {isServerConnecting(server) && (
           <span className={CONNECTION_BADGE_CLASS}>
             <FaRedo className="text-discord-text-strong text-[10px] animate-spin" />
           </span>

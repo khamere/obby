@@ -79,6 +79,14 @@ export function getLoginState(server: Server | undefined): LoginState {
   return server.account ? "loggedIn" : "guest";
 }
 
+// The socket opens before the server has logged us in, so a server counts as connecting until it has.
+export function isServerConnecting(server: Server | undefined): boolean {
+  return (
+    getLoginState(server) === "connecting" ||
+    server?.connectionState === "reconnecting"
+  );
+}
+
 export function normalizeHost(host: string): string {
   if (host.includes("://")) {
     // Extract hostname from URL format

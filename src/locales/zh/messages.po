@@ -1721,6 +1721,7 @@ msgstr "以访客身份连接"
 msgid "Connected to"
 msgstr "已连接到"
 
+#: src/components/layout/UserPanel.tsx
 #: src/components/ui/MiniMediaPlayer.tsx
 msgid "Connecting"
 msgstr "连接中"
