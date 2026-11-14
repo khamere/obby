@@ -1,7 +1,11 @@
 import { renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutoAway } from "../../src/hooks/useAutoAway";
-import { setAutoAwayRecord, setAutoAwaySeenAway } from "../../src/lib/autoAway";
+import {
+  forgetExpectedBack,
+  setAutoAwayRecord,
+  setAutoAwaySeenAway,
+} from "../../src/lib/autoAway";
 import ircClient from "../../src/lib/ircClient";
 import useStore from "../../src/store";
 import type { Server } from "../../src/types";
@@ -32,6 +36,8 @@ describe("useAutoAway", () => {
     vi.useFakeTimers();
     setAutoAwayRecord(new Map());
     setAutoAwaySeenAway(new Set());
+    forgetExpectedBack("s1");
+    forgetExpectedBack("s2");
     setAway = vi.spyOn(ircClient, "setAway").mockImplementation(() => {});
     clearAway = vi.spyOn(ircClient, "clearAway").mockImplementation(() => {});
     useStore.setState((state) => ({
@@ -316,6 +322,41 @@ describe("useAutoAway", () => {
 
     vi.advanceTimersByTime(10 * MIN);
     expect(setAway).toHaveBeenCalledTimes(2);
+  });
+
+  it("sends away again after a new idle time when one input sent two backs", () => {
+    renderHook(() => useAutoAway());
+    vi.advanceTimersByTime(10 * MIN + 30_000);
+    setServer(true);
+    vi.advanceTimersByTime(30_000);
+
+    window.dispatchEvent(new KeyboardEvent("keydown"));
+    useStore.getState().clearAway("s1");
+    expect(clearAway).toHaveBeenCalledTimes(2);
+    ircClient.triggerEvent("RPL_UNAWAY", { serverId: "s1", message: "" });
+    ircClient.triggerEvent("RPL_UNAWAY", { serverId: "s1", message: "" });
+
+    vi.advanceTimersByTime(10 * MIN + 30_000);
+    expect(setAway).toHaveBeenCalledTimes(2);
+  });
+
+  it("takes a back from elsewhere as such after a back of ours died with its connection", () => {
+    renderHook(() => useAutoAway());
+    useStore.getState().clearAway("s1");
+    ircClient.triggerEvent("connectionStateChange", {
+      serverId: "s1",
+      connectionState: "connected",
+    });
+    setServer(false);
+    vi.advanceTimersByTime(9 * MIN);
+
+    ircClient.triggerEvent("RPL_UNAWAY", { serverId: "s1", message: "" });
+    vi.advanceTimersByTime(5 * MIN);
+    expect(setAway).not.toHaveBeenCalled();
+
+    window.dispatchEvent(new KeyboardEvent("keydown"));
+    vi.advanceTimersByTime(10 * MIN + 30_000);
+    expect(setAway).toHaveBeenCalledTimes(1);
   });
 
   it("sends away again after its own back and a new idle time", () => {

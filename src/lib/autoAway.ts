@@ -83,16 +83,25 @@ export function setAutoAwaySeenAway(seen: ReadonlySet<string>): void {
   lastSeenAway = seen;
 }
 
-const expectedBack = new Set<string>();
+const expectedBack = new Map<string, number>();
 
-// The server answers a back we send ourselves, and that answer says nothing about other clients.
+// The server answers each back we send ourselves, and those answers say nothing about other clients.
 export function expectAutoBack(serverId: string): void {
-  expectedBack.add(serverId);
+  expectedBack.set(serverId, (expectedBack.get(serverId) ?? 0) + 1);
+}
+
+// Answers to what we sent on a closed connection never arrive.
+export function forgetExpectedBack(serverId: string): void {
+  expectedBack.delete(serverId);
 }
 
 // A back we did not send ended the away from elsewhere, so we wait for the user.
 export function releaseAutoAway(serverId: string): void {
-  if (expectedBack.delete(serverId)) return;
+  const expected = expectedBack.get(serverId) ?? 0;
+  if (expected > 0) {
+    expectedBack.set(serverId, expected - 1);
+    return;
+  }
   // Replies come in order, so a back that arrives before our away is confirmed ended an earlier away.
   if (ours.get(serverId) === "pending") return;
   ours.set(serverId, "released");
@@ -120,7 +129,6 @@ export function setAutoAwayRecord(next: Map<string, AutoAwayState>): void {
 // The user's own away or back on a server takes it out of our hands.
 export function forgetAutoAway(serverId: string): void {
   ours.delete(serverId);
-  expectedBack.delete(serverId);
   if (lastSeenAway.has(serverId))
     lastSeenAway = new Set([...lastSeenAway].filter((id) => id !== serverId));
 }

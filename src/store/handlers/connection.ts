@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import type { StoreApi } from "zustand";
-import { forgetAutoAway } from "../../lib/autoAway";
+import { forgetAutoAway, forgetExpectedBack } from "../../lib/autoAway";
 import { isLiveChannel } from "../../lib/channelFolders";
 import ircClient from "../../lib/ircClient";
 import type { PrivateChat } from "../../types";
@@ -128,6 +128,7 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
   ircClient.on("connectionStateChange", ({ serverId, connectionState }) => {
     // An automatic away belongs to the connection it was sent on.
     forgetAutoAway(serverId);
+    forgetExpectedBack(serverId);
     // Allow the ready handler to re-run metadata restoration after reconnect
     if (connectionState === "disconnected") {
       readyProcessedServers.delete(serverId);
