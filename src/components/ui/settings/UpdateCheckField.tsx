@@ -1,6 +1,7 @@
 import { Trans } from "@lingui/react/macro";
 import type React from "react";
 import { useState } from "react";
+import { useIsTouchInput } from "../../../hooks/useIsTouchInput";
 import type { SettingComponentProps } from "../../../lib/settings/types";
 import { useAppUpdate } from "../../../store/appUpdate";
 
@@ -13,6 +14,7 @@ export const UpdateCheckField: React.FC<SettingComponentProps> = ({
   const isChecking = useAppUpdate((s) => s.isChecking);
   const latest = useAppUpdate((s) => s.latest);
   const [result, setResult] = useState<Result>("idle");
+  const isTouch = useIsTouchInput();
 
   const handleCheck = async () => {
     await useAppUpdate.getState().check({ force: true });
@@ -22,8 +24,7 @@ export const UpdateCheckField: React.FC<SettingComponentProps> = ({
   // A release found earlier is on offer here as well, so nobody has to leave
   // the page to act on it.
   const version = latest?.version ?? "";
-  const button =
-    "rounded px-3 py-1.5 text-sm disabled:opacity-50 text-discord-text-normal";
+  const button = `rounded px-3 py-1.5 text-sm disabled:opacity-50 text-discord-text-normal ${isTouch ? "min-h-11" : ""}`;
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <span

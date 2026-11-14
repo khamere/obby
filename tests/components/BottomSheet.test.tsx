@@ -16,6 +16,15 @@ describe("BottomSheet", () => {
     expect(onRowTouchEnd).not.toHaveBeenCalled();
   });
 
+  it("takes its name from the heading its content points at", () => {
+    render(
+      <BottomSheet isOpen onClose={vi.fn()} labelledBy="sheet-title">
+        <h2 id="sheet-title">Pick a colour</h2>
+      </BottomSheet>,
+    );
+    expect(screen.getByRole("dialog", { name: "Pick a colour" })).toBeTruthy();
+  });
+
   it("closes when the backdrop is tapped", () => {
     const onClose = vi.fn();
     render(

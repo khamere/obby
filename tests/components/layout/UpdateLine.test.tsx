@@ -101,6 +101,17 @@ describe("UpdateLine", () => {
     expect(check).toHaveBeenCalledTimes(2);
   });
 
+  // The pill's text is 16px high, so 14px on each side makes the 44px a
+  // finger needs.
+  it("the pill takes touches 14px around itself on a touch screen", () => {
+    setState({ latest: release });
+    render(<UpdateLine />);
+    const classes = screen.getByRole("button").className.split(" ");
+    expect(classes).toContain("leading-4");
+    expect(classes).toContain("after:-inset-3.5");
+    expect(classes).toContain("[@media(pointer:coarse)]:after:block");
+  });
+
   it("the pill never shrinks and the version gives way first", () => {
     setState({ latest: release });
     render(<UpdateLine />);

@@ -1,6 +1,6 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type React from "react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useIsTouchInput } from "../../hooks/useIsTouchInput";
 import type { UpdateError } from "../../lib/appUpdateNative";
 import { APP_VERSION } from "../../lib/appVersion";
@@ -34,6 +34,7 @@ export const UpdateSheet: React.FC = () => {
   const error = useAppUpdate((s) => s.error);
   const canInstall = useAppUpdate(selectCanInstallInApp);
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
+  const titleId = useId();
 
   if (!isOpen || !latest) return null;
 
@@ -65,26 +66,27 @@ export const UpdateSheet: React.FC = () => {
     <button
       type="button"
       onClick={() => setPendingUrl(latest.url)}
-      className="text-left text-sm text-discord-text-link hover:underline"
+      className={`text-left text-sm text-discord-text-link hover:underline ${isTouch ? "min-h-11" : ""}`}
     >
       <Trans>Open the release page</Trans>
     </button>
   );
 
   let title: React.ReactNode = <Trans>Obby {version}</Trans>;
-  let body: React.ReactNode;
+  // The line that says where the update stands, apart from the rest of the
+  // body so a screen reader hears each step and nothing else.
+  let status: React.ReactNode = null;
+  let body: React.ReactNode = null;
   let actions: React.ReactNode;
 
   if (phase === "error") {
     title = <Trans>Update not installed</Trans>;
-    body = (
-      <>
-        <p className="text-sm text-discord-text-normal">
-          {errorText[error ?? "network"]}
-        </p>
-        {releaseLink}
-      </>
+    status = (
+      <p className="text-sm text-discord-text-normal">
+        {errorText[error ?? "network"]}
+      </p>
     );
+    body = releaseLink;
     actions = (
       <>
         <Button variant="secondary" onClick={closeSheet}>
@@ -98,11 +100,13 @@ export const UpdateSheet: React.FC = () => {
   } else if (phase === "downloading") {
     const done = megabytes(received);
     const all = `${megabytes(total)} MB`;
+    status = (
+      <p className="text-sm font-medium text-discord-text-strong">
+        <Trans>Downloading {label}</Trans>
+      </p>
+    );
     body = (
       <>
-        <p className="text-sm font-medium text-discord-text-strong">
-          <Trans>Downloading {label}</Trans>
-        </p>
         <div
           role="progressbar"
           aria-valuemin={0}
@@ -132,14 +136,14 @@ export const UpdateSheet: React.FC = () => {
       </Button>
     );
   } else if (phase === "verifying") {
-    body = (
+    status = (
       <p className="text-sm text-discord-text-normal">
         <Trans>Checking the download</Trans>
       </p>
     );
   } else if (phase === "needs-permission") {
     title = <Trans>Allow Obby to install updates</Trans>;
-    body = (
+    status = (
       <p className="text-sm text-discord-text-normal">
         <Trans>
           Android asks once. Turn on "Allow from this source" for Obby, then
@@ -158,13 +162,13 @@ export const UpdateSheet: React.FC = () => {
       </>
     );
   } else if (phase === "waiting-foreground") {
-    body = (
+    status = (
       <p className="text-sm text-discord-text-normal">
         <Trans>Ready to install. Return to Obby to continue.</Trans>
       </p>
     );
   } else if (phase === "installing") {
-    body = (
+    status = (
       <p className="text-sm text-discord-text-normal">
         <Trans>
           Obby will close to install the update; open it again afterwards.
@@ -237,9 +241,20 @@ export const UpdateSheet: React.FC = () => {
     );
   }
 
+  // The region stays mounted through every phase, because a screen reader
+  // only announces changes inside a region it already knows.
+  const main = (
+    <>
+      <div role="status" className="empty:hidden">
+        {status}
+      </div>
+      {body}
+    </>
+  );
+
   const content = (
     <>
-      <div className="flex flex-col gap-3 px-5 py-3">{body}</div>
+      <div className="flex flex-col gap-3 px-5 py-3">{main}</div>
       {actions && (
         <div className="flex flex-wrap justify-end gap-2 px-5 pb-4">
           {actions}
@@ -251,9 +266,12 @@ export const UpdateSheet: React.FC = () => {
   return (
     <>
       {isTouch ? (
-        <BottomSheet isOpen onClose={closeSheet}>
+        <BottomSheet isOpen onClose={closeSheet} labelledBy={titleId}>
           <div className="flex max-h-[80vh] flex-col overflow-y-auto">
-            <h2 className="px-5 pb-1 text-base font-semibold text-discord-text-strong">
+            <h2
+              id={titleId}
+              className="px-5 pb-1 text-base font-semibold text-discord-text-strong"
+            >
               {title}
             </h2>
             {content}
@@ -261,7 +279,7 @@ export const UpdateSheet: React.FC = () => {
         </BottomSheet>
       ) : (
         <BaseModal isOpen onClose={closeSheet} maxWidth="md" title={title}>
-          <ModalBody className="gap-3">{body}</ModalBody>
+          <ModalBody className="gap-3">{main}</ModalBody>
           {actions && <ModalFooter>{actions}</ModalFooter>}
         </BaseModal>
       )}

@@ -1,6 +1,10 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const env = vi.hoisted(() => ({ touch: false }));
+vi.mock("../../../../src/hooks/useIsTouchInput", () => ({
+  useIsTouchInput: () => env.touch,
+}));
 vi.mock("../../../../src/lib/releaseCheck", () => ({
   newerRelease: vi.fn(),
 }));
@@ -43,7 +47,25 @@ async function checkNow() {
 }
 
 describe("UpdateCheckField", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    env.touch = false;
+  });
+
+  it("gives both buttons a finger-sized height on touch input only", () => {
+    seed({});
+    act(() => useAppUpdate.setState({ latest: release } as never));
+    const { unmount } = render(<UpdateCheckField {...props} />);
+    for (const b of screen.getAllByRole("button")) {
+      expect(b.className).not.toContain("min-h-11");
+    }
+    unmount();
+    env.touch = true;
+    render(<UpdateCheckField {...props} />);
+    const buttons = screen.getAllByRole("button");
+    expect(buttons).toHaveLength(2);
+    for (const b of buttons) expect(b.className).toContain("min-h-11");
+  });
 
   it("forces a check and says when nothing is newer", async () => {
     const check = seed({ latest: null });

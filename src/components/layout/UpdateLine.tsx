@@ -62,7 +62,7 @@ export const UpdateLine: React.FC = () => {
           type="button"
           onClick={openSheet}
           aria-label={t`Update Obby to ${label}`}
-          className="relative shrink-0 whitespace-nowrap bg-discord-green text-white rounded-full px-2 text-[11px] font-semibold leading-4 after:absolute after:-inset-3 after:content-[''] after:hidden [@media(pointer:coarse)]:after:block"
+          className="relative shrink-0 whitespace-nowrap bg-discord-green text-white rounded-full px-2 text-[11px] font-semibold leading-4 after:absolute after:-inset-3.5 after:content-[''] after:hidden [@media(pointer:coarse)]:after:block"
         >
           {downloading ? (
             <span>↓ {percent}%</span>

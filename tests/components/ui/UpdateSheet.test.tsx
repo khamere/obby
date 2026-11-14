@@ -138,6 +138,51 @@ describe("UpdateSheet", () => {
     expect(fns.retry).toHaveBeenCalled();
   });
 
+  it("gives the release page link a finger-sized height on touch input only", () => {
+    const name = "Open the release page";
+    const { unmount } = render(<UpdateSheet />);
+    expect(screen.getByRole("button", { name }).className).not.toContain(
+      "min-h-11",
+    );
+    unmount();
+    env.touch = true;
+    seed({ phase: "error", error: "network" });
+    render(<UpdateSheet />);
+    expect(screen.getByRole("button", { name }).className).toContain(
+      "min-h-11",
+    );
+  });
+
+  it("names the bottom sheet after its title", () => {
+    env.touch = true;
+    render(<UpdateSheet />);
+    expect(
+      screen.getByRole("dialog", { name: "Obby 0.4.0-cf1.2.1" }),
+    ).toBeTruthy();
+  });
+
+  it.each([true, false])(
+    "announces each step in one status region (touch: %s)",
+    (touch) => {
+      env.touch = touch;
+      seed({ phase: "downloading", received: 36 * MB, total: 79 * MB });
+      render(<UpdateSheet />);
+      const status = screen.getByRole("status");
+      expect(status.textContent).toBe("Downloading cf1.2.1");
+      seed({ phase: "verifying" });
+      expect(screen.getByRole("status")).toBe(status);
+      expect(status.textContent).toBe("Checking the download");
+      seed({ phase: "error", error: "checksum" });
+      expect(screen.getByRole("status")).toBe(status);
+      expect(status.textContent).toContain("checksum");
+    },
+  );
+
+  it("keeps the offer and its release notes out of the status region", () => {
+    render(<UpdateSheet />);
+    expect(screen.getByRole("status").textContent).toBe("");
+  });
+
   it("is a bottom sheet on touch input and a dialog with a mouse", () => {
     env.touch = true;
     const { unmount } = render(<UpdateSheet />);
