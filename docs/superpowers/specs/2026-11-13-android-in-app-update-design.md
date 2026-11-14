@@ -81,7 +81,7 @@ The version line is shown on every build. The pill needs a releases repository a
 
 ### When it checks
 
-Once a day, as `releaseCheck.ts` does today (cached in `localStorage` per repository), plus a **Check now**
+Once a day, as `releaseCheck.ts` does today (cached in `localStorage` per repository and API base), plus a **Check now**
 button in Settings → Updates. The existing Settings "New release" button opens the same popup (one entry point
 per action). The `checkForReleases` description ("Nothing is downloaded or installed") is reworded: nothing is
 downloaded until you tap Update.
@@ -104,7 +104,9 @@ a mouse.
    **Open Android settings** (`ACTION_MANAGE_UNKNOWN_APP_SOURCES` for our package) and **Not now**. When the
    user comes back with the permission on, the update continues by itself.
 6. **Error:** what happened in plain words (no network, the release has no APK, checksum mismatch, Android
-   refused the install), with **Try again**, **Close** and the release-page link.
+   refused the install), with **Try again**, **Close** and the release-page link. One error comes from the
+   app itself and not from the plugin: `not-ready` ("The update could not start. Try again."), shown when
+   the plugin could not be listened to, so no download was started.
 
 On desktop and web the popup shows step 1 with **Download** in place of **Update**, which opens the release
 page through `ExternalLinkWarningModal`.
