@@ -101,19 +101,30 @@ describe("UpdateLine", () => {
     expect(check).toHaveBeenCalledTimes(2);
   });
 
-  // The pill's text is 16px high and a finger needs 44px. The row leaves 2px
-  // under the pill and the user panel starts with 4px of padding, so we take
-  // 4px below and the other 24px above, where the channel list ends.
-  it("the pill takes touches around itself without reaching the user panel", () => {
+  // The pill's text is 16px high and a finger needs 44px. On a touch screen
+  // the row itself grows to 44px while the pill shows, so the touch area
+  // stays inside the row and takes nothing from the list above or the user
+  // panel below.
+  it("the pill takes touches inside its own row", () => {
     setState({ latest: release });
-    render(<UpdateLine />);
-    const classes = screen.getByRole("button").className.split(" ");
-    expect(classes).toContain("leading-4");
+    const { container } = render(<UpdateLine />);
+    const row = container.querySelector(".update-line") as HTMLElement;
+    const classes = screen.getByRole("button").className;
+    expect(row.className).toContain("update-line-with-pill");
+    expect(row.className).toContain("[@media(pointer:coarse)]:h-11");
     expect(classes).toContain("after:-inset-x-3.5");
-    expect(classes).toContain("after:-top-6");
-    expect(classes).toContain("after:-bottom-1");
-    expect(classes).not.toContain("after:-inset-3.5");
+    expect(classes).toContain("after:-inset-y-3.5");
+    expect(classes).not.toContain("after:-top-6");
+    expect(classes).not.toContain("after:-bottom-1");
     expect(classes).toContain("[@media(pointer:coarse)]:after:block");
+  });
+
+  it("keeps the row at its usual height when there is no pill", () => {
+    setState({ latest: null });
+    const { container } = render(<UpdateLine />);
+    const row = container.querySelector(".update-line") as HTMLElement;
+    expect(row.className).toContain("h-5");
+    expect(row.className).not.toContain("h-11");
   });
 
   it("the pill never shrinks and the version gives way first", () => {

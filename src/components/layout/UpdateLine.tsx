@@ -45,7 +45,7 @@ export const UpdateLine: React.FC = () => {
 
   return (
     <div
-      className={`update-line mx-2 h-5 flex items-center gap-1.5 px-1 ${showPill ? "update-line-with-pill" : ""}`}
+      className={`update-line mx-2 h-5 flex items-center gap-1.5 px-1 ${showPill ? "update-line-with-pill [@media(pointer:coarse)]:h-11" : ""}`}
     >
       <span
         title={full}
@@ -57,15 +57,15 @@ export const UpdateLine: React.FC = () => {
           {shortReleaseLabel(APP_VERSION)}
         </span>
       </span>
-      {/* A finger needs 44px around the 16px pill. We take nearly all of it
-          above, since anything more than 4px below would cover the user
-          panel's buttons. */}
+      {/* A finger needs 44px around the 16px pill. On a touch screen the row
+          grows to that height while the pill shows, so the touch area stays
+          inside the row and takes nothing from its neighbours. */}
       {showPill && (
         <button
           type="button"
           onClick={openSheet}
           aria-label={t`Update Obby to ${label}`}
-          className="relative shrink-0 whitespace-nowrap bg-discord-green text-white rounded-full px-2 text-[11px] font-semibold leading-4 after:absolute after:-inset-x-3.5 after:-top-6 after:-bottom-1 after:content-[''] after:hidden [@media(pointer:coarse)]:after:block"
+          className="relative shrink-0 whitespace-nowrap bg-discord-green text-white rounded-full px-2 text-[11px] font-semibold leading-4 after:absolute after:-inset-x-3.5 after:-inset-y-3.5 after:content-[''] after:hidden [@media(pointer:coarse)]:after:block"
         >
           {downloading ? (
             <span>↓ {percent}%</span>
