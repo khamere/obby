@@ -58,6 +58,29 @@ describe("UpdateCheckField", () => {
     expect(screen.getByText("Obby 0.4.0-cf1.2.1 is available.")).toBeTruthy();
   });
 
+  it("offers the update right there once one is known", async () => {
+    seed({ latest: release });
+    const openSheet = vi.fn();
+    act(() => useAppUpdate.setState({ openSheet } as never));
+    await checkNow();
+    fireEvent.click(screen.getByRole("button", { name: "Update" }));
+    expect(openSheet).toHaveBeenCalledTimes(1);
+  });
+
+  it("offers a known update before anyone taps Check now", () => {
+    seed({});
+    act(() => useAppUpdate.setState({ latest: release } as never));
+    render(<UpdateCheckField {...props} />);
+    expect(screen.getByText("Obby 0.4.0-cf1.2.1 is available.")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Update" })).toBeTruthy();
+  });
+
+  it("offers no update when Obby is up to date", async () => {
+    seed({ latest: null });
+    await checkNow();
+    expect(screen.queryByRole("button", { name: "Update" })).toBeNull();
+  });
+
   it("says the check failed instead of calling Obby up to date", async () => {
     seed({ latest: null, checkFailed: true });
     await checkNow();

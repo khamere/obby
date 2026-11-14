@@ -6627,6 +6627,7 @@ msgstr "Unsuspend"
 msgid "Until I unmute"
 msgstr "Until I unmute"
 
+#: src/components/ui/settings/UpdateCheckField.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Update"
 msgstr "Update"

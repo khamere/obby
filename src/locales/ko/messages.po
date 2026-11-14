@@ -6628,6 +6628,7 @@ msgstr "정지 해제"
 msgid "Until I unmute"
 msgstr "해제할 때까지"
 
+#: src/components/ui/settings/UpdateCheckField.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Update"
 msgstr "업데이트"

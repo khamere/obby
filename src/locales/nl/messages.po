@@ -6628,6 +6628,7 @@ msgstr "Opschorting opheffen"
 msgid "Until I unmute"
 msgstr "Tot ik het ophef"
 
+#: src/components/ui/settings/UpdateCheckField.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Update"
 msgstr "Updaten"

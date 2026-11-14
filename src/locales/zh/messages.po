@@ -6628,6 +6628,7 @@ msgstr "取消停用"
 msgid "Until I unmute"
 msgstr "直到我取消"
 
+#: src/components/ui/settings/UpdateCheckField.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Update"
 msgstr "更新"

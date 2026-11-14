@@ -6628,6 +6628,7 @@ msgstr "Anulează suspendarea"
 msgid "Until I unmute"
 msgstr "Până îl reactivez"
 
+#: src/components/ui/settings/UpdateCheckField.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Update"
 msgstr "Actualizează"

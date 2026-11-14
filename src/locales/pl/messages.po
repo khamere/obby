@@ -6628,6 +6628,7 @@ msgstr "Wznów"
 msgid "Until I unmute"
 msgstr "Do odwołania"
 
+#: src/components/ui/settings/UpdateCheckField.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Update"
 msgstr "Aktualizuj"

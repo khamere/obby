@@ -6628,6 +6628,7 @@ msgstr "Entsperren"
 msgid "Until I unmute"
 msgstr "Bis ich es aufhebe"
 
+#: src/components/ui/settings/UpdateCheckField.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Update"
 msgstr "Update"

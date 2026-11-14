@@ -6628,6 +6628,7 @@ msgstr "Réactiver"
 msgid "Until I unmute"
 msgstr "Jusqu'à ce que je la retire"
 
+#: src/components/ui/settings/UpdateCheckField.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Update"
 msgstr "Mettre à jour"

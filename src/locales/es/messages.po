@@ -6628,6 +6628,7 @@ msgstr "Reactivar"
 msgid "Until I unmute"
 msgstr "Hasta que lo reactive"
 
+#: src/components/ui/settings/UpdateCheckField.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Update"
 msgstr "Actualizar"

@@ -6628,6 +6628,7 @@ msgstr "Zrušit pozastavení"
 msgid "Until I unmute"
 msgstr "Dokud nezruším"
 
+#: src/components/ui/settings/UpdateCheckField.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Update"
 msgstr "Aktualizovat"

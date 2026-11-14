@@ -6628,6 +6628,7 @@ msgstr "Poista jäädytys"
 msgid "Until I unmute"
 msgstr "Kunnes poistan mykistyksen"
 
+#: src/components/ui/settings/UpdateCheckField.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Update"
 msgstr "Päivitä"

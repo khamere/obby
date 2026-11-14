@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { SettingComponentProps } from "../../../lib/settings/types";
 import { useAppUpdate } from "../../../store/appUpdate";
 
-type Result = "idle" | "upToDate" | "available" | "failed";
+type Result = "idle" | "upToDate" | "failed";
 
 /** Asks now instead of waiting for the daily check, and says what it found. */
 export const UpdateCheckField: React.FC<SettingComponentProps> = ({
@@ -16,29 +16,48 @@ export const UpdateCheckField: React.FC<SettingComponentProps> = ({
 
   const handleCheck = async () => {
     await useAppUpdate.getState().check({ force: true });
-    const { latest, checkFailed } = useAppUpdate.getState();
-    if (checkFailed) setResult("failed");
-    else setResult(latest ? "available" : "upToDate");
+    setResult(useAppUpdate.getState().checkFailed ? "failed" : "upToDate");
   };
 
+  // A release found earlier is on offer here as well, so nobody has to leave
+  // the page to act on it.
   const version = latest?.version ?? "";
+  const button =
+    "rounded px-3 py-1.5 text-sm disabled:opacity-50 text-discord-text-normal";
   return (
-    <div className="flex items-center justify-between gap-3">
-      <span className="text-sm text-discord-text-muted" aria-live="polite">
-        {result === "upToDate" && <Trans>Obby is up to date.</Trans>}
-        {result === "available" && <Trans>Obby {version} is available.</Trans>}
-        {result === "failed" && (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <span
+        className="min-w-0 text-sm text-discord-text-muted"
+        aria-live="polite"
+      >
+        {result === "failed" ? (
           <Trans>Could not check. Try again later.</Trans>
+        ) : latest ? (
+          <Trans>Obby {version} is available.</Trans>
+        ) : (
+          result === "upToDate" && <Trans>Obby is up to date.</Trans>
         )}
       </span>
-      <button
-        type="button"
-        onClick={handleCheck}
-        disabled={disabled || isChecking}
-        className="rounded px-3 py-1.5 text-sm disabled:opacity-50 bg-discord-dark-400 hover:bg-discord-dark-300 text-discord-text-normal"
-      >
-        <Trans>Check now</Trans>
-      </button>
+      <span className="flex shrink-0 items-center gap-2">
+        {latest && (
+          <button
+            type="button"
+            onClick={() => useAppUpdate.getState().openSheet()}
+            disabled={disabled}
+            className={`${button} bg-discord-green font-semibold text-white hover:opacity-90`}
+          >
+            <Trans>Update</Trans>
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={handleCheck}
+          disabled={disabled || isChecking}
+          className={`${button} bg-discord-dark-400 hover:bg-discord-dark-300`}
+        >
+          <Trans>Check now</Trans>
+        </button>
+      </span>
     </div>
   );
 };
