@@ -15,6 +15,11 @@ const release = {
   apk: null,
 };
 
+// The field reads nothing from its setting, so the props only fill the type.
+const props = { value: null, onChange: () => {} } as unknown as Parameters<
+  typeof UpdateCheckField
+>[0];
+
 function seed(after: Record<string, unknown>) {
   const check = vi.fn(async () => {
     useAppUpdate.setState(after as never);
@@ -31,7 +36,7 @@ function seed(after: Record<string, unknown>) {
 }
 
 async function checkNow() {
-  render(<UpdateCheckField {...({} as never)} />);
+  render(<UpdateCheckField {...props} />);
   await act(async () => {
     fireEvent.click(screen.getByRole("button", { name: "Check now" }));
   });
