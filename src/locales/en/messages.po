@@ -1720,6 +1720,7 @@ msgstr "Connected as a guest"
 msgid "Connected to"
 msgstr "Connected to"
 
+#: src/components/layout/UserPanel.tsx
 #: src/components/ui/MiniMediaPlayer.tsx
 msgid "Connecting"
 msgstr "Connecting"

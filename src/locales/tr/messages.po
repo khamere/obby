@@ -1721,6 +1721,7 @@ msgstr "Misafir olarak bağlı"
 msgid "Connected to"
 msgstr "Bağlanılan"
 
+#: src/components/layout/UserPanel.tsx
 #: src/components/ui/MiniMediaPlayer.tsx
 msgid "Connecting"
 msgstr "Bağlanıyor"

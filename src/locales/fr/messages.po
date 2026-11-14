@@ -1721,6 +1721,7 @@ msgstr "Connecté en tant qu'invité"
 msgid "Connected to"
 msgstr "Connecté à"
 
+#: src/components/layout/UserPanel.tsx
 #: src/components/ui/MiniMediaPlayer.tsx
 msgid "Connecting"
 msgstr "Connexion en cours"

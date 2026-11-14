@@ -1721,6 +1721,7 @@ msgstr "Připojeno jako host"
 msgid "Connected to"
 msgstr "Připojeno k"
 
+#: src/components/layout/UserPanel.tsx
 #: src/components/ui/MiniMediaPlayer.tsx
 msgid "Connecting"
 msgstr "Připojování"

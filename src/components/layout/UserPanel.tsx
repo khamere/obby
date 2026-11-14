@@ -6,7 +6,7 @@ import { copyToClipboard } from "../../lib/clipboard";
 import useStore from "../../store";
 import Menu, { type MenuItem } from "../ui/Menu";
 
-export type PresenceStatus = "online" | "away" | "offline";
+export type PresenceStatus = "online" | "away" | "connecting" | "offline";
 
 interface UserPanelProps {
   serverId: string | null;
@@ -27,6 +27,7 @@ interface UserPanelProps {
 const STATUS_DOT: Record<PresenceStatus, string> = {
   online: "bg-green-500",
   away: "bg-yellow-500",
+  connecting: "bg-gray-500 animate-pulse",
   offline: "bg-gray-500",
 };
 
@@ -56,7 +57,9 @@ export const UserPanel: React.FC<UserPanelProps> = ({
       ? t`Online`
       : status === "away"
         ? awayMessage || t`Away`
-        : t`Offline`;
+        : status === "connecting"
+          ? t`Connecting`
+          : t`Offline`;
   const statusLabel =
     status === "online" && customStatus ? customStatus : presenceLabel;
   const name = displayName || username;

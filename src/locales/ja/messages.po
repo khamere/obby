@@ -1721,6 +1721,7 @@ msgstr "ゲストとして接続中"
 msgid "Connected to"
 msgstr "接続先"
 
+#: src/components/layout/UserPanel.tsx
 #: src/components/ui/MiniMediaPlayer.tsx
 msgid "Connecting"
 msgstr "接続中"

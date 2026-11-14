@@ -1721,6 +1721,7 @@ msgstr "Ansluten som gäst"
 msgid "Connected to"
 msgstr "Ansluten till"
 
+#: src/components/layout/UserPanel.tsx
 #: src/components/ui/MiniMediaPlayer.tsx
 msgid "Connecting"
 msgstr "Ansluter"

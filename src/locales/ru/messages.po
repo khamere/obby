@@ -1721,6 +1721,7 @@ msgstr "Подключено как гость"
 msgid "Connected to"
 msgstr "Подключено к"
 
+#: src/components/layout/UserPanel.tsx
 #: src/components/ui/MiniMediaPlayer.tsx
 msgid "Connecting"
 msgstr "Подключение"
