@@ -87,6 +87,35 @@ describe("app update store", () => {
     expect(useAppUpdate.getState().latest).toEqual(release);
   });
 
+  // A release republished after a bad upload has a new checksum, and the
+  // next attempt must be measured against that one.
+  it("a check after a failed update takes the corrected release and clears the error", async () => {
+    useAppUpdate.setState({ phase: "error", error: "checksum" });
+    const corrected = { ...release, apk: { ...apk, sha256: "cd".repeat(32) } };
+    releases.newerRelease.mockResolvedValueOnce(corrected);
+    await useAppUpdate.getState().check({ force: true });
+    const state = useAppUpdate.getState();
+    expect(state.latest).toEqual(corrected);
+    expect(state.phase).toBe("idle");
+    expect(state.error).toBeNull();
+
+    await state.startUpdate();
+    expect(native.startDownload).toHaveBeenCalledWith(
+      expect.objectContaining({ sha256: "cd".repeat(32) }),
+    );
+  });
+
+  it("a check after a failed update keeps the error when the release is the same", async () => {
+    useAppUpdate.setState({ phase: "error", error: "network" });
+    releases.newerRelease.mockResolvedValueOnce({
+      ...release,
+      apk: { ...apk },
+    });
+    await useAppUpdate.getState().check({ force: true });
+    expect(useAppUpdate.getState().phase).toBe("error");
+    expect(useAppUpdate.getState().error).toBe("network");
+  });
+
   it("startUpdate on Android asks the plugin once, even when tapped twice", async () => {
     const s = useAppUpdate.getState();
     await Promise.all([s.startUpdate(), s.startUpdate()]);

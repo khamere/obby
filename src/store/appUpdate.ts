@@ -37,6 +37,24 @@ interface AppUpdateState {
 
 const BUSY: UpdatePhase[] = ["downloading", "verifying", "installing"];
 
+const NOTHING_UNDER_WAY = {
+  phase: "idle",
+  error: null,
+  received: 0,
+  total: 0,
+} as const;
+
+function isSameRelease(
+  a: LatestRelease | null,
+  b: LatestRelease | null,
+): boolean {
+  return (
+    a?.version === b?.version &&
+    a?.apk?.sha256 === b?.apk?.sha256 &&
+    a?.apk?.url === b?.apk?.url
+  );
+}
+
 /** A rejected call carries the plugin's code when it sent one. */
 function errorCode(e: unknown): UpdateError {
   const text = typeof e === "string" ? e : ((e as Error)?.message ?? "");
@@ -87,13 +105,22 @@ export const useAppUpdate = create<AppUpdateState>((set, get) => {
       try {
         await ensureNative();
         const latest = await newerRelease({ force: opts?.force });
-        // The sheet and the pill show the release being downloaded or
-        // installed, so we swap it only while nothing is under way.
-        set(
-          get().phase === "idle"
-            ? { latest, checkFailed: false }
-            : { checkFailed: false },
-        );
+        const { phase, latest: known } = get();
+        if (phase === "idle") {
+          set({ latest, checkFailed: false });
+        } else if (phase === "error") {
+          // A failed attempt is over, so we take the answer; a release that
+          // changed (a republished file has a new checksum) starts afresh.
+          set(
+            isSameRelease(known, latest)
+              ? { latest, checkFailed: false }
+              : { latest, checkFailed: false, ...NOTHING_UNDER_WAY },
+          );
+        } else {
+          // The sheet and the pill show the release being downloaded or
+          // installed, so we leave it alone while that is under way.
+          set({ checkFailed: false });
+        }
       } catch {
         set({ checkFailed: true });
       } finally {
