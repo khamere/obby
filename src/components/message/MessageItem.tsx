@@ -331,72 +331,31 @@ export const MessageItem = memo((props: MessageItemProps) => {
     return getUserMetadata(pmUsername, serverId);
   }, [metadataChangeCounter, userKey, rawMessageUser, serverId]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: metadataChangeCounter is intentional reactive trigger
   const messageUser: User | undefined = useMemo(() => {
+    if (!rawMessageUser) return undefined;
+
     // For PM users, rawMessageUser is the privateChat object
     // We need to construct a proper User object
     if (userKey.startsWith("pm-")) {
-      const privateChat = rawMessageUser as PrivateChat | undefined;
-      const username = privateChat?.username || message.userId;
+      const privateChat = rawMessageUser as PrivateChat;
       const user: User = {
-        id: privateChat?.id || username,
-        username,
+        id: privateChat.id,
+        username: privateChat.username,
         realname: "",
         account: "",
-        isOnline: privateChat?.isOnline ?? true,
-        isAway: privateChat?.isAway ?? false,
+        isOnline: privateChat.isOnline ?? true,
+        isAway: privateChat.isAway ?? false,
         status: "",
         isBot: false,
         isIrcOp: false,
-        metadata:
-          pmUserMetadata ||
-          (serverId ? getUserMetadata(username, serverId) : null) ||
-          {},
+        metadata: pmUserMetadata || {},
       };
       return user;
     }
 
-    if (!rawMessageUser) {
-      const fallbackMeta = serverId
-        ? getUserMetadata(message.userId, serverId)
-        : null;
-      return {
-        id: message.userId,
-        username: message.userId,
-        realname: "",
-        account: "",
-        isOnline: false,
-        isAway: false,
-        status: "",
-        isBot: false,
-        isIrcOp: false,
-        metadata: fallbackMeta || {},
-      };
-    }
-
     // For channel users, rawMessageUser is already a proper User object
-    const channelUser = rawMessageUser as User;
-    if (!channelUser.metadata?.avatar?.value && serverId) {
-      const cached = getUserMetadata(channelUser.username, serverId);
-      if (cached && Object.keys(cached).length > 0) {
-        return {
-          ...channelUser,
-          metadata: {
-            ...cached,
-            ...channelUser.metadata,
-          },
-        };
-      }
-    }
-    return channelUser;
-  }, [
-    rawMessageUser,
-    pmUserMetadata,
-    userKey,
-    serverId,
-    message.userId,
-    metadataChangeCounter,
-  ]);
+    return rawMessageUser as User;
+  }, [rawMessageUser, pmUserMetadata, userKey]);
 
   const avatarUrl = messageUser?.metadata?.avatar?.value;
   const displayName = messageUser?.metadata?.["display-name"]?.value;
