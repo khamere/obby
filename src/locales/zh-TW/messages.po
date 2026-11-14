@@ -6294,6 +6294,10 @@ msgstr "無法完成錄製。"
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "伺服器拒絕了你的加入。請檢查頻道模式後再試一次。"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "The update could not start. Try again."
+msgstr "無法開始更新。請再試一次。"
+
 #: src/components/ui/InviteUserModal.tsx
 msgid "The user will receive an invitation to join {channelName}."
 msgstr "使用者將收到加入 {channelName} 的邀請。"

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { NativeUpdateEvent } from "../../src/lib/appUpdateNative";
 
 const native = vi.hoisted(() => ({
   startDownload: vi.fn(),
@@ -20,7 +21,8 @@ vi.mock("../../src/lib/appUpdateNative", () => native);
 vi.mock("../../src/lib/releaseCheck", () => releases);
 vi.mock("../../src/lib/platformUtils", () => platform);
 
-import { useAppUpdate } from "../../src/store/appUpdate";
+type Store = typeof import("../../src/store/appUpdate").useAppUpdate;
+let useAppUpdate: Store;
 
 const apk = {
   name: "o.apk",
@@ -34,10 +36,27 @@ const release = {
   notes: "",
   apk,
 };
-const idle = { phase: "idle", received: 0, total: 0, error: null } as const;
+const idle: NativeUpdateEvent = {
+  phase: "idle",
+  received: 0,
+  total: 0,
+  error: null,
+};
 
-beforeEach(() => {
+// The store asks the plugin what is under way before it acts, so a scenario
+// puts its starting point in both places.
+function underWay(patch: Partial<NativeUpdateEvent>) {
+  const status = { ...idle, ...patch };
+  native.downloadStatus.mockResolvedValue(status);
+  useAppUpdate.setState(status);
+}
+
+beforeEach(async () => {
   vi.clearAllMocks();
+  // The store keeps its plugin listener for the life of the module, so each
+  // test gets a module of its own and passes when run alone.
+  vi.resetModules();
+  ({ useAppUpdate } = await import("../../src/store/appUpdate"));
   platform.isTauriAndroid.mockReturnValue(true);
   native.onUpdateEvent.mockResolvedValue({});
   native.downloadStatus.mockResolvedValue(idle);
@@ -81,7 +100,7 @@ describe("app update store", () => {
   });
 
   it("a check during a download leaves the release being installed alone", async () => {
-    useAppUpdate.setState({ phase: "downloading", received: 10, total: 100 });
+    underWay({ phase: "downloading", received: 10, total: 100 });
     releases.newerRelease.mockResolvedValueOnce(null);
     await useAppUpdate.getState().check();
     expect(useAppUpdate.getState().latest).toEqual(release);
@@ -90,7 +109,7 @@ describe("app update store", () => {
   // A release republished after a bad upload has a new checksum, and the
   // next attempt must be measured against that one.
   it("a check after a failed update takes the corrected release and clears the error", async () => {
-    useAppUpdate.setState({ phase: "error", error: "checksum" });
+    underWay({ phase: "error", error: "checksum" });
     const corrected = { ...release, apk: { ...apk, sha256: "cd".repeat(32) } };
     releases.newerRelease.mockResolvedValueOnce(corrected);
     await useAppUpdate.getState().check({ force: true });
@@ -106,7 +125,7 @@ describe("app update store", () => {
   });
 
   it("a check after a failed update keeps the error when the release is the same", async () => {
-    useAppUpdate.setState({ phase: "error", error: "network" });
+    underWay({ phase: "error", error: "network" });
     releases.newerRelease.mockResolvedValueOnce({
       ...release,
       apk: { ...apk },
@@ -127,6 +146,34 @@ describe("app update store", () => {
       version: release.version,
       allowedHosts: ["github.com", ".githubusercontent.com", "api.github.com"],
     });
+  });
+
+  it("startUpdate listens to the plugin before it asks for the download", async () => {
+    const order: string[] = [];
+    native.onUpdateEvent.mockImplementation(async () => {
+      order.push("listen");
+      return {};
+    });
+    native.startDownload.mockImplementation(async () => {
+      order.push("download");
+      return { phase: "downloading", received: 0, total: 100, error: null };
+    });
+    await useAppUpdate.getState().startUpdate();
+    expect(order).toEqual(["listen", "download"]);
+  });
+
+  it("startUpdate stops when the plugin cannot be heard, and a retry starts it", async () => {
+    native.onUpdateEvent.mockRejectedValueOnce(new Error("no plugin"));
+    await useAppUpdate.getState().startUpdate();
+    expect(native.startDownload).not.toHaveBeenCalled();
+    expect(useAppUpdate.getState()).toMatchObject({
+      phase: "error",
+      error: "not-ready",
+    });
+    await useAppUpdate.getState().retry();
+    expect(native.onUpdateEvent).toHaveBeenCalledTimes(2);
+    expect(native.startDownload).toHaveBeenCalledTimes(1);
+    expect(useAppUpdate.getState().phase).toBe("downloading");
   });
 
   it("a release without an APK goes to the no-apk error instead of downloading", async () => {
@@ -168,14 +215,14 @@ describe("app update store", () => {
   });
 
   it("showInstallPrompt asks the plugin for the prompt and takes its status", async () => {
-    const installing = {
+    const installing: NativeUpdateEvent = {
       phase: "installing",
       received: 100,
       total: 100,
       error: null,
     };
     native.retryInstall.mockResolvedValueOnce(installing);
-    useAppUpdate.setState(installing as never);
+    underWay(installing);
     await useAppUpdate.getState().showInstallPrompt();
     expect(native.retryInstall).toHaveBeenCalledTimes(1);
     expect(native.startDownload).not.toHaveBeenCalled();
@@ -189,7 +236,7 @@ describe("app update store", () => {
   });
 
   it("cancelling during the install tells the plugin and returns to idle", async () => {
-    useAppUpdate.setState({ phase: "installing", received: 100, total: 100 });
+    underWay({ phase: "installing", received: 100, total: 100 });
     await useAppUpdate.getState().cancelUpdate();
     expect(native.cancelDownload).toHaveBeenCalledTimes(1);
     expect(useAppUpdate.getState().phase).toBe("idle");
@@ -202,10 +249,10 @@ describe("app update store", () => {
       total: 100,
       error: null,
     });
-    useAppUpdate.setState({ phase: "error", error: "refused" });
+    underWay({ phase: "error", error: "refused" });
     await useAppUpdate.getState().retry();
     expect(native.retryInstall).toHaveBeenCalledTimes(1);
-    useAppUpdate.setState({ phase: "error", error: "network" });
+    underWay({ phase: "error", error: "network" });
     await useAppUpdate.getState().retry();
     expect(native.startDownload).toHaveBeenCalledTimes(1);
   });

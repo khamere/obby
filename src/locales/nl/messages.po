@@ -6294,6 +6294,10 @@ msgstr "De opname kon niet worden gemaakt."
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "De server heeft je deelname geweigerd. Controleer de kanaalmodi en probeer het opnieuw."
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "The update could not start. Try again."
+msgstr "De update kon niet starten. Probeer het opnieuw."
+
 #: src/components/ui/InviteUserModal.tsx
 msgid "The user will receive an invitation to join {channelName}."
 msgstr "De gebruiker ontvangt een uitnodiging om deel te nemen aan {channelName}."

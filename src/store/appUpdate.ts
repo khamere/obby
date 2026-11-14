@@ -72,15 +72,19 @@ function errorCode(e: unknown): UpdateError {
 export const useAppUpdate = create<AppUpdateState>((set, get) => {
   // The download belongs to the app, not to the sheet, so we listen once and
   // ask what is already running instead of assuming nothing is.
-  let nativeReady: Promise<void> | null = null;
-  const ensureNative = (): Promise<void> => {
-    if (!isTauriAndroid()) return Promise.resolve();
+  // It answers whether we hear the plugin, and a failure is forgotten so the
+  // next caller tries again.
+  let nativeReady: Promise<boolean> | null = null;
+  const ensureNative = (): Promise<boolean> => {
+    if (!isTauriAndroid()) return Promise.resolve(false);
     nativeReady ??= (async () => {
       try {
         await onUpdateEvent((e) => get().applyNative(e));
         get().applyNative(await downloadStatus());
+        return true;
       } catch {
         nativeReady = null;
+        return false;
       }
     })();
     return nativeReady;
@@ -145,7 +149,17 @@ export const useAppUpdate = create<AppUpdateState>((set, get) => {
       }
       const { url, sha256, size } = latest.apk;
       // Set before the first await so a second tap finds the download started.
-      set({ phase: "downloading", received: 0, total: size, error: null });
+      const started = () =>
+        set({ phase: "downloading", received: 0, total: size, error: null });
+      started();
+      // Progress, the permission request and errors only reach us through
+      // the listener, so a download nobody hears would leave the sheet stuck.
+      if (!(await ensureNative())) {
+        fail("not-ready");
+        return;
+      }
+      // Listening for the first time also brings the plugin's own status.
+      if (!BUSY.includes(get().phase)) started();
       try {
         get().applyNative(
           await startDownload({

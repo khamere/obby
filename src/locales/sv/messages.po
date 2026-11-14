@@ -6294,6 +6294,10 @@ msgstr "Inspelningen kunde inte göras."
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "Servern nekade dig att gå med. Kontrollera kanalens lägen och försök igen."
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "The update could not start. Try again."
+msgstr "Uppdateringen kunde inte starta. Försök igen."
+
 #: src/components/ui/InviteUserModal.tsx
 msgid "The user will receive an invitation to join {channelName}."
 msgstr "Användaren får en inbjudan att gå med i {channelName}."

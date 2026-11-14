@@ -6294,6 +6294,10 @@ msgstr "Tallennusta ei voitu tehdä."
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "Palvelin hylkäsi liittymisesi. Tarkista kanavan tilat ja yritä uudelleen."
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "The update could not start. Try again."
+msgstr "Päivitystä ei voitu aloittaa. Yritä uudelleen."
+
 #: src/components/ui/InviteUserModal.tsx
 msgid "The user will receive an invitation to join {channelName}."
 msgstr "Käyttäjä saa kutsun liittyä kanavalle {channelName}."

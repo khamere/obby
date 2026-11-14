@@ -20,7 +20,9 @@ export type UpdateError =
   | "checksum"
   | "incompatible"
   | "refused"
-  | "storage";
+  | "storage"
+  // Ours alone: the plugin could not be listened to, so nothing was started.
+  | "not-ready";
 
 export interface NativeUpdateEvent {
   phase: UpdatePhase;

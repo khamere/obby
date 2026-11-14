@@ -6294,6 +6294,10 @@ msgstr "L'enregistrement n'a pas pu être réalisé."
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "Le serveur a refusé votre entrée. Vérifiez les modes du salon et réessayez."
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "The update could not start. Try again."
+msgstr "La mise à jour n'a pas pu démarrer. Réessaie."
+
 #: src/components/ui/InviteUserModal.tsx
 msgid "The user will receive an invitation to join {channelName}."
 msgstr "L'utilisateur recevra une invitation à rejoindre {channelName}."

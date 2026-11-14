@@ -127,6 +127,7 @@ describe("UpdateSheet", () => {
     ],
     ["refused", "The install was cancelled."],
     ["storage", "There is not enough free space for the update."],
+    ["not-ready", "The update could not start. Try again."],
   ];
   it.each(messages)("explains the %s error", (code, text) => {
     seed({ phase: "error", error: code });

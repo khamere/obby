@@ -6293,6 +6293,10 @@ msgstr "The recording could not be made."
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "The server refused your join. Check the channel modes and try again."
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "The update could not start. Try again."
+msgstr "The update could not start. Try again."
+
 #: src/components/ui/InviteUserModal.tsx
 msgid "The user will receive an invitation to join {channelName}."
 msgstr "The user will receive an invitation to join {channelName}."

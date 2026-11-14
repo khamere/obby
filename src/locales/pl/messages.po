@@ -6294,6 +6294,10 @@ msgstr "Nie udało się wykonać nagrania."
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "Serwer odrzucił dołączenie. Sprawdź tryby kanału i spróbuj ponownie."
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "The update could not start. Try again."
+msgstr "Nie udało się rozpocząć aktualizacji. Spróbuj ponownie."
+
 #: src/components/ui/InviteUserModal.tsx
 msgid "The user will receive an invitation to join {channelName}."
 msgstr "Użytkownik otrzyma zaproszenie do dołączenia do {channelName}."

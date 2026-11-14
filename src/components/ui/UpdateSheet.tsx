@@ -58,6 +58,7 @@ export const UpdateSheet: React.FC = () => {
     incompatible: t`Android refused the update because it was signed by someone else. Install it from the release page.`,
     refused: t`The install was cancelled.`,
     storage: t`There is not enough free space for the update.`,
+    "not-ready": t`The update could not start. Try again.`,
   };
 
   const releaseLink = (

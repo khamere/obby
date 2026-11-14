@@ -6294,6 +6294,10 @@ msgstr "Не вдалося зробити запис."
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "Сервер відхилив ваш вхід. Перевірте режими каналу й спробуйте ще раз."
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "The update could not start. Try again."
+msgstr "Не вдалося розпочати оновлення. Спробуйте ще раз."
+
 #: src/components/ui/InviteUserModal.tsx
 msgid "The user will receive an invitation to join {channelName}."
 msgstr "Користувач отримає запрошення приєднатися до {channelName}."
