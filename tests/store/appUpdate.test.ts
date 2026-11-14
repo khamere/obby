@@ -176,6 +176,46 @@ describe("app update store", () => {
     expect(useAppUpdate.getState().phase).toBe("downloading");
   });
 
+  it("startUpdate keeps its one listener when the plugin's status fails, and a retry starts it", async () => {
+    native.downloadStatus.mockRejectedValueOnce(new Error("no answer"));
+    await useAppUpdate.getState().startUpdate();
+    expect(native.startDownload).not.toHaveBeenCalled();
+    expect(useAppUpdate.getState()).toMatchObject({
+      phase: "error",
+      error: "not-ready",
+    });
+    await useAppUpdate.getState().retry();
+    expect(native.onUpdateEvent).toHaveBeenCalledTimes(1);
+    expect(native.downloadStatus).toHaveBeenCalledTimes(2);
+    expect(native.startDownload).toHaveBeenCalledTimes(1);
+    expect(useAppUpdate.getState().phase).toBe("downloading");
+  });
+
+  it.each([
+    ["is heard", true],
+    ["cannot be heard", false],
+  ])(
+    "a cancel while the plugin is being reached stays cancelled when it %s",
+    async (_, heard) => {
+      let settle = () => {};
+      native.onUpdateEvent.mockReturnValueOnce(
+        new Promise((resolve, reject) => {
+          settle = () => (heard ? resolve({}) : reject(new Error("no plugin")));
+        }),
+      );
+      const starting = useAppUpdate.getState().startUpdate();
+      expect(useAppUpdate.getState().phase).toBe("downloading");
+      await useAppUpdate.getState().cancelUpdate();
+      settle();
+      await starting;
+      expect(native.startDownload).not.toHaveBeenCalled();
+      expect(useAppUpdate.getState()).toMatchObject({
+        phase: "idle",
+        error: null,
+      });
+    },
+  );
+
   it("a release without an APK goes to the no-apk error instead of downloading", async () => {
     useAppUpdate.setState({ latest: { ...release, apk: null } });
     await useAppUpdate.getState().startUpdate();

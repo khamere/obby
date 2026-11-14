@@ -75,11 +75,21 @@ export const useAppUpdate = create<AppUpdateState>((set, get) => {
   // It answers whether we hear the plugin, and a failure is forgotten so the
   // next caller tries again.
   let nativeReady: Promise<boolean> | null = null;
+  // The listener outlives a failed status request, so the next try reuses it
+  // instead of adding one that would apply every event a second time.
+  let listening: Promise<unknown> | null = null;
+  const listen = (): Promise<unknown> => {
+    listening ??= onUpdateEvent((e) => get().applyNative(e)).catch((e) => {
+      listening = null;
+      throw e;
+    });
+    return listening;
+  };
   const ensureNative = (): Promise<boolean> => {
     if (!isTauriAndroid()) return Promise.resolve(false);
     nativeReady ??= (async () => {
       try {
-        await onUpdateEvent((e) => get().applyNative(e));
+        await listen();
         get().applyNative(await downloadStatus());
         return true;
       } catch {
@@ -89,6 +99,10 @@ export const useAppUpdate = create<AppUpdateState>((set, get) => {
     })();
     return nativeReady;
   };
+
+  // Counts starts and cancels. A start waits on the plugin more than once,
+  // and the phase alone cannot tell a cancel from the plugin's first status.
+  let attempt = 0;
 
   const fail = (error: UpdateError) =>
     set({ phase: "error", error, received: 0, total: 0 });
@@ -152,31 +166,35 @@ export const useAppUpdate = create<AppUpdateState>((set, get) => {
       const started = () =>
         set({ phase: "downloading", received: 0, total: size, error: null });
       started();
+      attempt += 1;
+      const mine = attempt;
       // Progress, the permission request and errors only reach us through
       // the listener, so a download nobody hears would leave the sheet stuck.
-      if (!(await ensureNative())) {
+      const heard = await ensureNative();
+      if (mine !== attempt) return;
+      if (!heard) {
         fail("not-ready");
         return;
       }
       // Listening for the first time also brings the plugin's own status.
       if (!BUSY.includes(get().phase)) started();
       try {
-        get().applyNative(
-          await startDownload({
-            url,
-            sha256,
-            size,
-            version: latest.version,
-            allowedHosts: allowedUpdateHosts(),
-          }),
-        );
+        const status = await startDownload({
+          url,
+          sha256,
+          size,
+          version: latest.version,
+          allowedHosts: allowedUpdateHosts(),
+        });
+        if (mine === attempt) get().applyNative(status);
       } catch (e) {
-        fail(errorCode(e));
+        if (mine === attempt) fail(errorCode(e));
       }
     },
 
     cancelUpdate: async () => {
       if (!isTauriAndroid()) return;
+      attempt += 1;
       try {
         await cancelDownload();
       } catch {
