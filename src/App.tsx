@@ -17,6 +17,7 @@ import { RemoveServerConfirmModal } from "./components/ui/RemoveServerConfirmMod
 import { TicTacToeModal } from "./components/ui/TicTacToeModal";
 import { TotpStepUpModal } from "./components/ui/TotpStepUpModal";
 import UpdateModal from "./components/ui/UpdateModal";
+import { useAutoAway } from "./hooks/useAutoAway";
 import { useChannelTabSwitching } from "./hooks/useChannelTabSwitching";
 import { useConnectionResilience } from "./hooks/useConnectionResilience";
 import { useDesktopTray } from "./hooks/useDesktopTray";
@@ -203,6 +204,7 @@ const App: React.FC = () => {
   // Initialize keyboard resize handling for mobile platforms
   useKeyboardResize();
   useConnectionResilience();
+  useAutoAway();
   useChannelTabSwitching();
   useDesktopTray();
   useHistoryPoll();

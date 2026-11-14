@@ -637,6 +637,26 @@ msgstr "Gelişmiş"
 msgid "After"
 msgstr "Sonra"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 1 hour"
+msgstr "1 saat sonra"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 10 minutes"
+msgstr "10 dakika sonra"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 15 minutes"
+msgstr "15 dakika sonra"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 30 minutes"
+msgstr "30 dakika sonra"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 5 minutes"
+msgstr "5 dakika sonra"
+
 #: src/components/ui/MediaCommentsSidebar.tsx
 msgid "Album"
 msgstr "Albüm"
@@ -820,6 +840,10 @@ msgstr "Kimlik doğrulayıcı uygulaması"
 #: src/components/pages/TwoFactorPage.tsx
 msgid "Authenticator app (TOTP)"
 msgstr "Kimlik doğrulayıcı uygulaması (TOTP)"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Auto away"
+msgstr "Otomatik uzakta"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Auto Fallback to Single Line"
@@ -3591,6 +3615,10 @@ msgstr "Kendinizi uzakta olarak işaretleyin"
 msgid "Mark yourself as back"
 msgstr "Kendinizi geri dönmüş olarak işaretleyin"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Mark yourself away after this long without using Obby, and back when you return"
+msgstr "Obby'yi bu kadar süre kullanmadığında seni uzakta olarak işaretle, döndüğünde tekrar burada olarak işaretle"
+
 #: src/components/layout/UserPanel.tsx
 msgid "Mark yourself back"
 msgstr "Döndüğünü işaretle"
@@ -4293,6 +4321,7 @@ msgid "Obby downloads this file every time it starts, so everyone using the same
 msgstr "Obby bu dosyayı her açılışta indirir, böylece aynı bağlantıyı kullanan herkes güncellemeleri alır. Bu, bağlantının işaret ettiği siteye bağlanır."
 
 #: src/components/pages/SettingsPage.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Off"
 msgstr "Kapalı"
 

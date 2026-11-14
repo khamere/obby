@@ -637,6 +637,26 @@ msgstr "Avancerat"
 msgid "After"
 msgstr "Efter"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 1 hour"
+msgstr "Efter 1 timme"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 10 minutes"
+msgstr "Efter 10 minuter"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 15 minutes"
+msgstr "Efter 15 minuter"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 30 minutes"
+msgstr "Efter 30 minuter"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 5 minutes"
+msgstr "Efter 5 minuter"
+
 #: src/components/ui/MediaCommentsSidebar.tsx
 msgid "Album"
 msgstr "Album"
@@ -820,6 +840,10 @@ msgstr "Autentiseringsapp"
 #: src/components/pages/TwoFactorPage.tsx
 msgid "Authenticator app (TOTP)"
 msgstr "Autentiseringsapp (TOTP)"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Auto away"
+msgstr "Automatiskt borta"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Auto Fallback to Single Line"
@@ -3591,6 +3615,10 @@ msgstr "Markera dig själv som borta"
 msgid "Mark yourself as back"
 msgstr "Markera dig själv som tillbaka"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Mark yourself away after this long without using Obby, and back when you return"
+msgstr "Markera dig som borta efter så här lång tid utan att använda Obby, och tillbaka när du återvänder"
+
 #: src/components/layout/UserPanel.tsx
 msgid "Mark yourself back"
 msgstr "Markera dig som tillbaka"
@@ -4293,6 +4321,7 @@ msgid "Obby downloads this file every time it starts, so everyone using the same
 msgstr "Obby laddar ner filen varje gång den startar, så alla som använder samma länk får uppdateringar. Detta kontaktar webbplatsen som länken pekar på."
 
 #: src/components/pages/SettingsPage.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Off"
 msgstr "Av"
 

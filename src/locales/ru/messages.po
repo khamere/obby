@@ -637,6 +637,26 @@ msgstr "Дополнительно"
 msgid "After"
 msgstr "После"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 1 hour"
+msgstr "Через 1 час"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 10 minutes"
+msgstr "Через 10 минут"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 15 minutes"
+msgstr "Через 15 минут"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 30 minutes"
+msgstr "Через 30 минут"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 5 minutes"
+msgstr "Через 5 минут"
+
 #: src/components/ui/MediaCommentsSidebar.tsx
 msgid "Album"
 msgstr "Альбом"
@@ -820,6 +840,10 @@ msgstr "Приложение-аутентификатор"
 #: src/components/pages/TwoFactorPage.tsx
 msgid "Authenticator app (TOTP)"
 msgstr "Приложение-аутентификатор (TOTP)"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Auto away"
+msgstr "Автоматически отошёл"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Auto Fallback to Single Line"
@@ -3591,6 +3615,10 @@ msgstr "Отметить себя как отошедшего"
 msgid "Mark yourself as back"
 msgstr "Отметить себя как вернувшегося"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Mark yourself away after this long without using Obby, and back when you return"
+msgstr "Отмечать вас отошедшим после такого времени без использования Obby и возвращать статус, когда вы вернётесь"
+
 #: src/components/layout/UserPanel.tsx
 msgid "Mark yourself back"
 msgstr "Отметить себя вернувшимся"
@@ -4293,6 +4321,7 @@ msgid "Obby downloads this file every time it starts, so everyone using the same
 msgstr "Obby скачивает этот файл при каждом запуске, поэтому все, кто использует ту же ссылку, получают обновления. При этом происходит обращение к сайту, на который указывает ссылка."
 
 #: src/components/pages/SettingsPage.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Off"
 msgstr "Выкл."
 

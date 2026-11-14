@@ -206,6 +206,7 @@ describe("Metadata Display Features", () => {
         showMotd: true,
         showServerReplies: true,
         awayMessage: "",
+        autoAwayMinutes: 0,
         quitMessage: "Obby - Bringing IRC to the future",
         callAudioInput: null,
         callVideoInput: null,

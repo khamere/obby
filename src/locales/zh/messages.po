@@ -637,6 +637,26 @@ msgstr "高级"
 msgid "After"
 msgstr "之后"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 1 hour"
+msgstr "1 小时后"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 10 minutes"
+msgstr "10 分钟后"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 15 minutes"
+msgstr "15 分钟后"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 30 minutes"
+msgstr "30 分钟后"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 5 minutes"
+msgstr "5 分钟后"
+
 #: src/components/ui/MediaCommentsSidebar.tsx
 msgid "Album"
 msgstr "相册"
@@ -820,6 +840,10 @@ msgstr "验证器应用"
 #: src/components/pages/TwoFactorPage.tsx
 msgid "Authenticator app (TOTP)"
 msgstr "验证器应用 (TOTP)"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Auto away"
+msgstr "自动离开"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Auto Fallback to Single Line"
@@ -3591,6 +3615,10 @@ msgstr "将自己标记为离开"
 msgid "Mark yourself as back"
 msgstr "将自己标记为返回"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Mark yourself away after this long without using Obby, and back when you return"
+msgstr "在这段时间未使用 Obby 后将你标记为离开，回来时恢复"
+
 #: src/components/layout/UserPanel.tsx
 msgid "Mark yourself back"
 msgstr "标记为已回来"
@@ -4293,6 +4321,7 @@ msgid "Obby downloads this file every time it starts, so everyone using the same
 msgstr "Obby 每次启动都会下载此文件，因此使用同一链接的每个人都会收到更新。这会访问链接所指向的网站。"
 
 #: src/components/pages/SettingsPage.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Off"
 msgstr "关"
 

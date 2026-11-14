@@ -637,6 +637,26 @@ msgstr "Avansat"
 msgid "After"
 msgstr "După"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 1 hour"
+msgstr "După 1 oră"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 10 minutes"
+msgstr "După 10 minute"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 15 minutes"
+msgstr "După 15 minute"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 30 minutes"
+msgstr "După 30 de minute"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "After 5 minutes"
+msgstr "După 5 minute"
+
 #: src/components/ui/MediaCommentsSidebar.tsx
 msgid "Album"
 msgstr "Album"
@@ -820,6 +840,10 @@ msgstr "Aplicație de autentificare"
 #: src/components/pages/TwoFactorPage.tsx
 msgid "Authenticator app (TOTP)"
 msgstr "Aplicație de autentificare (TOTP)"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Auto away"
+msgstr "Absent automat"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Auto Fallback to Single Line"
@@ -3591,6 +3615,10 @@ msgstr "Marchează-te ca absent"
 msgid "Mark yourself as back"
 msgstr "Marchează-te ca revenit"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Mark yourself away after this long without using Obby, and back when you return"
+msgstr "Marchează-te ca absent după acest timp fără să folosești Obby și din nou prezent când revii"
+
 #: src/components/layout/UserPanel.tsx
 msgid "Mark yourself back"
 msgstr "Marchează-te ca revenit"
@@ -4293,6 +4321,7 @@ msgid "Obby downloads this file every time it starts, so everyone using the same
 msgstr "Obby descarcă acest fișier la fiecare pornire, așa că toți cei care folosesc același link primesc actualizările. Aceasta contactează site-ul către care duce linkul."
 
 #: src/components/pages/SettingsPage.tsx
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Off"
 msgstr "Oprit"
 
