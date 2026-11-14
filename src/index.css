@@ -1253,19 +1253,57 @@ html[data-keyboard-open] .chat-input-area {
 .user-panel {
   container-type: inline-size;
 }
-/* The long pill label and the short one swap by the row's own width, so a
-   narrow sidebar never loses the pill, only its words. */
+/* The version and the pill label each come in several lengths and swap by
+   the row's own width, so a narrow sidebar loses neither the pill nor the
+   release the build is, only the words around them. */
 .update-line {
   container-type: inline-size;
 }
+.update-line-full,
+.update-line-version,
 .update-line-wide {
   display: none;
 }
-@container (min-width: 220px) {
+/* Alone on the row, the version keeps its full form as long as that fits. */
+@container (min-width: 100px) {
+  .update-line:not(.update-line-with-pill) .update-line-version {
+    display: inline;
+  }
+  .update-line:not(.update-line-with-pill) .update-line-short {
+    display: none;
+  }
+}
+@container (min-width: 216px) {
+  .update-line:not(.update-line-with-pill) .update-line-full {
+    display: inline;
+  }
+  .update-line:not(.update-line-with-pill) .update-line-version {
+    display: none;
+  }
+}
+/* Beside the pill each step is the width of the two forms it shows whole:
+   the version number, then the long pill label, then the full version. */
+@container (min-width: 174px) {
+  .update-line-with-pill .update-line-version {
+    display: inline;
+  }
+  .update-line-with-pill .update-line-short {
+    display: none;
+  }
+}
+@container (min-width: 248px) {
   .update-line-wide {
     display: inline;
   }
   .update-line-narrow {
+    display: none;
+  }
+}
+@container (min-width: 364px) {
+  .update-line-with-pill .update-line-full {
+    display: inline;
+  }
+  .update-line-with-pill .update-line-version {
     display: none;
   }
 }

@@ -107,8 +107,34 @@ describe("UpdateLine", () => {
     const pill = screen.getByRole("button");
     expect(pill.className).toContain("shrink-0");
     expect(pill.className).toContain("whitespace-nowrap");
-    const version = screen.getByText(/Obby 0\.4\.0/);
+    const version = screen.getByTitle("Obby 0.4.0-cf1.2.0 · abc1234");
     expect(version.className).toContain("min-w-0");
     expect(version.className).toContain("truncate");
+  });
+
+  it("carries the version in three lengths for the row's width to pick from", () => {
+    render(<UpdateLine />);
+    const version = screen.getByTitle("Obby 0.4.0-cf1.2.0 · abc1234");
+    const variants = [...version.children].map((el) => [
+      el.className,
+      el.textContent,
+    ]);
+    expect(variants).toEqual([
+      ["update-line-full", "Obby 0.4.0-cf1.2.0 · abc1234"],
+      ["update-line-version", "0.4.0-cf1.2.0"],
+      ["update-line-short", "cf1.2.0"],
+    ]);
+  });
+
+  it("marks the row when the pill takes part of it", () => {
+    const hasMark = (container: HTMLElement) =>
+      container
+        .querySelector(".update-line")
+        ?.classList.contains("update-line-with-pill");
+    const alone = render(<UpdateLine />);
+    expect(hasMark(alone.container)).toBe(false);
+    alone.unmount();
+    setState({ latest: release });
+    expect(hasMark(render(<UpdateLine />).container)).toBe(true);
   });
 });

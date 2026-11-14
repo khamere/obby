@@ -9,7 +9,8 @@ import { useAppUpdate } from "../../store/appUpdate";
 
 /** The running version, always visible above the user panel, with a pill
  *  when a newer release exists. The pill never shrinks and never wraps: the
- *  version text gives way first, so nothing else on the row moves. */
+ *  version text gives way first, so nothing else on the row moves. Both come
+ *  in several lengths, and the stylesheet shows the longest the row holds. */
 export const UpdateLine: React.FC = () => {
   const checkForReleases = useStore(
     (s) => s.globalSettings.checkForReleases !== false,
@@ -38,12 +39,23 @@ export const UpdateLine: React.FC = () => {
   const downloading = phase === "downloading" && total > 0;
   const percent = Math.min(100, Math.floor((received / total) * 100));
   const label = latest ? shortReleaseLabel(latest.version) : "";
+  const full = __APP_COMMIT__
+    ? `Obby ${APP_VERSION} · ${__APP_COMMIT__}`
+    : `Obby ${APP_VERSION}`;
 
   return (
-    <div className="update-line mx-2 h-5 flex items-center gap-1.5 px-1">
-      <span className="row-meta min-w-0 flex-1 truncate text-xs select-text">
-        Obby {APP_VERSION}
-        {__APP_COMMIT__ && ` · ${__APP_COMMIT__}`}
+    <div
+      className={`update-line mx-2 h-5 flex items-center gap-1.5 px-1 ${showPill ? "update-line-with-pill" : ""}`}
+    >
+      <span
+        title={full}
+        className="row-meta min-w-0 flex-1 truncate text-xs select-text"
+      >
+        <span className="update-line-full">{full}</span>
+        <span className="update-line-version">{APP_VERSION}</span>
+        <span className="update-line-short">
+          {shortReleaseLabel(APP_VERSION)}
+        </span>
       </span>
       {showPill && (
         <button
