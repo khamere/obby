@@ -132,7 +132,7 @@ const App: React.FC = () => {
     selectChannel,
     connectToSavedServers,
     toggleServerNoticesPopup,
-    isConnecting,
+    isAddingServer,
     hasConnectedToSavedServers,
   } = useStore(
     useShallow((state) => ({
@@ -145,7 +145,8 @@ const App: React.FC = () => {
       selectChannel: state.selectChannel,
       connectToSavedServers: state.connectToSavedServers,
       toggleServerNoticesPopup: state.toggleServerNoticesPopup,
-      isConnecting: state.isConnecting,
+      // Saved servers connect behind a usable app, so only a server being added waits behind the spinner.
+      isAddingServer: state.isConnecting && state.isAddingNewServer,
       hasConnectedToSavedServers: state.hasConnectedToSavedServers,
     })),
   );
@@ -437,7 +438,7 @@ const App: React.FC = () => {
                   joinChannel={joinChannel}
                 />
               )}
-              {isConnecting && <LoadingOverlay />}
+              {isAddingServer && <LoadingOverlay />}
             </>
           }
         />
