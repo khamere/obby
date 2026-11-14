@@ -141,6 +141,20 @@ with the real key.
   desktop downloads from here), along with the matching line in `docs/community-releases.md`. The popup shows
   the new release's notes, which already carry the new wording.
 
+### Added during review and the phone test
+
+- **Leaving Android's prompt unanswered:** the prompt lives outside the app, so the "installing" state offers
+  **Show the install prompt again** and **Cancel**; nothing reopens the prompt by itself.
+- **The version text steps down before it is cut:** full (`Obby 0.4.0-cf1.2.0 · 076d85ca`), then the version
+  alone, then the community part (`cf1.2.0`), chosen by the width left beside the pill; a `title` keeps the full
+  string.
+- **A failed check is not "up to date":** a request that fails is not remembered for the day, keeps the release
+  already known, and Settings says the check failed.
+- **A check after a failed update takes the answer:** a release that changed (a republished file has a new
+  checksum) clears the error, so the next attempt is measured against the new file.
+- **Settings offers the update too:** the Check now row shows the known release with an **Update** button that
+  opens the same popup.
+
 ## Left to the builder
 
 - Whether the Kotlin code goes in a new small plugin (e.g. `src-tauri/plugins/app-update`) or in
