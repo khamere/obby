@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import type { StoreApi } from "zustand";
 import { voiceDisplayName } from "../../lib/channelMentions";
 import ircClient from "../../lib/ircClient";
+import { moveChatMute } from "../../lib/mutes";
 import type { Message, User } from "../../types";
 import {
   generateDeterministicId,
@@ -382,6 +383,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
       }
     }
     saveConfirmedNick(store, serverId, newNick);
+    moveChatMute(serverId, "dm", oldNick, newNick);
     store.setState((state) => {
       const updatedServers = state.servers.map((server) => {
         if (server.id === serverId) {

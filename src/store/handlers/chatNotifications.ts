@@ -76,7 +76,7 @@ export function offerNotificationsOnce(store: StoreApi<AppState>): void {
   });
 }
 
-// Mutes are kept by chat id, while a notification names its target.
+// A notification names its target, and the mute check wants the chat.
 function chatIdOf(
   store: StoreApi<AppState>,
   { serverId, target, isPrivate }: ChatNotification,

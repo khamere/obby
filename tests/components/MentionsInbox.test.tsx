@@ -48,9 +48,11 @@ const server = (id: string, channelIds: string[]): Server =>
     })),
   }) as Server;
 
+const two = { id: "c2", kind: "channel", name: "#two" } as const;
+
 describe("MentionsInbox", () => {
   afterEach(() => {
-    unmuteChat("s2", "c2");
+    unmuteChat("s2", two);
     resetMutesForTests();
   });
   beforeEach(() => {
@@ -107,7 +109,7 @@ describe("MentionsInbox", () => {
   });
 
   it("keeps muted channels out of the badge and folds them away", () => {
-    muteChat("s2", "c2", "channel", null);
+    muteChat("s2", two, null);
     render(<MentionsInbox />);
     // The mute marked #two's mention seen; #left still counts.
     expect(screen.getByLabelText("Mentions")).toHaveTextContent("1");
@@ -122,7 +124,7 @@ describe("MentionsInbox", () => {
 
   it("moves mentions back when a timed mute runs out", () => {
     vi.useFakeTimers();
-    muteChat("s2", "c2", "channel", Date.now() + 60_000);
+    muteChat("s2", two, Date.now() + 60_000);
     render(<MentionsInbox />);
     fireEvent.click(screen.getByLabelText("Mentions"));
     expect(screen.getByText("Muted channels (2)")).toBeInTheDocument();
