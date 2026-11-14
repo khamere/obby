@@ -8,6 +8,7 @@ import ircClient from "../lib/ircClient";
 import useStore from "../store";
 
 const CHECK_INTERVAL_MS = 30_000;
+const INPUT_CHECK_MS = 1_000;
 const ACTIVITY_EVENTS = [
   "pointerdown",
   "pointermove",
@@ -34,10 +35,15 @@ export function useAutoAway(): void {
       for (const id of clearAway) ircClient.clearAway(id);
     };
 
+    // Input brings the user back at once from an away we set, checked at
+    // most once a second so pointer movement stays cheap.
+    let lastInputCheck = 0;
     const onActivity = () => {
-      const wasIdle = Date.now() - lastActivity > CHECK_INTERVAL_MS;
       lastActivity = Date.now();
-      if (wasIdle && autoAwayRecord().size > 0) check();
+      if (autoAwayRecord().size === 0) return;
+      if (lastActivity - lastInputCheck < INPUT_CHECK_MS) return;
+      lastInputCheck = lastActivity;
+      check();
     };
 
     for (const type of ACTIVITY_EVENTS)

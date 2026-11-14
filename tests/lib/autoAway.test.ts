@@ -5,6 +5,7 @@ const MIN = 60_000;
 const server = (id: string, extra: Record<string, unknown> = {}) => ({
   id,
   isConnected: true,
+  isRegistered: true,
   isAway: false,
   ...extra,
 });
@@ -23,6 +24,34 @@ describe("decideAutoAway", () => {
       ["a", "pending"],
       ["b", "pending"],
     ]);
+  });
+
+  it("waits for the login to finish before sending away", () => {
+    const d = decideAutoAway({
+      minutes: 5,
+      idleMs: 30 * MIN,
+      servers: [server("a", { isRegistered: false })],
+      ours: ours(),
+    });
+    expect(d.setAway).toEqual([]);
+  });
+
+  it("drops a pending away when the connection logs in again", () => {
+    const d = decideAutoAway({
+      minutes: 5,
+      idleMs: 30 * MIN,
+      servers: [server("a", { isRegistered: false })],
+      ours: ours([["a", "pending"]]),
+    });
+    expect(d.next.size).toBe(0);
+
+    const again = decideAutoAway({
+      minutes: 5,
+      idleMs: 30 * MIN,
+      servers: [server("a")],
+      ours: d.next,
+    });
+    expect(again.setAway).toEqual(["a"]);
   });
 
   it("does nothing before the idle time passes", () => {

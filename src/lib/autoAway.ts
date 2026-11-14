@@ -5,6 +5,7 @@
 export interface AutoAwayServer {
   id: string;
   isConnected: boolean;
+  isRegistered?: boolean;
   isAway?: boolean;
   isBouncerControl?: boolean;
 }
@@ -30,10 +31,12 @@ export function decideAutoAway({
   servers: readonly AutoAwayServer[];
   ours: ReadonlyMap<string, AutoAwayState>;
 }): AutoAwayDecision {
+  // A server accepts AWAY only once our login has finished.
+  const isReady = (s: AutoAwayServer) => s.isConnected && s.isRegistered;
   const next = new Map<string, AutoAwayState>();
   for (const [id, state] of ours) {
     const server = servers.find((s) => s.id === id);
-    if (!server?.isConnected) continue;
+    if (!server || !isReady(server)) continue;
     if (server.isAway) next.set(id, "confirmed");
     else if (state === "pending") next.set(id, "pending");
   }
@@ -47,8 +50,7 @@ export function decideAutoAway({
   }
   const setAway = servers
     .filter(
-      (s) =>
-        s.isConnected && !s.isAway && !s.isBouncerControl && !next.has(s.id),
+      (s) => isReady(s) && !s.isAway && !s.isBouncerControl && !next.has(s.id),
     )
     .map((s) => s.id);
   for (const id of setAway) next.set(id, "pending");

@@ -14,6 +14,7 @@ const setServer = (isAway: boolean) =>
       {
         id: "s1",
         isConnected: true,
+        isRegistered: true,
         isAway,
         channels: [],
         privateChats: [],
@@ -59,6 +60,20 @@ describe("useAutoAway", () => {
     vi.advanceTimersByTime(30_000);
     expect(setAway).toHaveBeenCalledTimes(1);
 
+    window.dispatchEvent(new KeyboardEvent("keydown"));
+    expect(clearAway).toHaveBeenCalledWith("s1");
+  });
+
+  it("marks the user back on the first input after a late confirmation", () => {
+    renderHook(() => useAutoAway());
+    vi.advanceTimersByTime(10 * MIN + 30_000);
+    expect(setAway).toHaveBeenCalledTimes(1);
+
+    window.dispatchEvent(new KeyboardEvent("keydown"));
+    expect(clearAway).not.toHaveBeenCalled();
+
+    setServer(true);
+    vi.advanceTimersByTime(5_000);
     window.dispatchEvent(new KeyboardEvent("keydown"));
     expect(clearAway).toHaveBeenCalledWith("s1");
   });
