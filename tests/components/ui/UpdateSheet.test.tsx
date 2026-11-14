@@ -183,6 +183,20 @@ describe("UpdateSheet", () => {
     expect(screen.getByRole("status").textContent).toBe("");
   });
 
+  // A hidden region leaves the accessibility tree, and one that comes back
+  // together with its first text is not reliably announced.
+  it.each([true, false])(
+    "keeps the empty status region exposed without a gap (touch: %s)",
+    (touch) => {
+      env.touch = touch;
+      render(<UpdateSheet />);
+      const classes = screen.getByRole("status").className.split(" ");
+      expect(classes).not.toContain("empty:hidden");
+      expect(classes).not.toContain("hidden");
+      expect(classes).toContain("empty:-mb-3");
+    },
+  );
+
   it("is a bottom sheet on touch input and a dialog with a mouse", () => {
     env.touch = true;
     const { unmount } = render(<UpdateSheet />);

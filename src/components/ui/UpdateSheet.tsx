@@ -242,10 +242,12 @@ export const UpdateSheet: React.FC = () => {
   }
 
   // The region stays mounted through every phase, because a screen reader
-  // only announces changes inside a region it already knows.
+  // only announces changes inside a region it already knows. Hiding it while
+  // empty would take it out of the accessibility tree, so it stays and gives
+  // back the column's gap instead.
   const main = (
     <>
-      <div role="status" className="empty:hidden">
+      <div role="status" className="empty:-mb-3">
         {status}
       </div>
       {body}
