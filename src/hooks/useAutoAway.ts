@@ -1,8 +1,10 @@
 import { useEffect } from "react";
 import {
   autoAwayRecord,
+  autoAwaySeenAway,
   decideAutoAway,
   setAutoAwayRecord,
+  setAutoAwaySeenAway,
 } from "../lib/autoAway";
 import ircClient from "../lib/ircClient";
 import useStore from "../store";
@@ -25,13 +27,15 @@ export function useAutoAway(): void {
 
     const check = () => {
       const state = useStore.getState();
-      const { next, setAway, clearAway } = decideAutoAway({
+      const { next, setAway, clearAway, seenAway } = decideAutoAway({
         minutes: Number(state.globalSettings.autoAwayMinutes) || 0,
         idleMs: Date.now() - lastActivity,
         servers: state.servers,
         ours: autoAwayRecord(),
+        wasAway: autoAwaySeenAway(),
       });
       setAutoAwayRecord(next);
+      setAutoAwaySeenAway(seenAway);
       const message = state.globalSettings.awayMessage || "Away";
       for (const id of setAway) ircClient.setAway(id, message);
       for (const id of clearAway) ircClient.clearAway(id);
@@ -50,7 +54,9 @@ export function useAutoAway(): void {
     let lastTick = Date.now();
     const onTick = () => {
       const now = Date.now();
-      if (now - lastTick > RESUME_GAP_MS) lastActivity = now;
+      // An away we already set stays until real input.
+      if (now - lastTick > RESUME_GAP_MS && autoAwayRecord().size === 0)
+        lastActivity = now;
       lastTick = now;
       check();
     };

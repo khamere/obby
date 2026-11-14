@@ -15,6 +15,8 @@ export interface AutoAwayDecision {
   setAway: string[];
   clearAway: string[];
   next: Map<string, AutoAwayState>;
+  // Servers away at this check, so the next one can tell an away that ended since.
+  seenAway: Set<string>;
 }
 
 export function decideAutoAway({
@@ -22,11 +24,13 @@ export function decideAutoAway({
   idleMs,
   servers,
   ours,
+  wasAway = NO_SERVERS,
 }: {
   minutes: number;
   idleMs: number;
   servers: readonly AutoAwayServer[];
   ours: ReadonlyMap<string, AutoAwayState>;
+  wasAway?: ReadonlySet<string>;
 }): AutoAwayDecision {
   // A server accepts AWAY only once our login has finished.
   const isReady = (s: AutoAwayServer) => s.isConnected && s.isRegistered;
@@ -38,6 +42,9 @@ export function decideAutoAway({
     else if (server.isAway) next.set(id, "confirmed");
     else next.set(id, state === "pending" ? "pending" : "released");
   }
+  const seenAway = new Set(
+    servers.filter((s) => isReady(s) && s.isAway).map((s) => s.id),
+  );
   const isIdle = minutes > 0 && idleMs >= minutes * 60_000;
   if (!isIdle) {
     const clearAway: string[] = [];
@@ -46,18 +53,39 @@ export function decideAutoAway({
       if (state === "confirmed") clearAway.push(id);
       next.delete(id);
     }
-    return { setAway: [], clearAway, next };
+    return { setAway: [], clearAway, next, seenAway };
   }
-  const setAway = servers
-    .filter(
-      (s) => isReady(s) && !s.isAway && !s.isBouncerControl && !next.has(s.id),
-    )
-    .map((s) => s.id);
-  for (const id of setAway) next.set(id, "pending");
-  return { setAway, clearAway: [], next };
+  const setAway: string[] = [];
+  for (const s of servers) {
+    if (!isReady(s) || s.isAway || s.isBouncerControl || next.has(s.id))
+      continue;
+    // An away that ended while the user was idle was ended from elsewhere.
+    if (wasAway.has(s.id)) next.set(s.id, "released");
+    else {
+      setAway.push(s.id);
+      next.set(s.id, "pending");
+    }
+  }
+  return { setAway, clearAway: [], next, seenAway };
 }
 
+const NO_SERVERS: ReadonlySet<string> = new Set();
+
 let ours = new Map<string, AutoAwayState>();
+let lastSeenAway: ReadonlySet<string> = NO_SERVERS;
+
+export function autoAwaySeenAway(): ReadonlySet<string> {
+  return lastSeenAway;
+}
+
+export function setAutoAwaySeenAway(seen: ReadonlySet<string>): void {
+  lastSeenAway = seen;
+}
+
+// A back we did not send ended the away from elsewhere, so we wait for the user.
+export function releaseAutoAway(serverId: string): void {
+  if (ours.has(serverId)) ours.set(serverId, "released");
+}
 
 export function autoAwayRecord(): ReadonlyMap<string, AutoAwayState> {
   return ours;
@@ -70,4 +98,6 @@ export function setAutoAwayRecord(next: Map<string, AutoAwayState>): void {
 // The user's own away or back on a server takes it out of our hands.
 export function forgetAutoAway(serverId: string): void {
   ours.delete(serverId);
+  if (lastSeenAway.has(serverId))
+    lastSeenAway = new Set([...lastSeenAway].filter((id) => id !== serverId));
 }

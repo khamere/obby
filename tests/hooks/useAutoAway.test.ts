@@ -1,7 +1,7 @@
 import { renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutoAway } from "../../src/hooks/useAutoAway";
-import { setAutoAwayRecord } from "../../src/lib/autoAway";
+import { setAutoAwayRecord, setAutoAwaySeenAway } from "../../src/lib/autoAway";
 import ircClient from "../../src/lib/ircClient";
 import useStore from "../../src/store";
 import type { Server } from "../../src/types";
@@ -13,6 +13,8 @@ const setServer = (isAway: boolean) =>
     servers: [
       {
         id: "s1",
+        host: "irc.example",
+        port: 6697,
         isConnected: true,
         isRegistered: true,
         isAway,
@@ -29,6 +31,7 @@ describe("useAutoAway", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     setAutoAwayRecord(new Map());
+    setAutoAwaySeenAway(new Set());
     setAway = vi.spyOn(ircClient, "setAway").mockImplementation(() => {});
     clearAway = vi.spyOn(ircClient, "clearAway").mockImplementation(() => {});
     useStore.setState((state) => ({
@@ -155,6 +158,90 @@ describe("useAutoAway", () => {
       expect(setAway).not.toHaveBeenCalled();
     },
   );
+
+  const reconnect = () => {
+    ircClient.triggerEvent("connectionStateChange", {
+      serverId: "s1",
+      connectionState: "disconnected",
+    });
+    ircClient.triggerEvent("connectionStateChange", {
+      serverId: "s1",
+      connectionState: "connected",
+    });
+    setServer(false);
+  };
+
+  it("marks an idle user away again after a quick reconnect", () => {
+    renderHook(() => useAutoAway());
+    vi.advanceTimersByTime(10 * MIN + 30_000);
+    setServer(true);
+    vi.advanceTimersByTime(30_000);
+    expect(setAway).toHaveBeenCalledTimes(1);
+
+    reconnect();
+    vi.advanceTimersByTime(30_000);
+    expect(setAway).toHaveBeenCalledTimes(2);
+  });
+
+  it("sends away again when the connection drops before the confirmation", () => {
+    renderHook(() => useAutoAway());
+    vi.advanceTimersByTime(10 * MIN + 30_000);
+    expect(setAway).toHaveBeenCalledTimes(1);
+
+    reconnect();
+    vi.advanceTimersByTime(30_000);
+    expect(setAway).toHaveBeenCalledTimes(2);
+  });
+
+  it("leaves an away set from elsewhere after an outside back", () => {
+    renderHook(() => useAutoAway());
+    vi.advanceTimersByTime(10 * MIN + 30_000);
+    setServer(true);
+    vi.advanceTimersByTime(30_000);
+
+    ircClient.triggerEvent("RPL_UNAWAY", { serverId: "s1", message: "" });
+    setServer(true);
+    vi.advanceTimersByTime(30_000);
+    window.dispatchEvent(new KeyboardEvent("keydown"));
+    vi.advanceTimersByTime(60_000);
+
+    expect(clearAway).not.toHaveBeenCalled();
+  });
+
+  it("keeps an away it set through a late timer tick", () => {
+    renderHook(() => useAutoAway());
+    vi.advanceTimersByTime(10 * MIN + 30_000);
+    setServer(true);
+    vi.advanceTimersByTime(30_000);
+
+    vi.setSystemTime(Date.now() + 60 * MIN);
+    vi.advanceTimersByTime(30_000);
+    expect(clearAway).not.toHaveBeenCalled();
+
+    window.dispatchEvent(new KeyboardEvent("keydown"));
+    expect(clearAway).toHaveBeenCalledWith("s1");
+  });
+
+  it("does not take the window being hidden as activity", () => {
+    const visibility = vi
+      .spyOn(document, "visibilityState", "get")
+      .mockReturnValue("hidden");
+    renderHook(() => useAutoAway());
+    vi.advanceTimersByTime(9 * MIN);
+
+    document.dispatchEvent(new Event("visibilitychange"));
+    vi.advanceTimersByTime(MIN + 30_000);
+    expect(setAway).toHaveBeenCalledTimes(1);
+    visibility.mockRestore();
+  });
+
+  it("stops watching once unmounted", () => {
+    const { unmount } = renderHook(() => useAutoAway());
+    unmount();
+
+    vi.advanceTimersByTime(60 * MIN);
+    expect(setAway).not.toHaveBeenCalled();
+  });
 
   it("does nothing while switched off", () => {
     useStore.setState((state) => ({

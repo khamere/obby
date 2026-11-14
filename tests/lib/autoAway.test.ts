@@ -191,6 +191,45 @@ describe("decideAutoAway", () => {
     expect(idleAgain.setAway).toEqual(["a"]);
   });
 
+  it("keeps a released server released when it reports away again", () => {
+    const idle = decideAutoAway({
+      minutes: 5,
+      idleMs: 20 * MIN,
+      servers: [server("a", { isAway: true })],
+      ours: ours([["a", "released"]]),
+    });
+    expect(idle.next.get("a")).toBe("released");
+
+    const active = decideAutoAway({
+      minutes: 5,
+      idleMs: 0,
+      servers: [server("a", { isAway: true })],
+      ours: idle.next,
+    });
+    expect(active.clearAway).toEqual([]);
+    expect(active.next.size).toBe(0);
+  });
+
+  it("leaves a server alone when the user's own away ended while idle", () => {
+    const whileAway = decideAutoAway({
+      minutes: 5,
+      idleMs: 20 * MIN,
+      servers: [server("a", { isAway: true })],
+      ours: ours(),
+    });
+    expect([...whileAway.seenAway]).toEqual(["a"]);
+
+    const ended = decideAutoAway({
+      minutes: 5,
+      idleMs: 21 * MIN,
+      servers: [server("a", { isAway: false })],
+      ours: whileAway.next,
+      wasAway: whileAway.seenAway,
+    });
+    expect(ended.setAway).toEqual([]);
+    expect(ended.next.get("a")).toBe("released");
+  });
+
   it("forgets a server that disconnected", () => {
     const d = decideAutoAway({
       minutes: 5,
