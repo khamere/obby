@@ -14,6 +14,7 @@ import { PushMethodField } from "../../../components/ui/settings/PushMethodField
 import { ThemeEditorField } from "../../../components/ui/settings/ThemeEditorField";
 import { ThemeField } from "../../../components/ui/settings/ThemeField";
 import { ThemeLinkField } from "../../../components/ui/settings/ThemeLinkField";
+import { UpdateCheckField } from "../../../components/ui/settings/UpdateCheckField";
 import { UserFilehostField } from "../../../components/ui/settings/UserFilehostField";
 import { isTauriAndroid, isTauriIOS } from "../../platformUtils";
 import { FONT_SIZE_MAX, FONT_SIZE_MIN } from "../../typography";
@@ -931,11 +932,29 @@ const preferenceSettings: SettingDefinition[] = [
     category: "preferences",
     subcategory: "Updates",
     title: msg`Check for new releases`,
-    description: msg`Once a day, ask the project's release page whether a newer build exists and say so under the version. Nothing is downloaded or installed.`,
+    description: msg`Once a day, ask the project's release page whether a newer build exists and show it above your name. Nothing is downloaded until you tap Update.`,
     type: "toggle",
     defaultValue: true,
     searchKeywords: ["update", "release", "version", "new"],
     priority: 16,
+  },
+  {
+    id: "preferences.checkNow",
+    key: "checkNow",
+    category: "preferences",
+    subcategory: "Updates",
+    title: msg`Check for an update now`,
+    type: "custom",
+    defaultValue: null,
+    searchKeywords: ["update", "release", "version", "check"],
+    priority: 15,
+    customComponent: UpdateCheckField,
+    dependencies: [
+      {
+        settingId: "preferences.checkForReleases",
+        condition: (value) => value !== false,
+      },
+    ],
   },
   {
     id: "preferences.backup",

@@ -1,0 +1,15 @@
+[package]
+name = "tauri-plugin-app-update"
+version = "0.1.0"
+edition = "2021"
+build = "build.rs"
+links = "tauri-plugin-app-update"
+
+[lib]
+name = "tauri_plugin_app_update"
+
+[dependencies]
+tauri = { version = "2" }
+
+[build-dependencies]
+tauri-plugin = { version = "2", features = ["build"] }

@@ -145,6 +145,10 @@ msgstr "{count}+ sonuç"
 msgid "{countLabel} in {scopeName}"
 msgstr "{scopeName} içinde {countLabel}"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "{done} of {all}"
+msgstr "{done} / {all}"
+
 #: src/components/ui/UploadProgressBar.tsx
 msgid "{failedCount, plural, one {1 upload failed} other {# uploads failed}}"
 msgstr "{failedCount, plural, one {1 yükleme başarısız oldu} other {# yükleme başarısız oldu}}"
@@ -312,6 +316,14 @@ msgstr "#overflow"
 #: src/components/ui/QuickActions.tsx
 msgid "↑ ↓ to move"
 msgstr "↑ ↓ taşı"
+
+#: src/components/layout/UpdateLine.tsx
+msgid "↑ Update"
+msgstr "↑ Güncelle"
+
+#: src/components/layout/UpdateLine.tsx
+msgid "↑ Update to {label}"
+msgstr "↑ {label} sürümüne güncelle"
 
 #: src/components/ui/QuickActions.tsx
 msgid "↵ to open"
@@ -712,6 +724,10 @@ msgstr "Ses kaydetmek için mikrofon erişimine izin verin."
 msgid "Allow notifications for Obby in your system settings to turn them on"
 msgstr "Açmak için sistem ayarlarından Obby bildirimlerine izin verin"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Allow Obby to install updates"
+msgstr "Obby'nin güncelleme yüklemesine izin ver"
+
 #: src/components/layout/ChatArea.tsx
 msgid "Allow Obby under Screen Recording in System Settings, then record again."
 msgstr "Sistem Ayarları'nda Ekran Kaydı altında Obby'ye izin verin, ardından yeniden kaydedin."
@@ -732,6 +748,14 @@ msgstr "Alternatif metin (isteğe bağlı)"
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Amount"
 msgstr "Miktar"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Android asks once. Turn on \"Allow from this source\" for Obby, then come back; the update continues by itself."
+msgstr "Android bunu yalnızca bir kez sorar. Obby için \"Bu kaynaktan izin ver\" seçeneğini aç ve geri dön; güncelleme kendiliğinden devam eder."
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Android refused the update because it was signed by someone else. Install it from the release page."
+msgstr "Android güncellemeyi, başka biri tarafından imzalandığı için reddetti. Sürüm sayfasından yükle."
 
 #: src/components/pages/SettingsPage.tsx
 msgid "Anonymous Analytics:"
@@ -1153,6 +1177,8 @@ msgstr "Son 2FA kimlik bilgisi kaldırılamaz"
 #: src/components/ui/settings/HistoryUsageField.tsx
 #: src/components/ui/TotpStepUpModal.tsx
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
 #: src/lib/modal/ConfirmDialog.tsx
 msgid "Cancel"
 msgstr "İptal"
@@ -1364,8 +1390,20 @@ msgid "Chats and networks"
 msgstr "Sohbetler ve ağlar"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Check for an update now"
+msgstr "Şimdi güncelleme ara"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Check for new releases"
 msgstr "Yeni sürümleri denetle"
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Check now"
+msgstr "Şimdi denetle"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Checking the download"
+msgstr "İndirme denetleniyor"
 
 #: src/lib/mediaUpload.ts
 msgid "Choose a different file type. The file host does not accept {ext} files."
@@ -1509,6 +1547,7 @@ msgstr "İstemci sınırı (+l)"
 #: src/components/ui/QuickActions.tsx
 #: src/components/ui/QuickActions.tsx
 #: src/components/ui/TicTacToeModal.tsx
+#: src/components/ui/UpdateSheet.tsx
 #: src/lib/modal/BaseModal.tsx
 msgid "Close"
 msgstr "Kapat"
@@ -1824,6 +1863,10 @@ msgstr "Rahat, avatarları ve mesajlar arasındaki boşlukları gösterir; Sık�
 #: src/lib/mediaDevices.ts
 msgid "Could not access the device."
 msgstr "Cihaza erişilemedi."
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Could not check. Try again later."
+msgstr "Denetlenemedi. Daha sonra tekrar dene."
 
 #: src/components/ui/GlobalNotifications.tsx
 msgid "Could not find this message"
@@ -2248,12 +2291,18 @@ msgstr "Bitti"
 
 #: src/components/ui/MediaViewerModal.tsx
 #: src/components/ui/MediaViewerModal.tsx
+#: src/components/ui/UpdateSheet.tsx
 msgid "Download"
 msgstr "İndir"
 
 #: src/components/ui/settings/BackupField.tsx
 msgid "Download backup"
 msgstr "Yedeği indir"
+
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Downloading {label}"
+msgstr "{label} indiriliyor"
 
 #: src/components/ui/UpdateModal.tsx
 msgid "Downloading…"
@@ -4275,6 +4324,11 @@ msgstr "Şifrelenmemiş"
 msgid "Not in this channel"
 msgstr "Bu kanalda değilsin"
 
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Not now"
+msgstr "Şimdi değil"
+
 #: src/components/chat/CommandArgHint.tsx
 msgid "Not sent. Reconnect, or use a chat where the bot offers this command"
 msgstr "Gönderilmedi. Yeniden bağlanın veya botun bu komutu sunduğu bir sohbeti kullanın"
@@ -4315,10 +4369,27 @@ msgstr "Obby"
 msgid "Obby - Bringing IRC to the future"
 msgstr "Obby - IRC'yi geleceğe taşıyor"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Obby {version}"
+msgstr "Obby {version}"
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Obby {version} is available."
+msgstr "Obby {version} kullanılabilir."
+
 #: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Obby downloads this file every time it starts, so everyone using the same link gets updates. This contacts the site the link points to."
 msgstr "Obby bu dosyayı her açılışta indirir, böylece aynı bağlantıyı kullanan herkes güncellemeleri alır. Bu, bağlantının işaret ettiği siteye bağlanır."
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Obby is up to date."
+msgstr "Obby güncel."
+
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Obby will close to install the update; open it again afterwards."
+msgstr "Obby güncellemeyi yüklemek için kapanacak; sonrasında yeniden aç."
 
 #: src/components/pages/SettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
@@ -4345,8 +4416,8 @@ msgid "on"
 msgstr "açık"
 
 #: src/lib/settings/definitions/allSettings.ts
-msgid "Once a day, ask the project's release page whether a newer build exists and say so under the version. Nothing is downloaded or installed."
-msgstr "Günde bir kez projenin sürüm sayfasına daha yeni bir yapı olup olmadığını sor ve bunu sürümün altında göster. Hiçbir şey indirilmez veya kurulmaz."
+msgid "Once a day, ask the project's release page whether a newer build exists and show it above your name. Nothing is downloaded until you tap Update."
+msgstr "Günde bir kez projenin sürüm sayfasına daha yeni bir derleme olup olmadığını sorar ve adının üstünde gösterir. Güncelle'ye dokunana kadar hiçbir şey indirilmez."
 
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/ChatHeader.tsx
@@ -4388,6 +4459,10 @@ msgstr "{0} aç"
 #: src/lib/clientCommands.ts
 msgid "Open a private message to a user"
 msgstr "Bir kullanıcıya özel mesaj aç"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Open Android settings"
+msgstr "Android ayarlarını aç"
 
 #: src/components/layout/ChannelRow.tsx
 #: src/components/layout/ChannelRow.tsx
@@ -4441,6 +4516,10 @@ msgstr "Neyin ters gittiğini görmek için Sunucu Bildirimlerini açın"
 #: src/components/layout/UserPanel.tsx
 msgid "Open settings"
 msgstr "Ayarları aç"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Open the release page"
+msgstr "Sürüm sayfasını aç"
 
 #: src/components/message/WorkflowLine.tsx
 msgid "Open workflow"
@@ -4891,6 +4970,10 @@ msgstr "Tüm bahsetmeleri oku"
 msgid "Read every message in your own language."
 msgstr "Her mesajı kendi dilinde oku."
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Ready to install. Return to Obby to continue."
+msgstr "Yüklemeye hazır. Devam etmek için Obby'ye dön."
+
 #: src/components/layout/ProfilePane.tsx
 msgid "Real name"
 msgstr "Gerçek ad"
@@ -5027,6 +5110,8 @@ msgid "Relaxed - Less aggressive protection"
 msgstr "Rahat - Daha az agresif koruma"
 
 #: src/components/ui/UpdateModal.tsx
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "Sürüm notları"
 
@@ -5849,6 +5934,10 @@ msgstr "Sunucu adlarını göster"
 msgid "Show server replies"
 msgstr "Sunucu yanıtlarını göster"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Show the install prompt again"
+msgstr "Yükleme istemini yeniden göster"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"
 msgstr "Günün mesajını göster"
@@ -6174,6 +6263,14 @@ msgstr "Arama sunucusu isteği reddetti. Biraz sonra yeniden deneyin."
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
 msgstr "<0>{serverName}</0> bağlantısında aşağıdaki güvenlik endişeleri bulunmaktadır:"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "The download did not match the release's checksum, so it was thrown away."
+msgstr "İndirilen dosya sürümün sağlama toplamıyla eşleşmedi, bu yüzden atıldı."
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "The download stopped. Check your connection and try again."
+msgstr "İndirme durdu. Bağlantını kontrol edip tekrar dene."
+
 #: src/components/ui/settings/BackupField.tsx
 msgid "The file holds your servers with their passwords, upload tokens, encryption keys, settings and layout, locked with the password you choose here. Chat history is not included."
 msgstr "Dosya; sunucularınızı parolalarıyla, yükleme belirteçlerini, şifreleme anahtarlarını, ayarları ve düzeni içerir ve burada seçtiğiniz parolayla kilitlenir. Sohbet geçmişi dahil değildir."
@@ -6193,6 +6290,10 @@ msgstr "Uygulama yazı tipinden farklıysa mesajlar için kullanılan yazı tipi
 #: src/lib/settings/definitions/allSettings.ts
 msgid "The font used for the whole app"
 msgstr "Tüm uygulamada kullanılan yazı tipi"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "The install was cancelled."
+msgstr "Yükleme iptal edildi."
 
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The IRC server has reported that its server-to-server links have a low security level. This means that when your messages are relayed between IRC servers in the network, they may not be properly encrypted or the SSL/TLS certificates may not be validated correctly."
@@ -6222,6 +6323,10 @@ msgstr "Kayıt yapılamadı."
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "Sunucu katılımınızı reddetti. Kanal modlarını kontrol edip tekrar deneyin."
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "The update could not start. Try again."
+msgstr "Güncelleme başlatılamadı. Tekrar dene."
+
 #: src/components/ui/InviteUserModal.tsx
 msgid "The user will receive an invitation to join {channelName}."
 msgstr "Kullanıcı {channelName} kanalına katılmak için davet alacak."
@@ -6241,6 +6346,10 @@ msgstr "Tema adı"
 #: src/components/ui/PluginsScreen.tsx
 msgid "Theme Studio"
 msgstr "Tema Stüdyosu"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "There is not enough free space for the update."
+msgstr "Güncelleme için yeterli boş alan yok."
 
 #: src/components/ui/settings/BackupField.tsx
 msgid "This backup was made by a newer Obby. Update first."
@@ -6323,6 +6432,10 @@ msgstr "Bu ağ"
 #: src/components/pages/EmojiPacksPage.tsx
 msgid "This pack has no emoji yet. Add one above."
 msgstr "Bu pakette henüz emoji yok. Yukarıdan bir tane ekleyin."
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "This release has no Android app to install."
+msgstr "Bu sürümde yüklenecek bir Android uygulaması yok."
 
 #: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 msgid "This removes the network from your soju bouncer. To use it again, you'll need to add it back."
@@ -6438,6 +6551,7 @@ msgid "Trusted Sources"
 msgstr "Güvenilir Kaynaklar"
 
 #: src/components/ui/LocationShareModal.tsx
+#: src/components/ui/UpdateSheet.tsx
 msgid "Try again"
 msgstr "Tekrar dene"
 
@@ -6547,6 +6661,11 @@ msgstr "Askıdan al"
 msgid "Until I unmute"
 msgstr "Ben açana kadar"
 
+#: src/components/ui/settings/UpdateCheckField.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Update"
+msgstr "Güncelle"
+
 #: src/components/ui/UpdateModal.tsx
 msgid "Update available"
 msgstr "Güncelleme mevcut"
@@ -6554,6 +6673,14 @@ msgstr "Güncelleme mevcut"
 #: src/components/ui/UpdateModal.tsx
 msgid "Update failed. Please try again."
 msgstr "Güncelleme başarısız oldu. Lütfen tekrar deneyin."
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Update not installed"
+msgstr "Güncelleme yüklenmedi"
+
+#: src/components/layout/UpdateLine.tsx
+msgid "Update Obby to {label}"
+msgstr "Obby'yi {label} sürümüne güncelle"
 
 #: src/components/pages/SettingsPage.tsx
 msgid "Updates"
@@ -7039,6 +7166,18 @@ msgstr "IRC Operatörüsünüz"
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "You are no longer in this channel"
 msgstr "Artık bu kanalda değilsiniz"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "You can close this and keep chatting."
+msgstr "Bunu kapatıp sohbete devam edebilirsin."
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "You have {current}"
+msgstr "Sürümün {current}"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "You have {current} · {size} download"
+msgstr "Sürümün {current} · {size} indirme"
 
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "You have a few minutes to choose a new password."

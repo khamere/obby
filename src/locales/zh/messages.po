@@ -145,6 +145,10 @@ msgstr "{count}+ 条结果"
 msgid "{countLabel} in {scopeName}"
 msgstr "{scopeName} 中的 {countLabel}"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "{done} of {all}"
+msgstr "{done} / {all}"
+
 #: src/components/ui/UploadProgressBar.tsx
 msgid "{failedCount, plural, one {1 upload failed} other {# uploads failed}}"
 msgstr "{failedCount, plural, other {# 个上传失败}}"
@@ -312,6 +316,14 @@ msgstr "#overflow"
 #: src/components/ui/QuickActions.tsx
 msgid "↑ ↓ to move"
 msgstr "↑ ↓ 移动"
+
+#: src/components/layout/UpdateLine.tsx
+msgid "↑ Update"
+msgstr "↑ 更新"
+
+#: src/components/layout/UpdateLine.tsx
+msgid "↑ Update to {label}"
+msgstr "↑ 更新到 {label}"
 
 #: src/components/ui/QuickActions.tsx
 msgid "↵ to open"
@@ -712,6 +724,10 @@ msgstr "允许访问麦克风以录制声音。"
 msgid "Allow notifications for Obby in your system settings to turn them on"
 msgstr "请在系统设置中允许 Obby 发送通知以开启此功能"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Allow Obby to install updates"
+msgstr "允许 Obby 安装更新"
+
 #: src/components/layout/ChatArea.tsx
 msgid "Allow Obby under Screen Recording in System Settings, then record again."
 msgstr "请在系统设置的“录屏”中允许 Obby，然后重新录制。"
@@ -732,6 +748,14 @@ msgstr "替代文本（可选）"
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Amount"
 msgstr "数量"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Android asks once. Turn on \"Allow from this source\" for Obby, then come back; the update continues by itself."
+msgstr "Android 只会询问一次。请为 Obby 打开“允许来自此来源”，然后返回；更新会自动继续。"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Android refused the update because it was signed by someone else. Install it from the release page."
+msgstr "Android 拒绝了此更新，因为它由其他人签名。请从发布页面安装。"
 
 #: src/components/pages/SettingsPage.tsx
 msgid "Anonymous Analytics:"
@@ -1153,6 +1177,8 @@ msgstr "无法删除你的最后一个 2FA 凭据"
 #: src/components/ui/settings/HistoryUsageField.tsx
 #: src/components/ui/TotpStepUpModal.tsx
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
 #: src/lib/modal/ConfirmDialog.tsx
 msgid "Cancel"
 msgstr "取消"
@@ -1364,8 +1390,20 @@ msgid "Chats and networks"
 msgstr "聊天和网络"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Check for an update now"
+msgstr "立即检查更新"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Check for new releases"
 msgstr "检查新版本"
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Check now"
+msgstr "立即检查"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Checking the download"
+msgstr "正在检查下载内容"
 
 #: src/lib/mediaUpload.ts
 msgid "Choose a different file type. The file host does not accept {ext} files."
@@ -1509,6 +1547,7 @@ msgstr "客户端上限 (+l)"
 #: src/components/ui/QuickActions.tsx
 #: src/components/ui/QuickActions.tsx
 #: src/components/ui/TicTacToeModal.tsx
+#: src/components/ui/UpdateSheet.tsx
 #: src/lib/modal/BaseModal.tsx
 msgid "Close"
 msgstr "关闭"
@@ -1824,6 +1863,10 @@ msgstr "舒适模式显示头像和消息间距；紧凑模式像传统 IRC 客�
 #: src/lib/mediaDevices.ts
 msgid "Could not access the device."
 msgstr "无法访问该设备。"
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Could not check. Try again later."
+msgstr "无法检查。请稍后重试。"
 
 #: src/components/ui/GlobalNotifications.tsx
 msgid "Could not find this message"
@@ -2248,12 +2291,18 @@ msgstr "完成"
 
 #: src/components/ui/MediaViewerModal.tsx
 #: src/components/ui/MediaViewerModal.tsx
+#: src/components/ui/UpdateSheet.tsx
 msgid "Download"
 msgstr "下载"
 
 #: src/components/ui/settings/BackupField.tsx
 msgid "Download backup"
 msgstr "下载备份"
+
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Downloading {label}"
+msgstr "正在下载 {label}"
 
 #: src/components/ui/UpdateModal.tsx
 msgid "Downloading…"
@@ -4275,6 +4324,11 @@ msgstr "未加密"
 msgid "Not in this channel"
 msgstr "不在此频道中"
 
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Not now"
+msgstr "暂不"
+
 #: src/components/chat/CommandArgHint.tsx
 msgid "Not sent. Reconnect, or use a chat where the bot offers this command"
 msgstr "未发送。请重新连接，或在机器人提供此命令的聊天中使用"
@@ -4315,10 +4369,27 @@ msgstr "Obby"
 msgid "Obby - Bringing IRC to the future"
 msgstr "Obby - 将 IRC 带入未来"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Obby {version}"
+msgstr "Obby {version}"
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Obby {version} is available."
+msgstr "Obby {version} 可用。"
+
 #: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Obby downloads this file every time it starts, so everyone using the same link gets updates. This contacts the site the link points to."
 msgstr "Obby 每次启动都会下载此文件，因此使用同一链接的每个人都会收到更新。这会访问链接所指向的网站。"
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Obby is up to date."
+msgstr "Obby 已是最新版本。"
+
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Obby will close to install the update; open it again afterwards."
+msgstr "Obby 将关闭以安装更新；之后请再次打开。"
 
 #: src/components/pages/SettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
@@ -4345,8 +4416,8 @@ msgid "on"
 msgstr "开启"
 
 #: src/lib/settings/definitions/allSettings.ts
-msgid "Once a day, ask the project's release page whether a newer build exists and say so under the version. Nothing is downloaded or installed."
-msgstr "每天一次向项目的发布页询问是否有更新的构建，并在版本下方显示。不会下载或安装任何内容。"
+msgid "Once a day, ask the project's release page whether a newer build exists and show it above your name. Nothing is downloaded until you tap Update."
+msgstr "每天一次，向项目的发布页面询问是否有更新的版本，并显示在你的名字上方。在你点按“更新”之前不会下载任何内容。"
 
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/ChatHeader.tsx
@@ -4388,6 +4459,10 @@ msgstr "打开{0}"
 #: src/lib/clientCommands.ts
 msgid "Open a private message to a user"
 msgstr "向用户打开私信"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Open Android settings"
+msgstr "打开 Android 设置"
 
 #: src/components/layout/ChannelRow.tsx
 #: src/components/layout/ChannelRow.tsx
@@ -4441,6 +4516,10 @@ msgstr "打开服务器通知查看出了什么问题"
 #: src/components/layout/UserPanel.tsx
 msgid "Open settings"
 msgstr "打开设置"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Open the release page"
+msgstr "打开发布页面"
 
 #: src/components/message/WorkflowLine.tsx
 msgid "Open workflow"
@@ -4891,6 +4970,10 @@ msgstr "已读全部提及"
 msgid "Read every message in your own language."
 msgstr "用你自己的语言阅读每条消息。"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Ready to install. Return to Obby to continue."
+msgstr "已准备好安装。请返回 Obby 继续。"
+
 #: src/components/layout/ProfilePane.tsx
 msgid "Real name"
 msgstr "真实姓名"
@@ -5027,6 +5110,8 @@ msgid "Relaxed - Less aggressive protection"
 msgstr "宽松 – 较弱的保护"
 
 #: src/components/ui/UpdateModal.tsx
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "更新说明"
 
@@ -5849,6 +5934,10 @@ msgstr "显示服务器名称"
 msgid "Show server replies"
 msgstr "显示服务器回复"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Show the install prompt again"
+msgstr "再次显示安装提示"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"
 msgstr "显示每日消息"
@@ -6174,6 +6263,14 @@ msgstr "通话服务器拒绝了请求。请稍后重试。"
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
 msgstr "与 <0>{serverName}</0> 的连接存在以下安全问题："
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "The download did not match the release's checksum, so it was thrown away."
+msgstr "下载内容与发布的校验和不一致，已被丢弃。"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "The download stopped. Check your connection and try again."
+msgstr "下载已中断。请检查网络连接后重试。"
+
 #: src/components/ui/settings/BackupField.tsx
 msgid "The file holds your servers with their passwords, upload tokens, encryption keys, settings and layout, locked with the password you choose here. Chat history is not included."
 msgstr "文件包含你的服务器及其密码、上传令牌、加密密钥、设置和布局，并用你在此选择的密码加锁。不包含聊天记录。"
@@ -6193,6 +6290,10 @@ msgstr "消息使用的字体（如与应用字体不同）"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "The font used for the whole app"
 msgstr "整个应用使用的字体"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "The install was cancelled."
+msgstr "安装已取消。"
 
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The IRC server has reported that its server-to-server links have a low security level. This means that when your messages are relayed between IRC servers in the network, they may not be properly encrypted or the SSL/TLS certificates may not be validated correctly."
@@ -6222,6 +6323,10 @@ msgstr "无法完成录制。"
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "服务器拒绝了你的加入。请检查频道模式后重试。"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "The update could not start. Try again."
+msgstr "无法开始更新。请重试。"
+
 #: src/components/ui/InviteUserModal.tsx
 msgid "The user will receive an invitation to join {channelName}."
 msgstr "用户将收到加入 {channelName} 的邀请。"
@@ -6241,6 +6346,10 @@ msgstr "主题名称"
 #: src/components/ui/PluginsScreen.tsx
 msgid "Theme Studio"
 msgstr "主题工作室"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "There is not enough free space for the update."
+msgstr "可用空间不足，无法更新。"
 
 #: src/components/ui/settings/BackupField.tsx
 msgid "This backup was made by a newer Obby. Update first."
@@ -6323,6 +6432,10 @@ msgstr "此网络"
 #: src/components/pages/EmojiPacksPage.tsx
 msgid "This pack has no emoji yet. Add one above."
 msgstr "此表情包还没有表情。请在上方添加。"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "This release has no Android app to install."
+msgstr "此发布版本没有可安装的 Android 应用。"
 
 #: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 msgid "This removes the network from your soju bouncer. To use it again, you'll need to add it back."
@@ -6438,6 +6551,7 @@ msgid "Trusted Sources"
 msgstr "受信任来源"
 
 #: src/components/ui/LocationShareModal.tsx
+#: src/components/ui/UpdateSheet.tsx
 msgid "Try again"
 msgstr "重试"
 
@@ -6547,6 +6661,11 @@ msgstr "取消停用"
 msgid "Until I unmute"
 msgstr "直到我取消"
 
+#: src/components/ui/settings/UpdateCheckField.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Update"
+msgstr "更新"
+
 #: src/components/ui/UpdateModal.tsx
 msgid "Update available"
 msgstr "有可用更新"
@@ -6554,6 +6673,14 @@ msgstr "有可用更新"
 #: src/components/ui/UpdateModal.tsx
 msgid "Update failed. Please try again."
 msgstr "更新失败，请重试。"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Update not installed"
+msgstr "更新未安装"
+
+#: src/components/layout/UpdateLine.tsx
+msgid "Update Obby to {label}"
+msgstr "将 Obby 更新到 {label}"
 
 #: src/components/pages/SettingsPage.tsx
 msgid "Updates"
@@ -7039,6 +7166,18 @@ msgstr "您是 IRC Operator"
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "You are no longer in this channel"
 msgstr "你已不在此频道中"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "You can close this and keep chatting."
+msgstr "你可以关闭此窗口，继续聊天。"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "You have {current}"
+msgstr "你当前的版本是 {current}"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "You have {current} · {size} download"
+msgstr "你当前的版本是 {current} · 下载大小 {size}"
 
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "You have a few minutes to choose a new password."

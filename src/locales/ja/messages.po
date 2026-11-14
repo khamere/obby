@@ -145,6 +145,10 @@ msgstr "{count}+ 件の結果"
 msgid "{countLabel} in {scopeName}"
 msgstr "{scopeName} 内の {countLabel}"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "{done} of {all}"
+msgstr "{all}中{done}"
+
 #: src/components/ui/UploadProgressBar.tsx
 msgid "{failedCount, plural, one {1 upload failed} other {# uploads failed}}"
 msgstr "{failedCount, plural, one {1 件のアップロードに失敗しました} other {# 件のアップロードに失敗しました}}"
@@ -312,6 +316,14 @@ msgstr "#overflow"
 #: src/components/ui/QuickActions.tsx
 msgid "↑ ↓ to move"
 msgstr "↑ ↓ で移動"
+
+#: src/components/layout/UpdateLine.tsx
+msgid "↑ Update"
+msgstr "↑ 更新"
+
+#: src/components/layout/UpdateLine.tsx
+msgid "↑ Update to {label}"
+msgstr "↑ {label} に更新"
 
 #: src/components/ui/QuickActions.tsx
 msgid "↵ to open"
@@ -712,6 +724,10 @@ msgstr "音声を録音するにはマイクへのアクセスを許可してく
 msgid "Allow notifications for Obby in your system settings to turn them on"
 msgstr "通知を有効にするには、システム設定で Obby の通知を許可してください"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Allow Obby to install updates"
+msgstr "Obbyによるアップデートのインストールを許可"
+
 #: src/components/layout/ChatArea.tsx
 msgid "Allow Obby under Screen Recording in System Settings, then record again."
 msgstr "システム設定の「画面収録」で Obby を許可してから、もう一度録画してください。"
@@ -732,6 +748,14 @@ msgstr "代替テキスト (任意)"
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Amount"
 msgstr "数量"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Android asks once. Turn on \"Allow from this source\" for Obby, then come back; the update continues by itself."
+msgstr "Androidが確認するのは一度だけです。Obbyの「この提供元を許可」をオンにして戻ってください。アップデートは自動的に続きます。"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Android refused the update because it was signed by someone else. Install it from the release page."
+msgstr "別の署名者によって署名されているため、Androidがアップデートを拒否しました。リリースページからインストールしてください。"
 
 #: src/components/pages/SettingsPage.tsx
 msgid "Anonymous Analytics:"
@@ -1153,6 +1177,8 @@ msgstr "最後の 2FA 認証情報は削除できません"
 #: src/components/ui/settings/HistoryUsageField.tsx
 #: src/components/ui/TotpStepUpModal.tsx
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
 #: src/lib/modal/ConfirmDialog.tsx
 msgid "Cancel"
 msgstr "キャンセル"
@@ -1364,8 +1390,20 @@ msgid "Chats and networks"
 msgstr "チャットとネットワーク"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Check for an update now"
+msgstr "今すぐアップデートを確認"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Check for new releases"
 msgstr "新しいリリースを確認"
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Check now"
+msgstr "今すぐ確認"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Checking the download"
+msgstr "ダウンロードを確認しています"
 
 #: src/lib/mediaUpload.ts
 msgid "Choose a different file type. The file host does not accept {ext} files."
@@ -1509,6 +1547,7 @@ msgstr "クライアント数の上限 (+l)"
 #: src/components/ui/QuickActions.tsx
 #: src/components/ui/QuickActions.tsx
 #: src/components/ui/TicTacToeModal.tsx
+#: src/components/ui/UpdateSheet.tsx
 #: src/lib/modal/BaseModal.tsx
 msgid "Close"
 msgstr "閉じる"
@@ -1824,6 +1863,10 @@ msgstr "「ゆったり」はアバターとメッセージ間の余白を表示
 #: src/lib/mediaDevices.ts
 msgid "Could not access the device."
 msgstr "デバイスにアクセスできませんでした。"
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Could not check. Try again later."
+msgstr "確認できませんでした。後でもう一度お試しください。"
 
 #: src/components/ui/GlobalNotifications.tsx
 msgid "Could not find this message"
@@ -2248,12 +2291,18 @@ msgstr "完了"
 
 #: src/components/ui/MediaViewerModal.tsx
 #: src/components/ui/MediaViewerModal.tsx
+#: src/components/ui/UpdateSheet.tsx
 msgid "Download"
 msgstr "ダウンロード"
 
 #: src/components/ui/settings/BackupField.tsx
 msgid "Download backup"
 msgstr "バックアップをダウンロード"
+
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Downloading {label}"
+msgstr "{label}をダウンロード中"
 
 #: src/components/ui/UpdateModal.tsx
 msgid "Downloading…"
@@ -4275,6 +4324,11 @@ msgstr "暗号化されていません"
 msgid "Not in this channel"
 msgstr "このチャンネルに参加していません"
 
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Not now"
+msgstr "今はしない"
+
 #: src/components/chat/CommandArgHint.tsx
 msgid "Not sent. Reconnect, or use a chat where the bot offers this command"
 msgstr "送信されませんでした。再接続するか、ボットがこのコマンドを提供しているチャットで使ってください"
@@ -4315,10 +4369,27 @@ msgstr "Obby"
 msgid "Obby - Bringing IRC to the future"
 msgstr "Obby — IRCを未来へ"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Obby {version}"
+msgstr "Obby {version}"
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Obby {version} is available."
+msgstr "Obby {version}が利用できます。"
+
 #: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Obby downloads this file every time it starts, so everyone using the same link gets updates. This contacts the site the link points to."
 msgstr "Obby は起動するたびにこのファイルをダウンロードするため、同じリンクを使う全員が更新を受け取れます。リンク先のサイトに接続します。"
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Obby is up to date."
+msgstr "Obbyは最新です。"
+
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Obby will close to install the update; open it again afterwards."
+msgstr "アップデートをインストールするためObbyを終了します。終了後にもう一度開いてください。"
 
 #: src/components/pages/SettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
@@ -4345,8 +4416,8 @@ msgid "on"
 msgstr "オン"
 
 #: src/lib/settings/definitions/allSettings.ts
-msgid "Once a day, ask the project's release page whether a newer build exists and say so under the version. Nothing is downloaded or installed."
-msgstr "1日に1回、プロジェクトのリリースページに新しいビルドがあるか問い合わせ、バージョンの下に表示します。何もダウンロードやインストールはされません。"
+msgid "Once a day, ask the project's release page whether a newer build exists and show it above your name. Nothing is downloaded until you tap Update."
+msgstr "1日1回、プロジェクトのリリースページに新しいビルドがあるか確認し、あれば名前の上に表示します。「アップデート」をタップするまで何もダウンロードされません。"
 
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/ChatHeader.tsx
@@ -4388,6 +4459,10 @@ msgstr "{0} を開く"
 #: src/lib/clientCommands.ts
 msgid "Open a private message to a user"
 msgstr "ユーザーへのプライベートメッセージを開く"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Open Android settings"
+msgstr "Androidの設定を開く"
 
 #: src/components/layout/ChannelRow.tsx
 #: src/components/layout/ChannelRow.tsx
@@ -4441,6 +4516,10 @@ msgstr "サーバー通知を開いて問題を確認"
 #: src/components/layout/UserPanel.tsx
 msgid "Open settings"
 msgstr "設定を開く"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Open the release page"
+msgstr "リリースページを開く"
 
 #: src/components/message/WorkflowLine.tsx
 msgid "Open workflow"
@@ -4891,6 +4970,10 @@ msgstr "すべてのメンションを既読にする"
 msgid "Read every message in your own language."
 msgstr "すべてのメッセージを自分の言語で読みましょう。"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Ready to install. Return to Obby to continue."
+msgstr "インストールの準備ができました。Obbyに戻って続けてください。"
+
 #: src/components/layout/ProfilePane.tsx
 msgid "Real name"
 msgstr "本名"
@@ -5027,6 +5110,8 @@ msgid "Relaxed - Less aggressive protection"
 msgstr "緩め — 控えめな保護"
 
 #: src/components/ui/UpdateModal.tsx
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "リリースノート"
 
@@ -5849,6 +5934,10 @@ msgstr "サーバー名を表示"
 msgid "Show server replies"
 msgstr "サーバーの応答を表示"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Show the install prompt again"
+msgstr "インストールの確認をもう一度表示"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"
 msgstr "今日のお知らせ (MOTD) を表示"
@@ -6174,6 +6263,14 @@ msgstr "通話サーバーがリクエストを拒否しました。しばらく
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
 msgstr "<0>{serverName}</0> への接続には次のセキュリティ上の懸念事項があります："
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "The download did not match the release's checksum, so it was thrown away."
+msgstr "ダウンロードがリリースのチェックサムと一致しなかったため、破棄されました。"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "The download stopped. Check your connection and try again."
+msgstr "ダウンロードが停止しました。接続を確認して、もう一度お試しください。"
+
 #: src/components/ui/settings/BackupField.tsx
 msgid "The file holds your servers with their passwords, upload tokens, encryption keys, settings and layout, locked with the password you choose here. Chat history is not included."
 msgstr "このファイルには、サーバーとそのパスワード、アップロードトークン、暗号鍵、設定、レイアウトが含まれ、ここで選んだパスワードで保護されます。チャット履歴は含まれません。"
@@ -6193,6 +6290,10 @@ msgstr "メッセージに使用するフォント（アプリのフォントと
 #: src/lib/settings/definitions/allSettings.ts
 msgid "The font used for the whole app"
 msgstr "アプリ全体で使用するフォント"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "The install was cancelled."
+msgstr "インストールはキャンセルされました。"
 
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The IRC server has reported that its server-to-server links have a low security level. This means that when your messages are relayed between IRC servers in the network, they may not be properly encrypted or the SSL/TLS certificates may not be validated correctly."
@@ -6222,6 +6323,10 @@ msgstr "録画できませんでした。"
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "サーバーが参加を拒否しました。チャンネルモードを確認して、もう一度お試しください。"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "The update could not start. Try again."
+msgstr "アップデートを開始できませんでした。もう一度お試しください。"
+
 #: src/components/ui/InviteUserModal.tsx
 msgid "The user will receive an invitation to join {channelName}."
 msgstr "ユーザーは {channelName} への参加招待を受け取ります。"
@@ -6241,6 +6346,10 @@ msgstr "テーマ名"
 #: src/components/ui/PluginsScreen.tsx
 msgid "Theme Studio"
 msgstr "テーマスタジオ"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "There is not enough free space for the update."
+msgstr "アップデートに必要な空き容量が足りません。"
 
 #: src/components/ui/settings/BackupField.tsx
 msgid "This backup was made by a newer Obby. Update first."
@@ -6323,6 +6432,10 @@ msgstr "このネットワーク"
 #: src/components/pages/EmojiPacksPage.tsx
 msgid "This pack has no emoji yet. Add one above."
 msgstr "このパックにはまだ絵文字がありません。上から追加してください。"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "This release has no Android app to install."
+msgstr "このリリースにはインストールできるAndroidアプリがありません。"
 
 #: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 msgid "This removes the network from your soju bouncer. To use it again, you'll need to add it back."
@@ -6438,6 +6551,7 @@ msgid "Trusted Sources"
 msgstr "信頼できるソース"
 
 #: src/components/ui/LocationShareModal.tsx
+#: src/components/ui/UpdateSheet.tsx
 msgid "Try again"
 msgstr "再試行"
 
@@ -6547,6 +6661,11 @@ msgstr "停止を解除"
 msgid "Until I unmute"
 msgstr "解除するまで"
 
+#: src/components/ui/settings/UpdateCheckField.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Update"
+msgstr "アップデート"
+
 #: src/components/ui/UpdateModal.tsx
 msgid "Update available"
 msgstr "アップデートが利用可能"
@@ -6554,6 +6673,14 @@ msgstr "アップデートが利用可能"
 #: src/components/ui/UpdateModal.tsx
 msgid "Update failed. Please try again."
 msgstr "アップデートに失敗しました。もう一度お試しください。"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Update not installed"
+msgstr "アップデートはインストールされませんでした"
+
+#: src/components/layout/UpdateLine.tsx
+msgid "Update Obby to {label}"
+msgstr "Obby を {label} に更新"
 
 #: src/components/pages/SettingsPage.tsx
 msgid "Updates"
@@ -7039,6 +7166,18 @@ msgstr "あなたはIRC Operatorです"
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "You are no longer in this channel"
 msgstr "このチャンネルには参加していません"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "You can close this and keep chatting."
+msgstr "これを閉じてチャットを続けられます。"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "You have {current}"
+msgstr "現在のバージョン: {current}"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "You have {current} · {size} download"
+msgstr "現在のバージョン: {current} · {size}のダウンロード"
 
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "You have a few minutes to choose a new password."

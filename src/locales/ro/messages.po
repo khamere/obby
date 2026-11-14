@@ -145,6 +145,10 @@ msgstr "{count}+ rezultate"
 msgid "{countLabel} in {scopeName}"
 msgstr "{countLabel} în {scopeName}"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "{done} of {all}"
+msgstr "{done} din {all}"
+
 #: src/components/ui/UploadProgressBar.tsx
 msgid "{failedCount, plural, one {1 upload failed} other {# uploads failed}}"
 msgstr "{failedCount, plural, one {1 încărcare a eșuat} other {# încărcări au eșuat}}"
@@ -312,6 +316,14 @@ msgstr "#overflow"
 #: src/components/ui/QuickActions.tsx
 msgid "↑ ↓ to move"
 msgstr "↑ ↓ mută"
+
+#: src/components/layout/UpdateLine.tsx
+msgid "↑ Update"
+msgstr "↑ Actualizează"
+
+#: src/components/layout/UpdateLine.tsx
+msgid "↑ Update to {label}"
+msgstr "↑ Actualizează la {label}"
 
 #: src/components/ui/QuickActions.tsx
 msgid "↵ to open"
@@ -712,6 +724,10 @@ msgstr "Permite accesul la microfon pentru a înregistra sunet."
 msgid "Allow notifications for Obby in your system settings to turn them on"
 msgstr "Permite notificările pentru Obby în setările sistemului ca să le activezi"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Allow Obby to install updates"
+msgstr "Permite Obby să instaleze actualizări"
+
 #: src/components/layout/ChatArea.tsx
 msgid "Allow Obby under Screen Recording in System Settings, then record again."
 msgstr "Permite Obby la Înregistrare ecran în Configurări sistem, apoi înregistrează din nou."
@@ -732,6 +748,14 @@ msgstr "Text alternativ (opțional)"
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Amount"
 msgstr "Cantitate"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Android asks once. Turn on \"Allow from this source\" for Obby, then come back; the update continues by itself."
+msgstr "Android întreabă o singură dată. Activează „Permite din această sursă” pentru Obby, apoi revino; actualizarea continuă singură."
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Android refused the update because it was signed by someone else. Install it from the release page."
+msgstr "Android a refuzat actualizarea pentru că a fost semnată de altcineva. Instaleaz-o de pe pagina versiunii."
 
 #: src/components/pages/SettingsPage.tsx
 msgid "Anonymous Analytics:"
@@ -1153,6 +1177,8 @@ msgstr "Nu poți elimina ultima credențială 2FA"
 #: src/components/ui/settings/HistoryUsageField.tsx
 #: src/components/ui/TotpStepUpModal.tsx
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
 #: src/lib/modal/ConfirmDialog.tsx
 msgid "Cancel"
 msgstr "Anulează"
@@ -1364,8 +1390,20 @@ msgid "Chats and networks"
 msgstr "Conversații și rețele"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Check for an update now"
+msgstr "Caută o actualizare acum"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Check for new releases"
 msgstr "Caută versiuni noi"
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Check now"
+msgstr "Verifică acum"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Checking the download"
+msgstr "Se verifică descărcarea"
 
 #: src/lib/mediaUpload.ts
 msgid "Choose a different file type. The file host does not accept {ext} files."
@@ -1509,6 +1547,7 @@ msgstr "Limită de clienți (+l)"
 #: src/components/ui/QuickActions.tsx
 #: src/components/ui/QuickActions.tsx
 #: src/components/ui/TicTacToeModal.tsx
+#: src/components/ui/UpdateSheet.tsx
 #: src/lib/modal/BaseModal.tsx
 msgid "Close"
 msgstr "Închide"
@@ -1824,6 +1863,10 @@ msgstr "Confortabil afișează avatare și spațiu între mesaje; Compact le în
 #: src/lib/mediaDevices.ts
 msgid "Could not access the device."
 msgstr "Dispozitivul nu a putut fi accesat."
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Could not check. Try again later."
+msgstr "Verificarea nu a reușit. Încearcă din nou mai târziu."
 
 #: src/components/ui/GlobalNotifications.tsx
 msgid "Could not find this message"
@@ -2248,12 +2291,18 @@ msgstr "Gata"
 
 #: src/components/ui/MediaViewerModal.tsx
 #: src/components/ui/MediaViewerModal.tsx
+#: src/components/ui/UpdateSheet.tsx
 msgid "Download"
 msgstr "Descarcă"
 
 #: src/components/ui/settings/BackupField.tsx
 msgid "Download backup"
 msgstr "Descarcă copia de rezervă"
+
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Downloading {label}"
+msgstr "Se descarcă {label}"
 
 #: src/components/ui/UpdateModal.tsx
 msgid "Downloading…"
@@ -4275,6 +4324,11 @@ msgstr "Necriptat"
 msgid "Not in this channel"
 msgstr "Nu ești în acest canal"
 
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Not now"
+msgstr "Nu acum"
+
 #: src/components/chat/CommandArgHint.tsx
 msgid "Not sent. Reconnect, or use a chat where the bot offers this command"
 msgstr "Netrimis. Reconectează-te sau folosește un chat în care botul oferă această comandă"
@@ -4315,10 +4369,27 @@ msgstr "Obby"
 msgid "Obby - Bringing IRC to the future"
 msgstr "Obby - Aducând IRC în viitor"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Obby {version}"
+msgstr "Obby {version}"
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Obby {version} is available."
+msgstr "Obby {version} este disponibil."
+
 #: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Obby downloads this file every time it starts, so everyone using the same link gets updates. This contacts the site the link points to."
 msgstr "Obby descarcă acest fișier la fiecare pornire, așa că toți cei care folosesc același link primesc actualizările. Aceasta contactează site-ul către care duce linkul."
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Obby is up to date."
+msgstr "Obby este la zi."
+
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Obby will close to install the update; open it again afterwards."
+msgstr "Obby se va închide pentru a instala actualizarea; deschide-l din nou după aceea."
 
 #: src/components/pages/SettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
@@ -4345,8 +4416,8 @@ msgid "on"
 msgstr "activ"
 
 #: src/lib/settings/definitions/allSettings.ts
-msgid "Once a day, ask the project's release page whether a newer build exists and say so under the version. Nothing is downloaded or installed."
-msgstr "O dată pe zi, întreabă pagina de versiuni a proiectului dacă există o versiune mai nouă și arată asta sub versiune. Nu se descarcă și nu se instalează nimic."
+msgid "Once a day, ask the project's release page whether a newer build exists and show it above your name. Nothing is downloaded until you tap Update."
+msgstr "O dată pe zi, întreabă pagina de versiuni a proiectului dacă există o versiune mai nouă și o arată deasupra numelui tău. Nu se descarcă nimic până nu atingi Actualizează."
 
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/ChatHeader.tsx
@@ -4388,6 +4459,10 @@ msgstr "Deschide {0}"
 #: src/lib/clientCommands.ts
 msgid "Open a private message to a user"
 msgstr "Deschide un mesaj privat către un utilizator"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Open Android settings"
+msgstr "Deschide setările Android"
 
 #: src/components/layout/ChannelRow.tsx
 #: src/components/layout/ChannelRow.tsx
@@ -4441,6 +4516,10 @@ msgstr "Deschide Notificările serverului ca să vezi ce nu a mers"
 #: src/components/layout/UserPanel.tsx
 msgid "Open settings"
 msgstr "Deschide setările"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Open the release page"
+msgstr "Deschide pagina versiunii"
 
 #: src/components/message/WorkflowLine.tsx
 msgid "Open workflow"
@@ -4891,6 +4970,10 @@ msgstr "Citește toate mențiunile"
 msgid "Read every message in your own language."
 msgstr "Citește fiecare mesaj în limba ta."
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Ready to install. Return to Obby to continue."
+msgstr "Gata de instalare. Revino în Obby pentru a continua."
+
 #: src/components/layout/ProfilePane.tsx
 msgid "Real name"
 msgstr "Nume real"
@@ -5027,6 +5110,8 @@ msgid "Relaxed - Less aggressive protection"
 msgstr "Relaxat – Protecție mai puțin agresivă"
 
 #: src/components/ui/UpdateModal.tsx
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "Note de lansare"
 
@@ -5849,6 +5934,10 @@ msgstr "Afișează numele serverelor"
 msgid "Show server replies"
 msgstr "Afișează răspunsurile serverului"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Show the install prompt again"
+msgstr "Arată din nou solicitarea de instalare"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"
 msgstr "Afișează mesajul zilei"
@@ -6174,6 +6263,14 @@ msgstr "Serverul de apeluri a refuzat cererea. Încearcă din nou într-un momen
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
 msgstr "Conexiunea la <0>{serverName}</0> prezintă următoarele probleme de securitate:"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "The download did not match the release's checksum, so it was thrown away."
+msgstr "Descărcarea nu se potrivea cu suma de control a versiunii, așa că a fost aruncată."
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "The download stopped. Check your connection and try again."
+msgstr "Descărcarea s-a oprit. Verifică conexiunea și încearcă din nou."
+
 #: src/components/ui/settings/BackupField.tsx
 msgid "The file holds your servers with their passwords, upload tokens, encryption keys, settings and layout, locked with the password you choose here. Chat history is not included."
 msgstr "Fișierul conține serverele tale cu parolele lor, tokenurile de încărcare, cheile de criptare, setările și aspectul, protejate cu parola aleasă aici. Istoricul conversațiilor nu este inclus."
@@ -6193,6 +6290,10 @@ msgstr "Fontul mesajelor, dacă diferă de fontul aplicației"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "The font used for the whole app"
 msgstr "Fontul folosit în toată aplicația"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "The install was cancelled."
+msgstr "Instalarea a fost anulată."
 
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The IRC server has reported that its server-to-server links have a low security level. This means that when your messages are relayed between IRC servers in the network, they may not be properly encrypted or the SSL/TLS certificates may not be validated correctly."
@@ -6222,6 +6323,10 @@ msgstr "Înregistrarea nu a putut fi realizată."
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "Serverul ți-a refuzat intrarea. Verifică modurile canalului și încearcă din nou."
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "The update could not start. Try again."
+msgstr "Actualizarea nu a putut porni. Încearcă din nou."
+
 #: src/components/ui/InviteUserModal.tsx
 msgid "The user will receive an invitation to join {channelName}."
 msgstr "Utilizatorul va primi o invitație să se alăture {channelName}."
@@ -6241,6 +6346,10 @@ msgstr "Nume temă"
 #: src/components/ui/PluginsScreen.tsx
 msgid "Theme Studio"
 msgstr "Studio de teme"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "There is not enough free space for the update."
+msgstr "Nu există suficient spațiu liber pentru actualizare."
 
 #: src/components/ui/settings/BackupField.tsx
 msgid "This backup was made by a newer Obby. Update first."
@@ -6323,6 +6432,10 @@ msgstr "Această rețea"
 #: src/components/pages/EmojiPacksPage.tsx
 msgid "This pack has no emoji yet. Add one above."
 msgstr "Acest pachet nu are încă emoji. Adaugă unul mai sus."
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "This release has no Android app to install."
+msgstr "Această versiune nu are nicio aplicație Android de instalat."
 
 #: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 msgid "This removes the network from your soju bouncer. To use it again, you'll need to add it back."
@@ -6438,6 +6551,7 @@ msgid "Trusted Sources"
 msgstr "Surse de încredere"
 
 #: src/components/ui/LocationShareModal.tsx
+#: src/components/ui/UpdateSheet.tsx
 msgid "Try again"
 msgstr "Încearcă din nou"
 
@@ -6547,6 +6661,11 @@ msgstr "Anulează suspendarea"
 msgid "Until I unmute"
 msgstr "Până îl reactivez"
 
+#: src/components/ui/settings/UpdateCheckField.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Update"
+msgstr "Actualizează"
+
 #: src/components/ui/UpdateModal.tsx
 msgid "Update available"
 msgstr "Actualizare disponibilă"
@@ -6554,6 +6673,14 @@ msgstr "Actualizare disponibilă"
 #: src/components/ui/UpdateModal.tsx
 msgid "Update failed. Please try again."
 msgstr "Actualizarea a eșuat. Încearcă din nou."
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Update not installed"
+msgstr "Actualizarea nu a fost instalată"
+
+#: src/components/layout/UpdateLine.tsx
+msgid "Update Obby to {label}"
+msgstr "Actualizează Obby la {label}"
 
 #: src/components/pages/SettingsPage.tsx
 msgid "Updates"
@@ -7039,6 +7166,18 @@ msgstr "Ești un Operator IRC"
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "You are no longer in this channel"
 msgstr "Nu mai sunteți în acest canal"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "You can close this and keep chatting."
+msgstr "Poți închide asta și să continui să discuți."
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "You have {current}"
+msgstr "Ai {current}"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "You have {current} · {size} download"
+msgstr "Ai {current} · descărcare de {size}"
 
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "You have a few minutes to choose a new password."

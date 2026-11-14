@@ -67,7 +67,7 @@ jobs:
             NOTES="First community release"
           fi
           FULL_BODY=$(printf '%s\n\n%s' \
-            "Community build of Obby. Desktop apps do not update themselves; download the next release from here." \
+            "Community build of Obby. The Android app updates itself from inside the app; desktop apps do not, so download the next release from here." \
             "$NOTES")
           echo "release_body<<__BODY__" >> "$GITHUB_OUTPUT"
           printf '%s\n' "$FULL_BODY" >> "$GITHUB_OUTPUT"

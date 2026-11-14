@@ -145,6 +145,10 @@ msgstr "결과 {count}+개"
 msgid "{countLabel} in {scopeName}"
 msgstr "{scopeName}의 {countLabel}"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "{done} of {all}"
+msgstr "{all} 중 {done}"
+
 #: src/components/ui/UploadProgressBar.tsx
 msgid "{failedCount, plural, one {1 upload failed} other {# uploads failed}}"
 msgstr "{failedCount, plural, one {업로드 1건 실패} other {업로드 #건 실패}}"
@@ -312,6 +316,14 @@ msgstr "#overflow"
 #: src/components/ui/QuickActions.tsx
 msgid "↑ ↓ to move"
 msgstr "↑ ↓ 이동"
+
+#: src/components/layout/UpdateLine.tsx
+msgid "↑ Update"
+msgstr "↑ 업데이트"
+
+#: src/components/layout/UpdateLine.tsx
+msgid "↑ Update to {label}"
+msgstr "↑ {label}(으)로 업데이트"
 
 #: src/components/ui/QuickActions.tsx
 msgid "↵ to open"
@@ -712,6 +724,10 @@ msgstr "소리를 녹음하려면 마이크 접근을 허용하세요."
 msgid "Allow notifications for Obby in your system settings to turn them on"
 msgstr "알림을 켜려면 시스템 설정에서 Obby 알림을 허용하세요"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Allow Obby to install updates"
+msgstr "Obby의 업데이트 설치 허용"
+
 #: src/components/layout/ChatArea.tsx
 msgid "Allow Obby under Screen Recording in System Settings, then record again."
 msgstr "시스템 설정의 화면 기록에서 Obby를 허용한 다음 다시 녹화하세요."
@@ -732,6 +748,14 @@ msgstr "대체 텍스트 (선택)"
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Amount"
 msgstr "횟수"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Android asks once. Turn on \"Allow from this source\" for Obby, then come back; the update continues by itself."
+msgstr "Android는 한 번만 묻습니다. Obby에 대해 \"이 출처 허용\"을 켜고 돌아오세요. 업데이트는 자동으로 이어집니다."
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Android refused the update because it was signed by someone else. Install it from the release page."
+msgstr "다른 사람이 서명한 업데이트라서 Android가 거부했습니다. 릴리스 페이지에서 설치하세요."
 
 #: src/components/pages/SettingsPage.tsx
 msgid "Anonymous Analytics:"
@@ -1153,6 +1177,8 @@ msgstr "마지막 2FA 인증 수단은 삭제할 수 없습니다"
 #: src/components/ui/settings/HistoryUsageField.tsx
 #: src/components/ui/TotpStepUpModal.tsx
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
 #: src/lib/modal/ConfirmDialog.tsx
 msgid "Cancel"
 msgstr "취소"
@@ -1364,8 +1390,20 @@ msgid "Chats and networks"
 msgstr "채팅 및 네트워크"
 
 #: src/lib/settings/definitions/allSettings.ts
+msgid "Check for an update now"
+msgstr "지금 업데이트 확인"
+
+#: src/lib/settings/definitions/allSettings.ts
 msgid "Check for new releases"
 msgstr "새 릴리스 확인"
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Check now"
+msgstr "지금 확인"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Checking the download"
+msgstr "다운로드 확인 중"
 
 #: src/lib/mediaUpload.ts
 msgid "Choose a different file type. The file host does not accept {ext} files."
@@ -1509,6 +1547,7 @@ msgstr "클라이언트 제한 (+l)"
 #: src/components/ui/QuickActions.tsx
 #: src/components/ui/QuickActions.tsx
 #: src/components/ui/TicTacToeModal.tsx
+#: src/components/ui/UpdateSheet.tsx
 #: src/lib/modal/BaseModal.tsx
 msgid "Close"
 msgstr "닫기"
@@ -1824,6 +1863,10 @@ msgstr "아늑하게는 아바타와 메시지 간격을 표시하고, 조밀하
 #: src/lib/mediaDevices.ts
 msgid "Could not access the device."
 msgstr "장치에 액세스할 수 없습니다."
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Could not check. Try again later."
+msgstr "확인하지 못했습니다. 나중에 다시 시도하세요."
 
 #: src/components/ui/GlobalNotifications.tsx
 msgid "Could not find this message"
@@ -2248,12 +2291,18 @@ msgstr "완료"
 
 #: src/components/ui/MediaViewerModal.tsx
 #: src/components/ui/MediaViewerModal.tsx
+#: src/components/ui/UpdateSheet.tsx
 msgid "Download"
 msgstr "다운로드"
 
 #: src/components/ui/settings/BackupField.tsx
 msgid "Download backup"
 msgstr "백업 다운로드"
+
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Downloading {label}"
+msgstr "{label} 다운로드 중"
 
 #: src/components/ui/UpdateModal.tsx
 msgid "Downloading…"
@@ -4275,6 +4324,11 @@ msgstr "암호화되지 않음"
 msgid "Not in this channel"
 msgstr "이 채널에 참여하지 않음"
 
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Not now"
+msgstr "나중에"
+
 #: src/components/chat/CommandArgHint.tsx
 msgid "Not sent. Reconnect, or use a chat where the bot offers this command"
 msgstr "전송되지 않았습니다. 다시 연결하거나 봇이 이 명령을 제공하는 채팅에서 사용하세요"
@@ -4315,10 +4369,27 @@ msgstr "Obby"
 msgid "Obby - Bringing IRC to the future"
 msgstr "Obby - IRC를 미래로"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Obby {version}"
+msgstr "Obby {version}"
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Obby {version} is available."
+msgstr "Obby {version}을(를) 사용할 수 있습니다."
+
 #: src/components/ui/settings/BridgeRulesField.tsx
 #: src/components/ui/settings/CustomCssField.tsx
 msgid "Obby downloads this file every time it starts, so everyone using the same link gets updates. This contacts the site the link points to."
 msgstr "Obby는 시작할 때마다 이 파일을 내려받으므로 같은 링크를 쓰는 모든 사람이 업데이트를 받습니다. 링크가 가리키는 사이트에 접속합니다."
+
+#: src/components/ui/settings/UpdateCheckField.tsx
+msgid "Obby is up to date."
+msgstr "Obby가 최신 버전입니다."
+
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Obby will close to install the update; open it again afterwards."
+msgstr "업데이트를 설치하기 위해 Obby가 종료됩니다. 이후에 다시 열어 주세요."
 
 #: src/components/pages/SettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
@@ -4345,8 +4416,8 @@ msgid "on"
 msgstr "켜기"
 
 #: src/lib/settings/definitions/allSettings.ts
-msgid "Once a day, ask the project's release page whether a newer build exists and say so under the version. Nothing is downloaded or installed."
-msgstr "하루에 한 번 프로젝트의 릴리스 페이지에 더 새로운 빌드가 있는지 물어보고 버전 아래에 표시합니다. 아무것도 다운로드하거나 설치하지 않습니다."
+msgid "Once a day, ask the project's release page whether a newer build exists and show it above your name. Nothing is downloaded until you tap Update."
+msgstr "하루에 한 번 프로젝트의 릴리스 페이지에 더 새로운 빌드가 있는지 확인하고, 있으면 이름 위에 표시합니다. 업데이트를 누르기 전에는 아무것도 다운로드되지 않습니다."
 
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/ChatHeader.tsx
@@ -4388,6 +4459,10 @@ msgstr "{0} 열기"
 #: src/lib/clientCommands.ts
 msgid "Open a private message to a user"
 msgstr "사용자에게 개인 메시지 열기"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Open Android settings"
+msgstr "Android 설정 열기"
 
 #: src/components/layout/ChannelRow.tsx
 #: src/components/layout/ChannelRow.tsx
@@ -4441,6 +4516,10 @@ msgstr "서버 알림을 열어 무엇이 잘못됐는지 확인하세요"
 #: src/components/layout/UserPanel.tsx
 msgid "Open settings"
 msgstr "설정 열기"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Open the release page"
+msgstr "릴리스 페이지 열기"
 
 #: src/components/message/WorkflowLine.tsx
 msgid "Open workflow"
@@ -4891,6 +4970,10 @@ msgstr "모든 멘션 읽음"
 msgid "Read every message in your own language."
 msgstr "모든 메시지를 내 언어로 읽으세요."
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Ready to install. Return to Obby to continue."
+msgstr "설치할 준비가 되었습니다. 계속하려면 Obby로 돌아오세요."
+
 #: src/components/layout/ProfilePane.tsx
 msgid "Real name"
 msgstr "실명"
@@ -5027,6 +5110,8 @@ msgid "Relaxed - Less aggressive protection"
 msgstr "완화 - 덜 공격적인 보호"
 
 #: src/components/ui/UpdateModal.tsx
+#: src/components/ui/UpdateSheet.tsx
+#: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "릴리스 노트"
 
@@ -5849,6 +5934,10 @@ msgstr "서버 이름 표시"
 msgid "Show server replies"
 msgstr "서버 응답 표시"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "Show the install prompt again"
+msgstr "설치 확인 창 다시 표시"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Show the message of the day"
 msgstr "오늘의 메시지 보기"
@@ -6174,6 +6263,14 @@ msgstr "통화 서버가 요청을 거부했습니다. 잠시 후 다시 시도�
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
 msgstr "<0>{serverName}</0>에 대한 연결에 다음과 같은 보안 문제가 있습니다:"
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "The download did not match the release's checksum, so it was thrown away."
+msgstr "다운로드가 릴리스의 체크섬과 일치하지 않아 삭제되었습니다."
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "The download stopped. Check your connection and try again."
+msgstr "다운로드가 중단되었습니다. 연결을 확인하고 다시 시도하세요."
+
 #: src/components/ui/settings/BackupField.tsx
 msgid "The file holds your servers with their passwords, upload tokens, encryption keys, settings and layout, locked with the password you choose here. Chat history is not included."
 msgstr "이 파일에는 서버와 비밀번호, 업로드 토큰, 암호화 키, 설정과 배치가 들어 있으며 여기서 고른 비밀번호로 잠깁니다. 채팅 기록은 포함되지 않습니다."
@@ -6193,6 +6290,10 @@ msgstr "메시지에 사용되는 글꼴(앱 글꼴과 다른 경우)"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "The font used for the whole app"
 msgstr "앱 전체에 사용되는 글꼴"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "The install was cancelled."
+msgstr "설치가 취소되었습니다."
 
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The IRC server has reported that its server-to-server links have a low security level. This means that when your messages are relayed between IRC servers in the network, they may not be properly encrypted or the SSL/TLS certificates may not be validated correctly."
@@ -6222,6 +6323,10 @@ msgstr "녹화를 할 수 없습니다."
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "서버가 참여를 거부했습니다. 채널 모드를 확인하고 다시 시도하세요."
 
+#: src/components/ui/UpdateSheet.tsx
+msgid "The update could not start. Try again."
+msgstr "업데이트를 시작할 수 없습니다. 다시 시도하세요."
+
 #: src/components/ui/InviteUserModal.tsx
 msgid "The user will receive an invitation to join {channelName}."
 msgstr "사용자가 {channelName} 참여 초대를 받게 됩니다."
@@ -6241,6 +6346,10 @@ msgstr "테마 이름"
 #: src/components/ui/PluginsScreen.tsx
 msgid "Theme Studio"
 msgstr "테마 스튜디오"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "There is not enough free space for the update."
+msgstr "업데이트에 필요한 저장 공간이 부족합니다."
 
 #: src/components/ui/settings/BackupField.tsx
 msgid "This backup was made by a newer Obby. Update first."
@@ -6323,6 +6432,10 @@ msgstr "이 네트워크"
 #: src/components/pages/EmojiPacksPage.tsx
 msgid "This pack has no emoji yet. Add one above."
 msgstr "이 팩에는 아직 이모지가 없습니다. 위에서 추가하세요."
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "This release has no Android app to install."
+msgstr "이 릴리스에는 설치할 Android 앱이 없습니다."
 
 #: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 msgid "This removes the network from your soju bouncer. To use it again, you'll need to add it back."
@@ -6438,6 +6551,7 @@ msgid "Trusted Sources"
 msgstr "신뢰할 수 있는 출처"
 
 #: src/components/ui/LocationShareModal.tsx
+#: src/components/ui/UpdateSheet.tsx
 msgid "Try again"
 msgstr "다시 시도"
 
@@ -6547,6 +6661,11 @@ msgstr "정지 해제"
 msgid "Until I unmute"
 msgstr "해제할 때까지"
 
+#: src/components/ui/settings/UpdateCheckField.tsx
+#: src/components/ui/UpdateSheet.tsx
+msgid "Update"
+msgstr "업데이트"
+
 #: src/components/ui/UpdateModal.tsx
 msgid "Update available"
 msgstr "업데이트 사용 가능"
@@ -6554,6 +6673,14 @@ msgstr "업데이트 사용 가능"
 #: src/components/ui/UpdateModal.tsx
 msgid "Update failed. Please try again."
 msgstr "업데이트에 실패했습니다. 다시 시도해 주세요."
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "Update not installed"
+msgstr "업데이트가 설치되지 않았습니다"
+
+#: src/components/layout/UpdateLine.tsx
+msgid "Update Obby to {label}"
+msgstr "Obby를 {label}(으)로 업데이트"
 
 #: src/components/pages/SettingsPage.tsx
 msgid "Updates"
@@ -7039,6 +7166,18 @@ msgstr "당신은 IRC Operator입니다"
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "You are no longer in this channel"
 msgstr "더 이상 이 채널에 있지 않습니다"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "You can close this and keep chatting."
+msgstr "이 창을 닫고 계속 채팅할 수 있습니다."
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "You have {current}"
+msgstr "현재 버전: {current}"
+
+#: src/components/ui/UpdateSheet.tsx
+msgid "You have {current} · {size} download"
+msgstr "현재 버전: {current} · 다운로드 {size}"
 
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "You have a few minutes to choose a new password."

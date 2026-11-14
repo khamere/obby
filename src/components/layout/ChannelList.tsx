@@ -57,6 +57,7 @@ import ConnectionStrip from "./ConnectionStrip";
 import NetworkMenu from "./NetworkMenu";
 import PrivateChatRow from "./PrivateChatRow";
 import StartPrivateChatRow from "./StartPrivateChatRow";
+import { UpdateLine } from "./UpdateLine";
 import UserPanel, { type PresenceStatus } from "./UserPanel";
 
 // The store keeps one currentUser for whichever server updated it last, so we
@@ -699,6 +700,7 @@ export const ChannelList: React.FC = () => {
           </>
         )}
       </div>
+      <UpdateLine />
       <UserPanel
         serverId={selectedServerId}
         username={currentUser?.username || "User"}

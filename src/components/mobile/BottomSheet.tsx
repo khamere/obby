@@ -8,12 +8,15 @@ interface BottomSheetProps {
   isOpen: boolean;
   onClose: () => void;
   children: React.ReactNode;
+  /** The id of the heading inside that names the sheet for a screen reader. */
+  labelledBy?: string;
 }
 
 const BottomSheet: React.FC<BottomSheetProps> = ({
   isOpen,
   onClose,
   children,
+  labelledBy,
 }) => {
   const sheetRef = useSwipeToDismiss(onClose);
 
@@ -43,6 +46,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
         ref={sheetRef}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={labelledBy}
         className="absolute bottom-0 left-0 right-0 surface-sheet"
         style={{ animation: "bottom-sheet-slide-up 200ms ease-out" }}
       >

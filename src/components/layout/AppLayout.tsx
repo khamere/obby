@@ -15,6 +15,7 @@ import LinkHoverLayer from "../ui/LinkHoverLayer";
 import { MediaViewerModal } from "../ui/MediaViewerModal";
 import { goBackInPage } from "../ui/page/PageShell";
 import TitleTooltipLayer from "../ui/TitleTooltipLayer";
+import UpdateSheet from "../ui/UpdateSheet";
 import { VoicePipOverlay } from "../voice/VoicePipOverlay";
 import { ChannelList } from "./ChannelList";
 import { ChatArea } from "./ChatArea";
@@ -524,6 +525,7 @@ export const AppLayout: React.FC = () => {
         />
         <LinkHoverLayer />
         <ExternalLinkGuard />
+        <UpdateSheet />
         <TitleTooltipLayer />
       </div>
     </ChannelLinkProvider>
