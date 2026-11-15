@@ -331,9 +331,11 @@ async function saveRows(store: StoreApi<AppState>, rows: NewHistoryRow[]) {
   writesSincePrune += rows.length;
   if (writesSincePrune >= PRUNE_EVERY_WRITES) {
     writesSincePrune = 0;
-    await pruneToLimit(
+    // The trim runs in the background, so the rows we just saved go on to
+    // the chat without waiting for it.
+    pruneToLimit(
       store.getState().globalSettings.historyLimitMb * BYTES_PER_MB,
-    );
+    ).catch((error: unknown) => console.warn("history trim failed", error));
   }
   return inserted;
 }

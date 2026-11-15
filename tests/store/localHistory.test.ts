@@ -421,6 +421,38 @@ describe("local history with a chathistory server", () => {
       expect(await w.db.refRowsFor(SERVER, ["m3"])).toEqual([]);
     });
 
+    it("finishes saving a page while the trim it started is still running", async () => {
+      const trim = vi
+        .spyOn(w.db, "pruneToLimit")
+        .mockReturnValue(new Promise(() => {}));
+      w.feed(privmsg("gone", 150.5, "redacted while away"));
+      await vi.waitFor(async () => expect(await w.stored()).toHaveLength(1));
+
+      w.ircClient.sendRaw(SERVER, "CHATHISTORY LATEST #chan * 200");
+      w.feed(...inBatch("h1", "#chan", page(200, 100, "p")));
+
+      await vi.waitFor(async () => {
+        const msgids = (await w.stored()).map((row) => row.msgid);
+        expect(msgids).toHaveLength(200);
+        expect(msgids).not.toContain("gone");
+      });
+      expect(trim).toHaveBeenCalledWith(500_000_000);
+    });
+
+    it("keeps the saved rows and reports it when the trim fails", async () => {
+      const failure = new Error("trim failed");
+      vi.spyOn(w.db, "pruneToLimit").mockRejectedValue(failure);
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+      w.feed(...page(200, 100, "p"));
+
+      await vi.waitFor(async () => expect(await w.stored()).toHaveLength(200));
+      await vi.waitFor(() =>
+        expect(warn).toHaveBeenCalledWith("history trim failed", failure),
+      );
+      warn.mockRestore();
+    });
+
     it.each([
       ["an empty", []],
       ["a short", [privmsg("p1", 10, "p one"), privmsg("p2", 11, "p two")]],

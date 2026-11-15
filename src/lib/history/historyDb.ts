@@ -57,9 +57,25 @@ export type NewHistoryRow = Omit<HistoryRow, "id" | "bytes" | SearchColumn>;
 
 const PRUNE_TARGET = 0.9;
 const QUOTA_RETRY_TARGET = 0.8;
+// Every other read and write waits while one step deletes its rows, at one to
+// two milliseconds a row, so we keep a step near a quarter of a second.
+export const PRUNE_STEP_ROWS = 150;
+const PRUNE_STEP_PAUSE_MS = 50;
+
+interface PruneStep {
+  freed: number;
+  remaining: number;
+  ranOutOfRows: boolean;
+}
+
+interface Trim {
+  limitBytes: number;
+  done: Promise<void>;
+}
 
 let dbPromise: Promise<IDBDatabase> | undefined;
 let chain: Promise<unknown> = Promise.resolve();
+let trim: Trim | undefined;
 
 function createV1(db: IDBDatabase) {
   const rows = db.createObjectStore(ROWS, {
@@ -306,14 +322,29 @@ function usageDb(db: IDBDatabase): Promise<number> {
   return inTx(db, [META], "readonly", readBytes);
 }
 
-function pruneDb(db: IDBDatabase, targetBytes: number): Promise<void> {
+// We drop the gaps left below the oldest row in the transaction that deletes
+// the rows, so the database is whole whenever the page closes.
+function pruneDb(
+  db: IDBDatabase,
+  targetBytes: number,
+  maxRows = Number.POSITIVE_INFINITY,
+): Promise<PruneStep> {
   return inTx(db, [ROWS, GAPS, META, TERMS], "readwrite", async (tx) => {
-    let remaining = await readBytes(tx);
+    const before = await readBytes(tx);
+    let remaining = before;
+    let deleted = 0;
+    let ranOutOfRows = true;
+    const trimmed = new Set<string>();
     const rows = tx.objectStore(ROWS);
     await walk(rows.index("time"), undefined, "next", (cursor) => {
-      if (remaining <= targetBytes) return false;
+      if (remaining <= targetBytes || deleted >= maxRows) {
+        ranOutOfRows = false;
+        return false;
+      }
       const row = cursor.value as HistoryRow;
       remaining -= row.bytes;
+      deleted++;
+      trimmed.add(conversationOf(row));
       unindexRow(tx, row);
       cursor.delete();
       return true;
@@ -322,9 +353,13 @@ function pruneDb(db: IDBDatabase, targetBytes: number): Promise<void> {
       tx.objectStore(META).put({ name: "bytes", value: remaining }),
     );
 
+    // Only a conversation we deleted from can gain a stale gap, so the full
+    // pass over every gap waits for the step that ends the trim.
+    const isLastStep = ranOutOfRows || remaining <= targetBytes;
     const gaps = tx.objectStore(GAPS);
     const conv = rows.index("conv");
     for (const gap of await awaitRequest<HistoryGap[]>(gaps.getAll())) {
+      if (!isLastStep && !trimmed.has(conversationOf(gap))) continue;
       const range = convRange(
         gap.server,
         gap.target,
@@ -336,8 +371,12 @@ function pruneDb(db: IDBDatabase, targetBytes: number): Promise<void> {
         gaps.delete(gap.id);
       }
     }
+    return { freed: before - remaining, remaining, ranOutOfRows };
   });
 }
+
+const conversationOf = ({ server, target }: HistoryRow | HistoryGap) =>
+  `${server}\n${target}`;
 
 export function appendRows(rows: NewHistoryRow[]): Promise<boolean[]> {
   return enqueue(
@@ -540,7 +579,10 @@ export function addGap(gap: Omit<HistoryGap, "id">): Promise<void> {
 export function updateGap(gap: HistoryGap): Promise<void> {
   return enqueue(undefined, (db) =>
     inTx(db, [GAPS], "readwrite", async (tx) => {
-      await awaitRequest(tx.objectStore(GAPS).put(gap));
+      // A trim may have removed the gap with the rows below it since the caller read it.
+      const gaps = tx.objectStore(GAPS);
+      if (await awaitRequest(gaps.get(gap.id)))
+        await awaitRequest(gaps.put(gap));
     }),
   );
 }
@@ -557,12 +599,42 @@ export function usageBytes(): Promise<number> {
   return enqueue(0, usageDb);
 }
 
-export async function pruneToLimit(limitBytes: number): Promise<void> {
-  return enqueue(undefined, async (db) => {
-    if ((await usageDb(db)) > limitBytes) {
-      await pruneDb(db, limitBytes * PRUNE_TARGET);
+// We queue each step of the trim on its own, so reads and writes queued
+// meanwhile run before the next step, and a call during a trim joins it.
+export function pruneToLimit(limitBytes: number): Promise<void> {
+  if (trim) {
+    // The latest call carries the limit the user has set now, so a running trim follows it.
+    trim.limitBytes = limitBytes;
+    return trim.done;
+  }
+  const running: Trim = { limitBytes, done: Promise.resolve() };
+  trim = running;
+  running.done = trimInSteps(running);
+  return running.done;
+}
+
+async function trimInSteps(running: Trim): Promise<void> {
+  try {
+    const startBytes = await usageBytes();
+    if (startBytes <= running.limitBytes) return;
+    // Rows saved between steps can outpace us, so we stop once we have freed
+    // as much as the database held when we began.
+    for (let freed = 0; freed < startBytes; ) {
+      const step = await enqueue<PruneStep>(
+        { freed: 0, remaining: 0, ranOutOfRows: true },
+        (db) => pruneDb(db, running.limitBytes * PRUNE_TARGET, PRUNE_STEP_ROWS),
+      );
+      freed += step.freed;
+      const isAtTarget = step.remaining <= running.limitBytes * PRUNE_TARGET;
+      if (isAtTarget || step.ranOutOfRows) return;
+      // Code that reads history in several queued operations issues the next one as the last returns, so we leave the queue free for a moment.
+      await new Promise((resolve) => setTimeout(resolve, PRUNE_STEP_PAUSE_MS));
     }
-  });
+  } finally {
+    // We clear this in the same turn the trim decides to stop, so a call that
+    // arrives right after starts a trim of its own.
+    trim = undefined;
+  }
 }
 
 export function savedSenders(limit = 2000): Promise<string[]> {
