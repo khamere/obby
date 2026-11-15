@@ -226,6 +226,7 @@ describe("history paging steps", { timeout: 2 * WRITE_TIMEOUT_MS }, () => {
 
       w.ircClient.requestChathistoryLatest(SERVER, "#chan");
       const latest = w.sent.at(-1);
+      w.feed(...w.page(range(500, 549)));
 
       w.useStore.setState((state) => ({
         messages: {
@@ -233,13 +234,24 @@ describe("history paging steps", { timeout: 2 * WRITE_TIMEOUT_MS }, () => {
           [KEY]: (state.messages[KEY] ?? []).filter((m) => m.msgid),
         },
       }));
-      await w.history.loadOlderMessages(
+      const older = w.history.loadOlderMessages(
         w.useStore,
         SERVER,
         "#chan",
         timeOf(500),
       );
+      await vi.waitFor(() => expect(w.requests("BEFORE")).toHaveLength(1));
       const diskBefore = w.requests("BEFORE").at(-1);
+      // The page fetched forward waits for this one, since both fill the same gap.
+      w.feed(...w.page(range(300, 499)));
+      await older;
+      await vi.waitFor(
+        async () =>
+          expect(await w.db.gapsFor(SERVER, "#chan")).toMatchObject([
+            { to: timeOf(300) },
+          ]),
+        { timeout: WRITE_TIMEOUT_MS },
+      );
 
       await w.history.loadOlderMessages(w.useStore, SERVER, "bob", timeOf(500));
       const shownBefore = w.requests("BEFORE").at(-1);
@@ -253,7 +265,7 @@ describe("history paging steps", { timeout: 2 * WRITE_TIMEOUT_MS }, () => {
         w.useStore,
         SERVER,
         "#chan",
-        timeOf(300),
+        timeOf(200),
       );
       await vi.waitFor(() => expect(w.requests("AROUND")).toHaveLength(1));
       const around = w.requests("AROUND")[0];
@@ -267,7 +279,7 @@ describe("history paging steps", { timeout: 2 * WRITE_TIMEOUT_MS }, () => {
         after: `CHATHISTORY AFTER #chan timestamp=${iso(99)} 200`,
         diskBefore: `CHATHISTORY BEFORE #chan timestamp=${iso(500)} 200`,
         shownBefore: `CHATHISTORY BEFORE bob timestamp=${iso(500)} 50`,
-        around: `CHATHISTORY AROUND #chan timestamp=${iso(300)} 50`,
+        around: `CHATHISTORY AROUND #chan timestamp=${iso(200)} 50`,
       });
     });
 
@@ -277,7 +289,7 @@ describe("history paging steps", { timeout: 2 * WRITE_TIMEOUT_MS }, () => {
         after: `CHATHISTORY AFTER #chan timestamp=${iso(99)} 30`,
         diskBefore: `CHATHISTORY BEFORE #chan timestamp=${iso(500)} 30`,
         shownBefore: `CHATHISTORY BEFORE bob timestamp=${iso(500)} 30`,
-        around: `CHATHISTORY AROUND #chan timestamp=${iso(300)} 30`,
+        around: `CHATHISTORY AROUND #chan timestamp=${iso(200)} 30`,
       });
     });
 
@@ -287,7 +299,7 @@ describe("history paging steps", { timeout: 2 * WRITE_TIMEOUT_MS }, () => {
         after: `CHATHISTORY AFTER #chan timestamp=${iso(99)} 50`,
         diskBefore: `CHATHISTORY BEFORE #chan timestamp=${iso(500)} 50`,
         shownBefore: `CHATHISTORY BEFORE bob timestamp=${iso(500)} 50`,
-        around: `CHATHISTORY AROUND #chan timestamp=${iso(300)} 50`,
+        around: `CHATHISTORY AROUND #chan timestamp=${iso(200)} 50`,
       };
       expect(await requestLines()).toEqual(unstated);
       expect(await requestLines(0)).toEqual(unstated);

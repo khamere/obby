@@ -924,12 +924,17 @@ function fetchForwardToDisk(
   const isSent = new Promise<void>((resolve) => {
     markSent = resolve;
   });
-  const isSaved = (async () => {
+  const fetch: ForwardFetch = { isSent, isSaved: Promise.resolve(false) };
+  forwardFetches.set(key, fetch);
+  fetch.isSaved = (async () => {
     // A page that landed since the caller read the gap has moved its older edge, and asking from the old one would return rows we hold.
     const current = (await gapsServerCanFill(store, serverId, target)).find(
       (saved) => saved.id === gap.id,
     );
     if (!current) return true;
+    // A disconnect dropped this fetch, or an earlier request for the gap is still queued, and a second copy of a page would be read as its answer.
+    if (forwardFetches.get(key) !== fetch) return false;
+    if (isGapBeingFilled(serverId, target, current.id)) return false;
     const page = fetchPageToDisk(
       serverId,
       target,
@@ -943,8 +948,6 @@ function fetchForwardToDisk(
     markSent();
     if (forwardFetches.get(key) === fetch) forwardFetches.delete(key);
   });
-  const fetch = { isSent, isSaved };
-  forwardFetches.set(key, fetch);
   return fetch;
 }
 

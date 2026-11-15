@@ -458,12 +458,16 @@ export function decideAfterLatest(input: {
 // the page reaches rows we already had, otherwise its older edge moves up.
 export function decideAfterForwardFill(input: {
   gap: HistoryGap;
-  page: Pick<HistoryPage, "newest">;
+  page: Pick<HistoryPage, "oldest" | "newest">;
   inserted: boolean[];
-}): { kind: "close" } | { kind: "shrink"; from: number } {
+}): { kind: "close" } | { kind: "keep" } | { kind: "shrink"; from: number } {
   const { gap, page, inserted } = input;
-  if (inserted.some((wasNew) => !wasNew)) return { kind: "close" };
   if (page.newest === undefined || page.newest >= gap.to)
+    return { kind: "close" };
+  // A page asked from an edge the gap has moved past starts with rows we hold, which says nothing about the far side.
+  const startsBeforeGap = page.oldest !== undefined && page.oldest <= gap.from;
+  if (startsBeforeGap && page.newest <= gap.from) return { kind: "keep" };
+  if (!startsBeforeGap && inserted.some((wasNew) => !wasNew))
     return { kind: "close" };
   return { kind: "shrink", from: page.newest };
 }
