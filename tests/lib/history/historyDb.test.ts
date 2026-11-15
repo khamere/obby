@@ -232,6 +232,257 @@ describe("pruneToLimit", () => {
   });
 });
 
+describe("pruneToLimit in steps", () => {
+  const STEPS = 4;
+  let total: number;
+
+  const line = (i: number) =>
+    row({
+      key: `k${i}`,
+      time: i + 1,
+      target: i % 3 ? "#a" : "#b",
+      raw: `@msgid=m${i} :alice!u@h PRIVMSG #a :word${i} shared ${"y".repeat(i % 7)}`,
+    });
+
+  const allRows = async () =>
+    [
+      ...(await db.newestEventRows("s1", "#a", 10_000)),
+      ...(await db.newestEventRows("s1", "#b", 10_000)),
+      ...(await db.newestEventRows("s1", "#new", 10_000)),
+    ].sort((a, b) => a.time - b.time);
+
+  function storedTerms(): Promise<{ rowId: number }[]> {
+    return new Promise((resolve, reject) => {
+      const open = indexedDB.open("obby-history");
+      open.onsuccess = () => {
+        const request = open.result
+          .transaction("terms")
+          .objectStore("terms")
+          .getAll();
+        request.onsuccess = () => {
+          open.result.close();
+          resolve(request.result);
+        };
+      };
+      open.onerror = () => reject(open.error);
+    });
+  }
+
+  const sumBytes = (rows: { bytes: number }[]) =>
+    rows.reduce((sum, r) => sum + r.bytes, 0);
+
+  // What one pass over the oldest rows leaves: the newest rows that fit.
+  function keptBySinglePass<T extends { bytes: number }>(
+    oldestFirst: T[],
+    targetBytes: number,
+  ): T[] {
+    let usage = sumBytes(oldestFirst);
+    let firstKept = 0;
+    while (usage > targetBytes && firstKept < oldestFirst.length)
+      usage -= oldestFirst[firstKept++].bytes;
+    return oldestFirst.slice(firstKept);
+  }
+
+  beforeEach(async () => {
+    total = db.PRUNE_STEP_ROWS * STEPS;
+    await db.appendRows(Array.from({ length: total }, (_, i) => line(i)));
+  });
+
+  it("lets a read queued during the trim finish before the trim does", async () => {
+    const before = await db.usageBytes();
+    const target = (before / 4) * 0.9;
+    let isTrimDone = false;
+    const trim = db.pruneToLimit(before / 4).then(() => {
+      isTrimDone = true;
+    });
+    await db.usageBytes();
+    const usageMidway = await db.usageBytes();
+
+    expect(isTrimDone).toBe(false);
+    expect(usageMidway).toBeLessThan(before);
+    expect(usageMidway).toBeGreaterThan(target);
+    await trim;
+    expect(await db.usageBytes()).toBeLessThanOrEqual(target);
+  });
+
+  it("deletes at most one step of rows before a queued read runs", async () => {
+    const countRows = async () =>
+      (await db.newestEventRows("s1", "#a", 10_000)).length;
+    const before = await countRows();
+    const trim = db.pruneToLimit(1);
+    await db.usageBytes();
+    const midway = await countRows();
+    await trim;
+
+    expect(midway).toBeLessThan(before);
+    expect(before - midway).toBeLessThanOrEqual(db.PRUNE_STEP_ROWS);
+    expect(await allRows()).toEqual([]);
+  });
+
+  it("ends where a single pass over the oldest rows would", async () => {
+    const before = await allRows();
+    const limit = sumBytes(before) / 4;
+    const expected = keptBySinglePass(before, limit * 0.9);
+    expect(before.length - expected.length).toBeGreaterThan(
+      2 * db.PRUNE_STEP_ROWS,
+    );
+    const oldestKept = expected[0].time;
+    const gap = { server: "s1", target: "#a", lost: false };
+    await db.addGap({ ...gap, from: 0, to: oldestKept - 1 });
+    await db.addGap({ ...gap, from: oldestKept, to: oldestKept + 5 });
+    await db.addGap({ ...gap, target: "#gone", from: 0, to: total });
+
+    await db.pruneToLimit(limit);
+
+    expect(await allRows()).toEqual(expected);
+    expect(await db.usageBytes()).toBe(sumBytes(expected));
+    const keptIds = new Set(expected.map((r) => r.id));
+    const terms = await storedTerms();
+    expect(terms.length).toBeGreaterThan(expected.length);
+    expect(terms.filter((term) => !keptIds.has(term.rowId))).toEqual([]);
+    expect(await db.fillableGaps()).toMatchObject([
+      { target: "#a", from: oldestKept, to: oldestKept + 5 },
+    ]);
+  });
+
+  it("runs one trim for overlapping calls", async () => {
+    const before = await allRows();
+    const limit = sumBytes(before) / 2;
+    const expected = keptBySinglePass(before, limit * 0.9);
+
+    const first = db.pruneToLimit(limit);
+    const second = db.pruneToLimit(limit);
+    expect(second).toBe(first);
+    await Promise.all([first, second]);
+
+    expect(await allRows()).toEqual(expected);
+    expect(await db.usageBytes()).toBe(sumBytes(expected));
+  });
+
+  it("starts a new trim once the running one has finished", async () => {
+    const before = await allRows();
+    await db.pruneToLimit(sumBytes(before) / 2);
+    const limit = sumBytes(before) / 4;
+    await db.pruneToLimit(limit);
+
+    expect(await allRows()).toEqual(keptBySinglePass(before, limit * 0.9));
+  });
+
+  it("follows the limit asked for last while it runs", async () => {
+    const before = await allRows();
+    const lower = sumBytes(before) / 4;
+
+    const first = db.pruneToLimit(sumBytes(before) / 2);
+    await Promise.all([first, db.pruneToLimit(lower)]);
+
+    expect(await allRows()).toEqual(keptBySinglePass(before, lower * 0.9));
+  });
+
+  it("stops early when the limit is raised while it runs", async () => {
+    const before = await allRows();
+    const lower = sumBytes(before) / 4;
+
+    const trim = db.pruneToLimit(lower);
+    await db.usageBytes();
+    await db.usageBytes();
+    void db.pruneToLimit(sumBytes(before) * 2);
+    await trim;
+
+    const after = await allRows();
+    expect(after.length).toBeGreaterThan(
+      keptBySinglePass(before, lower * 0.9).length,
+    );
+    expect(await db.usageBytes()).toBe(sumBytes(after));
+  });
+
+  it("lets reads issued one after another through between two steps", async () => {
+    const before = await allRows();
+    const trim = db.pruneToLimit(sumBytes(before) / 4);
+    await db.usageBytes();
+    const atFirstRead = (await allRows()).length;
+    for (let read = 0; read < 4; read++) await db.usageBytes();
+    const atLastRead = (await allRows()).length;
+    await trim;
+
+    expect(atFirstRead).toBeLessThan(before.length);
+    expect(atFirstRead - atLastRead).toBeLessThanOrEqual(db.PRUNE_STEP_ROWS);
+  });
+
+  it("keeps and counts rows appended between steps", async () => {
+    const before = await allRows();
+    const limit = sumBytes(before) / 4;
+    const fresh = Array.from({ length: 5 }, (_, i) =>
+      row({ key: `new${i}`, time: total + 10 + i, target: "#new" }),
+    );
+
+    const trim = db.pruneToLimit(limit);
+    await db.usageBytes();
+    await db.usageBytes();
+    expect((await allRows()).length).toBeLessThan(before.length);
+    expect(await db.appendRows(fresh)).toEqual(fresh.map(() => true));
+    await trim;
+
+    const after = await allRows();
+    expect(after.slice(-5).map((r) => r.key)).toEqual(fresh.map((r) => r.key));
+    expect(await db.usageBytes()).toBe(sumBytes(after));
+    expect(sumBytes(after)).toBeLessThanOrEqual(limit * 0.9);
+    expect(sumBytes(after) + after[0].bytes).toBeGreaterThan(limit * 0.9);
+  });
+
+  it("stops when rows arrive as fast as it deletes them", async () => {
+    const before = await db.usageBytes();
+    let next = total;
+    let isTrimDone = false;
+    const trim = db.pruneToLimit(before / 2).then(() => {
+      isTrimDone = true;
+    });
+    for (let batches = 0; !isTrimDone; batches++) {
+      expect(batches).toBeLessThan(10 * STEPS);
+      await db.appendRows(
+        Array.from({ length: db.PRUNE_STEP_ROWS }, () => line(next++)),
+      );
+    }
+    await trim;
+
+    expect(await db.usageBytes()).toBe(sumBytes(await allRows()));
+  });
+
+  it("touches nothing when usage is within the limit", async () => {
+    const before = await allRows();
+    await db.addGap({
+      server: "s1",
+      target: "#gone",
+      from: 0,
+      to: 1,
+      lost: false,
+    });
+
+    await db.pruneToLimit(sumBytes(before));
+
+    expect(await allRows()).toEqual(before);
+    expect(await db.usageBytes()).toBe(sumBytes(before));
+    expect(await db.fillableGaps()).toHaveLength(1);
+  });
+
+  it("removes a gap in the same step that deletes the rows below it", async () => {
+    await db.addGap({
+      server: "s1",
+      target: "#a",
+      from: 0,
+      to: 1,
+      lost: false,
+    });
+    const trim = db.pruneToLimit(1);
+    await db.usageBytes();
+    const gapsMidway = await db.gapsFor("s1", "#a");
+    const rowsMidway = await db.newestEventRows("s1", "#a", 10_000);
+    await trim;
+
+    expect(rowsMidway.length).toBeGreaterThan(0);
+    expect(gapsMidway).toEqual([]);
+  });
+});
+
 describe("deleteServerHistory", () => {
   it("removes only that server's rows and gaps", async () => {
     await db.appendRows([
