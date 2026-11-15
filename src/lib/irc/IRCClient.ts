@@ -37,9 +37,11 @@ function generateDeterministicId(serverId: string, name: string): string {
   return uuidv5(`${serverId}:${name}`, CHANNEL_NAMESPACE);
 }
 
-// Gap and load-more decisions read a short page as the end of server history,
-// so every request has to ask for the same page size.
+// A page we show at once is one screen step, and gap and load-more decisions
+// read only an empty page as the end of server history.
 const CHATHISTORY_PAGE_SIZE = 50;
+// Servers throttle CHATHISTORY, so pages we only save cover several steps each.
+const CHATHISTORY_DISK_PAGE_SIZE = 200;
 const PING_INTERVAL_MS = 30_000;
 const PONG_TIMEOUT_MS = 10_000;
 const WAKE_PONG_TIMEOUT_MS = 5_000;
@@ -1468,7 +1470,10 @@ export class IRCClient implements IRCClientContext {
     serverId: string,
     channelName: string,
     beforeTimestamp: string,
-    { showLoading = true }: { showLoading?: boolean } = {},
+    {
+      showLoading = true,
+      isDiskOnly = false,
+    }: { showLoading?: boolean; isDiskOnly?: boolean } = {},
   ): boolean {
     const server = this.servers.get(serverId);
     if (!server?.capabilities?.includes("draft/chathistory")) return false;
@@ -1484,7 +1489,7 @@ export class IRCClient implements IRCClientContext {
       });
     this.sendRaw(
       serverId,
-      `CHATHISTORY BEFORE ${channelName} timestamp=${beforeTimestamp} ${this.chathistoryPageSize(serverId)}`,
+      `CHATHISTORY BEFORE ${channelName} timestamp=${beforeTimestamp} ${this.chathistoryPageSize(serverId, isDiskOnly)}`,
     );
     return true;
   }
@@ -1494,13 +1499,14 @@ export class IRCClient implements IRCClientContext {
     target: string,
     subcommand: "AFTER" | "AROUND",
     timestamp: string,
+    { isDiskOnly = false }: { isDiskOnly?: boolean } = {},
   ): boolean {
     const server = this.servers.get(serverId);
     if (!server?.capabilities?.includes("draft/chathistory")) return false;
     if (server.isBouncerControl) return false;
     this.sendRaw(
       serverId,
-      `CHATHISTORY ${subcommand} ${target} timestamp=${timestamp} ${this.chathistoryPageSize(serverId)}`,
+      `CHATHISTORY ${subcommand} ${target} timestamp=${timestamp} ${this.chathistoryPageSize(serverId, isDiskOnly)}`,
     );
     return true;
   }
@@ -1543,14 +1549,16 @@ export class IRCClient implements IRCClientContext {
   }
 
   // Servers state their per-request maximum as CHATHISTORY=<n>, where 0 means
-  // they state none.
-  private chathistoryPageSize(serverId: string): number {
+  // they state none, and then we stay at the size every server accepts.
+  chathistoryPageSize(serverId: string, isDiskOnly = false): number {
     const advertised = Number(
       this.isupportValues.get(serverId)?.get("CHATHISTORY"),
     );
-    return advertised > 0
-      ? Math.min(CHATHISTORY_PAGE_SIZE, advertised)
-      : CHATHISTORY_PAGE_SIZE;
+    if (!(advertised > 0)) return CHATHISTORY_PAGE_SIZE;
+    return Math.min(
+      isDiskOnly ? CHATHISTORY_DISK_PAGE_SIZE : CHATHISTORY_PAGE_SIZE,
+      advertised,
+    );
   }
 
   chantypes(serverId: string): string {

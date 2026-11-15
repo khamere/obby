@@ -74,7 +74,7 @@ const MAX_AUTO_FILL_PAGES = 10;
 // Servers throttle CHATHISTORY (obbyircd allows about one command a second
 // after a short burst), so we keep one page in flight, pace the rest and stop
 // after a bounded amount of history.
-const SEARCH_FILL_MAX_PAGES = 40;
+const SEARCH_FILL_MAX_LINES = 2000;
 const SEARCH_FILL_PACE_MS = 1000;
 const SEARCH_FILL_TIMEOUT_MS = 20_000;
 
@@ -132,7 +132,7 @@ function requestPageBefore(
     serverId,
     target,
     new Date(before).toISOString(),
-    { showLoading },
+    { showLoading, isDiskOnly: fill?.isDiskOnly },
   );
   nextGapFill = undefined;
   return isSent;
@@ -828,6 +828,9 @@ export function registerHistoryHandlers(store: StoreApi<AppState>): void {
       return;
     }
     ircClient.clearDiskOnlyBatches(serverId);
+    // A request the closed socket dropped never answers, so the next page after a reconnect starts its own.
+    for (const key of forwardFetches.keys())
+      if (key.startsWith(`${serverId}\n`)) forwardFetches.delete(key);
     for (const [key, queue] of pendingRequests) {
       if (!key.startsWith(`${serverId}\n`)) continue;
       for (const request of queue)
@@ -895,10 +898,54 @@ function fetchPageToDisk(
       target,
       subcommand,
       new Date(time).toISOString(),
+      { isDiskOnly: subcommand === "AFTER" },
     );
     nextGapFill = undefined;
     if (!isSent) fill.onSettled(false);
   });
+}
+
+type ForwardFetch = { isSent: Promise<void>; isSaved: Promise<boolean> };
+const forwardFetches = new Map<string, ForwardFetch>();
+
+// Paging newer and reading ahead of it ask for the same page past a gap's
+// older edge, so a conversation shares the one request that is in flight.
+function fetchForwardToDisk(
+  store: StoreApi<AppState>,
+  serverId: string,
+  target: string,
+  time: number,
+  gap: HistoryGap,
+): ForwardFetch {
+  const key = conversationKey(serverId, target);
+  const inFlight = forwardFetches.get(key);
+  if (inFlight) return inFlight;
+  let markSent = () => {};
+  const isSent = new Promise<void>((resolve) => {
+    markSent = resolve;
+  });
+  const isSaved = (async () => {
+    // A page that landed since the caller read the gap has moved its older edge, and asking from the old one would return rows we hold.
+    const current = (await gapsServerCanFill(store, serverId, target)).find(
+      (saved) => saved.id === gap.id,
+    );
+    if (!current) return true;
+    const page = fetchPageToDisk(
+      serverId,
+      target,
+      "AFTER",
+      Math.max(time, current.from),
+      current,
+    );
+    markSent();
+    return page;
+  })().finally(() => {
+    markSent();
+    if (forwardFetches.get(key) === fetch) forwardFetches.delete(key);
+  });
+  const fetch = { isSent, isSaved };
+  forwardFetches.set(key, fetch);
+  return fetch;
 }
 
 // A notification can name a message older than the pages we loaded, so we ask
@@ -978,12 +1025,13 @@ export function fillGapsForSearch(
 ): () => void {
   let isCancelled = false;
   let pagesFetched = 0;
+  let linesAsked = 0;
   const report = (gaps: HistoryGap[], isFetching: boolean) => {
     if (!isCancelled) onProgress(gaps, isFetching, pagesFetched);
   };
   void (async () => {
     if (!isEnabled(store)) return report([], false);
-    while (pagesFetched < SEARCH_FILL_MAX_PAGES) {
+    while (linesAsked < SEARCH_FILL_MAX_LINES) {
       const gaps = await searchableGaps(store, scope);
       if (gaps.length === 0 || isCancelled) return report(gaps, false);
       report(gaps, true);
@@ -992,6 +1040,7 @@ export function fillGapsForSearch(
       if (isCancelled) return;
       if (!(await fetchGapPage(gaps[0]))) break;
       pagesFetched += 1;
+      linesAsked += ircClient.chathistoryPageSize(gaps[0].server, true);
     }
     report(await searchableGaps(store, scope), false);
   })();
@@ -1331,24 +1380,25 @@ export async function loadNewerMessages(
     .filter((row) => !row.msgid || !shown.has(row.msgid))
     .filter((row) => !hole || row.time <= hole.from)
     .slice(0, WINDOW_ROWS);
-  if (rows.length === 0 && hole) {
-    if (
-      serverSupportsChathistory(store.getState(), serverId) &&
-      (await fetchPageToDisk(
-        serverId,
-        target,
-        "AFTER",
-        Math.max(window.until, hole.from),
-        hole,
-      ))
-    )
-      await loadNewerMessages(store, serverId, target);
-    return;
-  }
   const isSameWindow = () => {
     const current = store.getState().historyWindows[conversation.key];
     return current?.until === window.until && current.jumpId === window.jumpId;
   };
+  if (rows.length === 0 && hole) {
+    if (
+      serverSupportsChathistory(store.getState(), serverId) &&
+      (await fetchForwardToDisk(
+        store,
+        serverId,
+        target,
+        Math.max(window.until, hole.from),
+        hole,
+      ).isSaved) &&
+      isSameWindow()
+    )
+      await loadNewerMessages(store, serverId, target);
+    return;
+  }
   if (rows.length < WINDOW_ROWS && !hole) {
     if (!isSameWindow()) return;
     joinWindowToPresent(store, conversation.key);
@@ -1358,6 +1408,7 @@ export async function loadNewerMessages(
     return;
   }
   const newest = rows[rows.length - 1];
+  let isShown = false;
   await replayRows(store, serverId, target, rows, () => {
     const current = store.getState().historyWindows[conversation.key];
     if (!current || !isSameWindow()) return false;
@@ -1371,10 +1422,41 @@ export async function loadNewerMessages(
         },
       },
     }));
+    isShown = true;
     return true;
   });
   if (dropOldestInWindow(store, conversation.key))
     await refreshHasMore(store, serverId, target, false);
+  if (isShown && hole)
+    await readAheadOfGap(store, serverId, target, newest, hole);
+}
+
+// A page from the server takes a round trip, so we fetch the one past the gap
+// while the last saved rows before it are still being read.
+async function readAheadOfGap(
+  store: StoreApi<AppState>,
+  serverId: string,
+  target: string,
+  newest: HistoryRow,
+  gap: HistoryGap,
+) {
+  const left = (
+    await eventRowsAfter(
+      serverId,
+      target.toLowerCase(),
+      newest.time,
+      WINDOW_ROWS,
+      newest.id,
+    )
+  ).filter((row) => row.time <= gap.from);
+  if (left.length >= WINDOW_ROWS) return;
+  await fetchForwardToDisk(
+    store,
+    serverId,
+    target,
+    Math.max(newest.time, gap.from),
+    gap,
+  ).isSent;
 }
 
 // We cap a window at WINDOW_KEEP_MESSAGES while paging newer, and the chat list
