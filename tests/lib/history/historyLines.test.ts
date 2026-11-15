@@ -3,6 +3,7 @@ import { E2EE_BODY_MARKER, E2EE_TAG } from "../../../src/lib/e2ee/protocol";
 import type { HistoryGap } from "../../../src/lib/history/historyDb";
 import {
   buildReplayLines,
+  decideAfterForwardFill,
   decideAfterGapFill,
   decideAfterLatest,
   HistoryRecorder,
@@ -1247,5 +1248,54 @@ describe("planLoadMore gap edges", () => {
         hasChathistory: true,
       }),
     ).toEqual({ kind: "server", gap, before: 500 });
+  });
+});
+
+describe("decideAfterForwardFill", () => {
+  const gap = {
+    id: 1,
+    server: "s",
+    target: "#c",
+    from: 300,
+    to: 900,
+    lost: false,
+  };
+  const decide = (oldest: number, newest: number, inserted: boolean[]) =>
+    decideAfterForwardFill({ gap, page: { oldest, newest }, inserted });
+
+  it("moves the older edge up to the page's newest line", () => {
+    expect(decide(310, 500, [true, true])).toEqual({
+      kind: "shrink",
+      from: 500,
+    });
+  });
+
+  it("closes once the page reaches the gap's newer edge", () => {
+    expect(decide(310, 900, [true, true])).toEqual({ kind: "close" });
+  });
+
+  it("closes when a page from inside the gap brings rows we hold", () => {
+    expect(decide(310, 500, [true, false])).toEqual({ kind: "close" });
+  });
+
+  it("closes on an empty page", () => {
+    expect(
+      decideAfterForwardFill({
+        gap,
+        page: { oldest: undefined, newest: undefined },
+        inserted: [],
+      }),
+    ).toEqual({ kind: "close" });
+  });
+
+  it("keeps the gap when a page lies wholly before its older edge", () => {
+    expect(decide(120, 300, [false, false])).toEqual({ kind: "keep" });
+  });
+
+  it("moves the edge when a page starts before it and ends inside the gap", () => {
+    expect(decide(120, 500, [false, true])).toEqual({
+      kind: "shrink",
+      from: 500,
+    });
   });
 });
