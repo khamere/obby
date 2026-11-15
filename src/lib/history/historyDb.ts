@@ -334,7 +334,7 @@ function pruneDb(
     let remaining = before;
     let deleted = 0;
     let ranOutOfRows = true;
-    const trimmed = new Set<string>();
+    const trimmed = new Map<string, [server: string, target: string]>();
     const rows = tx.objectStore(ROWS);
     await walk(rows.index("time"), undefined, "next", (cursor) => {
       if (remaining <= targetBytes || deleted >= maxRows) {
@@ -344,7 +344,7 @@ function pruneDb(
       const row = cursor.value as HistoryRow;
       remaining -= row.bytes;
       deleted++;
-      trimmed.add(conversationOf(row));
+      trimmed.set(conversationOf(row), [row.server, row.target]);
       unindexRow(tx, row);
       cursor.delete();
       return true;
@@ -358,8 +358,18 @@ function pruneDb(
     const isLastStep = ranOutOfRows || remaining <= targetBytes;
     const gaps = tx.objectStore(GAPS);
     const conv = rows.index("conv");
-    for (const gap of await awaitRequest<HistoryGap[]>(gaps.getAll())) {
-      if (!isLastStep && !trimmed.has(conversationOf(gap))) continue;
+    const candidates = isLastStep
+      ? await awaitRequest<HistoryGap[]>(gaps.getAll())
+      : (
+          await Promise.all(
+            [...trimmed.values()].map((conversation) =>
+              awaitRequest<HistoryGap[]>(
+                gaps.index("conv").getAll(IDBKeyRange.only(conversation)),
+              ),
+            ),
+          )
+        ).flat();
+    for (const gap of candidates) {
       const range = convRange(
         gap.server,
         gap.target,
