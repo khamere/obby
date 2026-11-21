@@ -19,7 +19,7 @@ import {
   type FormattingType,
   formatMessageForIrc,
 } from "../lib/messageFormatter";
-import { splitLongMessage } from "../lib/messageProtocol";
+import { exceedsLineLimit, splitLongMessage } from "../lib/messageProtocol";
 import { showOwnPrivateMessage } from "../lib/ownPrivateMessage";
 import { PRIVILEGED_COMMANDS } from "../lib/privilegedCommands";
 import { rainbowText, splitRainbowMessage } from "../lib/rainbow";
@@ -755,13 +755,8 @@ export function useMessageSending({
       const supportsMultiline = serverSupportsMultiline(selectedServerId);
       const hasMultipleLines = lines.length > 1;
 
-      // Calculate message length limits
-      const maxMessageLength =
-        512 -
-        (1 + 20 + 1 + 20 + 1 + 63 + 1 + 7 + 1 + target.length + 2 + 2) -
-        10;
       const isSingleLongLine =
-        lines.length === 1 && cleanedText.length > maxMessageLength;
+        lines.length === 1 && exceedsLineLimit(cleanedText, target);
 
       // Determine sending strategy
       if (supportsMultiline && (hasMultipleLines || isSingleLongLine)) {

@@ -1,17 +1,44 @@
+/// <reference lib="es2022.intl" />
 /**
  * IRC protocol utilities for message handling
  */
+
+const encoder = new TextEncoder();
+
+// We count bytes because the IRC line limit applies on the wire, where one character takes up to four.
+const byteLength = (text: string): number => encoder.encode(text).length;
+
+const graphemes =
+  typeof Intl !== "undefined" && typeof Intl.Segmenter === "function"
+    ? new Intl.Segmenter(undefined, { granularity: "grapheme" })
+    : null;
+
+// We keep a flag, a skin-toned emoji or an accented letter in one line so it reaches the reader whole.
+const splitUnits = (text: string, limit: number): string[] => {
+  const clusters = graphemes
+    ? Array.from(graphemes.segment(text), (s) => s.segment)
+    : Array.from(text);
+  return clusters.flatMap((cluster) =>
+    byteLength(cluster) > limit ? Array.from(cluster) : [cluster],
+  );
+};
+
+/** The number of message bytes one PRIVMSG to `target` can carry. */
+const maxMessageBytes = (target: string): number =>
+  512 - calculateProtocolOverhead(target);
+
+export const exceedsLineLimit = (message: string, target: string): boolean =>
+  byteLength(message) > maxMessageBytes(target);
 
 /**
  * Helper function to split long messages while respecting IRC protocol limits
  * @param message - The message to split
  * @param target - The channel or username target
- * @param preserveBoundarySpace - When true, each non-final chunk
- *   carries the original boundary space at its trailing edge so a
- *   downstream draft/multiline-concat join reconstructs the original
- *   text with its spacing intact.  Default false preserves the legacy
- *   "send as independent PRIVMSGs" behaviour where the split-point
- *   space simply becomes a line break.
+ * @param preserveBoundarySpace - When true, the parts concatenate back to
+ *   the exact message, so a draft/multiline-concat join reconstructs the
+ *   text with its spacing intact.  By default the parts go out as
+ *   independent PRIVMSGs and the space at a split point becomes the
+ *   line break.
  * @returns Array of message chunks within IRC limits
  */
 export const splitLongMessage = (
@@ -19,54 +46,45 @@ export const splitLongMessage = (
   target = "#channel",
   preserveBoundarySpace = false,
 ): string[] => {
-  const protocolOverhead = calculateProtocolOverhead(target);
+  const limit = maxMessageBytes(target);
 
-  // Available space for the actual message content.  Reserve one byte
-  // when we're going to re-attach a boundary space so the wire line
-  // still fits inside the 512-byte IRC limit.
-  const maxMessageLength =
-    512 - protocolOverhead - (preserveBoundarySpace ? 1 : 0);
-
-  if (message.length <= maxMessageLength) {
+  if (byteLength(message) <= limit) {
     return [message];
   }
 
+  const units = splitUnits(message, limit);
+  const sizes = units.map(byteLength);
   const lines: string[] = [];
-  let currentLine = "";
-  const words = message.split(" ");
+  let start = 0;
 
-  for (const word of words) {
-    if (word.length > maxMessageLength) {
-      // If a single word is too long, we have to break it
-      if (currentLine) {
-        lines.push(currentLine);
-        currentLine = "";
-      }
-
-      // Split the long word
-      for (let i = 0; i < word.length; i += maxMessageLength) {
-        lines.push(word.slice(i, i + maxMessageLength));
-      }
-    } else if (`${currentLine} ${word}`.length > maxMessageLength) {
-      // Adding this word would exceed the limit
-      if (currentLine) {
-        lines.push(currentLine);
-      }
-      currentLine = word;
-    } else {
-      currentLine = currentLine ? `${currentLine} ${word}` : word;
+  while (start < units.length) {
+    let end = start;
+    let bytes = 0;
+    while (end < units.length && bytes + sizes[end] <= limit) {
+      bytes += sizes[end];
+      end++;
     }
+    // We still have to send a unit that is wider than a whole line.
+    if (end === start) end = start + 1;
+
+    let next = end;
+    if (end < units.length) {
+      if (!preserveBoundarySpace && units[end] === " ") {
+        next = end + 1;
+      } else {
+        const space = units.lastIndexOf(" ", end - 1);
+        if (space > start) {
+          end = preserveBoundarySpace ? space + 1 : space;
+          next = space + 1;
+        }
+      }
+    }
+
+    lines.push(units.slice(start, end).join(""));
+    start = next;
   }
 
-  if (currentLine) {
-    lines.push(currentLine);
-  }
-
-  const filtered = lines.filter((line) => line.length > 0);
-  if (!preserveBoundarySpace || filtered.length < 2) return filtered;
-  return filtered.map((line, idx) =>
-    idx < filtered.length - 1 ? `${line} ` : line,
-  );
+  return lines;
 };
 
 /**
@@ -89,7 +107,7 @@ export const calculateProtocolOverhead = (target: string): number => {
     1 + // ' '
     7 + // 'PRIVMSG'
     1 + // ' '
-    target.length +
+    byteLength(target) +
     2 + // ' :'
     2 + // '\r\n'
     10
