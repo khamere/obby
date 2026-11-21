@@ -46,6 +46,19 @@ export function handleCannotSendToChan(
   });
 }
 
+const SEARCH_BATCH = "soju.im/search";
+
+function isInSearchBatch(
+  ctx: IRCClientContext,
+  serverId: string,
+  mtags: Record<string, string> | undefined,
+): boolean {
+  if (!mtags?.batch) return false;
+  return (
+    ctx.activeBatches.get(serverId)?.get(mtags.batch)?.type === SEARCH_BATCH
+  );
+}
+
 export function handlePrivmsg(
   ctx: IRCClientContext,
   serverId: string,
@@ -62,6 +75,18 @@ export function handlePrivmsg(
   if (batchId) {
     const serverBatches = ctx.activeBatches.get(serverId);
     const batch = serverBatches?.get(batchId);
+    // A search answer repeats old messages, so we hand them to whoever asked
+    // and keep them out of the chat.
+    if (batch?.type === SEARCH_BATCH) {
+      batch.searchResults?.push({
+        sender,
+        target,
+        message,
+        mtags,
+        timestamp: getTimestampFromTags(mtags),
+      });
+      return;
+    }
     if (
       batch &&
       (batch.type === "multiline" || batch.type === "draft/multiline")
@@ -125,6 +150,8 @@ export function handleNotice(
   const isChannel = isChannelOn(ctx, serverId, target);
   const sender = getNickFromNuh(source);
   const message = parv.slice(1).join(" ");
+
+  if (isInSearchBatch(ctx, serverId, mtags)) return;
 
   if (isChannel) {
     const channelName = target;
@@ -212,6 +239,7 @@ export function handleBatch(
       parameters,
       sender,
       messages: [],
+      ...(batchType === SEARCH_BATCH ? { searchResults: [] } : {}),
       timestamps: [],
       concatFlags: [],
       messageIds: [],
@@ -365,6 +393,12 @@ export function handleBatch(
     }
 
     serverBatches?.delete(batchId);
+
+    if (batch?.type === SEARCH_BATCH)
+      ctx.triggerEvent("SEARCH_RESULTS", {
+        serverId,
+        results: batch.searchResults ?? [],
+      });
 
     ctx.triggerEvent("BATCH_END", {
       serverId,

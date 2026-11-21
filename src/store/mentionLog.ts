@@ -24,12 +24,26 @@ export const mentionChannelKey = (
 
 export const mentionTarget = (m: MentionEntry) => m.msgid ?? m.messageId;
 
+const isSameLine = (a: MentionEntry, b: MentionEntry) =>
+  a.serverId === b.serverId &&
+  a.channelId === b.channelId &&
+  a.timestamp === b.timestamp &&
+  a.sender === b.sender &&
+  a.content === b.content;
+
 export function addMention(
   log: MentionEntry[],
   entry: MentionEntry,
 ): MentionEntry[] {
   if (entry.msgid && log.some((m) => m.msgid === entry.msgid)) return log;
-  return [...log, entry].slice(-MAX_MENTIONS);
+  // A server without msgids sends the same line again on every replay, and
+  // only its channel, sender, time and text tell us we have it.
+  if (!entry.msgid && log.some((m) => isSameLine(m, entry))) return log;
+  // A mention found in older history lands among the ones we already hold,
+  // so the log stays in the order the lines were said.
+  let at = log.length;
+  while (at > 0 && log[at - 1].timestamp > entry.timestamp) at--;
+  return [...log.slice(0, at), entry, ...log.slice(at)].slice(-MAX_MENTIONS);
 }
 
 export function markMentionsSeen(

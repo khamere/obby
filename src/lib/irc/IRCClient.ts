@@ -14,6 +14,7 @@ import type {
   WhoisSession,
 } from "../../types";
 import { APP_VERSION } from "../appVersion";
+import { encodeBouncerAttrs } from "../bouncerAttrs";
 import { parseIrcUrl } from "../ircUrlParser";
 import { chantypesOf, isChannelTarget, parseMessageTags } from "../ircUtils";
 import { createBatchId, splitLongMessage } from "../messageProtocol";
@@ -46,6 +47,15 @@ const PING_INTERVAL_MS = 30_000;
 const PONG_TIMEOUT_MS = 10_000;
 const WAKE_PONG_TIMEOUT_MS = 5_000;
 const DEAD_SOCKET_CLOSE_WAIT_MS = 2_000;
+
+// One message of a `soju.im/search` answer.
+export interface SearchResult {
+  sender: string;
+  target: string;
+  message: string;
+  mtags: Record<string, string> | undefined;
+  timestamp: Date;
+}
 
 export interface EventMap {
   ready: BaseIRCEvent & { serverName: string; nickname: string };
@@ -410,6 +420,9 @@ export interface EventMap {
     target?: string;
     message: string;
   };
+  // soju.im/search: the messages of one answered SEARCH, in server order.
+  SEARCH_RESULTS: BaseIRCEvent & { results: SearchResult[] };
+  SEARCH_FAIL: EventWithTags & { code: string; message: string };
   // draft/chathistory: one `CHATHISTORY TARGETS <target> <timestamp>`
   // reply line, i.e. a conversation that had activity in the window
   // we asked about.
@@ -706,6 +719,7 @@ export class IRCClient implements IRCClientContext {
         parameters?: string[];
         messages: string[];
         concatFlags?: boolean[];
+        searchResults?: SearchResult[];
         sender?: string;
         messageIds?: string[];
         timestamps?: Date[];
@@ -802,6 +816,7 @@ export class IRCClient implements IRCClientContext {
     "obby.world/invitation",
     "draft/webpush",
     "soju.im/webpush",
+    "soju.im/search",
     // Note: unrealircd.org/link-security is informational only, don't request it
   ];
 
@@ -2058,6 +2073,14 @@ export class IRCClient implements IRCClientContext {
   // values and replies with MARKREAD echoing whatever it stored.
   markreadSet(serverId: string, target: string, timestamp: string): void {
     this.sendRaw(serverId, `MARKREAD ${target} timestamp=${timestamp}`);
+  }
+
+  // soju.im/search: the server answers with one `soju.im/search` batch, which
+  // carries no reference to the question, so callers ask one at a time.
+  search(serverId: string, attributes: Record<string, string>): boolean {
+    if (!this.hasCapability(serverId, "soju.im/search")) return false;
+    this.sendRaw(serverId, `SEARCH ${encodeBouncerAttrs(attributes)}`);
+    return true;
   }
 
   // Explicit /motd: the reply (including ERR_NOMOTD) is shown to the user.

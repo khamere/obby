@@ -1,5 +1,5 @@
 import type { Server, User, WhoisSession } from "../../types";
-import type { EventMap } from "./IRCClient";
+import type { EventMap, SearchResult } from "./IRCClient";
 
 type EventKey = keyof EventMap;
 
@@ -64,6 +64,7 @@ export interface IRCClientContext {
         parameters?: string[];
         messages: string[];
         concatFlags?: boolean[];
+        searchResults?: SearchResult[];
         sender?: string;
         messageIds?: string[];
         timestamps?: Date[];
