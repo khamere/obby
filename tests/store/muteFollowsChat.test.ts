@@ -291,6 +291,45 @@ describe("a muted chat that is created again", () => {
     expect(silencesFor(server())).toEqual([{ chat: "#lounge", until: null }]);
   });
 
+  it.each([
+    ["no new name", ":bob!u@h RENAME #general"],
+    ["an empty new name", ":bob!u@h RENAME #general :"],
+    ["no parameters", ":bob!u@h RENAME"],
+  ])(
+    "leaves the channel and its logged mentions alone on a RENAME with %s",
+    (_case, line) => {
+      useStore.setState((state) => ({
+        servers: state.servers.map((s) => ({
+          ...s,
+          channels: [
+            { id: "c-general", name: "#general", users: [] },
+          ] as unknown as Server["channels"],
+        })),
+        mentionLog: [
+          {
+            serverId,
+            channelId: "c-general",
+            channelName: "#general",
+            messageId: "m1",
+          },
+        ] as unknown as ReturnType<typeof useStore.getState>["mentionLog"],
+      }));
+      muteChat(
+        serverId,
+        { id: "c-general", kind: "channel", name: "#general" },
+        null,
+      );
+
+      expect(() => feed(line)).not.toThrow();
+
+      expect(server().channels[0].name).toBe("#general");
+      expect(useStore.getState().mentionLog[0].channelName).toBe("#general");
+      expect(silencesFor(server())).toEqual([
+        { chat: "#general", until: null },
+      ]);
+    },
+  );
+
   it("notifies again once the recreated chat is unmuted", () => {
     feed(":Mara!u@h PRIVMSG me :hi");
     const live = ref("Mara");

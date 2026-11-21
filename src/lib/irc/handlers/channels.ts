@@ -100,6 +100,8 @@ export function handleRename(
   const user = getNickFromNuh(source);
   const oldName = parv[0];
   const newName = parv[1];
+  // A channel always has a name, so we skip a rename that lacks either one.
+  if (!oldName || !newName) return;
   const reason = parv.slice(2).join(" "); // trailing already parsed into parv
   ctx.triggerEvent("RENAME", {
     serverId,
