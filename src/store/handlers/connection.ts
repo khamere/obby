@@ -168,7 +168,13 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
             ? { isAway: false, awayMessage: undefined }
             : {}),
           webPushFailure: undefined,
-          account: connectionState === "connected" ? server.account : undefined,
+          // A network bound through a bouncer is told its account by the
+          // control connection alone, so we keep it across the network's own
+          // connections.
+          account:
+            connectionState === "connected" || server.bouncerServerId
+              ? server.account
+              : undefined,
           saslFailed:
             connectionState === "connected" ? server.saslFailed : false,
         };
