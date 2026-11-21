@@ -96,6 +96,39 @@ describe("ConnectionStrip", () => {
     expect(editConnection).toHaveBeenCalledWith("server1", "auth");
   });
 
+  it("names a refused login at once and offers the login form and a retry", () => {
+    render(
+      <ConnectionStrip
+        server={{
+          ...baseServer,
+          isConnected: false,
+          connectionState: "disconnected",
+          loginRefused: true,
+        }}
+      />,
+    );
+    act(() => {
+      vi.advanceTimersByTime(0);
+    });
+    expect(screen.getByRole("status")).toHaveTextContent(/refused your login/i);
+    fireEvent.click(screen.getByRole("button", { name: /log in again/i }));
+    expect(editConnection).toHaveBeenCalledWith("server1", "auth");
+    fireEvent.click(screen.getByRole("button", { name: /reconnect/i }));
+    expect(reconnectServer).toHaveBeenCalledWith("server1");
+  });
+
+  it("sends a refused bouncer network to the bouncer's login form", () => {
+    renderSettled({
+      ...baseServer,
+      bouncerServerId: "bouncer",
+      isConnected: false,
+      connectionState: "disconnected",
+      loginRefused: true,
+    });
+    fireEvent.click(screen.getByRole("button", { name: /log in again/i }));
+    expect(editConnection).toHaveBeenCalledWith("bouncer", "auth");
+  });
+
   it("logs a bouncer network in again on its own connection", () => {
     renderSettled({
       ...baseServer,

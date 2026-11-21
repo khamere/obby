@@ -3226,11 +3226,15 @@ const useStore = create<AppState>((set, get) => ({
     releaseServerVoiceClients(serverId);
     ircClient.disconnect(serverId, state.globalSettings.quitMessage);
 
-    // Update server state to connecting
+    // A refusal belongs to the attempt it answered, so this one starts without it.
     set((state) => ({
       servers: state.servers.map((s) =>
         s.id === serverId
-          ? { ...s, connectionState: "connecting" as const }
+          ? {
+              ...s,
+              connectionState: "connecting" as const,
+              loginRefused: false,
+            }
           : s,
       ),
     }));

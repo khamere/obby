@@ -98,11 +98,20 @@ function chooseMechanism(
   return "PLAIN";
 }
 
+// A bouncer network logs in with its bouncer's account, so we read the login the bouncer has saved.
+function loadLoginConfig(serverId: string): ServerConfig | undefined {
+  const saved = storage.servers.load();
+  const own = saved.find((s) => s.id === serverId);
+  const bouncer = own?.bouncerServerId
+    ? saved.find((s) => s.id === own.bouncerServerId)
+    : undefined;
+  return bouncer ?? own;
+}
+
 function loadCreds(
   serverId: string,
 ): { user: string; pass: string; mech: SaslMech } | null {
-  const servers = storage.servers.load();
-  const serv = servers.find((s) => s.id === serverId);
+  const serv = loadLoginConfig(serverId);
   if (!serv?.saslEnabled) return null;
   const user = serv.saslAccountName?.length
     ? serv.saslAccountName
@@ -161,8 +170,7 @@ export function registerAuthHandlers(store: StoreApi<AppState>): void {
 
     // Pick mechanism up-front so the AUTHENTICATE event handler knows what
     // to do when the server says "+".
-    const servers = storage.servers.load();
-    const serv = servers.find((s) => s.id === serverId);
+    const serv = loadLoginConfig(serverId);
     const oauth = getActiveOauth(serv);
     const bearer = oauth ? pickBearer(oauth) : undefined;
     const available = ircClient.getSaslMechanisms(serverId);
@@ -639,8 +647,7 @@ export function registerAuthHandlers(store: StoreApi<AppState>): void {
 
     const saslAcknowledged = server?.capabilities?.includes("sasl") ?? false;
     if (saslAcknowledged) {
-      const servers = storage.servers.load();
-      const savedServer = servers.find((s) => s.id === serverId);
+      const savedServer = loadLoginConfig(serverId);
       const hasPlain =
         savedServer?.saslEnabled && Boolean(savedServer?.saslPassword);
       const hasOauth =

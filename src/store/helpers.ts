@@ -74,7 +74,7 @@ export function getLoginState(server: Server | undefined): LoginState {
     (server?.isConnected && !server.isRegistered)
   )
     return "connecting";
-  if (!server?.isConnected) return "offline";
+  if (!server?.isConnected) return server?.loginRefused ? "failed" : "offline";
   if (server.saslFailed) return "failed";
   return server.account ? "loggedIn" : "guest";
 }

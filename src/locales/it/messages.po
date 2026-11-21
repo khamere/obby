@@ -3565,6 +3565,7 @@ msgid "Log in"
 msgstr "Accedi"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Log in again"
 msgstr "Accedi di nuovo"
 
@@ -5010,6 +5011,7 @@ msgid "Recent searches"
 msgstr "Ricerche recenti"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Reconnect"
 msgstr "Riconnetti"
 
@@ -6323,6 +6325,14 @@ msgstr "Non è stato possibile effettuare la registrazione."
 #: src/lib/voiceErrors.ts
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "Il server ha rifiutato il tuo ingresso. Controlla le modalità del canale e riprova."
+
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "The server refused your login. Fix your account name or password to connect"
+msgstr "Il server ha rifiutato l'accesso. Correggi il nome dell'account o la password per connetterti"
 
 #: src/components/ui/UpdateSheet.tsx
 msgid "The update could not start. Try again."

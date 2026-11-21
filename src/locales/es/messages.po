@@ -3565,6 +3565,7 @@ msgid "Log in"
 msgstr "Iniciar sesión"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Log in again"
 msgstr "Iniciar sesión de nuevo"
 
@@ -5010,6 +5011,7 @@ msgid "Recent searches"
 msgstr "Búsquedas recientes"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Reconnect"
 msgstr "Reconectar"
 
@@ -6323,6 +6325,14 @@ msgstr "No se pudo realizar la grabación."
 #: src/lib/voiceErrors.ts
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "El servidor rechazó tu entrada. Revisa los modos del canal e inténtalo de nuevo."
+
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "The server refused your login. Fix your account name or password to connect"
+msgstr "El servidor rechazó tu inicio de sesión. Corrige tu nombre de cuenta o contraseña para conectarte"
 
 #: src/components/ui/UpdateSheet.tsx
 msgid "The update could not start. Try again."

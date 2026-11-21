@@ -3565,6 +3565,7 @@ msgid "Log in"
 msgstr "Kirjaudu sisään"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Log in again"
 msgstr "Kirjaudu uudelleen"
 
@@ -5010,6 +5011,7 @@ msgid "Recent searches"
 msgstr "Viimeisimmät haut"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Reconnect"
 msgstr "Yhdistä uudelleen"
 
@@ -6323,6 +6325,14 @@ msgstr "Tallennusta ei voitu tehdä."
 #: src/lib/voiceErrors.ts
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "Palvelin hylkäsi liittymisesi. Tarkista kanavan tilat ja yritä uudelleen."
+
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "The server refused your login. Fix your account name or password to connect"
+msgstr "Palvelin hylkäsi kirjautumisesi. Korjaa tilin nimi tai salasana, jotta voit yhdistää"
 
 #: src/components/ui/UpdateSheet.tsx
 msgid "The update could not start. Try again."

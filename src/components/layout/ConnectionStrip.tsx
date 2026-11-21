@@ -13,10 +13,11 @@ import { getLoginState } from "../../store/helpers";
 import type { Server } from "../../types";
 import { editConnection } from "./NetworkMenu";
 
-type Trouble = "lost" | "retrying" | "auth";
+type Trouble = "lost" | "retrying" | "auth" | "refused";
 
 function getTrouble(server: Server): Trouble | null {
-  if (server.connectionState === "disconnected") return "lost";
+  if (server.connectionState === "disconnected")
+    return server.loginRefused ? "refused" : "lost";
   if (server.connectionState === "reconnecting") return "retrying";
   if (getLoginState(server) === "failed") return "auth";
   return null;
@@ -26,12 +27,14 @@ const TONES: Record<Trouble, string> = {
   lost: "bg-amber-500/10 border-amber-500/35",
   retrying: "bg-discord-dark-500/25 border-discord-dark-500/60",
   auth: "bg-red-500/10 border-red-500/35",
+  refused: "bg-red-500/10 border-red-500/35",
 };
 
 const ICONS: Record<Trouble, React.ReactNode> = {
   lost: <FaUnlink className="text-amber-400" />,
   retrying: <FaRedo className="text-discord-text-dim animate-spin" />,
   auth: <FaExclamationTriangle className="text-red-400" />,
+  refused: <FaExclamationTriangle className="text-red-400" />,
 };
 
 // Starting up and short network blips pass in a moment, so we only speak up
@@ -40,6 +43,7 @@ const SETTLE_MS: Record<Trouble, number> = {
   lost: 4000,
   retrying: 10000,
   auth: 0,
+  refused: 0,
 };
 
 function useSettledTrouble(trouble: Trouble | null): Trouble | null {
@@ -67,6 +71,7 @@ export const ConnectionStrip: React.FC<{ server: Server }> = ({ server }) => {
     lost: t`Connection lost. Reconnect to keep chatting`,
     retrying: t`Reconnecting. Edit the connection if this keeps failing`,
     auth: t`Sign-in failed, so you are chatting as a guest. Log in again or fix your password`,
+    refused: t`The server refused your login. Fix your account name or password to connect`,
   };
 
   return (
@@ -79,7 +84,28 @@ export const ConnectionStrip: React.FC<{ server: Server }> = ({ server }) => {
         <span>{messages[trouble]}</span>
       </div>
       <div className="flex flex-wrap gap-1.5">
-        {trouble === "auth" ? (
+        {trouble === "refused" ? (
+          <>
+            <button
+              type="button"
+              className={`${actionClass} button-primary`}
+              onClick={() =>
+                editConnection(server.bouncerServerId ?? server.id, "auth")
+              }
+            >
+              <FaSignInAlt />
+              {t`Log in again`}
+            </button>
+            <button
+              type="button"
+              className={`${actionClass} bg-discord-dark-500/40 text-discord-text-normal hover:bg-discord-dark-500/70 hover:text-white`}
+              onClick={() => reconnectServer(server.id)}
+            >
+              <FaRedo />
+              {t`Reconnect`}
+            </button>
+          </>
+        ) : trouble === "auth" ? (
           <button
             type="button"
             className={`${actionClass} button-primary`}

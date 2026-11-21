@@ -75,6 +75,7 @@ export function handleRplWelcome(
   const nickname = parv[0];
 
   ctx.nicks.set(serverId, nickname);
+  ctx.noteWelcomed(serverId);
 
   const currentUser = ctx.currentUsers.get(serverId);
   if (currentUser) {
@@ -301,6 +302,7 @@ export function handleSaslRejected(
   source: string,
   parv: string[],
 ): void {
+  ctx.noteLoginRefused(serverId);
   ctx.triggerEvent("saslFailed", { serverId });
   handleSaslFailure(ctx, serverId, source, parv);
 }
