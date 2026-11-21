@@ -41,6 +41,8 @@ interface ServerQueue {
   timer?: ReturnType<typeof setTimeout>;
   // Channels whose marker this connection has already reported.
   reported: Set<string>;
+  // Channels with a refused question, which the next connection asks again.
+  refused: Set<string>;
   isStopped: boolean;
 }
 
@@ -54,7 +56,12 @@ const channelKey = (serverId: string, channelName: string) =>
 function queueFor(serverId: string): ServerQueue {
   let queue = queues.get(serverId);
   if (!queue) {
-    queue = { waiting: [], reported: new Set(), isStopped: false };
+    queue = {
+      waiting: [],
+      reported: new Set(),
+      refused: new Set(),
+      isStopped: false,
+    };
     queues.set(serverId, queue);
   }
   return queue;
@@ -105,13 +112,18 @@ function giveUp(serverId: string): void {
   queue.isStopped = true;
 }
 
-function finish(serverId: string): void {
+function finish(serverId: string, isAnswered: boolean): void {
   const queue = queues.get(serverId);
   if (!queue?.asked) return;
   clearTimeout(queue.timer);
   const { channelName } = queue.asked;
   queue.asked = undefined;
-  if (!queue.waiting.some((q) => q.channelName === channelName))
+  const key = channelName.toLowerCase();
+  if (!isAnswered) queue.refused.add(key);
+  const isLastQuestion = !queue.waiting.some(
+    (q) => q.channelName === channelName,
+  );
+  if (isLastQuestion && !queue.refused.has(key))
     searchedAt.set(channelKey(serverId, channelName), Date.now());
   askNext(serverId);
 }
@@ -158,7 +170,10 @@ export function mentionsAmong(
     const sender = bridged?.kind === "bot" ? bridged.nick : result.sender;
     const content = bridged?.kind === "bot" ? bridged.text : result.message;
     if (isIgnored(result.sender) || isIgnored(sender)) continue;
-    if (result.sender.toLowerCase() === me.username.toLowerCase()) continue;
+    // Our own words relayed by a bridge are not a ping either.
+    const myNick = me.username.toLowerCase();
+    if (result.sender.toLowerCase() === myNick) continue;
+    if (sender.toLowerCase() === myNick) continue;
     if (!checkForMention(content, me, settings)) continue;
     const timestamp = result.timestamp.toISOString();
     const msgid = result.mtags?.msgid;
@@ -249,10 +264,10 @@ export function registerMentionCatchUpHandlers(
     );
     for (const mention of mentions) store.getState().recordMention(mention);
     queue.waiting.unshift(...pagesAfter(question, results));
-    finish(serverId);
+    finish(serverId, true);
   });
 
-  ircClient.on("SEARCH_FAIL", ({ serverId }) => finish(serverId));
+  ircClient.on("SEARCH_FAIL", ({ serverId }) => finish(serverId, false));
 
   ircClient.on("connectionStateChange", ({ serverId, connectionState }) => {
     if (connectionState !== "connected") dropQueue(serverId);

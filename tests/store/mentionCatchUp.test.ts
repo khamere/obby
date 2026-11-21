@@ -284,6 +284,45 @@ describe("mention catch-up by server search", () => {
     expect(searches()).toHaveLength(2);
   });
 
+  it("searches a refused channel in full on the next connection", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(Date.parse(at(7200)));
+    feed(`:server MARKREAD #two timestamp=${READ_AT}`);
+    feed(":server FAIL SEARCH INTERNAL_ERROR :The search could not be run");
+    reconnect();
+    feed(`:server MARKREAD #two timestamp=${READ_AT}`);
+    expect(searches()[1]).toBe(
+      `SEARCH in=#two;after=${READ_AT};text=me;limit=${SEARCH_PAGE_SIZE}`,
+    );
+  });
+
+  it("leaves out our own words relayed by a bridge", async () => {
+    const bridgeRules = await import("../../src/lib/bridgeRules");
+    vi.spyOn(bridgeRules, "applyBridgeRules").mockImplementation(
+      (_rules, _host, _channel, sender, text) =>
+        sender === "relay"
+          ? ({
+              kind: "bot",
+              nick: text.split("> ")[0],
+              text: text.split("> ")[1],
+            } as never)
+          : null,
+    );
+    useStore.setState((state) => ({
+      globalSettings: { ...state.globalSettings, bridgedUsers: true },
+    }));
+    feed(
+      `:server MARKREAD #two timestamp=${READ_AT}`,
+      ":server BATCH +s soju.im/search",
+      `@batch=s;msgid=a;time=${at(5)} :relay!u@h PRIVMSG #two :Me> me: note to self`,
+      `@batch=s;msgid=b;time=${at(6)} :relay!u@h PRIVMSG #two :carol> me: ping from the site`,
+      ":server BATCH -s",
+    );
+    expect(log().map((m) => [m.sender, m.content])).toEqual([
+      ["carol", "me: ping from the site"],
+    ]);
+  });
+
   it("stops asking on a connection whose answer is overdue", () => {
     vi.useFakeTimers();
     feed(
