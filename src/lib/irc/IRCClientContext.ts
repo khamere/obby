@@ -97,6 +97,7 @@ export interface IRCClientContext {
   userOnConnect(serverId: string): void;
   onCapLs(serverId: string, caps: string, isFinal: boolean): void;
   onCapAck(serverId: string, caps: string): void;
+  onCapNak(serverId: string, caps: string): void;
   onCapNew(serverId: string, caps: string): void;
   onCapDel(serverId: string, caps: string): void;
 }
