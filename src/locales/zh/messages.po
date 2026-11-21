@@ -5101,6 +5101,10 @@ msgstr "仅限已注册用户 (+R)"
 msgid "Reject"
 msgstr "拒绝"
 
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "Rejoin"
+msgstr "重新加入"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Relaxed"
@@ -7168,6 +7172,11 @@ msgstr "您是 IRC Operator"
 msgid "You are no longer in this channel"
 msgstr "你已不在此频道中"
 
+#: src/components/layout/ChannelRow.tsx
+#: src/components/layout/ChannelRow.tsx
+msgid "You are not in this channel"
+msgstr "你不在此频道中"
+
 #: src/components/ui/UpdateSheet.tsx
 msgid "You can close this and keep chatting."
 msgstr "你可以关闭此窗口，继续聊天。"
@@ -7192,9 +7201,17 @@ msgstr "您还没有创建任何邀请链接。使用上面的表单来创建您
 msgid "You invited {target} to join {channel}"
 msgstr "您邀请了 {target} 加入 {channel}"
 
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "You left this channel."
+msgstr "你已离开此频道。"
+
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "You verified this contact."
 msgstr "你已验证此联系人。"
+
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "You were kicked from this channel."
+msgstr "你已被踢出此频道。"
 
 #. placeholder {0}: parent.name
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx

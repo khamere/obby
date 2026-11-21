@@ -158,6 +158,7 @@ import {
   DEFAULT_VISIBLE_MESSAGE_COUNT,
 } from "./ChannelMessageList";
 import { ChatHeader } from "./ChatHeader";
+import { RejoinChannelBar } from "./RejoinChannelBar";
 import { SidePane } from "./SidePane";
 
 interface AliveChannel {
@@ -2238,6 +2239,9 @@ export const ChatArea: React.FC<{
     isAddServerModalOpen,
   ]);
 
+  const hasComposer =
+    !!(selectedChannel || selectedPrivateChat) && !selectedChannel?.leftReason;
+
   return (
     <div className="flex flex-col h-full">
       {/* Channel header */}
@@ -2394,8 +2398,19 @@ export const ChatArea: React.FC<{
             )}
           </div>
 
+          {selectedChannel?.leftReason && selectedServerId && (
+            <div
+              className={`${isNarrowView ? "px-2" : "px-4"} chat-input-area`}
+            >
+              <RejoinChannelBar
+                serverId={selectedServerId}
+                channelName={selectedChannel.name}
+                leftReason={selectedChannel.leftReason}
+              />
+            </div>
+          )}
           {/* Input area */}
-          {(selectedChannel || selectedPrivateChat) && (
+          {hasComposer && (
             <div
               className={`${isNarrowView ? "" : "px-4"} relative chat-input-area`}
             >

@@ -5101,6 +5101,10 @@ msgstr "Tylko zarejestrowani użytkownicy (+R)"
 msgid "Reject"
 msgstr "Odrzuć"
 
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "Rejoin"
+msgstr "Dołącz ponownie"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Relaxed"
@@ -7168,6 +7172,11 @@ msgstr "Jesteś operatorem IRC"
 msgid "You are no longer in this channel"
 msgstr "Nie jesteś już na tym kanale"
 
+#: src/components/layout/ChannelRow.tsx
+#: src/components/layout/ChannelRow.tsx
+msgid "You are not in this channel"
+msgstr "Nie jesteś na tym kanale"
+
 #: src/components/ui/UpdateSheet.tsx
 msgid "You can close this and keep chatting."
 msgstr "Możesz to zamknąć i dalej rozmawiać."
@@ -7192,9 +7201,17 @@ msgstr "Nie utworzyłeś jeszcze żadnych linków zapraszających. Użyj formula
 msgid "You invited {target} to join {channel}"
 msgstr "Zaprosiłeś {target} do dołączenia do {channel}"
 
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "You left this channel."
+msgstr "Opuszczono ten kanał."
+
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "You verified this contact."
 msgstr "Zweryfikowano ten kontakt."
+
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "You were kicked from this channel."
+msgstr "Wyrzucono cię z tego kanału."
 
 #. placeholder {0}: parent.name
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx

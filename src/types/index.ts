@@ -347,6 +347,7 @@ export interface Channel {
   // the user's connected sessions).  null = no marker on file yet.
   readMarker?: string | null;
   needsKey?: boolean;
+  leftReason?: "kicked" | "parted";
 }
 
 export interface PrivateChat {

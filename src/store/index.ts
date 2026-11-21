@@ -1771,7 +1771,16 @@ const useStore = create<AppState>((set, get) => ({
   },
 
   joinChannel: (serverId, channelName, key, options) => {
-    const channel = ircClient.joinChannel(serverId, channelName, key);
+    const joinedName = ircClient.withChannelPrefix(serverId, channelName);
+    const isReturning = !!get()
+      .servers.find((s) => s.id === serverId)
+      ?.channels.some(
+        (c) =>
+          c.name.toLowerCase() === joinedName.toLowerCase() && !!c.leftReason,
+      );
+    const channel = ircClient.joinChannel(serverId, channelName, key, {
+      isReturning,
+    });
     if (channel) {
       if (key) markKeyedJoin(serverId, channel.name);
       setAutomaticJoin(serverId, channel.name, !!options?.isAutomatic);
@@ -1842,7 +1851,8 @@ const useStore = create<AppState>((set, get) => ({
     // A voice call keeps running after its view unmounts, so leaving the
     // channel is the only thing left that can end it.
     releaseVoiceClient(serverId, channelName);
-    ircClient.leaveChannel(serverId, channelName); // Send PART command to the IRC server
+    // A bouncer keeps a channel we were kicked from on its list until we part it, so we send PART for a channel we are already out of as well.
+    ircClient.leaveChannel(serverId, channelName);
     get().forgetChannel(serverId, channelName);
   },
 
@@ -2553,7 +2563,7 @@ const useStore = create<AppState>((set, get) => ({
         // are commonly orphaned across restarts -- the cost of an
         // extra JOIN line is nothing compared to the 401 the user
         // sees today.
-        if (channelName && server && !ch?.needsKey) {
+        if (channelName && server && !ch?.needsKey && !ch?.leftReason) {
           const isVoiceOrStream =
             channelName.startsWith("^") || channelName.startsWith("$");
           const lostMembership =

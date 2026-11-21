@@ -5101,6 +5101,10 @@ msgstr "Лише зареєстровані користувачі (+R)"
 msgid "Reject"
 msgstr "Відхилити"
 
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "Rejoin"
+msgstr "Приєднатися знову"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Relaxed"
@@ -7168,6 +7172,11 @@ msgstr "Ви є IRC-оператором"
 msgid "You are no longer in this channel"
 msgstr "Ви більше не в цьому каналі"
 
+#: src/components/layout/ChannelRow.tsx
+#: src/components/layout/ChannelRow.tsx
+msgid "You are not in this channel"
+msgstr "Ви не на цьому каналі"
+
 #: src/components/ui/UpdateSheet.tsx
 msgid "You can close this and keep chatting."
 msgstr "Це можна закрити й далі спілкуватися."
@@ -7192,9 +7201,17 @@ msgstr "Ви ще не створили жодного запрошувальн�
 msgid "You invited {target} to join {channel}"
 msgstr "Ви запросили {target} приєднатися до {channel}"
 
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "You left this channel."
+msgstr "Ви покинули цей канал."
+
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "You verified this contact."
 msgstr "Ви перевірили цей контакт."
+
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "You were kicked from this channel."
+msgstr "Вас вигнали з цього каналу."
 
 #. placeholder {0}: parent.name
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx

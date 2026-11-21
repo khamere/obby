@@ -5101,6 +5101,10 @@ msgstr "등록된 사용자만 (+R)"
 msgid "Reject"
 msgstr "거부"
 
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "Rejoin"
+msgstr "다시 참여"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Relaxed"
@@ -7168,6 +7172,11 @@ msgstr "당신은 IRC Operator입니다"
 msgid "You are no longer in this channel"
 msgstr "더 이상 이 채널에 있지 않습니다"
 
+#: src/components/layout/ChannelRow.tsx
+#: src/components/layout/ChannelRow.tsx
+msgid "You are not in this channel"
+msgstr "이 채널에 참여하고 있지 않습니다"
+
 #: src/components/ui/UpdateSheet.tsx
 msgid "You can close this and keep chatting."
 msgstr "이 창을 닫고 계속 채팅할 수 있습니다."
@@ -7192,9 +7201,17 @@ msgstr "아직 초대 링크를 생성하지 않았습니다. 위 양식을 사�
 msgid "You invited {target} to join {channel}"
 msgstr "{target}을(를) {channel}에 초대했습니다"
 
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "You left this channel."
+msgstr "이 채널에서 나갔습니다."
+
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "You verified this contact."
 msgstr "이 연락처를 확인했습니다."
+
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "You were kicked from this channel."
+msgstr "이 채널에서 추방되었습니다."
 
 #. placeholder {0}: parent.name
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx

@@ -5101,6 +5101,10 @@ msgstr "Endast registrerade användare (+R)"
 msgid "Reject"
 msgstr "Avvisa"
 
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "Rejoin"
+msgstr "Gå med igen"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Relaxed"
@@ -7168,6 +7172,11 @@ msgstr "Du är en IRC-operatör"
 msgid "You are no longer in this channel"
 msgstr "Du är inte längre i den här kanalen"
 
+#: src/components/layout/ChannelRow.tsx
+#: src/components/layout/ChannelRow.tsx
+msgid "You are not in this channel"
+msgstr "Du är inte med i den här kanalen"
+
 #: src/components/ui/UpdateSheet.tsx
 msgid "You can close this and keep chatting."
 msgstr "Du kan stänga det här och fortsätta chatta."
@@ -7192,9 +7201,17 @@ msgstr "Du har inte skapat några inbjudningslänkar än. Använd formuläret ov
 msgid "You invited {target} to join {channel}"
 msgstr "Du bjöd in {target} att gå med i {channel}"
 
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "You left this channel."
+msgstr "Du lämnade den här kanalen."
+
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "You verified this contact."
 msgstr "Du har verifierat den här kontakten."
+
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "You were kicked from this channel."
+msgstr "Du sparkades ut från den här kanalen."
 
 #. placeholder {0}: parent.name
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
