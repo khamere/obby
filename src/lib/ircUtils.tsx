@@ -484,6 +484,38 @@ export function makeLinkLabels(url: string, label: string): LinkLabels {
 const labelFor = (labels: LinkLabels | undefined, url: string) =>
   labels?.get(linkLabelKey(url));
 
+// The info string after a code fence is free text from the sender, so we
+// read only its leading language name and never pass the rest to an attribute.
+const fenceLanguageName = (info: string | undefined): string | undefined =>
+  info?.match(/^[\w+#.-]{1,32}/)?.[0];
+
+const IMAGE_STYLE = "max-height: 150px;";
+const OWN_STYLE = /^color:[#\w]+(?:;background-color:[#\w]+)?$/;
+
+// A style attribute can cover the whole window or load a remote resource, so
+// we keep only the ones this renderer writes itself: a line colour and the
+// image height limit.
+const dropForeignStyle = (
+  _node: Element,
+  data: { attrName: string; attrValue: string; keepAttr: boolean },
+) => {
+  if (data.attrName !== "style") return;
+  if (data.attrValue === IMAGE_STYLE || OWN_STYLE.test(data.attrValue)) return;
+  data.keepAttr = false;
+};
+
+export function sanitizeMarkdownHtml(html: string): string {
+  DOMPurify.addHook("uponSanitizeAttribute", dropForeignStyle);
+  try {
+    return DOMPurify.sanitize(html, {
+      ADD_ATTR: ["data-code-id", "viewBox", "stroke-width", "rx", "ry"],
+      ADD_TAGS: ["button"],
+    });
+  } finally {
+    DOMPurify.removeHook("uponSanitizeAttribute", dropForeignStyle);
+  }
+}
+
 export function renderMarkdown(
   text: string,
   showExternalContent = true,
@@ -528,7 +560,7 @@ export function renderMarkdown(
     // Allow the image to render normally, but make it clickable
     const titleAttr = title ? ` title="${title.replace(/"/g, "&quot;")}"` : "";
     const altAttr = ` alt="${(text || "").replace(/"/g, "&quot;")}"`;
-    const imageHtml = `<img src="${sanitizedHref}"${altAttr}${titleAttr} class="max-w-full h-auto rounded-lg cursor-pointer" style="max-height: 150px;" />`;
+    const imageHtml = `<img src="${sanitizedHref}"${altAttr}${titleAttr} class="max-w-full h-auto rounded-lg cursor-pointer" style="${IMAGE_STYLE}" />`;
 
     // Add special class for external links that need security warnings
     const isExternalLink =
@@ -617,12 +649,15 @@ export function renderMarkdown(
     // hljs escapes what it highlights, so every other path must escape too or
     // a fenced "<img src>" would load a remote image and leak the reader's IP.
     let highlightedCode = escapeHtml(decodedText);
-    let language = lang;
+    const fenceLanguage = fenceLanguageName(lang);
+    let language = fenceLanguage;
 
     if (hljsModule) {
-      if (lang && hljsModule.getLanguage(lang)) {
+      if (fenceLanguage && hljsModule.getLanguage(fenceLanguage)) {
         try {
-          const result = hljsModule.highlight(decodedText, { language: lang });
+          const result = hljsModule.highlight(decodedText, {
+            language: fenceLanguage,
+          });
           highlightedCode = result.value;
           language = result.language;
         } catch (err) {
@@ -634,7 +669,7 @@ export function renderMarkdown(
             highlightedCode = escapeHtml(decodedText);
           }
         }
-      } else if (!lang) {
+      } else if (!fenceLanguage) {
         try {
           const result = hljsModule.highlightAuto(decodedText);
           highlightedCode = result.value;
@@ -645,7 +680,9 @@ export function renderMarkdown(
       }
     }
 
-    const languageClass = language ? ` class="language-${language}"` : "";
+    const languageClass = language
+      ? ` class="language-${escapeHtml(language)}"`
+      : "";
     return `<pre><code${languageClass}>${highlightedCode}</code></pre>`;
   };
 
@@ -701,10 +738,7 @@ export function renderMarkdown(
   // Apply IRC colors to prose (after code blocks are wrapped, so we can skip them)
   processedHtml = applyIrcColorsToHtml(processedHtml, lineColors);
 
-  const safeHtml = DOMPurify.sanitize(processedHtml, {
-    ADD_ATTR: ["style", "data-code-id", "viewBox", "stroke-width", "rx", "ry"],
-    ADD_TAGS: ["button"],
-  });
+  const safeHtml = sanitizeMarkdownHtml(processedHtml);
 
   return (
     <div
