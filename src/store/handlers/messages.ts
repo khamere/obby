@@ -1997,7 +1997,12 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
                 };
 
                 // If loading just completed and we need to send WHO, do it now
-                if (!isLoading && channel.needsWhoRequest) {
+                // A load that ends because the connection dropped leaves the request for the next connection.
+                if (
+                  !isLoading &&
+                  channel.needsWhoRequest &&
+                  server.isConnected
+                ) {
                   // Send WHO request now that CHATHISTORY is done
                   ircClient.sendRaw(serverId, `WHO ${channelName} %cuhnfaro`);
 

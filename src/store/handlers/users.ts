@@ -5,7 +5,7 @@ import { releaseAutoAway } from "../../lib/autoAway";
 import { voiceDisplayName } from "../../lib/channelMentions";
 import ircClient from "../../lib/ircClient";
 import { moveChatMute } from "../../lib/mutes";
-import type { Message, User } from "../../types";
+import type { Channel, Message, User } from "../../types";
 import {
   generateDeterministicId,
   getCurrentSelection,
@@ -225,14 +225,34 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
         // so the nicklist actually populates. Don't add ourselves to the
         // member list — NAMES populates it with proper modes.
         let isNewChannel = false;
+        let isAskingMembersNow = false;
         store.setState((state) => {
           const server = state.servers.find((s) => s.id === serverId);
           if (!server) return {};
 
-          const exists = server.channels.some(
-            (c) => c.name.toLowerCase() === channelName.toLowerCase(),
-          );
-          if (exists) return {};
+          const isJoined = (c: Channel) =>
+            c.name.toLowerCase() === channelName.toLowerCase();
+          const existing = server.channels.find(isJoined);
+          if (existing) {
+            // Members we hold from an earlier stay may have left or changed status, so we ask who is here now.
+            if (existing.users.length === 0) return {};
+            // A history load in flight asks when it ends, and otherwise we ask right away.
+            isAskingMembersNow = !existing.isLoadingHistory;
+            return {
+              servers: state.servers.map((s) =>
+                s.id !== serverId
+                  ? s
+                  : {
+                      ...s,
+                      channels: s.channels.map((c) =>
+                        isJoined(c)
+                          ? { ...c, needsWhoRequest: !isAskingMembersNow }
+                          : c,
+                      ),
+                    },
+              ),
+            };
+          }
 
           // soju bouncer control session has no real chathistory.
           const hasChathistory =
@@ -269,6 +289,8 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
         // ircClient I/O OUTSIDE setState: triggerEvent inside setState
         // causes a nested-setState race (see batches.ts:215-218).
         if (isNewChannel) ircClient.loadHistoryOrMembers(serverId, channelName);
+        if (isAskingMembersNow)
+          ircClient.sendRaw(serverId, `WHO ${channelName} %cuhnfaro`);
         // Fall through to shared message creation below — same JOIN event, same path.
       } else {
         store.setState((state) => {

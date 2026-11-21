@@ -3,7 +3,7 @@ import ircClient from "../../lib/ircClient";
 import type { User } from "../../types";
 import type { AppState } from "../index";
 import * as storage from "../localStorage";
-import { bufferWhoReply, flushWhoReplies } from "../whoReplyBatcher";
+import { bufferWhoReply, finishWhoReplies } from "../whoReplyBatcher";
 
 export function registerWhoisHandlers(store: StoreApi<AppState>): void {
   // WHOIS event handlers
@@ -425,7 +425,7 @@ export function registerWhoisHandlers(store: StoreApi<AppState>): void {
     // member list updates at the END_OF_WHO boundary instead of waiting
     // out the idle timer.
     if (mask && ircClient.isChannel(serverId, mask)) {
-      flushWhoReplies(store, serverId, mask);
+      finishWhoReplies(store, serverId, mask);
     }
     // When WHO list is complete for a channel, request metadata for all users
     // This ensures we get current metadata for users who were already in the channel

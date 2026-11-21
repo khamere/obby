@@ -46,6 +46,8 @@ interface ChannelBucket {
 }
 
 const buckets = new Map<string, ChannelBucket>();
+// A long reply reaches the list in several flushes, so we keep every nick it named until it ends.
+const listedNicks = new Map<string, Set<string>>();
 
 function key(serverId: string, channel: string): string {
   return `${serverId}|${channel.toLowerCase()}`;
@@ -190,6 +192,9 @@ export function bufferWhoReply(
   // Last-write-wins per nick within a burst (the most recent WHO line
   // for a given user is the authoritative one).
   bucket.byNick.set(entry.nick.toLowerCase(), entry);
+  const listed = listedNicks.get(k) ?? new Set<string>();
+  listedNicks.set(k, listed);
+  listed.add(entry.nick.toLowerCase());
   if (bucket.idleTimer) clearTimeout(bucket.idleTimer);
   bucket.idleTimer = setTimeout(
     () => applyBucket(store, bucket),
@@ -206,8 +211,39 @@ export function flushWhoReplies(
   if (bucket) applyBucket(store, bucket);
 }
 
+// The server lists every member only to someone inside the channel, so we drop the members a finished reply left out when it names us.
+export function finishWhoReplies(
+  store: StoreApi<AppState>,
+  serverId: string,
+  channel: string,
+): void {
+  flushWhoReplies(store, serverId, channel);
+  const k = key(serverId, channel);
+  const listed = listedNicks.get(k);
+  listedNicks.delete(k);
+  const ownNick = ircClient.getNick(serverId)?.toLowerCase();
+  if (!listed || !ownNick || !listed.has(ownNick)) return;
+  const isListed = (user: User) => listed.has(user.username.toLowerCase());
+
+  store.setState((state) => ({
+    servers: state.servers.map((s) => {
+      if (s.id !== serverId) return s;
+      return {
+        ...s,
+        channels: s.channels.map((ch) =>
+          ch.name.toLowerCase() !== channel.toLowerCase() ||
+          ch.users.every(isListed)
+            ? ch
+            : { ...ch, users: ch.users.filter(isListed) },
+        ),
+      };
+    }),
+  }));
+}
+
 // Test-only helpers.
 export function _resetWhoReplyBatcher(): void {
+  listedNicks.clear();
   for (const b of buckets.values()) {
     if (b.idleTimer) clearTimeout(b.idleTimer);
     if (b.ceilingTimer) clearTimeout(b.ceilingTimer);
