@@ -61,7 +61,7 @@ import { findMessageRow } from "../../lib/highlightRow";
 import { stripImageFile } from "../../lib/imageMetadata";
 import ircClient from "../../lib/ircClient";
 import { parseIrcUrl } from "../../lib/ircUrlParser";
-import { serverFilehosts } from "../../lib/ircUtils";
+import { escapeTagValue, serverFilehosts } from "../../lib/ircUtils";
 import { listDevices, screenCaptureSupported } from "../../lib/mediaDevices";
 import {
   describeUploadFailure,
@@ -1567,7 +1567,7 @@ export const ChatArea: React.FC<{
         ) !== "none";
       if (!encrypted) {
         const replyTags = replyTo?.msgid
-          ? `@+reply=${replyTo.msgid};+draft/reply=${replyTo.msgid} `
+          ? `@+reply=${escapeTagValue(replyTo.msgid)};+draft/reply=${escapeTagValue(replyTo.msgid)} `
           : "";
         ircClient.sendRaw(
           selectedServerId,

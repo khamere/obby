@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { resolveUserMetadata } from "../../src/store/helpers";
-import type { Channel } from "../../src/types";
+import { resolveUserMetadata, withReaction } from "../../src/store/helpers";
+import type { Channel, Message } from "../../src/types";
 
 function makeChannel(
   name: string,
@@ -84,5 +84,30 @@ describe("resolveUserMetadata", () => {
     ];
     const result = resolveUserMetadata("bob", { bob: localMeta }, channels);
     expect(result).toEqual(localMeta);
+  });
+});
+
+describe("withReaction", () => {
+  const message = { reactions: [] } as unknown as Message;
+
+  it.each(["👍", "👨‍👩‍👧‍👦", "🏴󠁧󠁢󠁥󠁮󠁧󠁿", ":custom_emoji:", "+1", "constructor"])(
+    "keeps %s",
+    (value) => {
+      expect(withReaction(message, value, "alice")?.reactions).toEqual([
+        { emoji: value, userId: "alice" },
+      ]);
+    },
+  );
+
+  it.each([
+    ["a space", "x PRIVMSG #chan :text"],
+    ["a line break", "x\r\nQUIT"],
+    ["a tab", "x\ty"],
+    ["a control character", "x\u0000y"],
+    ["a no-break space", "x\u00a0y"],
+    ["more text than a reaction holds", "x".repeat(65)],
+    ["nothing", ""],
+  ])("drops a reaction with %s", (_, value) => {
+    expect(withReaction(message, value, "alice")).toBeNull();
   });
 });

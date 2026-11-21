@@ -15,7 +15,12 @@ import type {
 } from "../../types";
 import { APP_VERSION } from "../appVersion";
 import { parseIrcUrl } from "../ircUrlParser";
-import { chantypesOf, isChannelTarget, parseMessageTags } from "../ircUtils";
+import {
+  chantypesOf,
+  escapeTagValue,
+  isChannelTarget,
+  parseMessageTags,
+} from "../ircUtils";
 import { createBatchId, splitLongMessage } from "../messageProtocol";
 import { createSocket, type ISocket } from "../socket";
 import { IRC_DISPATCH } from "./handlers";
@@ -1317,7 +1322,10 @@ export class IRCClient implements IRCClientContext {
     return Date.now() - at <= IRCClient.RECENT_SEND_MS;
   }
 
-  sendRaw(serverId: string, command: string): void {
+  sendRaw(serverId: string, text: string): void {
+    // The server reads every line of a frame as a command of its own, so we
+    // send only the first line of whatever a caller hands us.
+    const command = text.split(/[\r\n\0]/, 1)[0];
     if (this.tagmsgRefused.has(serverId) && /^(?:@\S+ )?TAGMSG /i.test(command))
       return;
     const privmsg = /^(?:@\S+ )?PRIVMSG (\S+) /i.exec(command);
@@ -1631,9 +1639,10 @@ export class IRCClient implements IRCClientContext {
     content: string,
   ): void {
     // Send a whisper with both the ratified and draft channel-context tags for backwards compat
+    const context = escapeTagValue(channelName);
     this.sendRaw(
       serverId,
-      `@+channel-context=${channelName};+draft/channel-context=${channelName} PRIVMSG ${targetUser} :${content}`,
+      `@+channel-context=${context};+draft/channel-context=${context} PRIVMSG ${targetUser} :${content}`,
     );
   }
 

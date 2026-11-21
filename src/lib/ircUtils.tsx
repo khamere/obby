@@ -152,6 +152,20 @@ function unescapeTagValue(s: string): string {
   return out;
 }
 
+const TAG_VALUE_ESCAPES: Record<string, string> = {
+  ";": "\\:",
+  " ": "\\s",
+  "\\": "\\\\",
+  "\r": "\\r",
+  "\n": "\\n",
+};
+
+// A tag value ends at the first space or semicolon, so we escape every value
+// we put into an outgoing line to keep the rest of it out of the command.
+export function escapeTagValue(value: string): string {
+  return value.replace(/[; \\\r\n]/g, (c) => TAG_VALUE_ESCAPES[c]);
+}
+
 export function parseMessageTags(tags: string): Record<string, string> {
   const parsedTags: Record<string, string> = {};
   const tagPairs = tags.substring(1).split(";");

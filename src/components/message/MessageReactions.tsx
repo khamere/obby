@@ -92,36 +92,28 @@ export const MessageReactions: React.FC<MessageReactionsProps> = ({
     );
   }
 
-  // Group reactions by emoji
-  const groupedReactions = reactions.reduce(
-    (
-      acc: Record<string, ReactionData>,
-      reaction: { emoji: string; userId: string },
-    ) => {
-      if (!acc[reaction.emoji]) {
-        acc[reaction.emoji] = {
-          count: 0,
-          users: [],
-          currentUserReacted: false,
-        };
-      }
-      acc[reaction.emoji].count++;
-      acc[reaction.emoji].users.push(reaction.userId);
-      if (reaction.userId === currentUserUsername) {
-        acc[reaction.emoji].currentUserReacted = true;
-      }
-      return acc;
-    },
-    {},
-  );
+  // The reaction text is chosen by other clients, so we group in a Map, where
+  // a name like "constructor" is a key like any other.
+  const groupedReactions = new Map<string, ReactionData>();
+  for (const reaction of reactions) {
+    let group = groupedReactions.get(reaction.emoji);
+    if (!group) {
+      group = { count: 0, users: [], currentUserReacted: false };
+      groupedReactions.set(reaction.emoji, group);
+    }
+    group.count++;
+    group.users.push(reaction.userId);
+    if (reaction.userId === currentUserUsername)
+      group.currentUserReacted = true;
+  }
 
   return (
     <div className="flex flex-wrap gap-1 mt-0.5 mb-2 select-none">
-      {Object.entries(groupedReactions).map(([emoji, data]) => (
+      {[...groupedReactions].map(([emoji, data]) => (
         <ReactionButton
           key={emoji}
           emoji={emoji}
-          reactionData={data as ReactionData}
+          reactionData={data}
           onReactionClick={onReactionClick}
         />
       ))}
