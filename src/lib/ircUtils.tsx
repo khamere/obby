@@ -38,6 +38,37 @@ export function isChannelTarget(
   return !!name && chantypes.includes(name[0]);
 }
 
+const CHANNEL_NAME_MAX_LENGTH = 200;
+const JOIN_ARGUMENT_BREAK = /[\s,\p{Cc}]/u;
+const CONTROL_CHARACTER = /\p{Cc}/u;
+
+/** True when `name` is exactly one channel in a JOIN line: a space or comma
+ * would add arguments to the line and a control character would end it. */
+export function isJoinableChannelName(
+  name: string | undefined | null,
+  chantypes: string = KNOWN_CHANTYPES,
+): name is string {
+  return (
+    isChannelTarget(name, chantypes) &&
+    !!name &&
+    name.length <= CHANNEL_NAME_MAX_LENGTH &&
+    !JOIN_ARGUMENT_BREAK.test(name)
+  );
+}
+
+export function hasControlCharacter(value: string): boolean {
+  return CONTROL_CHARACTER.test(value);
+}
+
+/** The channel a link asks us to join, or null when its value is not one
+ * channel name. A bare name gets the `#` prefix. */
+export function channelFromLink(raw: string | null): string | null {
+  const trimmed = raw?.trim();
+  if (!trimmed) return null;
+  const name = isChannelTarget(trimmed) ? trimmed : `#${trimmed}`;
+  return isJoinableChannelName(name) ? name : null;
+}
+
 /** Split an IRCv3 named-modes mode name into its vendor prefix and a
  * human-readable display label.
  *

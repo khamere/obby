@@ -6744,6 +6744,10 @@ msgstr "用 * 作通配符。示例：baduser!*@*, *!*@spammer.com, troll*!*@*"
 msgid "Use /{0}"
 msgstr "使用 /{0}"
 
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "请使用不含空格或逗号的名称"
+
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."
 msgstr "请使用 PNG、JPEG、WebP 或 GIF 图片。"

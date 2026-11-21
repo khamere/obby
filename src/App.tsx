@@ -26,7 +26,7 @@ import { whenHistoryIdle } from "./lib/history/historyDb";
 import { useHistoryPoll } from "./lib/historyPoll/useHistoryPoll";
 import ircClient from "./lib/ircClient";
 import { parseIrcUrl } from "./lib/ircUrlParser";
-import { isChannelTarget } from "./lib/ircUtils";
+import { channelFromLink } from "./lib/ircUtils";
 import { handleNotificationTaps } from "./lib/notifications";
 import { openNotificationTarget } from "./lib/openNotificationTarget";
 import { isTauri } from "./lib/platformUtils";
@@ -50,12 +50,8 @@ if (typeof window !== "undefined") {
     const params = new URLSearchParams(window.location.search);
     const raw = params.get("channel");
     if (raw) {
-      const trimmed = raw.trim();
-      if (trimmed) {
-        // Accept both encoded ("%23weather") and unencoded ("#weather")
-        // forms, and give a bare channel name a `#` prefix.
-        pendingJoinChannel = isChannelTarget(trimmed) ? trimmed : `#${trimmed}`;
-      }
+      // Accept both encoded ("%23weather") and unencoded ("#weather") forms.
+      pendingJoinChannel = channelFromLink(raw);
       // Strip the param so refreshes don't re-trigger.  Preserve any
       // other query params the host page may use.
       params.delete("channel");

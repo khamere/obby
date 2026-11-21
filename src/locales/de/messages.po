@@ -6744,6 +6744,10 @@ msgstr "* als Platzhalter verwenden. Beispiele: baduser!*@*, *!*@spammer.com, tr
 msgid "Use /{0}"
 msgstr "/{0} verwenden"
 
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "Verwende einen Namen ohne Leerzeichen und Kommas"
+
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."
 msgstr "Verwende ein PNG-, JPEG-, WebP- oder GIF-Bild."

@@ -6744,6 +6744,10 @@ msgstr "Użyj * jako symbolu wieloznacznego. Przykłady: baduser!*@*, *!*@spamme
 msgid "Use /{0}"
 msgstr "Użyj /{0}"
 
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "Użyj nazwy bez spacji i przecinków"
+
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."
 msgstr "Użyj obrazu PNG, JPEG, WebP lub GIF."

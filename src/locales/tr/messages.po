@@ -6744,6 +6744,10 @@ msgstr "Joker karakter için * kullanın. Örnekler: baduser!*@*, *!*@spammer.co
 msgid "Use /{0}"
 msgstr "/{0} kullan"
 
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "Boşluk veya virgül içermeyen bir ad kullanın"
+
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."
 msgstr "PNG, JPEG, WebP veya GIF görsel kullanın."

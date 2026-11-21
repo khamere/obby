@@ -396,6 +396,14 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
       }
 
       if (!isBouncerSession) {
+        const joinableChannels = channelsToJoin.filter((channelName) =>
+          ircClient.isJoinableChannel(serverId, channelName),
+        );
+        if (joinableChannels.length < channelsToJoin.length) {
+          savedServer.channels = joinableChannels;
+          storage.servers.save(savedServers);
+          channelsToJoin = joinableChannels;
+        }
         for (const channelName of channelsToJoin) {
           if (channelName) {
             store.getState().joinChannel(serverId, channelName, undefined, {

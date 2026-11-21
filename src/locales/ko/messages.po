@@ -6744,6 +6744,10 @@ msgstr "와일드카드로 *를 사용하세요. 예: baduser!*@*, *!*@spammer.c
 msgid "Use /{0}"
 msgstr "/{0} 사용"
 
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "공백이나 쉼표가 없는 이름을 사용하세요"
+
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."
 msgstr "PNG, JPEG, WebP 또는 GIF 이미지를 사용하세요."

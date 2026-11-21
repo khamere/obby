@@ -6744,6 +6744,10 @@ msgstr "Použijte * pro zástupné znaky. Příklady: baduser!*@*, *!*@spammer.c
 msgid "Use /{0}"
 msgstr "Použít /{0}"
 
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "Použijte název bez mezer a čárek"
+
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."
 msgstr "Použijte obrázek PNG, JPEG, WebP nebo GIF."

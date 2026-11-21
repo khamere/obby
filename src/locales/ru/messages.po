@@ -6744,6 +6744,10 @@ msgstr "Используйте * в качестве маски. Примеры:
 msgid "Use /{0}"
 msgstr "Использовать /{0}"
 
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "Используйте название без пробелов и запятых"
+
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."
 msgstr "Используйте изображение PNG, JPEG, WebP или GIF."

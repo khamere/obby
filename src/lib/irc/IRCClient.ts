@@ -15,7 +15,13 @@ import type {
 } from "../../types";
 import { APP_VERSION } from "../appVersion";
 import { parseIrcUrl } from "../ircUrlParser";
-import { chantypesOf, isChannelTarget, parseMessageTags } from "../ircUtils";
+import {
+  chantypesOf,
+  hasControlCharacter,
+  isChannelTarget,
+  isJoinableChannelName,
+  parseMessageTags,
+} from "../ircUtils";
 import { createBatchId, splitLongMessage } from "../messageProtocol";
 import { createSocket, type ISocket } from "../socket";
 import { IRC_DISPATCH } from "./handlers";
@@ -1420,7 +1426,22 @@ export class IRCClient implements IRCClientContext {
     return rateLimitPatterns.some((pattern) => pattern.test(message));
   }
 
-  joinChannel(serverId: string, typedName: string, key?: string): Channel {
+  // Names reach us from links, saved lists and other people's messages, so we
+  // send a JOIN only for a name that is one channel.
+  isJoinableChannel(serverId: string, typedName: string): boolean {
+    return isJoinableChannelName(
+      this.withChannelPrefix(serverId, typedName),
+      this.chantypes(serverId),
+    );
+  }
+
+  joinChannel(
+    serverId: string,
+    typedName: string,
+    key?: string,
+  ): Channel | undefined {
+    if (!this.isJoinableChannel(serverId, typedName)) return undefined;
+    if (key && hasControlCharacter(key)) return undefined;
     const channelName = this.withChannelPrefix(serverId, typedName);
     const joinLine = key ? `JOIN ${channelName} ${key}` : `JOIN ${channelName}`;
     const server = this.servers.get(serverId);

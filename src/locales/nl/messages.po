@@ -6744,6 +6744,10 @@ msgstr "Gebruik * voor jokertekens. Voorbeelden: slechtegebruiker!*@*, *!*@spamm
 msgid "Use /{0}"
 msgstr "/{0} gebruiken"
 
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "Gebruik een naam zonder spaties of komma's"
+
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."
 msgstr "Gebruik een PNG-, JPEG-, WebP- of GIF-afbeelding."

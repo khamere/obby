@@ -6744,6 +6744,10 @@ msgstr "Use * para curingas. Exemplos: baduser!*@*, *!*@spammer.com, troll*!*@*"
 msgid "Use /{0}"
 msgstr "Usar /{0}"
 
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "Use um nome sem espaços nem vírgulas"
+
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."
 msgstr "Use uma imagem PNG, JPEG, WebP ou GIF."

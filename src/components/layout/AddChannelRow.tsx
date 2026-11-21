@@ -10,7 +10,7 @@ import {
 } from "react-icons/fa";
 import { useIsTouchInput } from "../../hooks/useIsTouchInput";
 import { type ChannelKind, getChannelKind } from "../../lib/channelFolders";
-import { isChannelTarget } from "../../lib/ircUtils";
+import { isChannelTarget, isJoinableChannelName } from "../../lib/ircUtils";
 import Menu from "../ui/Menu";
 import InlineEntryRow from "./InlineEntryRow";
 
@@ -77,8 +77,11 @@ export const AddChannelRow: React.FC<AddChannelRowProps> = ({
     }
   };
 
+  const isInvalid =
+    name.trim() !== "" && !isJoinableChannelName(prefix + name.trim());
+
   const submit = () => {
-    if (!name.trim()) return;
+    if (!name.trim() || isInvalid) return;
     onAdd(prefix + name.trim());
     close();
   };
@@ -145,7 +148,13 @@ export const AddChannelRow: React.FC<AddChannelRowProps> = ({
       onSubmit={submit}
       onClose={close}
       inputRef={inputRef}
+      inputAriaProps={{ "aria-invalid": isInvalid }}
     >
+      {isInvalid && (
+        <p role="alert" className="mt-1 px-2 text-xs text-discord-red">
+          {t`Use a name without spaces or commas`}
+        </p>
+      )}
       <Menu
         isOpen={!!kindMenuAnchor}
         anchorElement={kindMenuAnchor}

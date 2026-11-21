@@ -6744,6 +6744,10 @@ msgstr "Використовуйте * для шаблонів. Приклади
 msgid "Use /{0}"
 msgstr "Використати /{0}"
 
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "Використовуйте назву без пробілів і ком"
+
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."
 msgstr "Використовуйте зображення PNG, JPEG, WebP або GIF."

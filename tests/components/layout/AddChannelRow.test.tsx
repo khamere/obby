@@ -153,3 +153,25 @@ describe("AddChannelRow", () => {
     expect(onAdd).toHaveBeenCalledWith("#^");
   });
 });
+
+describe("AddChannelRow with a name that is not one channel", () => {
+  it.each(["two words", "one,#two"])("keeps %j in the row", (value) => {
+    const onAdd = openRow(false);
+    typeAndSubmit("Text channel", value);
+
+    expect(onAdd).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Text channel")).toHaveValue(value);
+    expect(screen.getByLabelText("Text channel")).toBeInvalid();
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+  });
+
+  it("shows no hint for a plain name", () => {
+    openRow(false);
+    fireEvent.change(screen.getByLabelText("Text channel"), {
+      target: { value: "general " },
+    });
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Text channel")).toBeValid();
+  });
+});

@@ -6744,6 +6744,10 @@ msgstr "Usa * come wildcard. Esempi: baduser!*@*, *!*@spammer.com, troll*!*@*"
 msgid "Use /{0}"
 msgstr "Usa /{0}"
 
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "Usa un nome senza spazi né virgole"
+
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."
 msgstr "Usa un'immagine PNG, JPEG, WebP o GIF."
