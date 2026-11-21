@@ -4,6 +4,7 @@ import {
   getCurrentPosition as getNativePosition,
   requestPermissions as requestNativePermissions,
 } from "@tauri-apps/plugin-geolocation";
+import { MAX_TILE_ZOOM } from "./osmTiles";
 import { isTauriDesktop, isTauriMobile } from "./platformUtils";
 
 export type LocationPrecision = "exact" | "approximate";
@@ -54,7 +55,9 @@ export interface ParsedLocationUrl {
 
 // The inverse of buildLocationShareUrl. Reads mlat/mlon out of the URL
 // itself, so the preview reflects whatever precision the link was built
-// with -- our own share button's, or one a person simply pasted.
+// with -- our own share button's, or one a person simply pasted. Anyone can
+// post such a link, so we only return a position that exists on the globe and
+// a zoom level the tile server has.
 export function parseLocationShareUrl(url: string): ParsedLocationUrl | null {
   let parsed: URL;
   try {
@@ -71,9 +74,12 @@ export function parseLocationShareUrl(url: string): ParsedLocationUrl | null {
   const latitude = Number(mlat);
   const longitude = Number(mlon);
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+  if (Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return null;
 
   const fragmentZoom = parsed.hash.match(/#map=(\d+)\//)?.[1];
-  const zoom = fragmentZoom ? Number(fragmentZoom) : APPROXIMATE_ZOOM;
+  const zoom = fragmentZoom
+    ? Math.min(MAX_TILE_ZOOM, Number(fragmentZoom))
+    : APPROXIMATE_ZOOM;
   return { latitude, longitude, zoom };
 }
 

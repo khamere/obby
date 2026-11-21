@@ -83,6 +83,64 @@ describe("parseLocationShareUrl", () => {
       parseLocationShareUrl("https://example.com/?mlat=1&mlon=2"),
     ).toBeNull();
   });
+
+  it.each(["60", "2000", "20", "9007199254740993", "9".repeat(400)])(
+    "caps the zoom of #map=%s at the deepest tile level",
+    (zoom) => {
+      expect(
+        parseLocationShareUrl(
+          `https://www.openstreetmap.org/?mlat=1&mlon=1#map=${zoom}/1/1`,
+        ),
+      ).toEqual({ latitude: 1, longitude: 1, zoom: 19 });
+    },
+  );
+
+  it("keeps the zoom levels at both ends of the tile range", () => {
+    for (const zoom of [0, 19]) {
+      expect(
+        parseLocationShareUrl(
+          `https://www.openstreetmap.org/?mlat=1&mlon=1#map=${zoom}/1/1`,
+        )?.zoom,
+      ).toBe(zoom);
+    }
+  });
+
+  it.each(["-5", "NaN", "Infinity", "14.5", "1e3", ""])(
+    "falls back to the default zoom for #map=%s",
+    (zoom) => {
+      expect(
+        parseLocationShareUrl(
+          `https://www.openstreetmap.org/?mlat=1&mlon=1#map=${zoom}/1/1`,
+        )?.zoom,
+      ).toBe(14);
+    },
+  );
+
+  it.each([
+    ["90.0001", "0"],
+    ["-91", "0"],
+    ["1e300", "0"],
+    ["0", "180.0001"],
+    ["0", "-181"],
+    ["0", "1e300"],
+    ["NaN", "0"],
+    ["0", "Infinity"],
+    ["-Infinity", "0"],
+  ])("returns null for the position mlat=%s, mlon=%s", (mlat, mlon) => {
+    expect(
+      parseLocationShareUrl(
+        `https://www.openstreetmap.org/?mlat=${mlat}&mlon=${mlon}#map=14/0/0`,
+      ),
+    ).toBeNull();
+  });
+
+  it("accepts a position on the edge of the coordinate range", () => {
+    expect(
+      parseLocationShareUrl(
+        "https://www.openstreetmap.org/?mlat=-90&mlon=180#map=3/-90/180",
+      ),
+    ).toEqual({ latitude: -90, longitude: 180, zoom: 3 });
+  });
 });
 
 describe("describeGeolocationError", () => {

@@ -46,6 +46,31 @@ describe("MapPreview", () => {
     }
   });
 
+  it("renders a link with an oversized zoom at the deepest tile level", () => {
+    render(
+      <MapPreview url="https://www.openstreetmap.org/?mlat=1&mlon=1#map=60/1/1" />,
+    );
+    const images = screen.getAllByRole("presentation", { hidden: true });
+    expect(images.length).toBeGreaterThan(0);
+    expect(images.length).toBeLessThanOrEqual(6);
+    for (const img of images) {
+      expect(img.getAttribute("src")).toMatch(
+        /^https:\/\/tile\.openstreetmap\.org\/19\//,
+      );
+    }
+  });
+
+  it("reports failure for a position outside the coordinate range", () => {
+    const onRenderFailed = vi.fn();
+    const url =
+      "https://www.openstreetmap.org/?mlat=1e300&mlon=1e300#map=14/1/1";
+    const { container } = render(
+      <MapPreview url={url} onRenderFailed={onRenderFailed} />,
+    );
+    expect(container).toBeEmptyDOMElement();
+    expect(onRenderFailed).toHaveBeenCalledWith(url);
+  });
+
   it("renders only a still image, never an interactive map", () => {
     const { container } = render(<MapPreview url={LOCATION_URL} />);
     expect(container.querySelector(".leaflet-container")).toBeNull();
