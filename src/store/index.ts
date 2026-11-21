@@ -463,6 +463,9 @@ interface UIState {
     bouncerServerId: string;
     netid: string;
     childServerId: string;
+    // "deleting" from our DELNETWORK until the bouncer answers it.
+    status?: "deleting" | "refused";
+    shouldDeleteHistory?: boolean;
   } | null;
   quickActions: QuickActionsState | null;
   // The message list holding this id scrolls to it and flashes it.
@@ -1040,6 +1043,7 @@ export interface AppState {
   editBouncerNetwork: (childServerId: string) => void;
   consumePendingBouncerEdit: () => void;
   requestDeleteServer: (serverId: string) => void;
+  requestDeleteBouncerNetwork: (bouncerServerId: string, netid: string) => void;
   confirmRemoveServer: (shouldDeleteHistory: boolean) => void;
   cancelRemoveServer: () => void;
   cancelDeleteServer: () => void;
@@ -3392,16 +3396,10 @@ const useStore = create<AppState>((set, get) => ({
       return;
     }
     if (target?.bouncerServerId && target.bouncerNetid) {
-      set((s) => ({
-        ui: {
-          ...s.ui,
-          disconnectNetworkConfirmTarget: {
-            bouncerServerId: target.bouncerServerId as string,
-            netid: target.bouncerNetid as string,
-            childServerId: serverId,
-          },
-        },
-      }));
+      state.requestDeleteBouncerNetwork(
+        target.bouncerServerId,
+        target.bouncerNetid,
+      );
       return;
     }
     if (!target) return;
@@ -3416,6 +3414,23 @@ const useStore = create<AppState>((set, get) => ({
           }));
       })
       .catch(() => get().deleteServer(serverId));
+  },
+
+  requestDeleteBouncerNetwork: (bouncerServerId, netid) => {
+    if (get().ui.disconnectNetworkConfirmTarget?.status === "deleting") return;
+    set((s) => ({
+      ui: {
+        ...s.ui,
+        disconnectNetworkConfirmTarget: {
+          bouncerServerId,
+          netid,
+          childServerId: uuidv5(
+            `${bouncerServerId}:${netid}`,
+            CHANNEL_NAMESPACE,
+          ),
+        },
+      },
+    }));
   },
 
   confirmRemoveServer: (shouldDeleteHistory) => {
@@ -3438,6 +3453,9 @@ const useStore = create<AppState>((set, get) => ({
   },
 
   cancelDisconnectNetwork: () => {
+    // The saved-history choice travels with the dialog until the bouncer
+    // answers, so we keep it open for that long.
+    if (get().ui.disconnectNetworkConfirmTarget?.status === "deleting") return;
     set((state) => ({
       ui: { ...state.ui, disconnectNetworkConfirmTarget: null },
     }));
@@ -3456,14 +3474,22 @@ const useStore = create<AppState>((set, get) => ({
   confirmDisconnectNetwork: (shouldDeleteHistory) => {
     const state = get();
     const target = state.ui.disconnectNetworkConfirmTarget;
-    if (!target) return;
-    const child = state.servers.find((s) => s.id === target.childServerId);
-    if (child) void settleSavedHistory(child, shouldDeleteHistory);
-    state.bouncerDelNetwork(target.bouncerServerId, target.netid);
-    state.deleteServer(target.childServerId);
+    if (!target || target.status === "deleting") return;
+    // Only the bouncer's answer tells us the network is gone, and a command
+    // sent on a closed control connection never gets one.
+    const control = state.servers.find((s) => s.id === target.bouncerServerId);
+    if (!control?.isConnected) return;
     set((s) => ({
-      ui: { ...s.ui, disconnectNetworkConfirmTarget: null },
+      ui: {
+        ...s.ui,
+        disconnectNetworkConfirmTarget: {
+          ...target,
+          status: "deleting",
+          shouldDeleteHistory,
+        },
+      },
     }));
+    state.bouncerDelNetwork(target.bouncerServerId, target.netid);
   },
 
   setBouncerGroupAccent: (parentServerId, hex) => {

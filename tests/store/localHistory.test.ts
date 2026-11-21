@@ -1089,7 +1089,12 @@ describe("removing a server", () => {
           },
         },
       }));
+      w.addServer("bnc", "irc.test", 6667, { isBouncerControl: true });
       w.useStore.getState().confirmDisconnectNetwork(false);
+      w.ircClient.triggerEvent("BOUNCER_DELNETWORK_OK", {
+        serverId: "bnc",
+        netid: "n1",
+      });
       await w.drain();
 
       w.addServer("other", "irc.test", 6667, {

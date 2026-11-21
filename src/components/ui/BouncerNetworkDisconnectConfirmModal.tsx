@@ -1,8 +1,7 @@
 import { Trans } from "@lingui/react/macro";
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
-import { FaPlug } from "react-icons/fa";
-import { GiGlassShot } from "react-icons/gi";
+import { FaTrash } from "react-icons/fa";
 import BaseModal from "../../lib/modal/BaseModal";
 import { Button, ModalBody, ModalFooter } from "../../lib/modal/components";
 import useStore from "../../store";
@@ -16,6 +15,11 @@ export const BouncerNetworkDisconnectConfirmModal: React.FC = () => {
   const confirm = useStore((s) => s.confirmDisconnectNetwork);
   const [shouldDeleteHistory, setShouldDeleteHistory] = useState(false);
   const childServerId = target?.childServerId;
+  const isControlUp = useStore(
+    (s) =>
+      s.servers.find((srv) => srv.id === target?.bouncerServerId)
+        ?.isConnected === true,
+  );
 
   useEffect(() => {
     if (childServerId) setShouldDeleteHistory(false);
@@ -34,6 +38,12 @@ export const BouncerNetworkDisconnectConfirmModal: React.FC = () => {
 
   if (!target || !network) return null;
 
+  const isDeleting = target.status === "deleting";
+  const refusal =
+    target.status === "refused"
+      ? bouncers[target.bouncerServerId]?.lastError?.description
+      : undefined;
+
   return (
     <BaseModal
       isOpen
@@ -41,25 +51,25 @@ export const BouncerNetworkDisconnectConfirmModal: React.FC = () => {
       maxWidth="md"
       title={
         <span className="flex items-center gap-2">
-          <GiGlassShot className="text-amber-300" />
-          <FaPlug className="text-sky-300 text-sm" />
-          <Trans>Disconnect network?</Trans>
+          <FaTrash className="text-discord-red text-sm" />
+          <Trans>Delete network?</Trans>
         </span>
       }
     >
       <ModalBody className="gap-3">
         <p className="text-sm text-discord-text-normal">
           <Trans>
-            Disconnect <span className="font-semibold">{network.name}</span>?
+            Delete <span className="font-semibold">{network.name}</span> from
+            your bouncer?
           </Trans>
         </p>
         {network.host && (
           <p className="text-xs text-discord-text-muted">{network.host}</p>
         )}
-        <p className="text-xs text-discord-text-muted">
+        <p className="text-sm text-discord-text-normal">
           <Trans>
-            This removes the network from your soju bouncer. To use it again,
-            you'll need to add it back.
+            The bouncer drops this network for all your devices, together with
+            its channel list and the chat history the bouncer keeps for it.
           </Trans>
         </p>
         <SavedHistoryChoice
@@ -67,14 +77,48 @@ export const BouncerNetworkDisconnectConfirmModal: React.FC = () => {
           shouldDelete={shouldDeleteHistory}
           onChange={setShouldDeleteHistory}
         />
+        {!isControlUp && (
+          <p
+            role="alert"
+            className="rounded bg-red-600/10 border border-red-600/40 text-red-300 px-3 py-2 text-sm"
+            data-testid="bouncer-delete-offline"
+          >
+            <Trans>
+              The bouncer is not connected. Delete the network once it is back.
+            </Trans>
+          </p>
+        )}
+        {isControlUp && target.status === "refused" && (
+          <p
+            role="alert"
+            className="rounded bg-red-600/10 border border-red-600/40 text-red-300 px-3 py-2 text-sm"
+            data-testid="bouncer-delete-refused"
+          >
+            {refusal ? (
+              <Trans>
+                The bouncer kept the network and answered: {refusal}
+              </Trans>
+            ) : (
+              <Trans>The bouncer kept the network.</Trans>
+            )}
+          </p>
+        )}
       </ModalBody>
 
       <ModalFooter>
-        <Button variant="secondary" onClick={cancel}>
+        <Button variant="secondary" onClick={cancel} disabled={isDeleting}>
           <Trans>Cancel</Trans>
         </Button>
-        <Button variant="danger" onClick={() => confirm(shouldDeleteHistory)}>
-          <Trans>Disconnect</Trans>
+        <Button
+          variant="danger"
+          onClick={() => confirm(shouldDeleteHistory)}
+          disabled={isDeleting || !isControlUp}
+        >
+          {isDeleting ? (
+            <Trans>Deleting…</Trans>
+          ) : (
+            <Trans>Delete network</Trans>
+          )}
         </Button>
       </ModalFooter>
     </BaseModal>

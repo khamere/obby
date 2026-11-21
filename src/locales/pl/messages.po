@@ -1165,7 +1165,6 @@ msgstr "Nie można usunąć ostatniej metody 2FA"
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkForm.tsx
-#: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/E2EERequestBanner.tsx
 #: src/components/ui/FloodSettingsModal.tsx
 #: src/components/ui/InviteUserModal.tsx
@@ -2076,6 +2075,11 @@ msgstr "Opóźnij dołączenia (+D)"
 msgid "Delete"
 msgstr "Usuń"
 
+#. placeholder {0}: network.name
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Delete <0>{0}</0> from your bouncer?"
+msgstr "Usunąć <0>{0}</0> z Twojego bouncera?"
+
 #: src/components/layout/BotPane.tsx
 msgid "Delete bot"
 msgstr "Usuń bota"
@@ -2103,9 +2107,20 @@ msgstr "Usuń także zapisaną historię rozmów"
 msgid "Delete message"
 msgstr "Usuń wiadomość"
 
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/NetworkMenu.tsx
+#: src/components/layout/ServerList.tsx
+#: src/components/mobile/ServerBottomSheet.tsx
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkForm.tsx
+#: src/components/ui/BouncerNetworksPanel.tsx
+#: src/components/ui/BouncerNetworksPanel.tsx
 msgid "Delete network"
 msgstr "Usuń sieć"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Delete network?"
+msgstr "Usunąć sieć?"
 
 #: src/components/pages/EmojiPacksPage.tsx
 #: src/components/pages/EmojiPacksPage.tsx
@@ -2124,13 +2139,13 @@ msgstr "Usuń to zaproszenie"
 msgid "Delete this message? This cannot be undone."
 msgstr "Usunąć tę wiadomość? Tej operacji nie można cofnąć."
 
-#: src/components/ui/BouncerNetworkForm.tsx
-msgid "Delete this network?"
-msgstr "Usunąć tę sieć?"
-
 #: src/components/layout/BotPane.tsx
 msgid "deleted"
 msgstr "usunięto"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Deleting…"
+msgstr "Usuwanie…"
 
 #: src/components/voice/ParticipantTile.tsx
 #: src/components/voice/ParticipantTile.tsx
@@ -2197,16 +2212,9 @@ msgstr "Odrzuć"
 #: src/components/layout/ServerList.tsx
 #: src/components/mobile/ServerBottomSheet.tsx
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-#: src/components/ui/BouncerNetworksPanel.tsx
 #: src/components/ui/RemoveServerConfirmModal.tsx
 msgid "Disconnect"
 msgstr "Rozłącz"
-
-#. placeholder {0}: network.name
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "Disconnect <0>{0}</0>?"
-msgstr "Rozłączyć <0>{0}</0>?"
 
 #: src/components/ui/RemoveServerConfirmModal.tsx
 msgid "Disconnect from {name}?"
@@ -2215,10 +2223,6 @@ msgstr "Rozłączyć z {name}?"
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
 msgid "Disconnect from soju bouncer?"
 msgstr "Rozłączyć z bouncerem soju?"
-
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "Disconnect network?"
-msgstr "Rozłączyć sieć?"
 
 #: src/components/layout/ChannelList.tsx
 msgid "Discover"
@@ -6256,6 +6260,22 @@ msgstr "Ten ekran nie jest już dostępny. Wybierz inny ekran."
 msgid "That stylesheet is too large."
 msgstr "Ten arkusz stylów jest za duży."
 
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer drops this network for all your devices, together with its channel list and the chat history the bouncer keeps for it."
+msgstr "Bouncer usuwa tę sieć dla wszystkich Twoich urządzeń, razem z jej listą kanałów i historią czatu, którą bouncer dla niej przechowuje."
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer is not connected. Delete the network once it is back."
+msgstr "Bouncer nie jest połączony. Usuń sieć, gdy połączenie wróci."
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer kept the network and answered: {refusal}"
+msgstr "Bouncer zachował sieć i odpowiedział: {refusal}"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer kept the network."
+msgstr "Bouncer zachował sieć."
+
 #: src/lib/voiceErrors.ts
 msgid "The call server refused the request. Try again in a moment."
 msgstr "Serwer połączeń odrzucił żądanie. Spróbuj ponownie za chwilę."
@@ -6437,10 +6457,6 @@ msgstr "Ten pakiet nie ma jeszcze emoji. Dodaj je powyżej."
 #: src/components/ui/UpdateSheet.tsx
 msgid "This release has no Android app to install."
 msgstr "To wydanie nie zawiera aplikacji na Androida do zainstalowania."
-
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "This removes the network from your soju bouncer. To use it again, you'll need to add it back."
-msgstr "To usuwa sieć z Twojego bouncera soju. Aby użyć jej ponownie, musisz dodać ją z powrotem."
 
 #: src/components/ui/InvitationsPanel.tsx
 msgid "This server doesn't support invite links (the<0>obby.world/invitation</0>capability isn't advertised). You can still chat normally; this panel is for obbyircd-powered networks."
@@ -7140,10 +7156,6 @@ msgstr "Błędne hasło albo plik zmienił się od zapisania."
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Yellow"
 msgstr "Żółty"
-
-#: src/components/ui/BouncerNetworkForm.tsx
-msgid "Yes, delete"
-msgstr "Tak, usuń"
 
 #: src/components/search/messageSearchProviders.tsx
 msgid "Yesterday"

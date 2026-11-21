@@ -4,6 +4,7 @@ import type { BouncerState } from "../../types";
 import { generateDeterministicId } from "../helpers";
 import type { AppState } from "../index";
 import * as storage from "../localStorage";
+import { settleSavedHistory } from "./history";
 
 // Module-scope so a single childId only ever dispatches one bind across
 // the burst of BOUNCER_NETWORK events that arrive during the initial
@@ -53,6 +54,35 @@ function ensureBouncer(
     listed: false,
   };
   return { ...state.bouncers, [serverId]: { ...base, ...patch } };
+}
+
+type NetworkDeleteTarget = NonNullable<
+  AppState["ui"]["disconnectNetworkConfirmTarget"]
+>;
+
+function setNetworkDeleteTarget(
+  store: StoreApi<AppState>,
+  target: NetworkDeleteTarget | null,
+) {
+  store.setState((state) => ({
+    ui: { ...state.ui, disconnectNetworkConfirmTarget: target },
+  }));
+}
+
+// The delete dialog of this network is over once the bouncer says the network
+// is gone, and its saved-history choice applies if the delete was ours.
+function closeNetworkDeleteDialog(
+  store: StoreApi<AppState>,
+  serverId: string,
+  netid: string,
+) {
+  const state = store.getState();
+  const target = state.ui.disconnectNetworkConfirmTarget;
+  if (target?.bouncerServerId !== serverId || target.netid !== netid) return;
+  const child = state.servers.find((s) => s.id === target.childServerId);
+  if (child && target.status === "deleting")
+    void settleSavedHistory(child, target.shouldDeleteHistory === true);
+  setNetworkDeleteTarget(store, null);
 }
 
 export function registerBouncerHandlers(store: StoreApi<AppState>): void {
@@ -143,17 +173,40 @@ export function registerBouncerHandlers(store: StoreApi<AppState>): void {
       if (deleted || attributes.state === "disconnected")
         autoBindAttempted.delete(childId);
       if (deleted) {
+        closeNetworkDeleteDialog(store, serverId, netid);
         const live = store.getState().servers.find((s) => s.id === childId);
         if (live) store.getState().deleteServer(childId);
       }
     },
   );
 
-  // ACKs from the server confirming our ADD / CHANGE / DEL took effect.
-  // The accompanying BOUNCER NETWORK update has already updated state;
-  // these events exist primarily so UI can dismiss "saving..." spinners
-  // and close modals. The store doesn't need to mutate anything here,
-  // but we expose the events to consumers via the IRCClient EventMap.
+  // A bouncer without the notify capability sends no BOUNCER NETWORK line for
+  // a delete, so its acknowledgement is where we drop the network.
+  ircClient.on("BOUNCER_DELNETWORK_OK", ({ serverId, netid }) => {
+    closeNetworkDeleteDialog(store, serverId, netid);
+    const childId = generateDeterministicId(serverId, netid);
+    autoBindAttempted.delete(childId);
+    const state = store.getState();
+    const bouncer = state.bouncers[serverId];
+    if (bouncer?.networks[netid]) {
+      const { [netid]: _, ...networks } = bouncer.networks;
+      store.setState((current) => ({
+        bouncers: { ...current.bouncers, [serverId]: { ...bouncer, networks } },
+      }));
+    }
+    if (state.servers.some((s) => s.id === childId))
+      state.deleteServer(childId);
+  });
+
+  // A dropped control connection loses the answer to a pending delete, so we
+  // stop waiting and the dialog offers the delete again.
+  ircClient.on("connectionStateChange", ({ serverId, connectionState }) => {
+    if (connectionState === "connected") return;
+    const target = store.getState().ui.disconnectNetworkConfirmTarget;
+    if (target?.bouncerServerId !== serverId || target.status !== "deleting")
+      return;
+    setNetworkDeleteTarget(store, { ...target, status: undefined });
+  });
 
   // Errors from any subcommand. Stash on the bouncer state so the UI
   // can pick them up reactively (toast / inline form error).
@@ -165,6 +218,13 @@ export function registerBouncerHandlers(store: StoreApi<AppState>): void {
           lastError: { code, subcommand, attribute, netid, description },
         }),
       }));
+      const target = store.getState().ui.disconnectNetworkConfirmTarget;
+      if (
+        subcommand.toUpperCase() === "DELNETWORK" &&
+        target?.bouncerServerId === serverId &&
+        target.status === "deleting"
+      )
+        setNetworkDeleteTarget(store, { ...target, status: "refused" });
     },
   );
 

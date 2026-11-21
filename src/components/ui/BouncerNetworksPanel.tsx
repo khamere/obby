@@ -9,7 +9,7 @@ import {
   FaPencilAlt,
   FaPlay,
   FaPlus,
-  FaStop,
+  FaTrash,
 } from "react-icons/fa";
 import { v5 as uuidv5 } from "uuid";
 import useStore from "../../store";
@@ -59,9 +59,10 @@ export const BouncerNetworksPanel: React.FC<BouncerNetworksPanelProps> = ({
   const servers = useStore((s) => s.servers);
   const bouncerAddNetwork = useStore((s) => s.bouncerAddNetwork);
   const bouncerChangeNetwork = useStore((s) => s.bouncerChangeNetwork);
-  const bouncerDelNetwork = useStore((s) => s.bouncerDelNetwork);
   const bouncerConnectNetwork = useStore((s) => s.bouncerConnectNetwork);
-  const requestDeleteServer = useStore((s) => s.requestDeleteServer);
+  const requestDeleteBouncerNetwork = useStore(
+    (s) => s.requestDeleteBouncerNetwork,
+  );
   const bouncerListNetworks = useStore((s) => s.bouncerListNetworks);
   const selectServer = useStore((s) => s.selectServer);
   const pendingBouncerEdit = useStore((s) => s.ui.pendingBouncerEdit);
@@ -141,10 +142,6 @@ export const BouncerNetworksPanel: React.FC<BouncerNetworksPanelProps> = ({
     setPendingFor(netid);
     bouncerChangeNetwork(bouncerServerId, netid, attrs);
   };
-  const onDelete = (netid: string) => {
-    setPendingFor(netid);
-    bouncerDelNetwork(bouncerServerId, netid);
-  };
   const onConnectOrOpen = async (netid: string) => {
     const childId = uuidv5(`${bouncerServerId}:${netid}`, CHILD_NAMESPACE);
     const existing = servers.find((s) => s.id === childId);
@@ -161,6 +158,15 @@ export const BouncerNetworksPanel: React.FC<BouncerNetworksPanelProps> = ({
 
   const editingNetwork =
     mode.kind === "edit" ? bouncer?.networks[mode.netid] : undefined;
+
+  // The network being edited can be deleted under the form, which leaves
+  // nothing to edit.
+  const isEditingGoneNetwork = mode.kind === "edit" && !editingNetwork;
+  useEffect(() => {
+    if (!isEditingGoneNetwork) return;
+    setMode({ kind: "list" });
+    setPendingFor(null);
+  }, [isEditingGoneNetwork]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-discord-dark-200 text-discord-text-normal">
@@ -338,17 +344,21 @@ export const BouncerNetworksPanel: React.FC<BouncerNetworksPanelProps> = ({
                           </>
                         )}
                       </button>
-                      {childServer && (
-                        <button
-                          type="button"
-                          onClick={() => requestDeleteServer(childServer.id)}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded text-discord-text-muted hover:text-red-400 hover:bg-discord-dark-300"
-                          aria-label={t`Disconnect`}
-                          data-testid={`bouncer-row-disconnect-${net.netid}`}
-                        >
-                          <FaStop />
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          requestDeleteBouncerNetwork(
+                            bouncerServerId,
+                            net.netid,
+                          )
+                        }
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded text-discord-text-muted hover:text-red-400 hover:bg-discord-dark-300"
+                        aria-label={t`Delete network`}
+                        title={t`Delete network`}
+                        data-testid={`bouncer-row-delete-${net.netid}`}
+                      >
+                        <FaTrash />
+                      </button>
                     </li>
                   );
                 })}
@@ -376,9 +386,10 @@ export const BouncerNetworksPanel: React.FC<BouncerNetworksPanelProps> = ({
             errorAttribute={errorForForm?.attribute}
             errorMessage={errorForForm?.description}
             isSaving={pendingFor === editingNetwork.netid}
-            isDeleting={pendingFor === editingNetwork.netid}
             onSave={(attrs) => onSubmitEdit(editingNetwork.netid, attrs)}
-            onDelete={() => onDelete(editingNetwork.netid)}
+            onDelete={() =>
+              requestDeleteBouncerNetwork(bouncerServerId, editingNetwork.netid)
+            }
             onCancel={() => {
               setMode({ kind: "list" });
               setPendingFor(null);

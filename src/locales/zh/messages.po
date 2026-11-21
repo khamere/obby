@@ -1165,7 +1165,6 @@ msgstr "无法删除你的最后一个 2FA 凭据"
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkForm.tsx
-#: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/E2EERequestBanner.tsx
 #: src/components/ui/FloodSettingsModal.tsx
 #: src/components/ui/InviteUserModal.tsx
@@ -2076,6 +2075,11 @@ msgstr "延迟加入 (+D)"
 msgid "Delete"
 msgstr "删除"
 
+#. placeholder {0}: network.name
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Delete <0>{0}</0> from your bouncer?"
+msgstr "要从您的 bouncer 删除 <0>{0}</0> 吗？"
+
 #: src/components/layout/BotPane.tsx
 msgid "Delete bot"
 msgstr "删除机器人"
@@ -2103,9 +2107,20 @@ msgstr "同时删除其已保存的聊天历史"
 msgid "Delete message"
 msgstr "删除消息"
 
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/NetworkMenu.tsx
+#: src/components/layout/ServerList.tsx
+#: src/components/mobile/ServerBottomSheet.tsx
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkForm.tsx
+#: src/components/ui/BouncerNetworksPanel.tsx
+#: src/components/ui/BouncerNetworksPanel.tsx
 msgid "Delete network"
 msgstr "删除网络"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Delete network?"
+msgstr "删除网络？"
 
 #: src/components/pages/EmojiPacksPage.tsx
 #: src/components/pages/EmojiPacksPage.tsx
@@ -2124,13 +2139,13 @@ msgstr "删除此邀请"
 msgid "Delete this message? This cannot be undone."
 msgstr "删除此消息？此操作无法撤销。"
 
-#: src/components/ui/BouncerNetworkForm.tsx
-msgid "Delete this network?"
-msgstr "删除此网络？"
-
 #: src/components/layout/BotPane.tsx
 msgid "deleted"
 msgstr "已删除"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Deleting…"
+msgstr "正在删除…"
 
 #: src/components/voice/ParticipantTile.tsx
 #: src/components/voice/ParticipantTile.tsx
@@ -2197,16 +2212,9 @@ msgstr "丢弃"
 #: src/components/layout/ServerList.tsx
 #: src/components/mobile/ServerBottomSheet.tsx
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-#: src/components/ui/BouncerNetworksPanel.tsx
 #: src/components/ui/RemoveServerConfirmModal.tsx
 msgid "Disconnect"
 msgstr "断开连接"
-
-#. placeholder {0}: network.name
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "Disconnect <0>{0}</0>?"
-msgstr "断开 <0>{0}</0> 的连接？"
 
 #: src/components/ui/RemoveServerConfirmModal.tsx
 msgid "Disconnect from {name}?"
@@ -2215,10 +2223,6 @@ msgstr "断开与 {name} 的连接？"
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
 msgid "Disconnect from soju bouncer?"
 msgstr "断开与 soju bouncer 的连接？"
-
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "Disconnect network?"
-msgstr "断开网络连接？"
 
 #: src/components/layout/ChannelList.tsx
 msgid "Discover"
@@ -6256,6 +6260,22 @@ msgstr "该屏幕已不可用。请选择其他屏幕。"
 msgid "That stylesheet is too large."
 msgstr "该样式表过大。"
 
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer drops this network for all your devices, together with its channel list and the chat history the bouncer keeps for it."
+msgstr "bouncer 会为您的所有设备移除此网络，连同其频道列表和 bouncer 为它保存的聊天记录。"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer is not connected. Delete the network once it is back."
+msgstr "bouncer 未连接。请在它恢复连接后再删除网络。"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer kept the network and answered: {refusal}"
+msgstr "bouncer 保留了该网络，并回复：{refusal}"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer kept the network."
+msgstr "bouncer 保留了该网络。"
+
 #: src/lib/voiceErrors.ts
 msgid "The call server refused the request. Try again in a moment."
 msgstr "通话服务器拒绝了请求。请稍后重试。"
@@ -6437,10 +6457,6 @@ msgstr "此表情包还没有表情。请在上方添加。"
 #: src/components/ui/UpdateSheet.tsx
 msgid "This release has no Android app to install."
 msgstr "此发布版本没有可安装的 Android 应用。"
-
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "This removes the network from your soju bouncer. To use it again, you'll need to add it back."
-msgstr "这将从您的 soju bouncer 中移除该网络。若要再次使用，您需要重新添加它。"
 
 #: src/components/ui/InvitationsPanel.tsx
 msgid "This server doesn't support invite links (the<0>obby.world/invitation</0>capability isn't advertised). You can still chat normally; this panel is for obbyircd-powered networks."
@@ -7140,10 +7156,6 @@ msgstr "密码错误，或文件在保存后被改动。"
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Yellow"
 msgstr "黄色"
-
-#: src/components/ui/BouncerNetworkForm.tsx
-msgid "Yes, delete"
-msgstr "是的，删除"
 
 #: src/components/search/messageSearchProviders.tsx
 msgid "Yesterday"
