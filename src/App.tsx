@@ -3,6 +3,7 @@ import type React from "react";
 import { useEffect, useRef } from "react";
 import { Route, Routes } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
+import { AppErrorBoundary } from "./components/AppErrorBoundary";
 import AppLayout from "./components/layout/AppLayout";
 import { ServerNoticesPopup } from "./components/message/ServerNoticesPopup";
 import PrivacyPolicy from "./components/PrivacyPolicy";
@@ -121,7 +122,7 @@ const collectServerNotices = (state: AppState) =>
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
     );
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
   const {
     toggleAddServerModal,
     toggleQuickActions,
@@ -446,5 +447,11 @@ const App: React.FC = () => {
     </div>
   );
 };
+
+const App: React.FC = () => (
+  <AppErrorBoundary>
+    <AppContent />
+  </AppErrorBoundary>
+);
 
 export default App;

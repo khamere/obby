@@ -154,6 +154,8 @@ export function handleKick(
   const username = getNickFromNuh(source);
   const channelName = parv[0];
   const target = parv[1];
+  // A kick that names no channel or nobody removes no one.
+  if (!channelName || !target) return;
   parv[0] = "";
   parv[1] = "";
   const reasonText = parv.join(" ").trim();

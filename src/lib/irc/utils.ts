@@ -17,8 +17,6 @@ export function getHostFromNuh(nuh: string): string {
 export function getTimestampFromTags(
   mtags: Record<string, string> | undefined,
 ): Date {
-  if (mtags?.time) {
-    return new Date(mtags.time);
-  }
-  return new Date();
+  const time = mtags?.time ? new Date(mtags.time) : new Date();
+  return Number.isNaN(time.getTime()) ? new Date() : time;
 }

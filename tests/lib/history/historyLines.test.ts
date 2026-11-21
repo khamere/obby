@@ -106,6 +106,21 @@ describe("normalizeLine", () => {
     );
   });
 
+  it("replaces a time that is no date with the receive time", () => {
+    expect(
+      normalizeLine(
+        "@time=9999-99-99T99:99:99.999Z;msgid=m :n PRIVMSG #c :hi",
+        NOW,
+      ),
+    ).toBe(`@msgid=m;time=${NOW_ISO} :n PRIVMSG #c :hi`);
+  });
+
+  it("replaces a time without a value with the receive time", () => {
+    expect(normalizeLine("@time;msgid=m :n PRIVMSG #c :hi", NOW)).toBe(
+      `@msgid=m;time=${NOW_ISO} :n PRIVMSG #c :hi`,
+    );
+  });
+
   it("does not treat tags that merely start with batch or label as dropped", () => {
     expect(normalizeLine("@batchx=1;+label=2 PING", NOW)).toBe(
       `@batchx=1;+label=2;time=${NOW_ISO} PING`,

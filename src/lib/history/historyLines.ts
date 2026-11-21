@@ -78,6 +78,9 @@ interface OpenBatch {
 
 const nickOf = (source: string) => source.split("!")[0];
 
+const hasDate = (timeTag: string) =>
+  !Number.isNaN(Date.parse(timeTag.slice("time=".length)));
+
 // We rewrite the raw tag string so escaped tag values stay byte-identical.
 export function normalizeLine(
   line: string,
@@ -92,6 +95,9 @@ export function normalizeLine(
     rest = line.slice(space + 1);
   }
   tags = tags.filter((tag) => !DROPPED_TAGS.includes(tag.split("=")[0]));
+  // A replay reads the time from the saved line, so a time that is no date
+  // gives way to the one we received the line at.
+  tags = tags.filter((tag) => tag.split("=")[0] !== "time" || hasDate(tag));
   if (!tags.some((tag) => tag.startsWith("time=")))
     tags.push(`time=${new Date(time).toISOString()}`);
   if (isOwn) tags.push(`${OWN_LINE_TAG}=1`);

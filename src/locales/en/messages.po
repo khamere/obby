@@ -1774,6 +1774,7 @@ msgstr "Control how much external media is loaded. Off / Safe / Trusted Sources 
 msgid "Control media display and external content"
 msgstr "Control media display and external content"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 #: src/components/ui/E2EEVerifyModal.tsx
 #: src/components/ui/ExternalLinkWarningModal.tsx
@@ -1810,10 +1811,16 @@ msgstr "Copy channel name"
 msgid "Copy entire JSON"
 msgstr "Copy entire JSON"
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Copy error details"
+msgstr "Copy error details"
+
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 msgid "Copy failed, select to retry"
 msgstr "Copy failed, select to retry"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/mobile/MessageReaderSheet.tsx
 msgid "Copy failed, tap to retry"
 msgstr "Copy failed, tap to retry"
@@ -4386,6 +4393,10 @@ msgstr "Obby downloads this file every time it starts, so everyone using the sam
 msgid "Obby is up to date."
 msgstr "Obby is up to date."
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Obby stopped working"
+msgstr "Obby stopped working"
+
 #: src/components/ui/UpdateSheet.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Obby will close to install the update; open it again afterwards."
@@ -5114,6 +5125,14 @@ msgstr "Relaxed - Less aggressive protection"
 #: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "Release notes"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload"
+msgstr "Reload"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload to continue. Copy the error details to report the problem."
+msgstr "Reload to continue. Copy the error details to report the problem."
 
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/pages/ChannelSettingsPage.tsx
