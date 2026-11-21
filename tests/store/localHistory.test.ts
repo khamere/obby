@@ -682,6 +682,74 @@ describe("local history with a chathistory server", () => {
       );
     });
 
+    describe("a gap longer than we fill at once", () => {
+      const pageStart = (index: number) => 1000 - 60 * index;
+      const requestBefore = (seconds: number) =>
+        expect.stringContaining(
+          `CHATHISTORY BEFORE #chan timestamp=${at(seconds)} `,
+        );
+
+      beforeEach(async () => {
+        for (let index = 1; index <= 10; index++) {
+          w.feed(
+            ...inBatch(
+              `g${index}`,
+              "#chan",
+              page(50, pageStart(index), `g${index}-`),
+            ),
+          );
+          if (index < 10)
+            await vi.waitFor(() =>
+              expect(w.chathistoryRequests()).toContainEqual(
+                requestBefore(pageStart(index)),
+              ),
+            );
+        }
+        await vi.waitFor(async () =>
+          expect(await w.db.gapsFor(SERVER, "#chan")).toEqual([
+            expect.objectContaining({
+              from: BASE + 2000,
+              to: BASE + pageStart(10) * 1000,
+              lost: false,
+            }),
+          ]),
+        );
+        await w.drain();
+        w.sent.length = 0;
+      });
+
+      it("keeps no message from before the gap on screen", () => {
+        const texts = w.channelMessages().map((m) => m.content);
+        expect(texts).not.toContain("one");
+        expect(texts).not.toContain("two");
+        expect(texts[0]).toBe("g10- line 0");
+        expect(texts).toHaveLength(550);
+        expect(w.channel()?.hasMoreHistory).toBe(true);
+      });
+
+      it("fills the gap when the reader loads older messages", async () => {
+        expect(await w.loadOlder(BASE + pageStart(10) * 1000)).toBe(true);
+
+        expect(w.chathistoryRequests()).toEqual([requestBefore(pageStart(10))]);
+        w.feed(
+          ...inBatch("g11", "#chan", [
+            privmsg("m2", 2, "two"),
+            ...page(9, 300, "f"),
+          ]),
+        );
+        await vi.waitFor(() =>
+          expect(
+            w
+              .channelMessages()
+              .slice(0, 3)
+              .map((m) => m.content),
+          ).toEqual(["one", "two", "f line 0"]),
+        );
+        expect(await w.db.gapsFor(SERVER, "#chan")).toEqual([]);
+        expect(new Set(w.channelMessages().map((m) => m.msgid)).size).toBe(561);
+      });
+    });
+
     it("marks the gap lost when the server has nothing older", async () => {
       w.feed(...inBatch("h2", "#chan", []));
 

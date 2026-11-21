@@ -661,7 +661,10 @@ function settleGap(
     showMissingMarker(store, serverId, conversation.channelId, gap);
     return;
   }
-  if (pagesLeft === 0) return;
+  if (pagesLeft === 0) {
+    showOnlyAfterGap(store, conversation.key, gap);
+    return;
+  }
   requestPageBefore(
     serverId,
     target,
@@ -669,6 +672,32 @@ function settleGap(
     { gap, pagesLeft: pagesLeft - 1 },
     false,
   );
+}
+
+// A gap longer than we fill at once goes above the messages on screen, where
+// load more fills it as the reader scrolls up to it.
+function showOnlyAfterGap(
+  store: StoreApi<AppState>,
+  key: string,
+  gap: HistoryGap,
+) {
+  const isAfterGap = (message: Message) => messageTime(message) >= gap.to;
+  store.setState((state) => {
+    const window = state.historyWindows[key];
+    return window
+      ? {
+          historyWindows: {
+            ...state.historyWindows,
+            [key]: { ...window, present: window.present.filter(isAfterGap) },
+          },
+        }
+      : {
+          messages: {
+            ...state.messages,
+            [key]: (state.messages[key] ?? []).filter(isAfterGap),
+          },
+        };
+  });
 }
 
 export function findConversation(
