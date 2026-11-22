@@ -36,6 +36,21 @@ describe("decodeHtmlEntities", () => {
   );
 });
 
+describe("decodeHtmlEntities on an older engine", () => {
+  it("decodes without Object.hasOwn, which older webviews lack", () => {
+    const hasOwn = Object.hasOwn;
+    // biome-ignore lint/suspicious/noExplicitAny: we take a built-in away for the test
+    (Object as any).hasOwn = undefined;
+    try {
+      expect(decodeHtmlEntities("a &lt; b &constructor;")).toBe(
+        "a < b &constructor;",
+      );
+    } finally {
+      Object.hasOwn = hasOwn;
+    }
+  });
+});
+
 describe("decodeCharacterReferences", () => {
   it("decodes every reference a page would", () => {
     expect(decodeCharacterReferences("caf&eacute; &#x22;a&#34; &amp;lt;")).toBe(
