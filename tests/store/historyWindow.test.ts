@@ -222,6 +222,28 @@ describe("history windows", { timeout: 2 * WRITE_TIMEOUT_MS }, () => {
     expect(w.shown()).toEqual(ids(280, 379));
   });
 
+  it("leaves a window alone that another jump replaced while the last saved page landed", async () => {
+    const w = await boot();
+    await w.save(380);
+    await w.showNewest();
+    await w.jumpTo(100);
+    for (let page = 0; page < 4; page++) await w.pageNewer();
+    const stop = w.useStore.subscribe((state, previous) => {
+      const window = state.historyWindows[KEY];
+      if (state.messages === previous.messages || window?.jumpId !== 1) return;
+      if (!w.shown().includes("m379")) return;
+      w.useStore.setState({
+        historyWindows: { [KEY]: { ...window, jumpId: 2 } },
+      });
+    });
+
+    await w.pageNewer();
+    stop();
+
+    expect(w.window()?.jumpId).toBe(2);
+    expect(w.sent.filter((raw) => raw.includes("LATEST"))).toEqual([]);
+  });
+
   it("drops the oldest messages while paging newer and loads them back above", async () => {
     const w = await boot();
     await w.save(700);
