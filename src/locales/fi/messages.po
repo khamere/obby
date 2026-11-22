@@ -6416,6 +6416,10 @@ msgstr "Tämä selain ei voi nauhoittaa ääntä."
 msgid "This browser cannot record video."
 msgstr "Tämä selain ei voi nauhoittaa videota."
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "This browser does not let Obby store data, so nothing was saved."
+msgstr "Tämä selain ei anna Obbyn tallentaa tietoja, joten mitään ei tallennettu."
+
 #: src/components/search/SearchQueryBar.tsx
 msgid "This chat"
 msgstr "Tämä keskustelu"
@@ -6500,6 +6504,10 @@ msgstr "Tällä palvelimella ei ole tiedostopalvelinta. Yhdistä palvelimeen, jo
 #: src/components/ui/AddServerModal.tsx
 msgid "This server only supports one connection type"
 msgstr "Tämä palvelin tukee vain yhtä yhteystyyppiä"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "This stylesheet could not be made safe, so it was not saved."
+msgstr "Tätä tyylitiedostoa ei voitu tehdä turvalliseksi, joten sitä ei tallennettu."
 
 #. placeholder {0}: children.length
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
@@ -6806,6 +6814,10 @@ msgstr "Käytä suojattua websocket-porttia."
 #: src/components/pages/SettingsPage.tsx
 msgid "Use a server with IRCv3 METADATA to set your avatar, display name, and status."
 msgstr "Käytä IRCv3 METADATA -tukea palvelinta asettaaksesi profiilikuvan, näyttönimen ja tilan."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Use a smaller stylesheet. This one does not fit in this browser's storage."
+msgstr "Käytä pienempää tyylitiedostoa. Tämä ei mahdu tämän selaimen tallennustilaan."
 
 #: src/components/ui/settings/BackupField.tsx
 msgid "Use at least {PASSWORD_MIN_LENGTH} characters."

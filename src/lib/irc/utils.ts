@@ -50,3 +50,12 @@ export function getTimestampFromTags(
   const time = parseServerTime(mtags?.time);
   return Number.isNaN(time) ? new Date() : new Date(time);
 }
+
+// A request the user types can carry a small number of its own, so each connection starts ours at a random three-digit one and counts up from there.
+export function nextMemberRequestNumber(
+  last: number | undefined,
+  random: () => number = Math.random,
+): number {
+  if (last === undefined) return 100 + Math.floor(random() * 900);
+  return last >= 999 ? 100 : last + 1;
+}

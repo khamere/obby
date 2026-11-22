@@ -338,7 +338,9 @@ describe("server-initiated own-JOIN — CHATHISTORY/WHO fanout", () => {
     expect(ch?.needsWhoRequest).toBe(false);
     expect(ch?.chathistoryRequested).toBe(false);
     expect(ch?.isLoadingHistory).toBe(false);
-    expect(sent).toContain("WHO #inspircd-help %cuhnfaro");
+    expect(sent).toContainEqual(
+      expect.stringMatching(/^WHO #inspircd-help %tcuhnfaro,\d{1,3}$/),
+    );
     expect(sent.some((l) => l.startsWith("CHATHISTORY "))).toBe(false);
   });
 

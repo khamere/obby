@@ -6416,6 +6416,10 @@ msgstr "Этот браузер не может записывать аудио.
 msgid "This browser cannot record video."
 msgstr "Этот браузер не может записывать видео."
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "This browser does not let Obby store data, so nothing was saved."
+msgstr "Этот браузер не разрешает Obby сохранять данные, поэтому ничего не сохранено."
+
 #: src/components/search/SearchQueryBar.tsx
 msgid "This chat"
 msgstr "Этот чат"
@@ -6500,6 +6504,10 @@ msgstr "На этом сервере нет файлообменника. Под
 #: src/components/ui/AddServerModal.tsx
 msgid "This server only supports one connection type"
 msgstr "Этот сервер поддерживает только один тип подключения"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "This stylesheet could not be made safe, so it was not saved."
+msgstr "Эту таблицу стилей не удалось сделать безопасной, поэтому она не сохранена."
 
 #. placeholder {0}: children.length
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
@@ -6806,6 +6814,10 @@ msgstr "Использовать защищённый порт WebSocket."
 #: src/components/pages/SettingsPage.tsx
 msgid "Use a server with IRCv3 METADATA to set your avatar, display name, and status."
 msgstr "Используйте сервер с поддержкой IRCv3 METADATA, чтобы задать аватар, отображаемое имя и статус."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Use a smaller stylesheet. This one does not fit in this browser's storage."
+msgstr "Используйте таблицу стилей поменьше. Эта не помещается в хранилище этого браузера."
 
 #: src/components/ui/settings/BackupField.tsx
 msgid "Use at least {PASSWORD_MIN_LENGTH} characters."

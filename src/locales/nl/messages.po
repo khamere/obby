@@ -6416,6 +6416,10 @@ msgstr "Deze browser kan geen audio opnemen."
 msgid "This browser cannot record video."
 msgstr "Deze browser kan geen video opnemen."
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "This browser does not let Obby store data, so nothing was saved."
+msgstr "Deze browser laat Obby geen gegevens opslaan, dus er is niets opgeslagen."
+
 #: src/components/search/SearchQueryBar.tsx
 msgid "This chat"
 msgstr "Deze chat"
@@ -6500,6 +6504,10 @@ msgstr "Deze server heeft geen bestandshost. Maak verbinding met een server met 
 #: src/components/ui/AddServerModal.tsx
 msgid "This server only supports one connection type"
 msgstr "Deze server ondersteunt slechts één verbindingstype"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "This stylesheet could not be made safe, so it was not saved."
+msgstr "Dit stylesheet kon niet veilig worden gemaakt en is daarom niet opgeslagen."
 
 #. placeholder {0}: children.length
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
@@ -6806,6 +6814,10 @@ msgstr "Gebruik een beveiligde websocketpoort."
 #: src/components/pages/SettingsPage.tsx
 msgid "Use a server with IRCv3 METADATA to set your avatar, display name, and status."
 msgstr "Gebruik een server met IRCv3 METADATA om je avatar, weergavenaam en status in te stellen."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Use a smaller stylesheet. This one does not fit in this browser's storage."
+msgstr "Gebruik een kleiner stylesheet. Dit past niet in de opslag van deze browser."
 
 #: src/components/ui/settings/BackupField.tsx
 msgid "Use at least {PASSWORD_MIN_LENGTH} characters."
