@@ -66,6 +66,15 @@ describe("markdown code fence language", () => {
     ["a'b=c", "a'b=c"],
     ["<b>", "<b>"],
     ["a&quot;b", 'a"b'],
+    ["a&#x22;b&#34;c", 'a"b"c'],
+    ["a&#x22;onclick=&#x22;b", 'a"onclick="b'],
+    ["caf&eacute;", "café"],
+    ["&constructor;", "&constructor;"],
+    ["&__proto__;", "&__proto__;"],
+    ["&amp;lt;b&amp;gt;", "&lt;b&gt;"],
+    ["&lt;script&gt;alert(1)&lt;/script&gt;", "<script>alert(1)</script>"],
+    ["<img/src=x/onerror=alert(1)>", "<img/src=x/onerror=alert(1)>"],
+    [`${"&eacute;".repeat(33)}`, `${"é".repeat(32)}…`],
     ["x".repeat(33), `${"x".repeat(32)}…`],
     [`${"x".repeat(32)}"y`, `${"x".repeat(32)}…`],
   ])("shows the fence word %s as text and gives it no class", (word, shown) => {
@@ -73,6 +82,12 @@ describe("markdown code fence language", () => {
     expect(codeAttributes(container)).toEqual([]);
     expect(label(container)).toBe(shown);
     expect(container.querySelector("[data-fence-label]")).toBeNull();
+    expect(container.querySelector("script, img, b, [onclick]")).toBeNull();
+    const header = container.querySelector(".code-block-header");
+    expect([...(header?.attributes ?? [])].map((attr) => attr.name)).toEqual([
+      "class",
+    ]);
+    expect(header?.children).toHaveLength(1);
     expect(container.querySelector("pre code")?.innerHTML).toBe("int a = 1;");
   });
 
@@ -179,8 +194,7 @@ describe("markdown inline styles", () => {
   });
 });
 
-// The highlighter loads after the first render, so these wait for it: a fence
-// word reaches it only as a whole language name, never as its leading part.
+// We wait for the lazy highlighter import so these tests exercise highlighting.
 describe("markdown code fence highlighting", () => {
   beforeAll(async () => {
     await import("../../src/lib/hljs");
@@ -201,6 +215,18 @@ describe("markdown code fence highlighting", () => {
     );
     expect(label(container)).toBe(language);
     expect(highlighted(container)).toBe(true);
+  });
+
+  it("detects the language of a fence that names none", () => {
+    const container = renderMessage(
+      "```\nSELECT name FROM users WHERE id = 1;\n```",
+    );
+    expect(container.querySelector("pre code")?.className).toBe("language-sql");
+    expect(label(container)).toBe("sql");
+    expect(highlighted(container)).toBe(true);
+    expect(container.querySelector("pre code")?.textContent).toBe(
+      "SELECT name FROM users WHERE id = 1;",
+    );
   });
 
   it.each([

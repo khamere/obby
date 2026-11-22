@@ -5,7 +5,11 @@ import { ChannelLink } from "../components/message/ChannelLink";
 /* eslint-disable no-control-regex */
 import type { Server, User } from "../types";
 import { findChannelMentions } from "./channelMentions";
-import { decodeHtmlEntities, escapeHtml } from "./htmlEntities";
+import {
+  decodeCharacterReferences,
+  decodeHtmlEntities,
+  escapeHtml,
+} from "./htmlEntities";
 import { isTauri } from "./platformUtils";
 import { userFilehostOrigin } from "./userFilehost";
 
@@ -494,10 +498,10 @@ const fenceLanguageName = (word: string | undefined): string | undefined =>
     ? word
     : undefined;
 
-// Any other fence word is shown as the sender wrote it, as escaped text cut
-// to the length of a language name, so we never pass it to the highlighter.
+// Any other fence word is shown as the text a page would read from it, so we
+// decode it first, cut it to the length of a language name and escape it last.
 const fenceWordLabel = (word: string): string => {
-  const chars = [...decodeHtmlEntities(word)];
+  const chars = [...decodeCharacterReferences(word)];
   const shown =
     chars.length > MAX_FENCE_WORD
       ? `${chars.slice(0, MAX_FENCE_WORD).join("")}…`

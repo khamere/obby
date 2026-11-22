@@ -30,13 +30,26 @@ export function decodeHtmlEntities(text: string): string {
   return text.replace(
     /&(?:#(\d+)|#x([0-9a-f]+)|([a-z]+));/gi,
     (entity, decimal?: string, hex?: string, name?: string) => {
-      if (name) return NAMED_ENTITIES[name.toLowerCase()] ?? entity;
+      if (name) {
+        const key = name.toLowerCase();
+        return Object.hasOwn(NAMED_ENTITIES, key)
+          ? NAMED_ENTITIES[key]
+          : entity;
+      }
       const codePoint = decimal
         ? Number.parseInt(decimal, 10)
         : Number.parseInt(hex ?? "", 16);
       return codePoint <= 0x10ffff ? String.fromCodePoint(codePoint) : entity;
     },
   );
+}
+
+// We let the browser's own parser decode, so every reference reads as it
+// does in a page, and we escape "<" first so the parser only ever sees text.
+export function decodeCharacterReferences(text: string): string {
+  const holder = document.createElement("textarea");
+  holder.innerHTML = text.replace(/</g, "&lt;");
+  return holder.value;
 }
 
 const ESCAPES: Record<string, string> = {
