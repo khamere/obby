@@ -42,6 +42,7 @@ vi.mock("../src/components/PrivacyPolicy", async (importOriginal) => {
 let storeVersion = 0;
 const mockStoreState = {
   servers: [],
+  bouncers: {},
   currentUser: { id: "user1", username: "testuser", isOnline: true },
   isConnecting: false,
   isAddingNewServer: false,
