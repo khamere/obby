@@ -400,6 +400,27 @@ describe("read markers", () => {
     );
   });
 
+  it("leaves the chats alone when an update touches neither chats nor messages", async () => {
+    const { useStore } = await boot({ selected: false });
+    const privateChats = [
+      {
+        id: "pm-bob",
+        username: "bob",
+        serverId: SERVER,
+        unreadCount: 0,
+        isMentioned: false,
+        readMarker: null,
+        readMarkerFetched: true,
+      },
+    ];
+    useStore.setState((state) => ({
+      servers: state.servers.map((server) => ({ ...server, privateChats })),
+    }));
+    const find = vi.spyOn(privateChats, "find");
+    useStore.setState({ rawLog: { [SERVER]: [] } });
+    expect(find).not.toHaveBeenCalled();
+  });
+
   it("stops sending markers on a connection once the server refuses one", async () => {
     vi.useFakeTimers();
     const { useStore, ircClient, markreadSet } = await boot({ selected: true });

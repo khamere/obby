@@ -154,6 +154,13 @@ function withUnreadCounts(
 ): Server[] | undefined {
   const inView = chatInView(state);
   const wasInView = chatInView(previous);
+  if (
+    state.servers === previous.servers &&
+    state.messages === previous.messages &&
+    state.historyWindows === previous.historyWindows &&
+    inView === wasInView
+  )
+    return undefined;
   let servers = state.servers;
   for (const server of state.servers) {
     const before = previous.servers.find((s) => s.id === server.id);
