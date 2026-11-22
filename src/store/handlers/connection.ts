@@ -4,7 +4,7 @@ import { forgetAutoAway, forgetExpectedBack } from "../../lib/autoAway";
 import { isLiveChannel } from "../../lib/channelFolders";
 import ircClient from "../../lib/ircClient";
 import { cannotBeChannelName } from "../../lib/ircUtils";
-import type { PrivateChat } from "../../types";
+import type { PrivateChat, Server } from "../../types";
 import {
   generateDeterministicId,
   getServerSelection,
@@ -20,6 +20,18 @@ import { reportServerReply } from "./serverReplies";
 
 // Track which servers have had their ready handler run to prevent duplicate processing
 export const readyProcessedServers = new Set<string>();
+
+// A bouncer names a bound network's account only when its upstream is logged
+// in, so between connections the network takes the control connection's
+// account and keeps its last one while the control connection has none.
+function accountBetweenConnections(
+  servers: Server[],
+  server: Server,
+): string | undefined {
+  if (!server.bouncerServerId) return undefined;
+  const control = servers.find((s) => s.id === server.bouncerServerId);
+  return control?.account ?? server.account;
+}
 
 export function registerConnectionHandlers(store: StoreApi<AppState>): void {
   ircClient.on("MOTD", ({ serverId, lines }) => {
@@ -169,13 +181,10 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
             ? { isAway: false, awayMessage: undefined }
             : {}),
           webPushFailure: undefined,
-          // A network bound through a bouncer is told its account by the
-          // control connection alone, so we keep it across the network's own
-          // connections.
           account:
-            connectionState === "connected" || server.bouncerServerId
+            connectionState === "connected"
               ? server.account
-              : undefined,
+              : accountBetweenConnections(state.servers, server),
           saslFailed:
             connectionState === "connected" ? server.saslFailed : false,
         };

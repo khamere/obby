@@ -1,12 +1,13 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ircClient from "../../src/lib/ircClient";
 import useStore from "../../src/store";
 import { registerAuthHandlers } from "../../src/store/handlers/auth";
 import { serverTracksReadMarker } from "../../src/store/helpers";
 
 // A network bound through a bouncer logs in as the bouncer's account; the
-// bouncer answers no 900 on that connection, so the child takes the account
-// from the control connection, and its read markers go to the bouncer.
+// bouncer answers a 900 on that connection only when the upstream is logged
+// in, so the child takes the account from the control connection, and its
+// read markers go to the bouncer.
 describe("a bouncer child's account", () => {
   let saved: Record<string, unknown[]>;
 
@@ -166,39 +167,138 @@ describe("a bouncer child's account across a reconnect", () => {
     expect(server("plain")?.account).toBeUndefined();
   });
 
-  it("keeps a private chat nobody read unread", () => {
-    useStore.setState((s) => ({
-      servers: s.servers.map((row) =>
-        row.id === "child"
-          ? {
-              ...row,
-              privateChats: [
-                {
-                  id: "pm",
-                  username: "friend",
-                  serverId: "child",
-                  unreadCount: 0,
-                  isMentioned: false,
-                  readMarker: null,
-                  readMarkerFetched: true,
-                },
-              ],
-            }
-          : row,
-      ),
-    }));
-    ircClient.triggerEvent("parsedLine", {
+  it("stays while the control connection is down too", () => {
+    drop("parent");
+    drop("child");
+    open("child");
+
+    expect(server("child")?.account).toBe("me");
+    expect(serverTracksReadMarker(useStore.getState(), "child")).toBe(true);
+  });
+
+  it("drops the upstream account the bouncer named on the last connection", () => {
+    ircClient.triggerEvent("LOGGED_IN", {
       serverId: "child",
-      line: ":soju.example 001 me :Welcome",
-      command: "001",
-      source: "soju.example",
-      parv: ["me", "Welcome"],
-      mtags: { time: "2026-01-01T00:00:00.000Z" },
+      account: "upstream",
     });
+    expect(server("child")?.account).toBe("upstream");
 
     drop("child");
     open("child");
 
-    expect(server("child")?.privateChats?.[0].readMarker).toBeNull();
+    expect(server("child")?.account).toBe("me");
+  });
+
+  describe("with a private chat", () => {
+    const welcome = (time: string) =>
+      ircClient.triggerEvent("parsedLine", {
+        serverId: "child",
+        line: ":soju.example 001 me :Welcome",
+        command: "001",
+        source: "soju.example",
+        parv: ["me", "Welcome"],
+        mtags: { time },
+      });
+    const seedChat = (marker: {
+      readMarker?: string | null;
+      readMarkerFetched?: boolean;
+    }) =>
+      useStore.setState((s) => ({
+        servers: s.servers.map((row) =>
+          row.id === "child"
+            ? {
+                ...row,
+                privateChats: [
+                  {
+                    id: "pm",
+                    username: "friend",
+                    serverId: "child",
+                    unreadCount: 0,
+                    isMentioned: false,
+                    ...marker,
+                  },
+                ],
+              }
+            : row,
+        ),
+      }));
+    const chat = () => server("child")?.privateChats?.[0];
+    let markreadGet: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      vi.spyOn(ircClient, "getNick").mockReturnValue("me");
+      markreadGet = vi
+        .spyOn(ircClient, "markreadGet")
+        .mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+      useStore.setState({ messages: {} });
+    });
+
+    it("keeps a line nobody read unread", () => {
+      welcome("2026-01-02T00:00:00.000Z");
+      seedChat({ readMarker: null, readMarkerFetched: true });
+      useStore.setState({
+        messages: {
+          "child-pm": [
+            {
+              id: "m1",
+              msgid: "m1",
+              type: "message",
+              content: "hello",
+              timestamp: new Date("2026-01-01T00:00:00.000Z"),
+              userId: "friend",
+              channelId: "pm",
+              serverId: "child",
+              reactions: [],
+              replyMessage: null,
+              mentioned: [],
+            },
+          ],
+        },
+      } as never);
+      expect(chat()?.unreadCount).toBe(1);
+
+      drop("child");
+      open("child");
+      welcome("2026-01-03T00:00:00.000Z");
+
+      expect(chat()?.readMarker).toBeNull();
+      expect(chat()).toMatchObject({ unreadCount: 1, isMentioned: true });
+    });
+
+    it("asks again for a marker whose answer the last connection lost", () => {
+      welcome("2026-01-02T00:00:00.000Z");
+      seedChat({ readMarkerFetched: true });
+
+      drop("child");
+      open("child");
+      expect(markreadGet).not.toHaveBeenCalled();
+      welcome("2026-01-03T00:00:00.000Z");
+
+      expect(markreadGet.mock.calls).toEqual([["child", "friend"]]);
+    });
+
+    it("asks again for a marker it knows, since another client can have moved it", () => {
+      welcome("2026-01-02T00:00:00.000Z");
+      seedChat({
+        readMarker: "2026-01-01T00:00:00.000Z",
+        readMarkerFetched: true,
+      });
+
+      drop("child");
+      open("child");
+      welcome("2026-01-03T00:00:00.000Z");
+      ircClient.triggerEvent("MARKREAD", {
+        serverId: "child",
+        target: "friend",
+        timestamp: "2026-01-02T12:00:00.000Z",
+      } as never);
+
+      expect(markreadGet.mock.calls).toEqual([["child", "friend"]]);
+      expect(chat()?.readMarker).toBe("2026-01-02T12:00:00.000Z");
+    });
   });
 });
