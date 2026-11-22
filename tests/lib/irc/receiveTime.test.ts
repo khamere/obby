@@ -4,6 +4,7 @@ import {
   HistoryRecorder,
 } from "../../../src/lib/history/historyLines";
 import { IRCClient } from "../../../src/lib/irc/IRCClient";
+import { parseServerTime } from "../../../src/lib/irc/utils";
 
 const feed = (client: IRCClient, line: string) =>
   (
@@ -49,27 +50,78 @@ describe("receive time", () => {
     );
   });
 
-  test("a server-time tag on a leap second counts as the server's time, at the end of its minute", () => {
+  test("a time on a leap second reaches no handler as a time it cannot read", () => {
+    vi.useFakeTimers({ now: Date.parse("2026-10-14T10:00:00.000Z") });
     const client = new IRCClient();
-    const onMessage = vi.fn();
-    const onParsed = vi.fn();
-    client.on("CHANMSG", onMessage);
-    client.on("parsedLine", onParsed);
+    const leap = "2012-06-30T23:59:60.419Z";
+    const tagTimes: string[] = [];
+    const shown: Date[] = [];
+    client.on("parsedLine", (parsed) =>
+      tagTimes.push(parsed.mtags?.time ?? ""),
+    );
+    client.on("JOIN", ({ time }) =>
+      shown.push(time ? new Date(time) : new Date()),
+    );
+    client.on("MULTILINE_MESSAGE", ({ timestamp }) => shown.push(timestamp));
+    client.on("CHANMSG", ({ timestamp }) => shown.push(timestamp));
 
+    feed(client, `@time=${leap} :alice!a@h JOIN #lobby`);
     feed(
       client,
-      "@time=2012-06-30T23:59:60.419Z :alice!a@h PRIVMSG #lobby :hi",
+      `@time=${leap};msgid=m1 :alice!a@h BATCH +ml draft/multiline #lobby`,
     );
+    feed(client, "@batch=ml :alice!a@h PRIVMSG #lobby :one");
+    feed(client, "@batch=ml :alice!a@h PRIVMSG #lobby :two");
+    feed(client, ":alice!a@h BATCH -ml");
+    feed(client, `@time=${leap} :alice!a@h PRIVMSG #lobby :hi`);
 
-    expect(client.hasLineServerTime).toBe(true);
-    expect(onParsed.mock.calls[0][0]).toMatchObject({
-      hasReceiveTime: false,
-      mtags: { time: "2012-06-30T23:59:60.419Z" },
-    });
-    expect(onMessage.mock.calls[0][0].timestamp.toISOString()).toBe(
-      "2012-06-30T23:59:59.999Z",
+    expect(tagTimes).toHaveLength(6);
+    expect(tagTimes.map((time) => new Date(time).toISOString())).toEqual(
+      tagTimes.map(() => "2026-10-14T10:00:00.000Z"),
     );
+    expect(shown.map((time) => time.toISOString())).toEqual([
+      "2026-10-14T10:00:00.000Z",
+      "2026-10-14T10:00:00.000Z",
+      "2026-10-14T10:00:00.000Z",
+    ]);
+    expect(client.hasLineServerTime).toBe(false);
   });
+
+  test.each([
+    "2026-10-13T10:00:00.123Z",
+    "2026-10-13T10:00:00Z",
+    "2026-10-13T10:00:00.5Z",
+    "2026-10-13T10:00:00.12Z",
+    "2026-10-13T10:00:00.1234Z",
+    "2026-10-13T10:00:00.123456Z",
+    "2026-10-13T10:00:00.123456789Z",
+    "2026-10-13T10:00:00.999999999Z",
+    "2024-02-29T23:59:59.999Z",
+  ])(
+    "a server time of %s reaches the handlers in the one form every reader takes the same way",
+    (sent) => {
+      vi.useFakeTimers({ now: Date.parse("2026-10-14T10:00:00.000Z") });
+      const client = new IRCClient();
+      const onParsed = vi.fn();
+      const onMessage = vi.fn();
+      client.on("parsedLine", onParsed);
+      client.on("CHANMSG", onMessage);
+
+      feed(client, `@time=${sent} :alice!a@h PRIVMSG #lobby :hi`);
+
+      const { mtags, line, hasReceiveTime } = onParsed.mock.calls[0][0];
+      expect(hasReceiveTime).toBe(false);
+      expect(line).toContain(`time=${sent}`);
+      expect(mtags.time).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+      );
+      expect(mtags.time).toBe(new Date(parseServerTime(sent)).toISOString());
+      expect(Date.parse(mtags.time)).toBe(parseServerTime(sent));
+      expect(onMessage.mock.calls[0][0].timestamp.getTime()).toBe(
+        parseServerTime(sent),
+      );
+    },
+  );
 
   test("a server-time tag that is no date gives way to the receive time", () => {
     vi.useFakeTimers({ now: Date.parse("2026-10-14T10:00:00.000Z") });

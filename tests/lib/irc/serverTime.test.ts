@@ -13,8 +13,7 @@ describe("parseServerTime", () => {
     ["2024-02-29T23:59:59.999Z", "2024-02-29T23:59:59.999Z"],
     ["2026-11-23T12:00:00.000Z", "2026-11-23T12:00:00.000Z"],
     ["1995-06-01T00:00:00.000Z", "1995-06-01T00:00:00.000Z"],
-    ["2012-06-30T23:59:60.419Z", "2012-06-30T23:59:59.999Z"],
-    ["2016-12-31T23:59:60Z", "2016-12-31T23:59:59.999Z"],
+    ["2026-11-21T10:00:00.123456789Z", "2026-11-21T10:00:00.123Z"],
   ])("reads %s", (value, expected) => {
     expect(new Date(read(value)).toISOString()).toBe(expected);
   });
@@ -32,6 +31,8 @@ describe("parseServerTime", () => {
     ["a day the month does not have", "2026-02-30T10:00:00.000Z"],
     ["a month the year does not have", "2026-13-01T10:00:00.000Z"],
     ["an hour the day does not have", "2026-11-21T24:00:00.000Z"],
+    ["a leap second", "2012-06-30T23:59:60.419Z"],
+    ["a second the minute does not have", "2026-11-21T14:09:60.419Z"],
     ["a second past the leap second", "2012-06-30T23:59:61.000Z"],
     ["a minute the hour does not have", "2012-06-30T23:60:00.000Z"],
     [

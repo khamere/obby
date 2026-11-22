@@ -456,6 +456,10 @@ describe("local history with a chathistory server", () => {
         "@msgid=u1;time=3000 :alice!u@h PRIVMSG #chan :when",
       ],
       [
+        "a second its minute does not have",
+        `@msgid=u1;time=${at(540).replace(":09:00.000Z", ":09:60.419Z")} :alice!u@h PRIVMSG #chan :when`,
+      ],
+      [
         "a time far ahead of our clock",
         "@msgid=u1;time=9999-12-31T23:59:59.999Z :alice!u@h PRIVMSG #chan :when",
       ],

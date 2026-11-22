@@ -2263,11 +2263,15 @@ export class IRCClient implements IRCClientContext {
       }
       // Servers without server-time, or with one that is no date, leave the
       // time to us, so we stamp one receive time that the chat and the saved
-      // history both read.
-      const hasServerTime = !Number.isNaN(parseServerTime(mtags?.time));
+      // history both read. A server's time goes on in the one form every
+      // reader of the tag takes the same way, whatever fraction it came with.
+      const serverTime = parseServerTime(mtags?.time);
+      const hasServerTime = !Number.isNaN(serverTime);
       this.hasLineServerTime = hasServerTime;
-      if (!mtags?.time || !hasServerTime)
-        mtags = { ...mtags, time: new Date().toISOString() };
+      mtags = {
+        ...mtags,
+        time: new Date(hasServerTime ? serverTime : Date.now()).toISOString(),
+      };
 
       // Parse IRC message properly handling colon-prefixed trailing parameter
       const spaceIndex = lineAfterTags.indexOf(" :");
