@@ -4,7 +4,7 @@ import { forgetAutoAway, forgetExpectedBack } from "../../lib/autoAway";
 import { isLiveChannel } from "../../lib/channelFolders";
 import ircClient from "../../lib/ircClient";
 import { cannotBeChannelName } from "../../lib/ircUtils";
-import type { PrivateChat } from "../../types";
+import type { PrivateChat, Server } from "../../types";
 import {
   generateDeterministicId,
   getServerSelection,
@@ -20,6 +20,16 @@ import { reportServerReply } from "./serverReplies";
 
 // Track which servers have had their ready handler run to prevent duplicate processing
 export const readyProcessedServers = new Set<string>();
+
+// We fall back to the bouncer's account until the network names its own.
+function accountBetweenConnections(
+  servers: Server[],
+  server: Server,
+): string | undefined {
+  if (!server.bouncerServerId) return undefined;
+  const control = servers.find((s) => s.id === server.bouncerServerId);
+  return control?.account ?? server.account;
+}
 
 export function registerConnectionHandlers(store: StoreApi<AppState>): void {
   ircClient.on("MOTD", ({ serverId, lines }) => {
@@ -145,7 +155,14 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
     }
 
     store.setState((state) => {
+      const controlAccount =
+        connectionState === "connected"
+          ? undefined
+          : state.servers.find((s) => s.id === serverId)?.account;
       const updatedServers = state.servers.map((server) => {
+        // We reset the networks while we still know the bouncer's account.
+        if (server.bouncerServerId === serverId && controlAccount)
+          return { ...server, account: controlAccount };
         if (server.id !== serverId) return server;
 
         // On disconnect, reset chathistoryRequested so history is re-fetched after rejoin
@@ -169,7 +186,10 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
             ? { isAway: false, awayMessage: undefined }
             : {}),
           webPushFailure: undefined,
-          account: connectionState === "connected" ? server.account : undefined,
+          account:
+            connectionState === "connected"
+              ? server.account
+              : accountBetweenConnections(state.servers, server),
           saslFailed:
             connectionState === "connected" ? server.saslFailed : false,
         };
