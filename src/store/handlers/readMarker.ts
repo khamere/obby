@@ -22,8 +22,8 @@ const MARK_READ_DELAY_MS = 1000;
 // start local markers from then on.
 const registeredAt = new Map<string, string>();
 
-// A server takes no marker from a connection it has yet to welcome, so what
-// the user reads meanwhile waits here until it tells us the chat's marker.
+// A connection can end before the server stores what the user read, so we keep
+// each chat's newest read here until the server names it or a later one.
 const unsentMarkers = new Map<string, string>();
 // A server that stores nothing for a chat answers our marker with its old one,
 // so we send each waiting marker once per connection.
@@ -114,10 +114,14 @@ export function markChatRead(
   setReadMarker(store, serverId, chatId, marker);
   closeChatNotification(serverId, targetOf(chat));
   if (!tracks) return;
-  if (isRegistered(state, serverId)) {
-    unsentMarkers.delete(chatKey(serverId, chat));
-    ircClient.markreadSet(serverId, targetOf(chat), marker);
-  } else unsentMarkers.set(chatKey(serverId, chat), marker);
+  const key = chatKey(serverId, chat);
+  unsentMarkers.set(key, marker);
+  if (!isRegistered(state, serverId)) return;
+  resentMarkers.set(
+    serverId,
+    (resentMarkers.get(serverId) ?? new Set<string>()).add(key),
+  );
+  ircClient.markreadSet(serverId, targetOf(chat), marker);
 }
 
 // Every chat with unread lines, on every server: the "Read all" button.
@@ -267,8 +271,8 @@ export function registerReadMarkerHandlers(store: StoreApi<AppState>): void {
         if (!eqIC(targetOf(chat), target)) return chat;
         const key = chatKey(serverId, chat);
         const unsent = unsentMarkers.get(key);
-        // What the user read while the connection was away waits until the
-        // server names that marker or a later one from another client.
+        // An answer older than what the user read here was on its way before
+        // ours arrived, so the chat stays read and our marker keeps waiting.
         const isWaiting =
           unsent !== undefined &&
           (timestamp === null || Date.parse(unsent) > Date.parse(timestamp));
@@ -290,11 +294,7 @@ export function registerReadMarkerHandlers(store: StoreApi<AppState>): void {
             ? chat
             : { ...chat, readMarker };
         }
-        // A server that keeps no marker for a chat answers `*` to our own
-        // marker too, so what we already read here stays read.
-        const readMarker = isWaiting
-          ? unsent
-          : (timestamp ?? chat.readMarker ?? null);
+        const readMarker = isWaiting ? unsent : timestamp;
         return chat.readMarker === readMarker &&
           "username" in chat &&
           chat.readMarkerFetched

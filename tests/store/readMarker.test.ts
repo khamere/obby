@@ -545,6 +545,89 @@ describe("read markers", () => {
     expect(service()).toMatchObject({ unreadCount: 0, readMarker: read });
   });
 
+  it("keeps a newer read made while the server's older marker is still on its way", async () => {
+    const { useStore, markreadSet, channel, drop, welcome, answer } =
+      await markReadWhileAway("one");
+    welcome();
+    useStore.setState((state) => ({
+      messages: {
+        ...state.messages,
+        [KEY]: [...state.messages[KEY], message(4)],
+      },
+    }));
+    useStore.getState().markChannelAsRead(SERVER, "chan-1");
+    const newer = new Date(BASE + 4000).toISOString();
+    expect(markreadSet.mock.calls).toEqual([[SERVER, "#chan", newer]]);
+
+    answer("#chan", STORED);
+    expect(markreadSet).toHaveBeenCalledTimes(1);
+    expect(channel()).toMatchObject({ unreadCount: 0, readMarker: newer });
+
+    drop();
+    welcome();
+    answer("#chan", STORED);
+    expect(markreadSet.mock.calls).toEqual([
+      [SERVER, "#chan", newer],
+      [SERVER, "#chan", newer],
+    ]);
+    expect(channel()).toMatchObject({ unreadCount: 0, readMarker: newer });
+  });
+
+  it("keeps a chat read while connected when the server stores no marker for it", async () => {
+    const { useStore, markreadSet, service, answer } = await bootBoundNetwork();
+    useStore.getState().markAllRead();
+    const read = new Date(BASE + 2000).toISOString();
+    expect(markreadSet).toHaveBeenCalledWith(SERVER, "service", read);
+
+    answer("service", null);
+    expect(service()).toMatchObject({ unreadCount: 0, readMarker: read });
+  });
+
+  it("counts a private chat's older lines once a login shows the server stores no marker for it", async () => {
+    const { useStore, ircClient } = await boot({ selected: false });
+    vi.spyOn(ircClient, "markreadGet").mockImplementation(() => {});
+    useStore.setState((state) => ({
+      servers: state.servers.map((server) => ({
+        ...server,
+        account: undefined,
+        privateChats: [
+          {
+            id: "pm-bob",
+            username: "bob",
+            serverId: SERVER,
+            unreadCount: 0,
+            isMentioned: false,
+          },
+        ],
+      })),
+      messages: {
+        ...state.messages,
+        [`${SERVER}-pm-bob`]: [{ ...message(1, "bob"), channelId: "pm-bob" }],
+      },
+    }));
+    const bob = () => useStore.getState().servers[0].privateChats?.[0];
+    ircClient.triggerEvent("parsedLine", {
+      serverId: SERVER,
+      line: ":irc.test 001 tester :Welcome",
+      command: "001",
+      source: "irc.test",
+      parv: ["tester", "Welcome"],
+      mtags: { time: new Date(BASE + 10000).toISOString() },
+    });
+    expect(bob()).toMatchObject({
+      unreadCount: 0,
+      readMarker: new Date(BASE + 10000).toISOString(),
+    });
+
+    ircClient.triggerEvent("LOGGED_IN", { serverId: SERVER, account: "me" });
+    ircClient.triggerEvent("MARKREAD", {
+      serverId: SERVER,
+      target: "bob",
+      timestamp: null,
+    } as never);
+    expect(bob()).toMatchObject({ unreadCount: 1, readMarker: null });
+  });
+
   it("leaves the chats alone when an update touches neither chats nor messages", async () => {
     const { useStore } = await boot({ selected: false });
     const privateChats = [
