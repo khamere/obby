@@ -67,6 +67,18 @@ describe("ChannelKeyModal", () => {
     expect(sendRaw).toHaveBeenCalledWith(SERVER, "JOIN #vault hunter2");
   });
 
+  it("keeps a non-breaking space at the end of a key", () => {
+    const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    render(<ChannelKeyModal />);
+
+    fireEvent.change(screen.getByLabelText("Channel key"), {
+      target: { value: " hunter2\u00a0 " },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Join" }));
+
+    expect(sendRaw).toHaveBeenCalledWith(SERVER, "JOIN #vault hunter2\u00a0");
+  });
+
   it.each(["hunter2 #other", "hunter2,other"])(
     "keeps the prompt open for %j and sends nothing",
     (key) => {

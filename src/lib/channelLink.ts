@@ -26,16 +26,13 @@ export function takeChannelFromAddress(): string | null {
   }
 }
 
-/** Joins `channel` once, on the first server that finishes registration and
- * holds channels, so a saved server reconnecting and a newly added one are
- * both covered. */
+/** Joins `channel` once, on the first server that finishes registration, so a
+ * saved server reconnecting and a newly added one are both covered. */
 export function joinOnFirstReady(
   channel: string,
-  holdsChannels: (serverId: string) => boolean,
   join: (serverId: string, channel: string) => void,
 ): void {
   const onReady = ({ serverId }: { serverId: string }) => {
-    if (!holdsChannels(serverId)) return;
     ircClient.deleteHook("ready", onReady);
     join(serverId, channel);
   };

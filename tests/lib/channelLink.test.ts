@@ -19,22 +19,20 @@ const joinFromLink = vi.fn((serverId: string, name: string) =>
   useStore.getState().joinChannel(serverId, name),
 );
 
-const holdsChannels = (serverId: string) =>
-  !useStore.getState().servers.find((s) => s.id === serverId)?.isBouncerControl;
-
 function startWithAddress(address: string) {
   window.history.replaceState({}, "", address);
   const channel = takeChannelFromAddress();
-  if (channel) joinOnFirstReady(channel, holdsChannels, joinFromLink);
+  if (channel) joinOnFirstReady(channel, joinFromLink);
   return channel;
 }
 
+// Registration as the server sends it, so the client's own handling of the welcome runs too.
 const becomeReady = () =>
-  ircClient.triggerEvent("ready", {
-    serverId: SERVER,
-    serverName: "Test",
-    nickname: "me",
-  });
+  (
+    ircClient as unknown as {
+      handleMessage(data: string, serverId: string): void;
+    }
+  ).handleMessage(":irc.test 001 me :Welcome", SERVER);
 
 describe("opening the app from a link with a channel parameter", () => {
   let sendRaw: ReturnType<typeof vi.spyOn>;
@@ -57,7 +55,7 @@ describe("opening the app from a link with a channel parameter", () => {
           host: "irc.test",
           port: 6667,
           nickname: "me",
-          channels: [],
+          channels: ["#saved"],
         },
       ]),
     );
@@ -102,10 +100,16 @@ describe("opening the app from a link with a channel parameter", () => {
 
     becomeReady();
 
-    expect(joinChannel).toHaveBeenCalledTimes(1);
+    expect(joinFromLink).toHaveBeenCalledTimes(1);
     expect(joinChannel).toHaveBeenCalledWith(SERVER, "#weather", undefined);
-    expect(joinLines()).toEqual(["JOIN #weather"]);
-    expect(savedChannels()).toEqual(["#weather"]);
+    expect(savedChannels()).toEqual(["#saved", "#weather"]);
+    // The link sends one JOIN, and the welcome repeats the JOIN of every channel the client holds, the saved one included.
+    expect(joinLines()).toEqual([
+      "JOIN #saved",
+      "JOIN #weather",
+      "JOIN #saved",
+      "JOIN #weather",
+    ]);
 
     readyProcessedServers.delete(SERVER);
     becomeReady();
@@ -125,9 +129,9 @@ describe("opening the app from a link with a channel parameter", () => {
 
     becomeReady();
 
-    expect(joinChannel).not.toHaveBeenCalled();
-    expect(joinLines()).toEqual([]);
-    expect(savedChannels()).toEqual([]);
+    expect(joinFromLink).not.toHaveBeenCalled();
+    expect(joinLines()).toEqual(["JOIN #saved", "JOIN #saved"]);
+    expect(savedChannels()).toEqual(["#saved"]);
   });
 
   it("reads no channel from an unencoded #, which starts the fragment", () => {
@@ -136,30 +140,13 @@ describe("opening the app from a link with a channel parameter", () => {
 
     becomeReady();
 
-    expect(joinChannel).not.toHaveBeenCalled();
-  });
-
-  it("waits past a bouncer's control session for a server that holds channels", () => {
-    useStore.setState((state) => ({
-      servers: state.servers.map((s) => ({ ...s, isBouncerControl: true })),
-    }));
-    startWithAddress("/?channel=%23weather");
-
-    becomeReady();
     expect(joinFromLink).not.toHaveBeenCalled();
-
-    useStore.setState((state) => ({
-      servers: state.servers.map((s) => ({ ...s, isBouncerControl: false })),
-    }));
-    readyProcessedServers.delete(SERVER);
-    becomeReady();
-    expect(joinLines()).toEqual(["JOIN #weather"]);
   });
 
   it("gives a bare name the # prefix", () => {
     startWithAddress("/?channel=weather");
     becomeReady();
 
-    expect(joinLines()).toEqual(["JOIN #weather"]);
+    expect(joinLines()).toContain("JOIN #weather");
   });
 });

@@ -396,9 +396,10 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
         channelsToJoin = savedServer.channels;
       }
 
-      // We drop only the saved names that would change the JOIN line, and leave every other name for the server to answer.
+      // We drop only the saved entries that are no name or would change the JOIN line, and leave every other name for the server to answer.
       const sendableChannels = channelsToJoin.filter(
-        (channelName) => !breaksJoinLine(channelName),
+        (channelName: unknown) =>
+          typeof channelName === "string" && !breaksJoinLine(channelName),
       );
       if (sendableChannels.length < channelsToJoin.length) {
         savedServer.channels = sendableChannels;

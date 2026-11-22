@@ -25,6 +25,14 @@ function saveChannels(channels: string[]) {
   );
 }
 
+// Reads a line the way a server does: arguments split on spaces, and a colon
+// opens a last argument that runs to the end of the line.
+function serverArguments(line: string): string[] {
+  const trailingAt = line.indexOf(" :");
+  if (trailingAt === -1) return line.split(" ");
+  return [...line.slice(0, trailingAt).split(" "), line.slice(trailingAt + 2)];
+}
+
 describe("joining a name that is not one channel", () => {
   let sendRaw: ReturnType<typeof vi.spyOn>;
   const sentLines = () =>
@@ -129,6 +137,65 @@ describe("joining a name that is not one channel", () => {
     expect(
       sentLines().filter((line: string) => line.startsWith("JOIN")),
     ).toEqual(saved.map((name) => `JOIN ${name}`));
+  });
+
+  it.each([":secret", "::", ":", "se:cret", "secret"])(
+    "sends the key %j so the server reads it as typed",
+    (key) => {
+      useStore.getState().joinChannel(SERVER, "#vault", key);
+
+      const joins = sentLines().filter((line: string) =>
+        line.startsWith("JOIN"),
+      );
+      expect(joins.map(serverArguments)).toEqual([["JOIN", "#vault", key]]);
+    },
+  );
+
+  it("rejoins the saved channels when the saved list holds an entry that is no name", () => {
+    lsBacking.set(
+      "savedServers",
+      JSON.stringify([
+        {
+          id: SERVER,
+          host: "irc.test",
+          port: 6667,
+          nickname: "me",
+          channels: ["#saved", null, 7, { name: "#x" }, "#other"],
+        },
+      ]),
+    );
+
+    ircClient.triggerEvent("ready", {
+      serverId: SERVER,
+      serverName: "Test",
+      nickname: "me",
+    });
+
+    expect(
+      sentLines().filter((line: string) => line.startsWith("JOIN")),
+    ).toEqual(["JOIN #saved", "JOIN #other"]);
+    expect(savedChannels()).toEqual(["#saved", "#other"]);
+  });
+
+  it("joins and leaves a channel while the saved list holds an entry that is no name", () => {
+    lsBacking.set(
+      "savedServers",
+      JSON.stringify([
+        {
+          id: SERVER,
+          host: "irc.test",
+          port: 6667,
+          nickname: "me",
+          channels: ["#saved", null],
+        },
+      ]),
+    );
+
+    useStore.getState().joinChannel(SERVER, "#open");
+    expect(savedChannels()).toContain("#open");
+
+    useStore.getState().forgetChannel(SERVER, "#open");
+    expect(savedChannels()).toEqual(["#saved"]);
   });
 
   it("drops such a saved name on connect and rejoins the others", () => {

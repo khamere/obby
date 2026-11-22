@@ -188,11 +188,7 @@ const App: React.FC = () => {
     connectToSavedServers();
 
     if (linkedChannel) {
-      // A bouncer's control session holds no channels, so the link waits for the first network.
-      const holdsChannels = (serverId: string) =>
-        !useStore.getState().servers.find((s) => s.id === serverId)
-          ?.isBouncerControl;
-      joinOnFirstReady(linkedChannel, holdsChannels, (serverId, channel) => {
+      joinOnFirstReady(linkedChannel, (serverId, channel) => {
         joinChannel(serverId, channel);
         // Wait a tick for the JOIN echo to register the channel in
         // the store, then focus it.  Same pattern UserProfileModal

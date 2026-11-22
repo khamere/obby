@@ -1437,7 +1437,11 @@ export class IRCClient implements IRCClientContext {
     if (!isJoinableChannelName(channelName, this.chantypes(serverId)))
       return undefined;
     if (key && !isJoinableChannelKey(key)) return undefined;
-    const joinLine = key ? `JOIN ${channelName} ${key}` : `JOIN ${channelName}`;
+    // A last argument that opens with a colon needs one more in front, or the server reads the key without it.
+    const keyArgument = key?.startsWith(":") ? `:${key}` : key;
+    const joinLine = keyArgument
+      ? `JOIN ${channelName} ${keyArgument}`
+      : `JOIN ${channelName}`;
     const server = this.servers.get(serverId);
     if (server) {
       const existing = server.channels.find((c) => c.name === channelName);
