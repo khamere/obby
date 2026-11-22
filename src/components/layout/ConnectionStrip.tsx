@@ -8,6 +8,7 @@ import {
   FaSignInAlt,
   FaUnlink,
 } from "react-icons/fa";
+import { useIsTouchInput } from "../../hooks/useIsTouchInput";
 import useStore from "../../store";
 import { getLoginState } from "../../store/helpers";
 import type { Server } from "../../types";
@@ -59,13 +60,15 @@ function useSettledTrouble(trouble: Trouble | null): Trouble | null {
   return settled === trouble ? trouble : null;
 }
 
-const actionClass =
-  "h-7 px-2.5 rounded flex items-center gap-1.5 text-xs font-semibold";
+const ACTION_CLASS =
+  "px-2.5 rounded flex items-center gap-1.5 text-xs font-semibold";
 
 export const ConnectionStrip: React.FC<{ server: Server }> = ({ server }) => {
   const reconnectServer = useStore((state) => state.reconnectServer);
   const trouble = useSettledTrouble(getTrouble(server));
+  const isTouch = useIsTouchInput();
   if (!trouble) return null;
+  const actionClass = `${ACTION_CLASS} ${isTouch ? "h-11" : "h-7"}`;
 
   const messages: Record<Trouble, string> = {
     lost: t`Connection lost. Reconnect to keep chatting`,

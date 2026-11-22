@@ -21,6 +21,7 @@ import {
   chunkSaslPayload,
 } from "../../lib/saslFrames";
 import type { Message, ServerConfig, ServerOAuthConfig } from "../../types";
+import { dialsSavedAddress } from "../helpers";
 import type { AppState } from "../index";
 import * as storage from "../localStorage";
 
@@ -98,14 +99,16 @@ function chooseMechanism(
   return "PLAIN";
 }
 
-// A bouncer network logs in with its bouncer's account, so we read the login the bouncer has saved.
+// A bouncer network logs in with its bouncer's account, and a saved login goes only to the address it was saved for.
 function loadLoginConfig(serverId: string): ServerConfig | undefined {
   const saved = storage.servers.load();
   const own = saved.find((s) => s.id === serverId);
-  const bouncer = own?.bouncerServerId
-    ? saved.find((s) => s.id === own.bouncerServerId)
+  if (!own?.bouncerServerId) return own;
+  const bouncer = saved.find((s) => s.id === own.bouncerServerId);
+  return bouncer &&
+    dialsSavedAddress(ircClient.getConnectTarget(serverId), bouncer)
+    ? bouncer
     : undefined;
-  return bouncer ?? own;
 }
 
 function loadCreds(
@@ -167,6 +170,8 @@ export function registerAuthHandlers(store: StoreApi<AppState>): void {
       }
     }
     if (key !== "sasl") return;
+    // An exchange cut short on an earlier connection still holds its password, so each connection starts its own.
+    clearSession(serverId);
 
     // Pick mechanism up-front so the AUTHENTICATE event handler knows what
     // to do when the server says "+".
@@ -215,7 +220,11 @@ export function registerAuthHandlers(store: StoreApi<AppState>): void {
       return;
     }
 
-    if (!serv?.saslEnabled) return;
+    if (!serv?.saslEnabled) {
+      // We hold no login for this connection, so the client reads a server that only takes accounts as refusing us.
+      if (!oauth) ircClient.setSaslEnabled(serverId, false);
+      return;
+    }
 
     const mech = chooseMechanism(available, serv.saslMechanism);
     const username = serv.saslAccountName?.length

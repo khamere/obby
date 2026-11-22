@@ -5,6 +5,11 @@ import type { Server } from "../../../src/types";
 
 const reconnectServer = vi.fn();
 const editConnection = vi.hoisted(() => vi.fn());
+const input = vi.hoisted(() => ({ isTouch: false }));
+
+vi.mock("../../../src/hooks/useIsTouchInput", () => ({
+  useIsTouchInput: () => input.isTouch,
+}));
 
 vi.mock("../../../src/store", () => {
   const mockStore = vi.fn((selector: (state: unknown) => unknown) =>
@@ -41,6 +46,7 @@ describe("ConnectionStrip", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
+    input.isTouch = false;
   });
 
   afterEach(() => {
@@ -139,5 +145,28 @@ describe("ConnectionStrip", () => {
     fireEvent.click(screen.getByRole("button", { name: /log in again/i }));
     expect(reconnectServer).toHaveBeenCalledWith("server1");
     expect(editConnection).not.toHaveBeenCalled();
+  });
+
+  it("gives every action a finger-sized target on touch input", () => {
+    input.isTouch = true;
+    renderSettled({
+      ...baseServer,
+      isConnected: false,
+      connectionState: "disconnected",
+      loginRefused: true,
+    });
+    for (const button of screen.getAllByRole("button"))
+      expect(button).toHaveClass("h-11");
+  });
+
+  it("keeps the compact actions for a mouse", () => {
+    renderSettled({
+      ...baseServer,
+      isConnected: false,
+      connectionState: "disconnected",
+      loginRefused: true,
+    });
+    for (const button of screen.getAllByRole("button"))
+      expect(button).toHaveClass("h-7");
   });
 });

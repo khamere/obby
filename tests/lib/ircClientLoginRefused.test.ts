@@ -146,14 +146,53 @@ describe("retrying a connection the server keeps closing", () => {
     expect(await retryAfter(2000)).toBe(true);
   });
 
-  test("tries again when the user reconnects after a refused login", async () => {
+  test("retries as usual on the connection the user opens after a refused login", async () => {
     await connect(client);
     latest().receive(":irc.example 904 * :Authentication failed");
     latest().close();
     client.disconnect(SERVER);
     await connect(client);
-    latest().receive(":irc.example 001 alice :Welcome");
     latest().close();
     expect(await retryAfter(2000)).toBe(true);
+  });
+
+  test("stops when the saved login is gone and the server only takes accounts", async () => {
+    await connect(client);
+    client.setSaslEnabled(SERVER, false);
+    latest().receive(
+      ":irc.example FAIL * ACCOUNT_REQUIRED :Authentication required",
+    );
+    latest().close();
+    expect(await retryAfter(600_000)).toBe(false);
+  });
+
+  test("a wake keeps the wait for a server that closed before its welcome", async () => {
+    await connect(client);
+    latest().close();
+    await retryAfter(2000);
+    latest().close();
+    client.wakeReconnect(SERVER);
+    expect(await retryAfter(3999)).toBe(false);
+    expect(await retryAfter(1)).toBe(true);
+  });
+
+  test("a wake retries at once a server that had welcomed us", async () => {
+    await connect(client);
+    latest().receive(":irc.example 001 alice :Welcome");
+    latest().close();
+    const before = sockets.length;
+    client.wakeReconnect(SERVER);
+    expect(sockets).toHaveLength(before + 1);
+  });
+
+  test("a wake leaves a server we closed ourselves alone", async () => {
+    await connect(client);
+    latest().receive(":irc.example 001 alice :Welcome");
+    client.disconnect(SERVER);
+    const before = sockets.length;
+    client.wakeReconnect(SERVER);
+    expect(await retryAfter(600_000)).toBe(false);
+    expect(sockets).toHaveLength(before);
+    expect(client.getConnectTarget(SERVER)).toBeUndefined();
   });
 });

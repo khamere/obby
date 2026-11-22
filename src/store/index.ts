@@ -66,6 +66,7 @@ import * as tictactoeActions from "./handlers/tictactoeActions";
 import { rememberRequestedNick } from "./handlers/users";
 import {
   compareMessageOrder,
+  dialsSavedAddress,
   ensureUrlFormat,
   isAppInFront,
   MAX_MESSAGES_PER_CHANNEL,
@@ -3371,6 +3372,17 @@ const useStore = create<AppState>((set, get) => ({
     if (serverIndex !== -1) {
       savedServers[serverIndex] = { ...savedServers[serverIndex], ...config };
       saveServersToLocalStorage(savedServers);
+    }
+    // A bouncer network left dialling an address its bouncer no longer has would retry there, so we close it.
+    const moved = savedServers[serverIndex];
+    if (moved && (config.host !== undefined || config.port !== undefined)) {
+      for (const child of get().servers) {
+        if (child.bouncerServerId !== serverId) continue;
+        const target = ircClient.getConnectTarget(child.id);
+        if (!target || dialsSavedAddress(target, moved)) continue;
+        releaseServerVoiceClients(child.id);
+        ircClient.disconnect(child.id);
+      }
     }
     if (config.accentColor !== undefined) {
       set((state) => {

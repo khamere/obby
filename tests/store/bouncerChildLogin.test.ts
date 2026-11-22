@@ -19,6 +19,10 @@ describe("a bouncer network logging in", () => {
       sent.push(line);
     });
     vi.spyOn(ircClient, "getSaslMechanisms").mockReturnValue(["PLAIN"]);
+    vi.spyOn(ircClient, "getConnectTarget").mockReturnValue({
+      host: "wss://bouncer.example.com",
+      port: 443,
+    });
     const login = {
       host: "wss://bouncer.example.com",
       port: 443,
@@ -69,5 +73,117 @@ describe("a bouncer network logging in", () => {
     ircClient.triggerEvent("AUTHENTICATE", { serverId: bouncerId, param: "+" });
 
     expect(sent).toEqual(["AUTHENTICATE PLAIN", plain("me", "new-pass")]);
+  });
+
+  test("sends no login on a connection to an address its bouncer has left", () => {
+    vi.spyOn(ircClient, "getConnectTarget").mockReturnValue({
+      host: "wss://old.example.com",
+      port: 443,
+    });
+    const setSaslEnabled = vi.spyOn(ircClient, "setSaslEnabled");
+    ircClient.triggerEvent("CAP_ACKNOWLEDGED", {
+      serverId: networkId,
+      key: "sasl",
+      capabilities: "sasl",
+    });
+    ircClient.triggerEvent("AUTHENTICATE", { serverId: networkId, param: "+" });
+
+    expect(sent).toEqual([]);
+    expect(setSaslEnabled).toHaveBeenCalledWith(networkId, false);
+  });
+
+  test("tells the client it holds no login once the saved one is removed", () => {
+    vi.spyOn(storage.servers, "load").mockReturnValue([
+      {
+        id: bouncerId,
+        host: "wss://bouncer.example.com",
+        port: 443,
+        nickname: "me",
+        channels: [],
+        saslEnabled: false,
+      },
+    ]);
+    const setSaslEnabled = vi.spyOn(ircClient, "setSaslEnabled");
+    ircClient.triggerEvent("CAP_ACKNOWLEDGED", {
+      serverId: bouncerId,
+      key: "sasl",
+      capabilities: "sasl",
+    });
+
+    expect(sent).toEqual([]);
+    expect(setSaslEnabled).toHaveBeenCalledWith(bouncerId, false);
+  });
+});
+
+describe("a bouncer moved to another address", () => {
+  const saved = (host: string) => [
+    {
+      id: bouncerId,
+      host,
+      port: 443,
+      nickname: "me",
+      channels: [],
+      isBouncerControl: true,
+    },
+  ];
+
+  beforeEach(() => {
+    let stored = JSON.stringify(saved("wss://bouncer.example.com"));
+    vi.mocked(localStorage.getItem).mockImplementation((key) =>
+      key === "savedServers" ? stored : null,
+    );
+    vi.mocked(localStorage.setItem).mockImplementation((key, value) => {
+      if (key === "savedServers") stored = value;
+    });
+    vi.spyOn(ircClient, "getConnectTarget").mockReturnValue({
+      host: "wss://bouncer.example.com",
+      port: 443,
+    });
+    useStore.setState({
+      servers: [
+        {
+          id: networkId,
+          name: "net",
+          host: "bouncer.example.com",
+          port: 443,
+          channels: [],
+          privateChats: [],
+          users: [],
+          isConnected: false,
+          connectionState: "reconnecting",
+          bouncerServerId: bouncerId,
+          bouncerNetid: "1",
+        },
+      ],
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    useStore.setState({ servers: [] });
+  });
+
+  test("closes its networks' connections and retries to the old address", () => {
+    const disconnect = vi
+      .spyOn(ircClient, "disconnect")
+      .mockImplementation(() => {});
+    useStore
+      .getState()
+      .updateServer(bouncerId, { host: "wss://new.example.com", port: 443 });
+
+    expect(disconnect).toHaveBeenCalledWith(networkId);
+  });
+
+  test("leaves its networks alone when the address stays", () => {
+    const disconnect = vi
+      .spyOn(ircClient, "disconnect")
+      .mockImplementation(() => {});
+    useStore.getState().updateServer(bouncerId, {
+      host: "wss://bouncer.example.com",
+      port: 443,
+      nickname: "other",
+    });
+
+    expect(disconnect).not.toHaveBeenCalled();
   });
 });

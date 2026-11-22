@@ -1177,6 +1177,8 @@ export class IRCClient implements IRCClientContext {
     this.registered.delete(serverId);
     this.welcomed.delete(serverId);
     this.loginRefused.delete(serverId);
+    // A closed server stays closed until its owner connects it again, so a wake finds nothing to redial.
+    this.serverConnectParams.delete(serverId);
     this.pendingMonitor.delete(serverId);
     this.tagmsgRefused.delete(serverId);
     const server = this.servers.get(serverId);
@@ -1373,6 +1375,14 @@ export class IRCClient implements IRCClientContext {
   // A login we hold but could not present on this connection may still pass on the next one.
   noteAccountRequired(serverId: string): void {
     if (!this.saslEnabled.get(serverId)) this.noteLoginRefused(serverId);
+  }
+
+  // Saved credentials belong to one address, so callers compare it with the one this connection dials.
+  getConnectTarget(
+    serverId: string,
+  ): { host: string; port: number } | undefined {
+    const params = this.serverConnectParams.get(serverId);
+    return params && { host: params.host, port: params.port };
   }
 
   // When we last sent a PRIVMSG to each target, so a refusal that carries no
@@ -2840,6 +2850,8 @@ export class IRCClient implements IRCClientContext {
     if (!params) return;
 
     if (server.connectionState === "reconnecting") {
+      // A server that closed our last connection before its welcome is turning us away, so we keep the wait we owe it.
+      if (!this.welcomed.has(serverId)) return;
       // Already reconnecting but may be stuck in a long backoff (e.g. after many
       // failed attempts while sleeping). Cancel the pending timeout and retry now.
       const existingTimeout = this.reconnectionTimeouts.get(serverId);
