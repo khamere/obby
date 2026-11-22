@@ -47,13 +47,13 @@ interface ChannelBucket {
 
 const buckets = new Map<string, ChannelBucket>();
 
-// The server answers WHO requests in the order we send them, so we keep every request for a channel in that order and read each reply as the answer to the oldest one still open.
-interface WhoRequest {
+// Only the answer to our own request for every member says who is in the channel, so we number that request and replace the list only from the rows that carry its number.
+interface MemberRefresh {
   serverId: string;
   channel: string;
-  // Only our own request for every member says who is in the channel, and any other reply only adds to the list.
-  isMemberRefresh: boolean;
+  token: string;
   sentAt: number;
+  hasRows: boolean;
   // Everyone the answer named or we saw join since we asked.
   present: Set<string>;
   // Everyone we saw leave since we asked, whom a row written before they left may still name.
@@ -62,43 +62,43 @@ interface WhoRequest {
   renamed: Map<string, string>;
 }
 
-const requests = new Map<string, WhoRequest[]>();
-// A request this old got no end of reply, so we no longer take a reply for its answer and ask again.
-const REPLY_LOST_AFTER_MS = 60_000;
+const refreshes = new Map<string, MemberRefresh>();
+// A request with no row of its answer after this long is given up, so the next join asks again.
+const ANSWER_LOST_AFTER_MS = 60_000;
 
 function key(serverId: string, channel: string): string {
   return `${serverId}|${channel.toLowerCase()}`;
 }
 
-function isAwaited(request: WhoRequest): boolean {
-  return (
-    request.isMemberRefresh && Date.now() - request.sentAt < REPLY_LOST_AFTER_MS
-  );
+function openRefresh(k: string): MemberRefresh | undefined {
+  const refresh = refreshes.get(k);
+  if (!refresh) return undefined;
+  const isLost =
+    !refresh.hasRows && Date.now() - refresh.sentAt >= ANSWER_LOST_AFTER_MS;
+  if (isLost) refreshes.delete(k);
+  return isLost ? undefined : refresh;
 }
 
-function refreshesFor(serverId: string, channel?: string): WhoRequest[] {
-  const queues =
-    channel === undefined
-      ? [...requests.values()]
-      : [requests.get(key(serverId, channel)) ?? []];
-  return queues
-    .flat()
-    .filter((r) => r.serverId === serverId && r.isMemberRefresh);
+function refreshesFor(serverId: string, channel?: string): MemberRefresh[] {
+  const keys =
+    channel === undefined ? [...refreshes.keys()] : [key(serverId, channel)];
+  return keys
+    .map(openRefresh)
+    .filter((r): r is MemberRefresh => r?.serverId === serverId);
 }
 
-export function noteWhoSent(
+// A newer request for the same channel takes over, and rows numbered for the older one only add to the list.
+export function beginMemberRefresh(
   serverId: string,
   channel: string,
-  isMemberRefresh: boolean,
+  token: string,
 ): void {
-  const k = key(serverId, channel);
-  const queue = requests.get(k) ?? [];
-  requests.set(k, queue);
-  queue.push({
+  refreshes.set(key(serverId, channel), {
     serverId,
     channel,
-    isMemberRefresh,
+    token,
     sentAt: Date.now(),
+    hasRows: false,
     present: new Set(),
     gone: new Set(),
     renamed: new Map(),
@@ -109,7 +109,7 @@ export function isMemberRefreshPending(
   serverId: string,
   channel: string,
 ): boolean {
-  return refreshesFor(serverId, channel).some(isAwaited);
+  return openRefresh(key(serverId, channel)) !== undefined;
 }
 
 // The server takes its snapshot of the channel at some point after we ask, so a join, departure or nick change we see while the answer is open is newer than any row of it.
@@ -133,6 +133,9 @@ export function noteMemberLeft(
   nick: string,
 ): void {
   const lowered = nick.toLowerCase();
+  // Outside the channel we see none of its joins and departures, so a request still open when we leave is given up.
+  if (channel && lowered === ircClient.getNick(serverId)?.toLowerCase())
+    refreshes.delete(key(serverId, channel));
   for (const refresh of refreshesFor(serverId, channel)) {
     refresh.present.delete(lowered);
     refresh.gone.add(lowered);
@@ -140,26 +143,22 @@ export function noteMemberLeft(
   }
 }
 
-// A nick change names no channel, so the caller tells us where the old nick was a member: there the new nick belongs to someone present, even when its previous holder left since we asked.
+// A nick change names no channel, so we take the new nick for someone present wherever its previous holder left since we asked.
 export function noteMemberRenamed(
   serverId: string,
   oldNick: string,
   newNick: string,
-  channelsOfOldNick: string[],
 ): void {
   const from = oldNick.toLowerCase();
   const to = newNick.toLowerCase();
   if (from === to) return;
-  const memberOf = new Set(channelsOfOldNick.map((c) => c.toLowerCase()));
   for (const refresh of refreshesFor(serverId)) {
     for (const [earlier, current] of refresh.renamed)
       if (current === from) refresh.renamed.set(earlier, to);
     refresh.renamed.set(from, to);
     refresh.renamed.delete(to);
-    const wasPresent = refresh.present.delete(from);
-    if (wasPresent) refresh.present.add(to);
-    if (wasPresent || memberOf.has(refresh.channel.toLowerCase()))
-      refresh.gone.delete(to);
+    refresh.gone.delete(to);
+    if (refresh.present.delete(from)) refresh.present.add(to);
     const rows = buckets.get(key(refresh.serverId, refresh.channel))?.byNick;
     const row = rows?.get(from);
     if (!rows || !row) continue;
@@ -169,8 +168,8 @@ export function noteMemberRenamed(
 }
 
 export function forgetWhoReplies(serverId: string): void {
-  for (const [k, queue] of requests)
-    if (queue[0]?.serverId === serverId) requests.delete(k);
+  for (const [k, refresh] of refreshes)
+    if (refresh.serverId === serverId) refreshes.delete(k);
   for (const [k, bucket] of buckets) {
     if (bucket.serverId !== serverId) continue;
     clearTimeout(bucket.idleTimer);
@@ -298,10 +297,12 @@ export function bufferWhoReply(
   serverId: string,
   channel: string,
   row: BufferedWhoEntry,
+  token?: string,
 ): void {
   const k = key(serverId, channel);
-  const oldest = requests.get(k)?.[0];
-  const refresh = oldest?.isMemberRefresh ? oldest : undefined;
+  const open = openRefresh(k);
+  const refresh = open && token === open.token ? open : undefined;
+  if (refresh) refresh.hasRows = true;
   const entry = refresh ? currentMember(refresh, row) : row;
   if (!entry) return;
   refresh?.present.add(entry.nick.toLowerCase());
@@ -332,7 +333,7 @@ export function bufferWhoReply(
 
 // A row describes the channel as it was when the server wrote it, so we read it under the nick its member has now and skip it for a member who has left since.
 function currentMember(
-  refresh: WhoRequest,
+  refresh: MemberRefresh,
   row: BufferedWhoEntry,
 ): BufferedWhoEntry | undefined {
   const nick = refresh.renamed.get(row.nick.toLowerCase()) ?? row.nick;
@@ -349,7 +350,7 @@ export function flushWhoReplies(
   if (bucket) applyBucket(store, bucket);
 }
 
-// The server lists every member only to someone inside the channel, so the end of our own request drops the members its answer left out when that answer names us, and the end of any other reply only adds what it brought.
+// A server sends the rows of one answer together and ends them before it starts the next, so the first end of a reply after rows with our number closes our request, and an end that comes before any such row belongs to another request.
 export function finishWhoReplies(
   store: StoreApi<AppState>,
   serverId: string,
@@ -357,12 +358,12 @@ export function finishWhoReplies(
 ): void {
   flushWhoReplies(store, serverId, channel);
   const k = key(serverId, channel);
-  const queue = requests.get(k);
-  const answered = queue?.shift();
-  if (queue?.length === 0) requests.delete(k);
+  const refresh = openRefresh(k);
+  if (!refresh?.hasRows) return;
+  refreshes.delete(k);
+  // The server lists every member only to someone inside the channel, so we drop the members the answer left out only when it names us.
+  const present = refresh.present;
   const ownNick = ircClient.getNick(serverId)?.toLowerCase();
-  if (!answered || !isAwaited(answered)) return;
-  const present = answered.present;
   if (!ownNick || !present.has(ownNick)) return;
   const isPresent = (user: User) => present.has(user.username.toLowerCase());
 
@@ -384,7 +385,7 @@ export function finishWhoReplies(
 
 // Test-only helpers.
 export function _resetWhoReplyBatcher(): void {
-  requests.clear();
+  refreshes.clear();
   for (const b of buckets.values()) {
     if (b.idleTimer) clearTimeout(b.idleTimer);
     if (b.ceilingTimer) clearTimeout(b.ceilingTimer);

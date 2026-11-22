@@ -438,14 +438,17 @@ export function handleWhoxReply(
   parv: string[],
   _mtags: Record<string, string> | undefined,
 ): void {
-  const channel = parv[1];
-  const username = parv[2];
-  const host = parv[3];
-  const nick = parv[4];
-  const flags = parv[5];
-  const account = parv[6];
-  const _opLevelField = parv[7] || "";
-  const realname = parv[8] || "";
+  // A reply to a request that carried a number starts with that number, ahead of the fields every reply has.
+  const token =
+    parv.length > 9 && /^\d{1,3}$/.test(parv[1]) ? parv[1] : undefined;
+  const fields = token === undefined ? parv : parv.slice(1);
+  const channel = fields[1];
+  const username = fields[2];
+  const host = fields[3];
+  const nick = fields[4];
+  const flags = fields[5];
+  const account = fields[6];
+  const realname = fields[8] || "";
 
   const isAway = flags.includes("G");
 
@@ -469,6 +472,7 @@ export function handleWhoxReply(
     realname,
     isAway,
     opLevel,
+    token,
   });
 }
 

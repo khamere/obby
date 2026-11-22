@@ -421,14 +421,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
       }
     }
     saveConfirmedNick(store, serverId, newNick);
-    noteMemberRenamed(
-      serverId,
-      oldNick,
-      newNick,
-      (store.getState().servers.find((s) => s.id === serverId)?.channels ?? [])
-        .filter((c) => c.users.some((u) => u.username === oldNick))
-        .map((c) => c.name),
-    );
+    noteMemberRenamed(serverId, oldNick, newNick);
     moveChatMute(serverId, "dm", oldNick, newNick);
     store.setState((state) => {
       const updatedServers = state.servers.map((server) => {

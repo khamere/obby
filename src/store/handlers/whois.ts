@@ -1,14 +1,13 @@
 import type { StoreApi } from "zustand";
-import { MEMBER_WHO_FIELDS } from "../../lib/irc/IRCClient";
 import ircClient from "../../lib/ircClient";
 import type { User } from "../../types";
 import type { AppState } from "../index";
 import * as storage from "../localStorage";
 import {
+  beginMemberRefresh,
   bufferWhoReply,
   finishWhoReplies,
   forgetWhoReplies,
-  noteWhoSent,
 } from "../whoReplyBatcher";
 
 export function registerWhoisHandlers(store: StoreApi<AppState>): void {
@@ -428,14 +427,9 @@ export function registerWhoisHandlers(store: StoreApi<AppState>): void {
     },
   );
 
-  // The server answers WHO requests in the order we send them, so we record every one we send for a channel, typed ones included.
-  ircClient.on("rawLine", ({ serverId, direction, line }) => {
-    if (direction !== "tx") return;
-    const [command, target, ...filter] = line.split(" ");
-    if (command.toUpperCase() !== "WHO" || !target) return;
-    if (!ircClient.isChannel(serverId, target)) return;
-    noteWhoSent(serverId, target, filter.join(" ") === MEMBER_WHO_FIELDS);
-  });
+  ircClient.on("MEMBERS_REQUESTED", ({ serverId, channelName, token }) =>
+    beginMemberRefresh(serverId, channelName, token),
+  );
 
   // A reply belongs to the connection that asked, so a connection change ends every reply still open.
   ircClient.on("connectionStateChange", ({ serverId }) =>
@@ -510,6 +504,7 @@ export function registerWhoisHandlers(store: StoreApi<AppState>): void {
       realname,
       isAway,
       opLevel,
+      token,
     }) => {
       const state = store.getState();
       const serverData = state.servers.find((s) => s.id === serverId);
@@ -525,7 +520,7 @@ export function registerWhoisHandlers(store: StoreApi<AppState>): void {
       // refresh (no channel) falls through to the immediate setState
       // path below since it's a single line, not part of a burst.
       if (channel && channel !== "*") {
-        bufferWhoReply(store, serverId, channel, {
+        const row = {
           nick,
           host,
           realname,
@@ -535,7 +530,8 @@ export function registerWhoisHandlers(store: StoreApi<AppState>): void {
           isBot: isBotFromFlags,
           isIrcOp: isIrcOpFromFlags,
           status: opLevel,
-        });
+        };
+        bufferWhoReply(store, serverId, channel, row, token);
         return;
       }
 

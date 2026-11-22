@@ -104,6 +104,7 @@ function whoReply(nick: string, opLevel = "") {
     realname: nick,
     isAway: false,
     opLevel,
+    token: ourToken(),
   });
 }
 
@@ -120,8 +121,23 @@ function receive(...lines: string[]) {
   ).handleMessage(lines.map((line) => `${line}\r\n`).join(""), serverId);
 }
 
+// The number our latest member request carried, which the server repeats in every row of its answer.
+function ourToken(): string | undefined {
+  return whoLines()
+    .flatMap((line) => / %tcuhnfaro,(\d+)$/.exec(line)?.[1] ?? [])
+    .at(-1);
+}
+
+function memberRequest(name = channelName) {
+  return [expect.stringMatching(`^WHO ${name} %tcuhnfaro,\\d{1,3}$`)];
+}
+
 function whoxRow(nick: string, flags = "H", name = channelName) {
-  return `:irc.test 354 me ${name} u h ${nick} ${flags} 0 0 :${nick}`;
+  return `:irc.test 354 me ${ourToken()} ${name} u h ${nick} ${flags} 0 0 :${nick}`;
+}
+
+function typedWhoxRow(nick: string, flags = "H", token = "") {
+  return `:irc.test 354 me ${token}${channelName} u h ${nick} ${flags} 0 0 :${nick}`;
 }
 
 function whoRow(nick: string, flags = "H", name = channelName) {
@@ -161,7 +177,7 @@ describe("member list after coming back to a channel", () => {
     setConnection("connected");
     ownJoin();
 
-    expect(whoLines()).toEqual([`WHO ${channelName.toLowerCase()} %cuhnfaro`]);
+    expect(whoLines()).toEqual(memberRequest(channelName.toLowerCase()));
     expect(channel().needsWhoRequest).toBe(false);
   });
 
@@ -190,7 +206,7 @@ describe("member list after coming back to a channel", () => {
       channelName,
       isLoading: false,
     });
-    expect(whoLines()).toEqual([`WHO ${channelName} %cuhnfaro`]);
+    expect(whoLines()).toEqual(memberRequest());
   });
 
   test("our first join on a server with history sends one member request, when the history load ends", () => {
@@ -213,7 +229,7 @@ describe("member list after coming back to a channel", () => {
         channelName,
         isLoading: false,
       });
-      expect(whoLines()).toEqual([`WHO ${channelName} %cuhnfaro`]);
+      expect(whoLines()).toEqual(memberRequest());
     } finally {
       clientServers.delete(serverId);
     }
@@ -365,39 +381,70 @@ describe("member list after coming back to a channel", () => {
     expect(members()).toEqual(["@caroline", "me", "robert"]);
   });
 
-  test("a typed request sent before ours keeps its own reply, and ours still replaces the list", () => {
-    seed([user("me", "@"), user("bob"), user("carol")]);
+  // The server reads these the same way, and we send whatever the user types.
+  const typedRequests = [
+    "WHO #Lounge o",
+    "WHO  #Lounge o",
+    "WHO #Lounge o #Lounge",
+    "WHO #Lounge %cuhnfaro",
+    "who #lounge",
+  ];
 
-    ircClient.sendRaw(serverId, `WHO ${channelName} o`);
-    ownJoin();
-    receive(whoRow("me", "H*@"), endOfWho());
-    expect(members()).toEqual(["@me", "bob", "carol"]);
+  test.each(typedRequests)(
+    "the reply to a typed '%s' sent before our request removes nobody, and ours still replaces the list",
+    (typed) => {
+      seed([user("me", "@"), user("bob"), user("carol")]);
 
-    receive(whoxRow("me", "H@"), whoxRow("bob"), endOfWho());
-    expect(members()).toEqual(["@me", "bob"]);
-  });
+      ircClient.sendRaw(serverId, typed);
+      ownJoin();
+      receive(whoRow("me", "H*@"), typedWhoxRow("me", "H*@"), endOfWho());
+      expect(members()).toEqual(["@me", "bob", "carol"]);
 
-  test("a typed request sent before ours that names nobody leaves ours to replace the list", () => {
+      receive(whoxRow("me", "H@"), whoxRow("bob"), endOfWho());
+      expect(members()).toEqual(["@me", "bob"]);
+    },
+  );
+
+  test.each(typedRequests)(
+    "the empty reply to a typed '%s' sent before our request leaves ours open",
+    (typed) => {
+      seed([user("me"), user("bob"), user("carol")]);
+
+      ircClient.sendRaw(serverId, typed);
+      ownJoin();
+      receive(endOfWho());
+      receive(whoxRow("me"), whoxRow("bob"), endOfWho());
+
+      expect(members()).toEqual(["bob", "me"]);
+    },
+  );
+
+  test.each(typedRequests)(
+    "the reply to a typed '%s' sent after our request removes nobody",
+    (typed) => {
+      seed([user("me", "@"), user("bob"), user("carol")]);
+
+      ownJoin();
+      ircClient.sendRaw(serverId, typed);
+      receive(whoxRow("me", "H@"), whoxRow("bob"), whoxRow("dave"), endOfWho());
+      expect(members()).toEqual(["@me", "bob", "dave"]);
+
+      receive(whoRow("me", "H*@"), typedWhoxRow("me", "H*@"), endOfWho());
+      expect(members()).toEqual(["@me", "bob", "dave"]);
+    },
+  );
+
+  test("a typed request that carries a number of its own removes nobody", () => {
     seed([user("me"), user("bob"), user("carol")]);
 
-    ircClient.sendRaw(serverId, `WHO ${channelName} o`);
     ownJoin();
-    receive(endOfWho());
+    const other = ourToken() === "7" ? "8" : "7";
+    ircClient.sendRaw(serverId, `who ${channelName} %tcuhnfaro,${other}`);
+    receive(typedWhoxRow("me", "H", `${other} `), endOfWho());
+    expect(members()).toEqual(["bob", "carol", "me"]);
+
     receive(whoxRow("me"), whoxRow("bob"), endOfWho());
-
     expect(members()).toEqual(["bob", "me"]);
-  });
-
-  test("a typed request sent after ours removes nobody", () => {
-    seed([user("me", "@"), user("bob"), user("carol")]);
-
-    ownJoin();
-    ircClient.sendRaw(serverId, `WHO ${channelName} o`);
-    receive(whoxRow("me", "H@"), whoxRow("bob"), whoxRow("dave"), endOfWho());
-    expect(members()).toEqual(["@me", "bob", "dave"]);
-
-    receive(whoRow("me", "H*@"), endOfWho());
-    expect(members()).toEqual(["@me", "bob", "dave"]);
   });
 
   test("a typed request on its own removes nobody", () => {
@@ -409,45 +456,105 @@ describe("member list after coming back to a channel", () => {
     expect(members()).toEqual(["@me", "bob", "carol"]);
   });
 
-  test("a nick taken over while the reply is on its way stays with its new holder", () => {
-    seed([user("me"), user("bob"), user("carol")]);
+  test("a reply without our number, as a server without numbered replies sends it, adds members and removes nobody", () => {
+    seed([user("me"), user("bob")]);
 
     ownJoin();
-    ircClient.triggerEvent("QUIT", { serverId, username: "bob", reason: "" });
-    ircClient.triggerEvent("NICK", {
-      serverId,
-      mtags: undefined,
-      oldNick: "carol",
-      newNick: "bob",
-    });
-    receive(whoxRow("me"), whoxRow("bob"), endOfWho());
+    receive(whoRow("me"), whoRow("dave", "H@"), endOfWho());
 
-    expect(members()).toEqual(["bob", "me"]);
+    expect(members()).toEqual(["@dave", "bob", "me"]);
   });
+
+  test.each([
+    ["someone we had listed", [user("me"), user("bob"), user("carol")]],
+    ["someone who joined while we were away", [user("me"), user("bob")]],
+  ])(
+    "a nick taken over by %s while the reply is on its way stays with its new holder",
+    (_, cached) => {
+      seed(cached);
+
+      ownJoin();
+      ircClient.triggerEvent("QUIT", { serverId, username: "bob", reason: "" });
+      ircClient.triggerEvent("NICK", {
+        serverId,
+        mtags: undefined,
+        oldNick: "carol",
+        newNick: "bob",
+      });
+      receive(whoxRow("me"), whoxRow("bob"), endOfWho());
+
+      expect(members()).toEqual(["bob", "me"]);
+    },
+  );
 
   test("a reply that spells the channel in another case still replaces the list", () => {
     seed([user("me"), user("bob")]);
 
     ownJoin();
     const spelled = channelName.toUpperCase();
-    receive(whoRow("me", "H", spelled), whoRow("dave", "H@", spelled));
+    receive(whoxRow("me", "H", spelled), whoxRow("dave", "H@", spelled));
     receive(endOfWho(spelled));
 
     expect(members()).toEqual(["@dave", "me"]);
   });
 
-  test("a request whose reply never ended replaces nothing later and is asked again", () => {
+  test("a reply without our number that spells the channel in another case still adds its members", () => {
+    seed([user("me"), user("bob")]);
+
+    const spelled = channelName.toUpperCase();
+    receive(whoRow("dave", "H@", spelled), endOfWho(spelled));
+
+    expect(members()).toEqual(["@dave", "bob", "me"]);
+  });
+
+  test("a request that got no answer is asked again, and the second answer alone replaces the list", () => {
     vi.useFakeTimers();
     try {
       seed([user("me", "@"), user("bob")]);
 
       ownJoin();
+      const lost = ourToken();
       vi.advanceTimersByTime(61_000);
       ownJoin();
       expect(whoLines()).toHaveLength(2);
+      expect(ourToken()).not.toBe(lost);
 
-      receive(whoRow("me", "H*@"), endOfWho());
-      expect(members()).toEqual(["@me", "bob"]);
+      receive(whoxRow("me", "H@"), whoxRow("dave"), endOfWho());
+      expect(members()).toEqual(["@me", "dave"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("an answer that starts after its request was given up removes nobody", () => {
+    vi.useFakeTimers();
+    try {
+      seed([user("me"), user("bob")]);
+
+      ownJoin();
+      const late = [whoxRow("me"), endOfWho()];
+      vi.advanceTimersByTime(61_000);
+      receive(...late);
+
+      expect(members()).toEqual(["bob", "me"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("an answer still arriving after a minute replaces the list when it ends", () => {
+    vi.useFakeTimers();
+    try {
+      seed([user("me"), user("bob")]);
+
+      ownJoin();
+      receive(whoxRow("me"));
+      vi.advanceTimersByTime(61_000);
+      ownJoin();
+      expect(whoLines()).toHaveLength(1);
+      receive(whoxRow("dave"), endOfWho());
+
+      expect(members()).toEqual(["dave", "me"]);
     } finally {
       vi.useRealTimers();
     }
@@ -513,15 +620,16 @@ describe("member list after coming back to a channel", () => {
     }
   });
 
-  test("a reply cut off by a dropped connection removes nobody when a typed request ends", () => {
+  test("a reply cut off by a dropped connection removes nobody when a typed request ends on the next one", () => {
     seed([user("me"), user("bob")]);
 
     ownJoin();
-    whoReply("me");
+    receive(whoxRow("me"));
+    const cutOff = whoxRow("me");
     setConnection("disconnected");
     setConnection("connected");
-    whoReply("me");
-    whoEnd();
+    ircClient.sendRaw(serverId, `WHO  ${channelName} o`);
+    receive(cutOff, whoRow("me", "H*"), endOfWho());
 
     expect(members()).toEqual(["bob", "me"]);
   });
@@ -544,7 +652,7 @@ describe("member list after coming back to a channel", () => {
 
       useStore.getState().joinChannel(serverId, channelName);
       ownJoin();
-      expect(whoLines()).toEqual([`WHO ${channelName} %cuhnfaro`]);
+      expect(whoLines()).toEqual(memberRequest());
       expect(channel().users).toEqual([]);
 
       setConnection("disconnected");

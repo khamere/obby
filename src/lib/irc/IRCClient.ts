@@ -300,8 +300,10 @@ export interface EventMap {
     realname: string;
     isAway: boolean;
     opLevel: string;
+    token?: string;
   };
   WHO_END: { serverId: string; mask: string };
+  MEMBERS_REQUESTED: { serverId: string; channelName: string; token: string };
   RPL_AWAY: {
     serverId: string;
     nick: string;
@@ -687,11 +689,9 @@ function splitCapToken(token: string): { cap: string; value?: string } {
     : { cap: token.slice(0, eq), value: token.slice(eq + 1) };
 }
 
-// A WHO with exactly these fields and no filter is our request for every member of a channel.
-export const MEMBER_WHO_FIELDS = "%cuhnfaro";
-
 export class IRCClient implements IRCClientContext {
   private sockets: Map<string, ISocket> = new Map();
+  private memberRequestCount = 0;
   servers: Map<string, Server> = new Map();
   nicks: Map<string, string> = new Map();
   myIdents: Map<string, string> = new Map(); // Our own ident per server, populated by draft/whoami SETNAME burst and CHGHOST
@@ -1603,8 +1603,12 @@ export class IRCClient implements IRCClientContext {
     return false;
   }
 
+  // The server repeats the number we send in every row of its answer, so the member list can tell the answer to this request from any other WHO reply.
   requestMembers(serverId: string, channelName: string): void {
-    this.sendRaw(serverId, `WHO ${channelName} ${MEMBER_WHO_FIELDS}`);
+    this.memberRequestCount = (this.memberRequestCount % 999) + 1;
+    const token = String(this.memberRequestCount);
+    this.sendRaw(serverId, `WHO ${channelName} %tcuhnfaro,${token}`);
+    this.triggerEvent("MEMBERS_REQUESTED", { serverId, channelName, token });
   }
 
   // Servers state their per-request maximum as CHATHISTORY=<n>, where 0 means
