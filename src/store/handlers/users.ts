@@ -4,7 +4,9 @@ import type { StoreApi } from "zustand";
 import { releaseAutoAway } from "../../lib/autoAway";
 import { voiceDisplayName } from "../../lib/channelMentions";
 import ircClient from "../../lib/ircClient";
+import { saveLeftReason } from "../../lib/leftChannels";
 import { moveChatMute } from "../../lib/mutes";
+import { releaseVoiceClient } from "../../lib/voice";
 import type { Channel, Message, User } from "../../types";
 import {
   generateDeterministicId,
@@ -81,11 +83,13 @@ function setLeftReason(
   const isTarget = (name: string) =>
     name.toLowerCase() === channelName.toLowerCase();
   let isChanged = false;
+  let shownName = channelName;
   store.setState((state) => {
     const server = state.servers.find((s) => s.id === serverId);
     const channel = server?.channels.find((c) => isTarget(c.name));
     if (!channel || channel.leftReason === leftReason) return {};
     isChanged = true;
+    shownName = channel.name;
     return {
       servers: state.servers.map((s) =>
         s.id !== serverId
@@ -105,6 +109,9 @@ function setLeftReason(
       ),
     };
   });
+  if (isChanged || !leftReason) saveLeftReason(serverId, shownName, leftReason);
+  // A call runs on our membership of its channel, so it ends when the membership does.
+  if (isChanged && leftReason) releaseVoiceClient(serverId, shownName);
   return isChanged;
 }
 
@@ -256,8 +263,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
         }
       }
 
-      const ourNick = ircClient.getNick(serverId);
-      const isOurJoin = username === ourNick;
+      const isOurJoin = isOwnNick(serverId, username);
 
       if (isOurJoin) {
         takePendingJoin(serverId, channelName);
@@ -839,6 +845,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
         noteMemberLeft(serverId, channelName, target);
         store.setState((state) => {
           const updatedServers = state.servers.map((server) => {
+            if (server.id !== serverId) return server;
             const updatedChannels = server.channels.map((channel) => {
               if (channel.name.toLowerCase() === channelName.toLowerCase()) {
                 return {

@@ -203,6 +203,35 @@ describe("ChatArea Tab Completion Integration", () => {
     expect(input).toHaveValue("");
   });
 
+  it("shows the unsent draft again when the message box comes back after a kick and a rejoin", async () => {
+    render(<ChatArea onToggleChanList={() => {}} isChanListVisible={true} />);
+    await userEvent.type(
+      screen.getByPlaceholderText(/Message #general/i),
+      "half a thought",
+    );
+    const setLeftReason = (leftReason?: "kicked") =>
+      act(() =>
+        useStore.setState({
+          servers: [
+            { ...mockServer, channels: [{ ...mockChannel, leftReason }] },
+          ],
+        }),
+      );
+
+    setLeftReason("kicked");
+    expect(screen.getByTestId("rejoin-channel-bar")).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/Message #general/i)).toBeNull();
+
+    setLeftReason(undefined);
+    const input = screen.getByPlaceholderText(/Message #general/i);
+    expect(input).toHaveValue("half a thought");
+    fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
+    expect(ircClient.sendRaw).toHaveBeenCalledWith(
+      "server1",
+      expect.stringContaining("PRIVMSG #general :half a thought"),
+    );
+  });
+
   it("should handle case-insensitive matching", async () => {
     render(<ChatArea onToggleChanList={() => {}} isChanListVisible={true} />);
 

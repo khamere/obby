@@ -285,6 +285,8 @@ export interface ServerConfig {
   bouncerServerId?: string;
   bouncerNetid?: string;
   isBouncerControl?: boolean;
+  // Channels we still show but are out of, so no connection joins them until the user does.
+  leftChannels?: Record<string, "kicked" | "parted">;
 }
 
 export interface ServerOAuthConfig {

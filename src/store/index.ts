@@ -10,6 +10,7 @@ import type { E2EEScheme, E2EESessionState } from "../lib/e2ee/session";
 import { e2eeSessionKey } from "../lib/e2ee/session";
 import ircClient from "../lib/ircClient";
 import { makeLabel } from "../lib/labeledResponse";
+import { leftReasonOf, saveLeftReason } from "../lib/leftChannels";
 import type { MediaType } from "../lib/mediaUtils";
 import { recordPlace, recordSearch } from "../lib/search/recents";
 import { serializeSearchQuery } from "../lib/search/searchQuery";
@@ -1586,6 +1587,7 @@ const useStore = create<AppState>((set, get) => ({
         operOnConnect: savedServer?.operOnConnect,
         skipLocalhostWarning: savedServer?.skipLocalhostWarning,
         skipLinkSecurityWarning: savedServer?.skipLinkSecurityWarning,
+        leftChannels: savedServer?.leftChannels,
         // Preserve existing addedAt timestamp or set current time for new servers
         addedAt: savedServer?.addedAt || Date.now(),
         oauth: mergedOauth ?? savedServer?.oauth,
@@ -1793,12 +1795,9 @@ const useStore = create<AppState>((set, get) => ({
 
   joinChannel: (serverId, channelName, key, options) => {
     const joinedName = ircClient.withChannelPrefix(serverId, channelName);
-    const isReturning = !!get()
-      .servers.find((s) => s.id === serverId)
-      ?.channels.some(
-        (c) =>
-          c.name.toLowerCase() === joinedName.toLowerCase() && !!c.leftReason,
-      );
+    // A channel the user was removed from or left stays theirs to rejoin, so a join nobody asked for passes it by.
+    if (options?.isAutomatic && leftReasonOf(serverId, joinedName)) return;
+    const isReturning = !!leftReasonOf(serverId, joinedName);
     const channel = ircClient.joinChannel(serverId, channelName, key, {
       isReturning,
     });
@@ -1884,6 +1883,7 @@ const useStore = create<AppState>((set, get) => ({
     const isForgotten = (name: string) =>
       name.toLowerCase() === channelName.toLowerCase();
     ircClient.forgetChannel(serverId, channelName);
+    saveLeftReason(serverId, channelName, undefined);
     set((state) => {
       const updatedServers = state.servers.map((server) => {
         if (server.id === serverId) {
@@ -2588,7 +2588,12 @@ const useStore = create<AppState>((set, get) => ({
         // are commonly orphaned across restarts -- the cost of an
         // extra JOIN line is nothing compared to the 401 the user
         // sees today.
-        if (channelName && server && !ch?.needsKey && !ch?.leftReason) {
+        if (
+          channelName &&
+          server &&
+          !ch?.needsKey &&
+          !leftReasonOf(server.id, channelName)
+        ) {
           const isVoiceOrStream =
             channelName.startsWith("^") || channelName.startsWith("$");
           const lostMembership =

@@ -287,7 +287,7 @@ describe("member list after coming back to a channel", () => {
       channelName,
       reason: "",
     });
-    expect(members()).toEqual(["@bob"]);
+    expect(members()).toEqual([]);
 
     ownJoin();
     expect(whoLines()).toHaveLength(1);

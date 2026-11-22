@@ -26,6 +26,7 @@
 import type { StoreApi } from "zustand";
 import type { AppState } from "../store";
 import ircClient from "./ircClient";
+import { leftReasonOf } from "./leftChannels";
 import {
   audioConstraints,
   captureScreen,
@@ -404,6 +405,8 @@ export class VoiceClient {
 
   async join(): Promise<void> {
     if (this.state.phase !== "idle") return;
+    // Joining a call joins its channel, and a channel the user is out of is theirs to rejoin.
+    if (this.isOutOfChannel()) return;
     this.setState({ phase: "joining" });
 
     // Subscribe to inbound TAGMSGs carrying our tag.
@@ -451,6 +454,7 @@ export class VoiceClient {
       if (this.generation !== generation || this.state.phase !== "joining") {
         return;
       }
+      if (this.isOutOfChannel()) return;
       if (isJoinRefused) {
         ircClient.sendRaw(this.opts.serverId, `JOIN ${channel}`);
       } else {
@@ -506,6 +510,10 @@ export class VoiceClient {
     } else {
       this.joinEchoTimeout = setTimeout(signalJoin, 2000);
     }
+  }
+
+  private isOutOfChannel(): boolean {
+    return !!leftReasonOf(this.opts.serverId, this.opts.channel);
   }
 
   private isChannelMember(): boolean {
@@ -1784,13 +1792,13 @@ export interface AcquireOptions extends VoiceViewCallbacks {
   selfNick: string;
 }
 
-export function acquireVoiceClient(opts: AcquireOptions): {
-  client: VoiceClient;
-  detach: () => void;
-} {
+export function acquireVoiceClient(
+  opts: AcquireOptions,
+): { client: VoiceClient; detach: () => void } | null {
   const key = clientKey(opts.serverId, opts.channel);
   let client = liveClients.get(key);
   if (!client) {
+    if (leftReasonOf(opts.serverId, opts.channel)) return null;
     // A person has one microphone and one pair of ears, so joining a call or a
     // stream ends whichever one was already running rather than leaving it
     // playing in the pop-out.

@@ -1,8 +1,18 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import ircClient from "../../src/lib/ircClient";
+import {
+  acquireVoiceClient,
+  hasActiveVoiceClient,
+  shutdownAllVoiceClients,
+} from "../../src/lib/voice";
 import type { AppState } from "../../src/store";
 import useStore from "../../src/store";
-import type { Channel, User } from "../../src/types";
+import { readyProcessedServers } from "../../src/store/handlers/connection";
+import type { Channel, ServerConfig, User } from "../../src/types";
+import {
+  installLocalStorageBacking,
+  lsBacking,
+} from "../fixtures/localStorageBacking";
 
 const OTHER_SERVER = "left-srv-other";
 let serverId = "";
@@ -12,17 +22,17 @@ let sendRaw: ReturnType<typeof vi.spyOn>;
 const member = (username: string): User =>
   ({ id: username, username, isOnline: true }) as User;
 
-function channelOn(id: string): Channel {
+function channelOn(id: string, name = "#Lounge", users = ["me", "op"]) {
   return {
-    id: `${id}-chan`,
-    name: "#Lounge",
+    id: `${id}-${name}`,
+    name,
     isPrivate: false,
     serverId: id,
     unreadCount: 0,
     isMentioned: false,
     messages: [],
-    users: [member("me"), member("op")],
-  };
+    users: users.map(member),
+  } as Channel;
 }
 
 const clientServers = () =>
@@ -31,22 +41,51 @@ const capsDone = () =>
   (ircClient as unknown as { capNegotiationComplete: Map<string, boolean> })
     .capNegotiationComplete;
 
-function seed() {
+const savedEntry = (id = serverId): ServerConfig =>
+  JSON.parse(lsBacking.get("savedServers") ?? "[]").find(
+    (s: ServerConfig) => s.id === id,
+  );
+
+function saveEntries(entries: Partial<ServerConfig>[]) {
+  lsBacking.set(
+    "savedServers",
+    JSON.stringify(
+      entries.map((entry) => ({
+        host: "irc.test",
+        port: 6697,
+        nickname: "me",
+        channels: ["#Lounge", "#other"],
+        ...entry,
+      })),
+    ),
+  );
+}
+
+function seed({
+  channels = (id: string) => [channelOn(id), channelOn(id, "#other")],
+  server = {},
+}: {
+  channels?: (id: string) => Channel[];
+  server?: Record<string, unknown>;
+} = {}) {
   serverId = `left-srv-${++counter}`;
   const servers = [serverId, OTHER_SERVER].map((id) => ({
     id,
     name: "test",
     host: "irc.test",
     port: 6697,
-    channels: [channelOn(id)],
+    channels: channels(id),
     privateChats: [],
     isConnected: true,
     users: [],
+    ...(id === serverId && server),
   }));
+  saveEntries([{ id: serverId }, { id: OTHER_SERVER }]);
   useStore.setState({
     servers,
     messages: {},
     activeBatches: {},
+    channelOrder: {},
     globalSettings: { showEvents: true, showKicks: true, showJoinsParts: true },
   } as unknown as Partial<AppState>);
   for (const id of [serverId, OTHER_SERVER]) {
@@ -54,14 +93,17 @@ function seed() {
     capsDone().set(id, true);
     clientServers().set(id, {
       id,
-      channels: [{ ...channelOn(id), users: [] }],
+      channels: channels(id).map((c) => ({ ...c, users: [] })),
       capabilities: [],
     });
   }
 }
 
-const channel = (id = serverId) =>
-  useStore.getState().servers.find((s) => s.id === id)?.channels[0] as Channel;
+const channel = (id = serverId, name = "#Lounge") =>
+  useStore
+    .getState()
+    .servers.find((s) => s.id === id)
+    ?.channels.find((c) => c.name === name) as Channel;
 
 const sentLines = () =>
   sendRaw.mock.calls.map((call: unknown[]) => call[1] as string);
@@ -87,8 +129,26 @@ function part(username: string) {
   });
 }
 
+function ownJoin(username = "me", channelName = "#lounge") {
+  ircClient.triggerEvent("JOIN", { serverId, username, channelName });
+}
+
+// Hands the client the line that ends registration, as every new connection does.
+function welcome(id = serverId) {
+  readyProcessedServers.delete(id);
+  (
+    ircClient as unknown as {
+      handleMessage: (data: string, serverId: string) => void;
+    }
+  ).handleMessage(":irc.test 001 me :Welcome\r\n", id);
+  (
+    ircClient as unknown as { stopWebSocketPing: (serverId: string) => void }
+  ).stopWebSocketPing(id);
+}
+
 describe("a channel we were removed from", () => {
   beforeEach(() => {
+    installLocalStorageBacking();
     sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
     seed();
   });
@@ -98,6 +158,7 @@ describe("a channel we were removed from", () => {
       ircClient.nicks.delete(id);
       capsDone().delete(id);
       clientServers().delete(id);
+      readyProcessedServers.delete(id);
     }
   });
 
@@ -105,12 +166,14 @@ describe("a channel we were removed from", () => {
     kick("ME");
     expect(channel().leftReason).toBe("kicked");
     expect(channel().users).toEqual([]);
+    expect(savedEntry().leftChannels).toEqual({ "#Lounge": "kicked" });
   });
 
   test("our own part seen from another session marks the channel as left", () => {
     part("me");
     expect(channel().leftReason).toBe("parted");
     expect(channel().users).toEqual([]);
+    expect(savedEntry().leftChannels).toEqual({ "#Lounge": "parted" });
   });
 
   test("someone else leaving keeps us in the channel", () => {
@@ -118,17 +181,40 @@ describe("a channel we were removed from", () => {
     part("op");
     expect(channel().leftReason).toBeUndefined();
     expect(channel().users.map((u) => u.username)).toEqual(["me"]);
+    expect(savedEntry().leftChannels).toBeUndefined();
   });
 
   test("a kick on one server leaves the same-named channel of another alone", () => {
     kick("me");
     expect(channel(OTHER_SERVER).leftReason).toBeUndefined();
+    expect(channel(OTHER_SERVER).users.map((u) => u.username)).toEqual([
+      "me",
+      "op",
+    ]);
+    expect(savedEntry(OTHER_SERVER).leftChannels).toBeUndefined();
   });
 
-  test("selecting a channel we left sends no JOIN", () => {
-    kick("me");
-    useStore.getState().selectChannel(channel().id);
-    expect(sentJoins()).toEqual([]);
+  describe("selecting a channel whose member list is empty", () => {
+    beforeEach(() => {
+      seed({ channels: (id) => [channelOn(id, "#Lounge", ["me"])] });
+      useStore.setState((state) => ({
+        ui: { ...state.ui, selectedServerId: serverId },
+      }));
+    });
+
+    test("sends no JOIN after our kick", () => {
+      kick("me");
+      useStore.getState().selectChannel(channel().id);
+      expect(sentJoins()).toEqual([]);
+    });
+
+    test("sends JOIN while nothing says we left", () => {
+      part("me");
+      ownJoin();
+      sendRaw.mockClear();
+      useStore.getState().selectChannel(channel().id);
+      expect(sentJoins()).toEqual(["JOIN #Lounge"]);
+    });
   });
 
   test("typing and sending in a channel send no JOIN", () => {
@@ -152,13 +238,19 @@ describe("a channel we were removed from", () => {
   test("our JOIN puts us back and asks the server for the members", () => {
     kick("me");
     sendRaw.mockClear();
-    ircClient.triggerEvent("JOIN", {
-      serverId,
-      username: "me",
-      channelName: "#lounge",
-    });
+    ownJoin();
     expect(channel().leftReason).toBeUndefined();
-    expect(sentLines()).toEqual(["WHO #lounge %cuhnfaro"]);
+    expect(savedEntry().leftChannels).toEqual({});
+    expect(sentLines()).toEqual([
+      expect.stringMatching(/^WHO #lounge %tcuhnfaro,\d+$/),
+    ]);
+  });
+
+  test("our JOIN counts when the server spells our nick in another case", () => {
+    kick("me");
+    ownJoin("ME");
+    expect(channel().leftReason).toBeUndefined();
+    expect(channel().users).toEqual([]);
   });
 
   test("joining again a channel the client no longer tracks loads it once", () => {
@@ -169,25 +261,157 @@ describe("a channel we were removed from", () => {
     sendRaw.mockClear();
     useStore.getState().joinChannel(serverId, "#Lounge");
     expect(sentLines()).toEqual(["JOIN #Lounge"]);
-    ircClient.triggerEvent("JOIN", {
-      serverId,
-      username: "me",
-      channelName: "#Lounge",
-    });
+    ownJoin("me", "#Lounge");
     expect(sentLines()).toEqual([
       "JOIN #Lounge",
       "CHATHISTORY LATEST #Lounge * 50",
-      "WHO #Lounge %cuhnfaro",
+    ]);
+    ircClient.triggerEvent("CHATHISTORY_LOADING", {
+      serverId,
+      channelName: "#Lounge",
+      isLoading: false,
+    });
+    expect(sentLines().slice(2)).toEqual([
+      expect.stringMatching(/^WHO #Lounge %tcuhnfaro,\d+$/),
     ]);
   });
 
-  test("closing a channel we left still parts it, so a bouncer drops it too", () => {
+  describe("a new connection", () => {
+    test("joins the saved channels we are in and passes by the one we were kicked from", () => {
+      kick("me");
+      sendRaw.mockClear();
+      welcome();
+      expect(sentJoins().length).toBeGreaterThan(0);
+      expect(new Set(sentJoins())).toEqual(new Set(["JOIN #other"]));
+      expect(channel().leftReason).toBe("kicked");
+    });
+
+    test("passes by a channel one of our other sessions left", () => {
+      part("me");
+      sendRaw.mockClear();
+      welcome();
+      expect(new Set(sentJoins())).toEqual(new Set(["JOIN #other"]));
+    });
+
+    test("stays out after a rejoin the server refused", () => {
+      kick("me");
+      useStore.getState().joinChannel(serverId, "#Lounge");
+      ircClient.triggerEvent("JOIN_REFUSED", {
+        serverId,
+        channelName: "#Lounge",
+        isThrottled: false,
+        numeric: "474",
+      });
+      expect(channel().leftReason).toBe("kicked");
+      sendRaw.mockClear();
+      welcome();
+      expect(new Set(sentJoins())).toEqual(new Set(["JOIN #other"]));
+    });
+
+    test("joins the channel again once the user has rejoined it", () => {
+      kick("me");
+      useStore.getState().joinChannel(serverId, "#Lounge");
+      ownJoin();
+      sendRaw.mockClear();
+      welcome();
+      expect(new Set(sentJoins())).toEqual(
+        new Set(["JOIN #Lounge", "JOIN #other"]),
+      );
+    });
+
+    test("after a page load shows the channel as left without joining it", () => {
+      const reloaded = `left-srv-reloaded-${++counter}`;
+      saveEntries([
+        { id: reloaded, leftChannels: { "#Lounge": "kicked" } },
+        { id: OTHER_SERVER },
+      ]);
+      useStore.setState((state) => ({
+        servers: [
+          { ...state.servers[0], id: reloaded, channels: [] },
+          state.servers[1],
+        ],
+      }));
+      ircClient.nicks.set(reloaded, "me");
+      clientServers().set(reloaded, {
+        id: reloaded,
+        channels: [],
+        capabilities: [],
+      });
+      sendRaw.mockClear();
+
+      welcome(reloaded);
+
+      const rows = useStore.getState().servers[0].channels;
+      expect(rows.map((c) => [c.name, c.leftReason])).toEqual([
+        ["#Lounge", "kicked"],
+        ["#other", undefined],
+      ]);
+      expect(new Set(sentJoins())).toEqual(new Set(["JOIN #other"]));
+      ircClient.nicks.delete(reloaded);
+      clientServers().delete(reloaded);
+      readyProcessedServers.delete(reloaded);
+    });
+
+    test("to a bouncer shows the channel as left until the bouncer joins us", () => {
+      seed({ channels: () => [], server: { bouncerNetid: "1" } });
+      saveEntries([
+        { id: serverId, channels: [], leftChannels: { "#Lounge": "kicked" } },
+        { id: OTHER_SERVER },
+      ]);
+      welcome();
+      expect(sentJoins()).toEqual([]);
+      expect(channel().leftReason).toBe("kicked");
+
+      ownJoin();
+      expect(channel().leftReason).toBeUndefined();
+      expect(savedEntry().leftChannels).toEqual({});
+    });
+  });
+
+  test("a join nobody asked for passes by a channel we left, and the user's join goes out", () => {
     kick("me");
     sendRaw.mockClear();
+    useStore
+      .getState()
+      .joinChannel(serverId, "#lounge", undefined, { isAutomatic: true });
+    expect(sentJoins()).toEqual([]);
+    useStore.getState().joinChannel(serverId, "#lounge");
+    expect(sentJoins()).toEqual(["JOIN #lounge"]);
+  });
+
+  test("our kick from the channel of a running call ends the call", () => {
+    seed({ channels: (id) => [channelOn(id, "^Lounge")] });
+    const call = {
+      serverId,
+      channel: "^Lounge",
+      selfNick: "me",
+      onState() {},
+      onError() {},
+    };
+    acquireVoiceClient(call);
+    expect(hasActiveVoiceClient(serverId, "^Lounge")).toBe(true);
+
+    kick("me", "^lounge");
+
+    expect(hasActiveVoiceClient(serverId, "^Lounge")).toBe(false);
+    sendRaw.mockClear();
+    expect(acquireVoiceClient(call)).toBeNull();
+    expect(sentJoins()).toEqual([]);
+    shutdownAllVoiceClients();
+  });
+
+  test("closing a channel we were kicked from on a bouncer parts it and forgets it", () => {
+    seed({ server: { bouncerNetid: "1" } });
+    kick("me");
+    expect(savedEntry().leftChannels).toEqual({ "#Lounge": "kicked" });
+    sendRaw.mockClear();
+
     useStore.getState().leaveChannel(serverId, "#lounge");
+
     expect(sentLines()).toEqual(["PART #lounge"]);
-    expect(
-      useStore.getState().servers.find((s) => s.id === serverId)?.channels,
-    ).toEqual([]);
+    expect(savedEntry().leftChannels).toEqual({});
+    welcome();
+    expect(channel()).toBeUndefined();
+    expect(sentJoins()).not.toContain("JOIN #Lounge");
   });
 });

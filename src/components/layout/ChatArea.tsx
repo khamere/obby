@@ -1167,6 +1167,14 @@ export const ChatArea: React.FC<{
     }
   }, [channelKey, applyText]);
 
+  const hasComposer =
+    !!(selectedChannel || selectedPrivateChat) && !selectedChannel?.leftReason;
+
+  // The message box mounts empty, so we show the text we hold for this chat in it each time it mounts.
+  useEffect(() => {
+    if (hasComposer) applyText(messageTextRef.current);
+  }, [hasComposer, applyText]);
+
   // Keep-alive: maintain last 3 visited channels in an LRU list so their message list
   // DOMs are preserved with display:none (scroll position + media elements stay alive).
   // We update it during render so a newly opened chat mounts its list on the first frame.
@@ -2236,9 +2244,6 @@ export const ChatArea: React.FC<{
     isProfileOpen,
     isAddServerModalOpen,
   ]);
-
-  const hasComposer =
-    !!(selectedChannel || selectedPrivateChat) && !selectedChannel?.leftReason;
 
   return (
     <div className="flex flex-col h-full">

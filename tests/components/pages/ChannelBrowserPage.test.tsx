@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => {
         name: "Test Server",
         host: "irc.example.com",
         port: 6667,
-        channels: [] as { id: string; name: string }[],
+        channels: [] as { id: string; name: string; leftReason?: string }[],
         privateChats: [],
       },
     ],
@@ -82,6 +82,21 @@ describe("ChannelBrowserPage", () => {
     expect(screen.getByText("channel1")).toBeInTheDocument();
     expect(screen.getByText("channel2")).toBeInTheDocument();
     expect(screen.getByText("channel3")).toBeInTheDocument();
+  });
+
+  test("offers Join for a channel we are shown but out of, and Open for one we are in", () => {
+    state.servers[0].channels = [
+      { id: "c1", name: "#Channel1", leftReason: "kicked" },
+      { id: "c2", name: "#Channel2" },
+    ];
+    render(
+      <ChannelBrowserPage
+        page={{ kind: "channelBrowser", serverId: "server1" }}
+      />,
+    );
+
+    expect(screen.getByLabelText("Join #channel1")).toBeInTheDocument();
+    expect(screen.getByLabelText("Open #channel2")).toBeInTheDocument();
   });
 
   test("displays topic and member count for each channel", () => {

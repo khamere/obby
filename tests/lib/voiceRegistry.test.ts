@@ -10,6 +10,8 @@ vi.mock("../../src/lib/ircClient", () => ({
   },
 }));
 
+import ircClient from "../../src/lib/ircClient";
+import { saveLeftReason } from "../../src/lib/leftChannels";
 import {
   acquireVoiceClient,
   attachLiveVoiceClient,
@@ -46,6 +48,40 @@ describe("live voice call registry", () => {
     act(() => releaseVoiceClient("s1", "$stage"));
 
     expect(result.current[0]).toBe(false);
+  });
+
+  describe("in a channel the user is out of", () => {
+    const sentJoins = () =>
+      vi
+        .mocked(ircClient.sendRaw)
+        .mock.calls.map((call) => call[1])
+        .filter((line) => line.startsWith("JOIN"));
+
+    beforeEach(() => {
+      vi.mocked(ircClient.sendRaw).mockClear();
+      saveLeftReason("s-out", "^Lobby", undefined);
+    });
+
+    it("starts no call and sends no JOIN", () => {
+      saveLeftReason("s-out", "^Lobby", "kicked");
+
+      expect(acquire("s-out", "^lobby")).toBeNull();
+
+      expect(getLiveVoiceCalls()).toEqual([]);
+      expect(sentJoins()).toEqual([]);
+    });
+
+    it("sends no JOIN when a running call starts over", async () => {
+      const call = acquire("s-out", "^Lobby");
+      expect(sentJoins()).toEqual(["JOIN ^Lobby"]);
+      saveLeftReason("s-out", "^Lobby", "kicked");
+      vi.mocked(ircClient.sendRaw).mockClear();
+
+      call?.client.leave();
+      await call?.client.join();
+
+      expect(sentJoins()).toEqual([]);
+    });
   });
 
   it("starts empty", () => {

@@ -4,7 +4,8 @@ import { forgetAutoAway, forgetExpectedBack } from "../../lib/autoAway";
 import { isLiveChannel } from "../../lib/channelFolders";
 import ircClient from "../../lib/ircClient";
 import { cannotBeChannelName } from "../../lib/ircUtils";
-import type { PrivateChat, Server } from "../../types";
+import { leftChannelsOf } from "../../lib/leftChannels";
+import type { Channel, PrivateChat, Server } from "../../types";
 import {
   generateDeterministicId,
   getServerSelection,
@@ -17,6 +18,40 @@ import * as storage from "../localStorage";
 import { forgetJoins } from "../pendingJoins";
 import { findConversation } from "./history";
 import { reportServerReply } from "./serverReplies";
+
+// A page load starts with no channels, so we put back the ones we are out of as left and leave joining them to the user.
+function restoreLeftChannels(
+  store: StoreApi<AppState>,
+  serverId: string,
+): void {
+  const leftChannels = leftChannelsOf(serverId);
+  store.setState((state) => {
+    const server = state.servers.find((s) => s.id === serverId);
+    if (!server) return {};
+    const shown = new Set(server.channels.map((c) => c.name.toLowerCase()));
+    const restored: Channel[] = Object.entries(leftChannels)
+      .filter(([name]) => !shown.has(name.toLowerCase()))
+      .map(([name, leftReason]) => ({
+        id: generateDeterministicId(serverId, name),
+        name,
+        isPrivate: false,
+        serverId,
+        unreadCount: 0,
+        isMentioned: false,
+        messages: [],
+        users: [],
+        leftReason,
+      }));
+    if (restored.length === 0) return {};
+    return {
+      servers: state.servers.map((s) =>
+        s.id === serverId
+          ? { ...s, channels: [...s.channels, ...restored] }
+          : s,
+      ),
+    };
+  });
+}
 
 // Track which servers have had their ready handler run to prevent duplicate processing
 export const readyProcessedServers = new Set<string>();
@@ -427,6 +462,8 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
         channelsToJoin = sendableChannels;
       }
 
+      restoreLeftChannels(store, serverId);
+
       if (!isBouncerSession) {
         for (const channelName of channelsToJoin) {
           if (channelName) {
@@ -447,7 +484,7 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
         if (!reconnectedServer) return;
         if (reconnectedServer.isBouncerControl) return;
         for (const ch of reconnectedServer.channels) {
-          if (!ch.chathistoryRequested && !ch.needsKey)
+          if (!ch.chathistoryRequested && !ch.needsKey && !ch.leftReason)
             ircClient.loadLatestHistory(serverId, ch.name);
         }
       }, 50);

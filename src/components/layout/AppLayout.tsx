@@ -318,7 +318,10 @@ export const AppLayout: React.FC = () => {
         // A page covers the chat and keeps it mounted, so the draft, the
         // scroll position and a running call survive opening Settings.
         const voiceTopSlot =
-          isVoiceChannel && selectedServerId && selectedChannel ? (
+          isVoiceChannel &&
+          selectedServerId &&
+          selectedChannel &&
+          !selectedChannel.leftReason ? (
             <VoiceChannelView
               serverId={selectedServerId}
               channelName={selectedChannel.name}

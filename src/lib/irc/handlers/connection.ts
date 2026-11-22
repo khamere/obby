@@ -1,4 +1,5 @@
 import { parseIsupportTokens } from "../../ircUtils";
+import { leftReasonOf } from "../../leftChannels";
 import type { IRCClientContext } from "../IRCClientContext";
 
 export function handlePing(
@@ -94,6 +95,7 @@ export function handleRplWelcome(
   const server = ctx.servers.get(serverId);
   if (server && server.channels.length > 0) {
     for (const channel of server.channels) {
+      if (leftReasonOf(serverId, channel.name)) continue;
       ctx.sendRaw(serverId, `JOIN ${channel.name}`);
     }
   }
