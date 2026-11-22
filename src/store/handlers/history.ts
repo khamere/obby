@@ -14,6 +14,7 @@ import {
   gapsFor,
   type HistoryGap,
   type HistoryRow,
+  hasRowForEach,
   hasServerHistory,
   type NewHistoryRow,
   newestEventRows,
@@ -468,8 +469,9 @@ async function saveHistoryPage(
   await refreshHasMore(store, serverId, target, page.size > 0);
 }
 
-// We decide load more for a chat from both sources: the server may have an
-// older page, or our disk has rows older than the oldest message on screen.
+// We decide load more for a chat from every source: the server may have an
+// older page, our disk has rows older than the oldest message on screen, or a
+// gap the server can still fill waits above it.
 async function refreshHasMore(
   store: StoreApi<AppState>,
   serverId: string,
@@ -478,9 +480,15 @@ async function refreshHasMore(
 ) {
   const conversation = findConversation(store, serverId, target);
   if (!conversation) return;
+  const oldest = store.getState().messages[conversation.key]?.[0];
+  const isOlderThanOldestShown = (gap: HistoryGap) =>
+    !oldest || gap.from < messageTime(oldest);
   const hasMore =
     serverMayHaveMore ||
-    (await olderDiskRows(store, serverId, target, 1)).length > 0;
+    (await olderDiskRows(store, serverId, target, 1)).length > 0 ||
+    (await gapsServerCanFill(store, serverId, target)).some(
+      isOlderThanOldestShown,
+    );
   store.setState((state) => ({
     servers: state.servers.map((server) =>
       server.id !== serverId
@@ -641,9 +649,8 @@ async function olderDiskRows(
   );
 }
 
-// A gap inside the messages on screen is invisible, so we fill it from the
-// server at once and mark what the server no longer has. A gap above them
-// waits for load more.
+// A gap inside the present is invisible, so we fill it from the server at once
+// and mark what the server no longer has. A gap above it waits for load more.
 function settleGap(
   store: StoreApi<AppState>,
   serverId: string,
@@ -653,15 +660,22 @@ function settleGap(
 ) {
   const conversation = findConversation(store, serverId, target);
   if (!conversation) return;
-  const isOnScreen = (store.getState().messages[conversation.key] ?? []).some(
-    (message) => new Date(message.timestamp).getTime() <= gap.from,
-  );
-  if (!isOnScreen) return;
+  const state = store.getState();
+  const window = state.historyWindows[conversation.key];
+  const present = window?.present ?? state.messages[conversation.key] ?? [];
+  if (!present.some((message) => messageTime(message) <= gap.from)) return;
+  // A page or a marker for this gap would show inside a window opened after
+  // it, so the gap waits there for the reader to return to the present.
+  const isBehindWindow = window !== undefined && window.until > gap.from;
   if (gap.lost) {
-    showMissingMarker(store, serverId, conversation.channelId, gap);
+    if (!isBehindWindow)
+      showMissingMarker(store, serverId, conversation.channelId, gap);
     return;
   }
-  if (pagesLeft === 0) return;
+  if (pagesLeft === 0 || isBehindWindow) {
+    void showOnlyAfterGap(store, serverId, target, gap, !isBehindWindow);
+    return;
+  }
   requestPageBefore(
     serverId,
     target,
@@ -669,6 +683,59 @@ function settleGap(
     { gap, pagesLeft: pagesLeft - 1 },
     false,
   );
+}
+
+// A gap longer than we fill at once goes above the messages on screen, where
+// load more fills it as the reader scrolls up to it. Scrolling on brings the
+// messages before it back from disk, so when one of them is not saved there
+// (a whisper, say) they all stay and we mark the gap.
+async function showOnlyAfterGap(
+  store: StoreApi<AppState>,
+  serverId: string,
+  target: string,
+  gap: HistoryGap,
+  canMark: boolean,
+) {
+  const conversation = findConversation(store, serverId, target);
+  if (!conversation) return;
+  const { key } = conversation;
+  const isAfterGap = (message: Message) => messageTime(message) >= gap.to;
+  const state = store.getState();
+  const said = (state.historyWindows[key]?.present ?? state.messages[key] ?? [])
+    .filter((message) => !isAfterGap(message))
+    .filter(
+      (message) => message.type === "message" || message.type === "notice",
+    );
+  const isEverySaved = await hasRowForEach(
+    serverId,
+    target.toLowerCase(),
+    said.map((message) =>
+      [message.msgid, ...(message.multilineMessageIds ?? [])].filter(
+        (msgid) => msgid !== undefined,
+      ),
+    ),
+  );
+  if (!isEverySaved) {
+    if (canMark)
+      showMissingMarker(store, serverId, conversation.channelId, gap);
+    return;
+  }
+  store.setState((state) => {
+    const window = state.historyWindows[key];
+    return window
+      ? {
+          historyWindows: {
+            ...state.historyWindows,
+            [key]: { ...window, present: window.present.filter(isAfterGap) },
+          },
+        }
+      : {
+          messages: {
+            ...state.messages,
+            [key]: (state.messages[key] ?? []).filter(isAfterGap),
+          },
+        };
+  });
 }
 
 export function findConversation(
