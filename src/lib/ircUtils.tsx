@@ -484,23 +484,43 @@ export function makeLinkLabels(url: string, label: string): LinkLabels {
 const labelFor = (labels: LinkLabels | undefined, url: string) =>
   labels?.get(linkLabelKey(url));
 
-// The info string after a code fence is free text from the sender, so we
-// read only its leading language name and never pass the rest to an attribute.
-const fenceLanguageName = (info: string | undefined): string | undefined =>
-  info?.match(/^[\w+#.-]{1,32}/)?.[0];
+const MAX_FENCE_WORD = 32;
+const FENCE_LANGUAGE = /^[\w+#.-]+$/;
+
+// The word after a code fence is free text from the sender, so we let it name
+// a class or a highlighter only when all of it reads as a language name.
+const fenceLanguageName = (word: string | undefined): string | undefined =>
+  word && word.length <= MAX_FENCE_WORD && FENCE_LANGUAGE.test(word)
+    ? word
+    : undefined;
+
+// Any other fence word is shown as the sender wrote it, as escaped text cut
+// to the length of a language name, so we never pass it to the highlighter.
+const fenceWordLabel = (word: string): string => {
+  const chars = [...decodeHtmlEntities(word)];
+  const shown =
+    chars.length > MAX_FENCE_WORD
+      ? `${chars.slice(0, MAX_FENCE_WORD).join("")}…`
+      : chars.join("");
+  return escapeHtml(shown);
+};
 
 const IMAGE_STYLE = "max-height: 150px;";
-const OWN_STYLE = /^color:[#\w]+(?:;background-color:[#\w]+)?$/;
+const IRC_COLOUR = "(?:#[0-9A-Fa-f]{6}|inherit)";
+const LINE_COLOUR_STYLE = new RegExp(
+  `^color:${IRC_COLOUR}(?:;background-color:${IRC_COLOUR})?$`,
+);
 
 // A style attribute can cover the whole window or load a remote resource, so
-// we keep only the ones this renderer writes itself: a line colour and the
-// image height limit.
+// we keep one only when its whole value is an IRC line colour or the image
+// height limit.
 const dropForeignStyle = (
   _node: Element,
   data: { attrName: string; attrValue: string; keepAttr: boolean },
 ) => {
   if (data.attrName !== "style") return;
-  if (data.attrValue === IMAGE_STYLE || OWN_STYLE.test(data.attrValue)) return;
+  if (data.attrValue === IMAGE_STYLE) return;
+  if (LINE_COLOUR_STYLE.test(data.attrValue)) return;
   data.keepAttr = false;
 };
 
@@ -649,7 +669,8 @@ export function renderMarkdown(
     // hljs escapes what it highlights, so every other path must escape too or
     // a fenced "<img src>" would load a remote image and leak the reader's IP.
     let highlightedCode = escapeHtml(decodedText);
-    const fenceLanguage = fenceLanguageName(lang);
+    const fenceWord = lang?.match(/^\S+/)?.[0];
+    const fenceLanguage = fenceLanguageName(fenceWord);
     let language = fenceLanguage;
 
     if (hljsModule) {
@@ -669,7 +690,7 @@ export function renderMarkdown(
             highlightedCode = escapeHtml(decodedText);
           }
         }
-      } else if (!fenceLanguage) {
+      } else if (!fenceWord) {
         try {
           const result = hljsModule.highlightAuto(decodedText);
           highlightedCode = result.value;
@@ -683,7 +704,11 @@ export function renderMarkdown(
     const languageClass = language
       ? ` class="language-${escapeHtml(language)}"`
       : "";
-    return `<pre><code${languageClass}>${highlightedCode}</code></pre>`;
+    const wordLabel =
+      !language && fenceWord
+        ? ` data-fence-label="${fenceWordLabel(fenceWord)}"`
+        : "";
+    return `<pre><code${languageClass}${wordLabel}>${highlightedCode}</code></pre>`;
   };
 
   // Temporarily replace blockquote markers to preserve them during HTML escaping
@@ -729,9 +754,12 @@ export function renderMarkdown(
       // Extract language from class attribute (e.g., class="language-javascript")
       const languageMatch = attrs.match(/class="[^"]*language-([^"\s]+)/);
       const language = languageMatch ? languageMatch[1] : "text";
-      const displayLanguage = language === "text" ? "plain text" : language;
+      const wordLabel = attrs.match(/ data-fence-label="([^"]*)"/);
+      const displayLanguage =
+        wordLabel?.[1] ?? (language === "text" ? "plain text" : language);
+      const codeAttrs = wordLabel ? attrs.replace(wordLabel[0], "") : attrs;
 
-      return `<div class="code-block-container"><div class="code-block-header">${displayLanguage}<button class="copy-button" data-code-id="${codeId}" title="Copy to clipboard"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></div><pre><code id="${codeId}"${attrs}>${content}</code></pre></div>`;
+      return `<div class="code-block-container"><div class="code-block-header">${displayLanguage}<button class="copy-button" data-code-id="${codeId}" title="Copy to clipboard"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></div><pre><code id="${codeId}"${codeAttrs}>${content}</code></pre></div>`;
     },
   );
 

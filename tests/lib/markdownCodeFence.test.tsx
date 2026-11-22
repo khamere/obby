@@ -1,5 +1,6 @@
 import { render } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { marked } from "marked";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import {
   processMarkdownInText,
   sanitizeMarkdownHtml,
@@ -8,20 +9,29 @@ import {
 const renderMessage = (text: string) =>
   render(<div>{processMarkdownInText(text, false, true, "k")}</div>).container;
 
-// The fence info string is free text from the sender, so only its leading
-// language name may reach an attribute: a quote in it would add attributes,
-// and a style with url() fetches from any host without a click.
+const label = (container: HTMLElement) =>
+  container.querySelector(".code-block-header")?.textContent;
+
+// Only the id we generate and a validated language class may sit on a code
+// block, whatever the sender wrote after the fence.
+const codeAttributes = (container: HTMLElement) =>
+  [...(container.querySelector("pre code")?.attributes ?? [])]
+    .map((attr) => attr.name)
+    .filter((name) => name !== "id");
+
+// The fence info string is free text from the sender, so its first word may
+// name a class only when all of it is a language name: a quote in it would
+// add attributes, and a style with url() fetches from any host without a click.
 describe("markdown code fence language", () => {
   const overlay =
     'x"style="background:url(https://attacker.example/b);position:fixed;inset:0;z-index:99999';
 
   it("keeps a quote in a one-line fence out of the attributes", () => {
     const container = renderMessage(`\`\`\`${overlay}`);
-    const code = container.querySelector("pre code");
-    expect(code?.className).toBe("language-x");
-    expect(code?.getAttribute("style")).toBeNull();
+    expect(codeAttributes(container)).toEqual([]);
     expect(container.querySelector("[style]")).toBeNull();
     expect(container.innerHTML).not.toContain("attacker.example");
+    expect(label(container)).toBe('x"style="background:url(https://…');
   });
 
   it.each(["```", "~~~"])(
@@ -32,7 +42,7 @@ describe("markdown code fence language", () => {
       );
       const code = container.querySelector("pre code");
       expect(code?.textContent).toBe("const a = 1;");
-      expect(code?.className).toBe("language-x");
+      expect(codeAttributes(container)).toEqual([]);
       expect(container.querySelector("[style]")).toBeNull();
       expect(container.innerHTML).not.toContain("attacker.example");
     },
@@ -46,6 +56,38 @@ describe("markdown code fence language", () => {
     expect(code?.className).toBe("language-js");
     expect(code?.getAttribute("style")).toBeNull();
     expect(code?.getAttribute("title")).toBeNull();
+    expect(label(container)).toBe("js");
+  });
+
+  it.each([
+    ["C/C++", "C/C++"],
+    ["c/c++ extra words", "c/c++"],
+    ['a"b', 'a"b'],
+    ["a'b=c", "a'b=c"],
+    ["<b>", "<b>"],
+    ["a&quot;b", 'a"b'],
+    ["x".repeat(33), `${"x".repeat(32)}…`],
+    [`${"x".repeat(32)}"y`, `${"x".repeat(32)}…`],
+  ])("shows the fence word %s as text and gives it no class", (word, shown) => {
+    const container = renderMessage(`\`\`\`${word}\nint a = 1;\n\`\`\``);
+    expect(codeAttributes(container)).toEqual([]);
+    expect(label(container)).toBe(shown);
+    expect(container.querySelector("[data-fence-label]")).toBeNull();
+    expect(container.querySelector("pre code")?.innerHTML).toBe("int a = 1;");
+  });
+
+  it("keeps a language name of 32 characters", () => {
+    const name = "x".repeat(32);
+    const container = renderMessage(`\`\`\`${name}\na = 1\n\`\`\``);
+    expect(container.querySelector("pre code")?.className).toBe(
+      `language-${name}`,
+    );
+    expect(label(container)).toBe(name);
+  });
+
+  it("labels a fence with no word as plain text", () => {
+    const container = renderMessage("```\n\n```");
+    expect(label(container)).toBe("plain text");
   });
 
   it.each(["py", "c++", "c#", "objective-c", "asp.net"])(
@@ -79,7 +121,31 @@ describe("markdown inline styles", () => {
     );
   });
 
+  it("keeps the default IRC colour of a line", () => {
+    const safe = sanitizeMarkdownHtml(
+      '<span style="color:inherit;background-color:#00007F">x</span>',
+    );
+    expect(safe).toContain('style="color:inherit;background-color:#00007F"');
+  });
+
+  it("drops a style the parsed Markdown carries when a message renders", () => {
+    const parse = vi
+      .spyOn(marked, "parse")
+      .mockReturnValue('<p><span style="text-decoration:blink">x</span></p>');
+    try {
+      const container = renderMessage("**x**");
+      expect(parse).toHaveBeenCalled();
+      expect(container.querySelector("p span")?.textContent).toBe("x");
+      expect(container.querySelector("[style]")).toBeNull();
+    } finally {
+      parse.mockRestore();
+    }
+  });
+
   it.each([
+    "color:red",
+    "color:#FF0000;background-color:url(x)",
+    "color:#FF00",
     "position:fixed;inset:0;z-index:99999",
     "background:url(https://attacker.example/b)",
     "color:#FF0000;background-image:url(https://attacker.example/b)",
@@ -111,4 +177,49 @@ describe("markdown inline styles", () => {
       "max-height: 150px;",
     );
   });
+});
+
+// The highlighter loads after the first render, so these wait for it: a fence
+// word reaches it only as a whole language name, never as its leading part.
+describe("markdown code fence highlighting", () => {
+  beforeAll(async () => {
+    await import("../../src/lib/hljs");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+
+  const highlighted = (container: HTMLElement) =>
+    container.querySelector("pre code [class^='hljs-']") !== null;
+
+  it.each([
+    ["c++", "c++"],
+    ["js foo", "js"],
+    ["C", "C"],
+  ])("highlights a fence opened with %s as %s", (info, language) => {
+    const container = renderMessage(`\`\`\`${info}\nconst int a = 1;\n\`\`\``);
+    expect(container.querySelector("pre code")?.className).toBe(
+      `language-${language}`,
+    );
+    expect(label(container)).toBe(language);
+    expect(highlighted(container)).toBe(true);
+  });
+
+  it.each([
+    ["C/C++", "C/C++", []],
+    ["objective-c", "objective-c", ["class"]],
+    ['js"x', 'js"x', []],
+    [`${"c".repeat(33)}`, `${"c".repeat(32)}…`, []],
+  ])(
+    "leaves a fence opened with %s unhighlighted",
+    (info, shown, attributes) => {
+      const container = renderMessage(
+        `\`\`\`${info}\nconst int a = 1;\n\`\`\``,
+      );
+      expect(codeAttributes(container)).toEqual(attributes);
+      expect(label(container)).toBe(shown);
+      expect(highlighted(container)).toBe(false);
+      expect(container.querySelector("pre code")?.textContent).toBe(
+        "const int a = 1;",
+      );
+    },
+  );
 });
