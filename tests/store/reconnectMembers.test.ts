@@ -358,6 +358,40 @@ describe("member list after coming back to a channel", () => {
     expect(members()).toEqual(["bob", "me"]);
   });
 
+  test("someone who splits away and comes back while the reply is on its way is listed", () => {
+    seed([user("me"), user("bob")]);
+
+    ownJoin();
+    receive(
+      whoxRow("me"),
+      whoxRow("bob"),
+      ":irc.test BATCH +split netsplit a.test b.test",
+      "@batch=split :bob!u@h QUIT :a.test b.test",
+      ":irc.test BATCH -split",
+    );
+    expect(members()).toEqual(["me"]);
+
+    receive(
+      ":irc.test BATCH +back netjoin a.test b.test",
+      `@batch=back :bob!u@h JOIN ${channelName}`,
+      ":irc.test BATCH -back",
+      endOfWho(),
+    );
+
+    expect(members()).toEqual(["bob", "me"]);
+  });
+
+  test("a numbered row with more fields than our request asks for adds nobody", () => {
+    seed([user("me"), user("bob")]);
+
+    receive(
+      `:irc.test 354 me 7 ${channelName} u 192.0.2.7 h irc.test dave H 0 0 0 0 :dave`,
+      endOfWho(),
+    );
+
+    expect(members()).toEqual(["bob", "me"]);
+  });
+
   test("a nick changed while the reply is on its way is listed under the new nick", () => {
     seed([user("me"), user("bob")]);
 

@@ -438,9 +438,9 @@ export function handleWhoxReply(
   parv: string[],
   _mtags: Record<string, string> | undefined,
 ): void {
-  // A reply to a request that carried a number starts with that number, ahead of the fields every reply has.
+  // We read a leading number only on a row with exactly the fields our own member request asks for, so we never shift the fields of a row shaped any other way.
   const token =
-    parv.length > 9 && /^\d{1,3}$/.test(parv[1]) ? parv[1] : undefined;
+    parv.length === 10 && /^\d{1,3}$/.test(parv[1]) ? parv[1] : undefined;
   const fields = token === undefined ? parv : parv.slice(1);
   const channel = fields[1];
   const username = fields[2];
@@ -484,7 +484,7 @@ export function handleWhoEnd(
   _mtags: Record<string, string> | undefined,
 ): void {
   const mask = parv[1];
-  // A bouncer that loses its own connection mid-reply ends the reply with exactly this text, the only sign that rows are missing.
+  // We match the exact text a bouncer sends when it loses its own connection mid-reply, since nothing else tells us rows are missing.
   const isAborted = parv[2] === "Command aborted";
   ctx.triggerEvent("WHO_END", { serverId, mask, isAborted });
 }

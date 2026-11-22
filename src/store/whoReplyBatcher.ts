@@ -47,21 +47,21 @@ interface ChannelBucket {
 
 const buckets = new Map<string, ChannelBucket>();
 
-// Only the answer to our own request for every member says who is in the channel, so we number that request and replace the list only from the rows that carry its number.
+// We number our own request for every member and replace the list only from the rows that carry its number, since no other reply says who is in the channel.
 interface MemberRefresh {
   serverId: string;
   channel: string;
   token: string;
-  // When we sent the request or last got a row of its answer.
+  // We count the wait for the answer from the request or from its latest row.
   progressAt: number;
   hasRows: boolean;
-  // Whether no other WHO about a channel could have its reply mixed into this answer.
+  // We replace the list only while no other WHO about a channel can have its reply mixed into this answer.
   canReplaceList: boolean;
-  // Everyone the answer named or we saw join since we asked.
+  // We hold everyone the answer named or we saw join since we asked.
   present: Set<string>;
-  // Everyone we saw leave since we asked, whom a row written before they left may still name.
+  // We hold everyone we saw leave since we asked, since a row written before they left may still name them.
   gone: Set<string>;
-  // Nick changes since we asked, old to new, for rows written before the change.
+  // We map each nick changed since we asked to its new one, so we can read rows written before the change.
   renamed: Map<string, string>;
 }
 
@@ -92,7 +92,7 @@ function refreshesFor(serverId: string, channel?: string): MemberRefresh[] {
     .filter((r): r is MemberRefresh => r?.serverId === serverId);
 }
 
-// A newer request for the same channel takes over, and rows numbered for the older one only add to the list.
+// We let a newer request for the same channel take over, so rows numbered for the older one only add to the list.
 export function beginMemberRefresh(
   serverId: string,
   channel: string,
@@ -140,7 +140,7 @@ export function noteMemberJoined(
   }
 }
 
-// A quit names no channel, so it reaches us with the channel left out.
+// We take a departure with no channel for a quit, which names none, and apply it to every channel.
 export function noteMemberLeft(
   serverId: string,
   channel: string | undefined,
