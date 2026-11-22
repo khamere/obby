@@ -4,7 +4,7 @@ import {
   getCurrentPosition as getNativePosition,
   requestPermissions as requestNativePermissions,
 } from "@tauri-apps/plugin-geolocation";
-import { MAX_TILE_ZOOM } from "./osmTiles";
+import { MAX_TILE_ZOOM, wrapLongitude } from "./osmTiles";
 import { isTauriDesktop, isTauriMobile } from "./platformUtils";
 
 export type LocationPrecision = "exact" | "approximate";
@@ -41,7 +41,7 @@ export function buildLocationShareUrl(
   zoom?: number,
 ): string {
   const lat = roundCoordinate(latitude, precision);
-  const lon = roundCoordinate(longitude, precision);
+  const lon = roundCoordinate(wrapLongitude(longitude), precision);
   const mapZoom =
     zoom ?? (precision === "exact" ? EXACT_ZOOM : APPROXIMATE_ZOOM);
   return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=${mapZoom}/${lat}/${lon}`;
@@ -53,12 +53,9 @@ export interface ParsedLocationUrl {
   zoom: number;
 }
 
-// The inverse of buildLocationShareUrl. Reads mlat/mlon out of the URL
-// itself, so the preview reflects whatever precision the link was built
-// with -- our own share button's, or one a person simply pasted. Anyone can
-// post such a link, so we only return a position that exists on the globe and
-// a zoom level the tile server has.
-export function parseLocationShareUrl(url: string): ParsedLocationUrl | null {
+function readPositionParams(
+  url: string,
+): { parsed: URL; mlat: string | null; mlon: string | null } | null {
   let parsed: URL;
   try {
     parsed = new URL(url);
@@ -68,19 +65,46 @@ export function parseLocationShareUrl(url: string): ParsedLocationUrl | null {
   if (parsed.hostname.replace(/^www\./, "") !== "openstreetmap.org") {
     return null;
   }
-  const mlat = parsed.searchParams.get("mlat");
-  const mlon = parsed.searchParams.get("mlon");
+  return {
+    parsed,
+    mlat: parsed.searchParams.get("mlat"),
+    mlon: parsed.searchParams.get("mlon"),
+  };
+}
+
+// The inverse of buildLocationShareUrl. Reads mlat/mlon out of the URL
+// itself, so the preview reflects whatever precision the link was built
+// with -- our own share button's, or one a person simply pasted. Anyone can
+// post such a link, so we only return a position that exists on the globe and
+// a zoom level the tile server has.
+export function parseLocationShareUrl(url: string): ParsedLocationUrl | null {
+  const params = readPositionParams(url);
+  if (!params) return null;
+  const { parsed, mlat, mlon } = params;
   if (mlat === null || mlon === null) return null;
+  // An empty value converts to zero, which would place the pin off the coast
+  // of Africa for a link that names no position.
+  if (mlat.trim() === "" || mlon.trim() === "") return null;
   const latitude = Number(mlat);
-  const longitude = Number(mlon);
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
-  if (Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return null;
+  // A map dragged across the date line names a longitude on another copy of
+  // the world, so any finite longitude is a place on the main one.
+  const worldCopyLongitude = Number(mlon);
+  if (!Number.isFinite(latitude) || Math.abs(latitude) > 90) return null;
+  if (!Number.isFinite(worldCopyLongitude)) return null;
 
   const fragmentZoom = parsed.hash.match(/#map=(\d+)\//)?.[1];
   const zoom = fragmentZoom
     ? Math.min(MAX_TILE_ZOOM, Number(fragmentZoom))
     : APPROXIMATE_ZOOM;
-  return { latitude, longitude, zoom };
+  return { latitude, longitude: wrapLongitude(worldCopyLongitude), zoom };
+}
+
+// A map link that carries a position we refuse to draw. It stays a plain link:
+// its address holds whatever the sender typed, so we never request it.
+export function isRejectedLocationShareUrl(url: string): boolean {
+  const params = readPositionParams(url);
+  if (!params || (params.mlat === null && params.mlon === null)) return false;
+  return parseLocationShareUrl(url) === null;
 }
 
 // The plugin behind this is Android/iOS only (no desktop implementation),

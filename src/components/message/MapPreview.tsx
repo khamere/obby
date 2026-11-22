@@ -21,7 +21,7 @@ export const MapPreview: React.FC<{
   onRenderFailed?: (url: string) => void;
 }> = ({ url, msgid, serverId, channelId, onRenderFailed }) => {
   const openMedia = useStore((s) => s.openMedia);
-  const [failedTileKeys, setFailedTileKeys] = useState<Set<string>>(
+  const [failedTileUrls, setFailedTileUrls] = useState<Set<string>>(
     () => new Set(),
   );
   const location = parseLocationShareUrl(url);
@@ -34,11 +34,13 @@ export const MapPreview: React.FC<{
         PREVIEW_HEIGHT,
       )
     : [];
+  // Near a pole or at a very low zoom the card repeats one tile side by side,
+  // so we count the distinct images the card asks for.
+  const tileUrls = new Set(placements.map((p) => tileUrl(p.z, p.x, p.y)));
   // A blocked or offline tile server fails every tile, leaving a blank card —
-  // that counts the same as a parse failure: nothing worth showing.
-  const failed =
-    !location ||
-    (placements.length > 0 && failedTileKeys.size >= placements.length);
+  // that counts the same as a parse failure or a position with no tiles:
+  // nothing worth showing.
+  const failed = !location || failedTileUrls.size >= tileUrls.size;
 
   useEffect(() => {
     if (failed) onRenderFailed?.(url);
@@ -56,11 +58,11 @@ export const MapPreview: React.FC<{
         style={{ width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT }}
       >
         {placements.map((p) => {
-          const key = `${p.z}/${p.x}/${p.y}`;
+          const src = tileUrl(p.z, p.x, p.y);
           return (
             <img
-              key={key}
-              src={tileUrl(p.z, p.x, p.y)}
+              key={`${p.drawX}/${p.drawY}`}
+              src={src}
               alt=""
               aria-hidden="true"
               loading="lazy"
@@ -73,9 +75,9 @@ export const MapPreview: React.FC<{
                 height: TILE_SIZE,
               }}
               onError={() =>
-                setFailedTileKeys((prev) => {
-                  if (prev.has(key)) return prev;
-                  return new Set(prev).add(key);
+                setFailedTileUrls((prev) => {
+                  if (prev.has(src)) return prev;
+                  return new Set(prev).add(src);
                 })
               }
             />

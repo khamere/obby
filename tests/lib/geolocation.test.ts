@@ -5,6 +5,7 @@ import {
   GeolocationPermissionDeniedError,
   GeolocationTimeoutError,
   getCurrentLocation,
+  isRejectedLocationShareUrl,
   parseLocationShareUrl,
   roundCoordinate,
 } from "../../src/lib/geolocation";
@@ -43,6 +44,15 @@ describe("buildLocationShareUrl", () => {
     const url = buildLocationShareUrl(-33.86882, -70.673676, "approximate");
     expect(url).toBe(
       "https://www.openstreetmap.org/?mlat=-33.869&mlon=-70.674#map=14/-33.869/-70.674",
+    );
+  });
+
+  it("writes a longitude from the next copy of the world as the place itself", () => {
+    expect(buildLocationShareUrl(-16.5, 187.438, "approximate", 5)).toBe(
+      "https://www.openstreetmap.org/?mlat=-16.5&mlon=-172.562#map=5/-16.5/-172.562",
+    );
+    expect(buildLocationShareUrl(-16.5, -187.438, "approximate", 5)).toBe(
+      "https://www.openstreetmap.org/?mlat=-16.5&mlon=172.562#map=5/-16.5/172.562",
     );
   });
 });
@@ -120,9 +130,10 @@ describe("parseLocationShareUrl", () => {
     ["90.0001", "0"],
     ["-91", "0"],
     ["1e300", "0"],
-    ["0", "180.0001"],
-    ["0", "-181"],
-    ["0", "1e300"],
+    ["", "0"],
+    ["0", ""],
+    ["", ""],
+    ["%20", "0"],
     ["NaN", "0"],
     ["0", "Infinity"],
     ["-Infinity", "0"],
@@ -140,6 +151,58 @@ describe("parseLocationShareUrl", () => {
         "https://www.openstreetmap.org/?mlat=-90&mlon=180#map=3/-90/180",
       ),
     ).toEqual({ latitude: -90, longitude: 180, zoom: 3 });
+  });
+
+  it.each([
+    ["187.438", -172.562],
+    ["-187.438", 172.562],
+    ["360", 0],
+    ["540", -180],
+    ["-540", -180],
+    ["541", -179],
+    ["-541", 179],
+    ["3780.5", -179.5],
+    ["179.99999999999997", 179.99999999999997],
+    ["-180", -180],
+  ])("reads mlon=%s from another copy of the world as %s", (mlon, expected) => {
+    const location = parseLocationShareUrl(
+      `https://www.openstreetmap.org/?mlat=-16.5&mlon=${mlon}#map=5/-16.5/${mlon}`,
+    );
+    expect(location?.latitude).toBe(-16.5);
+    expect(location?.longitude).toBe(expected);
+  });
+
+  it("reads any finite longitude as a place the tile grid has", () => {
+    for (const mlon of ["1e300", "-1e300", "1e21", "123456789.25", "5e-324"]) {
+      const location = parseLocationShareUrl(
+        `https://www.openstreetmap.org/?mlat=1&mlon=${mlon}#map=14/1/1`,
+      );
+      expect(location?.longitude).toBeGreaterThanOrEqual(-180);
+      expect(location?.longitude).toBeLessThanOrEqual(180);
+    }
+  });
+});
+
+describe("isRejectedLocationShareUrl", () => {
+  it.each([
+    "https://www.openstreetmap.org/?mlat=91&mlon=0#map=14/91/0",
+    "https://www.openstreetmap.org/?mlat=0&mlon=Infinity",
+    "https://openstreetmap.org/?mlat=&mlon=",
+    "https://www.openstreetmap.org/?mlat=12",
+    "https://www.openstreetmap.org/?mlon=abc",
+  ])("is true for the unusable position in %s", (url) => {
+    expect(isRejectedLocationShareUrl(url)).toBe(true);
+  });
+
+  it.each([
+    "https://www.openstreetmap.org/?mlat=51.5&mlon=-0.12#map=14/51.5/-0.12",
+    "https://www.openstreetmap.org/?mlat=-16.5&mlon=187.438",
+    "https://www.openstreetmap.org/?mlat=0&mlon=541",
+    "https://www.openstreetmap.org/about",
+    "https://example.com/?mlat=91&mlon=0",
+    "not a url",
+  ])("is false for %s", (url) => {
+    expect(isRejectedLocationShareUrl(url)).toBe(false);
   });
 });
 

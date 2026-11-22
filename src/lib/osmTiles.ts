@@ -3,6 +3,8 @@
 
 const TILE_SIZE = 256;
 
+// The deepest zoom level the tile server draws, shared by the preview card and
+// the interactive maps.
 export const MAX_TILE_ZOOM = 19;
 
 // The Web Mercator projection reaches infinity at the poles, so the square
@@ -45,22 +47,44 @@ export function worldPixel(
   return { x, y };
 }
 
-// The tiles needed to cover a `width`x`height` crop centred on the position --
-// almost always four, never more than the tile grid itself at very low zoom.
+// One copy of the world spans 360 degrees of longitude, and a map dragged past
+// the date line reports a position on another copy. This brings such a
+// longitude back onto the main copy and leaves one already there as it is.
+// The remainder and the single step after it are exact, so the result always
+// lands from -180 up to but excluding 180.
+export function wrapLongitude(longitude: number): number {
+  if (longitude >= -180 && longitude <= 180) return longitude;
+  const turn = longitude % 360;
+  if (turn >= 180) return turn - 360;
+  if (turn < -180) return turn + 360;
+  return turn;
+}
+
+export interface PreviewGrid {
+  left: number;
+  top: number;
+  firstX: number;
+  firstY: number;
+  columns: number;
+  rows: number;
+  tileCount: number;
+}
+
+// Where a `width`x`height` crop centred on the position sits in the tile grid.
 // The coordinates and zoom can come from a link anyone posted, so we return
-// no tiles for values outside the tile grid and count the loops from the crop
-// size alone.
-export function tilesForPreview(
+// null for values outside the tile grid and never count more columns or rows
+// than the crop size can hold.
+export function previewGrid(
   latitude: number,
   longitude: number,
   zoom: number,
   width: number,
   height: number = width,
-): TilePlacement[] {
-  if (!Number.isInteger(zoom) || zoom < 0 || zoom > MAX_TILE_ZOOM) return [];
-  if (!Number.isFinite(width) || !Number.isFinite(height)) return [];
-  if (width <= 0 || height <= 0) return [];
-  if (!Number.isFinite(latitude) || !(Math.abs(longitude) <= 180)) return [];
+): PreviewGrid | null {
+  if (!Number.isInteger(zoom) || zoom < 0 || zoom > MAX_TILE_ZOOM) return null;
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return null;
+  if (width <= 0 || height <= 0) return null;
+  if (!Number.isFinite(latitude) || !(Math.abs(longitude) <= 180)) return null;
 
   const center = worldPixel(latitude, longitude, zoom);
   const left = center.x - width / 2;
@@ -69,18 +93,36 @@ export function tilesForPreview(
   const firstY = Math.floor(top / TILE_SIZE);
   const lastX = Math.floor((left + width - 1) / TILE_SIZE);
   const lastY = Math.floor((top + height - 1) / TILE_SIZE);
-  const tileCount = 2 ** zoom;
-  const maxColumns = Math.ceil(width / TILE_SIZE) + 1;
-  const maxRows = Math.ceil(height / TILE_SIZE) + 1;
+  return {
+    left,
+    top,
+    firstX,
+    firstY,
+    columns: Math.min(lastX - firstX + 1, Math.ceil(width / TILE_SIZE) + 1),
+    rows: Math.min(lastY - firstY + 1, Math.ceil(height / TILE_SIZE) + 1),
+    tileCount: 2 ** zoom,
+  };
+}
+
+// The tiles needed to cover a `width`x`height` crop centred on the position --
+// almost always four, never more than the tile grid itself at very low zoom.
+export function tilesForPreview(
+  latitude: number,
+  longitude: number,
+  zoom: number,
+  width: number,
+  height: number = width,
+): TilePlacement[] {
+  const grid = previewGrid(latitude, longitude, zoom, width, height);
+  if (!grid) return [];
+  const { left, top, firstX, firstY, columns, rows, tileCount } = grid;
 
   const placements: TilePlacement[] = [];
-  for (let row = 0; row < maxRows; row++) {
+  for (let row = 0; row < rows; row++) {
     const ty = firstY + row;
-    if (ty > lastY) break;
     if (ty < 0 || ty >= tileCount) continue;
-    for (let column = 0; column < maxColumns; column++) {
+    for (let column = 0; column < columns; column++) {
       const tx = firstX + column;
-      if (tx > lastX) break;
       placements.push({
         x: ((tx % tileCount) + tileCount) % tileCount,
         y: ty,
