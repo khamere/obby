@@ -1165,7 +1165,6 @@ msgstr "Не можна видалити останні облікові дан�
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkForm.tsx
-#: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/E2EERequestBanner.tsx
 #: src/components/ui/FloodSettingsModal.tsx
 #: src/components/ui/InviteUserModal.tsx
@@ -1775,6 +1774,7 @@ msgstr "Контролюйте завантаження зовнішніх ме�
 msgid "Control media display and external content"
 msgstr "Керувати відображенням медіа та зовнішнього вмісту"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 #: src/components/ui/E2EEVerifyModal.tsx
 #: src/components/ui/ExternalLinkWarningModal.tsx
@@ -1811,10 +1811,16 @@ msgstr "Копіювати назву каналу"
 msgid "Copy entire JSON"
 msgstr "Скопіювати весь JSON"
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Copy error details"
+msgstr "Скопіювати відомості про помилку"
+
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 msgid "Copy failed, select to retry"
 msgstr "Копіювання не вдалося, виберіть для повтору"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/mobile/MessageReaderSheet.tsx
 msgid "Copy failed, tap to retry"
 msgstr "Копіювання не вдалося, торкніться для повтору"
@@ -2076,6 +2082,11 @@ msgstr "Затримка входів (+D)"
 msgid "Delete"
 msgstr "Видалити"
 
+#. placeholder {0}: network.name
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Delete <0>{0}</0> from your bouncer?"
+msgstr "Видалити <0>{0}</0> з вашого bouncer?"
+
 #: src/components/layout/BotPane.tsx
 msgid "Delete bot"
 msgstr "Видалити бота"
@@ -2103,9 +2114,20 @@ msgstr "Також видалити його збережену історію �
 msgid "Delete message"
 msgstr "Видалити повідомлення"
 
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/NetworkMenu.tsx
+#: src/components/layout/ServerList.tsx
+#: src/components/mobile/ServerBottomSheet.tsx
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkForm.tsx
+#: src/components/ui/BouncerNetworksPanel.tsx
+#: src/components/ui/BouncerNetworksPanel.tsx
 msgid "Delete network"
 msgstr "Видалити мережу"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Delete network?"
+msgstr "Видалити мережу?"
 
 #: src/components/pages/EmojiPacksPage.tsx
 #: src/components/pages/EmojiPacksPage.tsx
@@ -2124,13 +2146,13 @@ msgstr "Видалити це запрошення"
 msgid "Delete this message? This cannot be undone."
 msgstr "Видалити це повідомлення? Цю дію неможливо скасувати."
 
-#: src/components/ui/BouncerNetworkForm.tsx
-msgid "Delete this network?"
-msgstr "Видалити цю мережу?"
-
 #: src/components/layout/BotPane.tsx
 msgid "deleted"
 msgstr "видалено"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Deleting…"
+msgstr "Видалення…"
 
 #: src/components/voice/ParticipantTile.tsx
 #: src/components/voice/ParticipantTile.tsx
@@ -2197,16 +2219,9 @@ msgstr "Видалити"
 #: src/components/layout/ServerList.tsx
 #: src/components/mobile/ServerBottomSheet.tsx
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-#: src/components/ui/BouncerNetworksPanel.tsx
 #: src/components/ui/RemoveServerConfirmModal.tsx
 msgid "Disconnect"
 msgstr "Від'єднатися"
-
-#. placeholder {0}: network.name
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "Disconnect <0>{0}</0>?"
-msgstr "Відключити <0>{0}</0>?"
 
 #: src/components/ui/RemoveServerConfirmModal.tsx
 msgid "Disconnect from {name}?"
@@ -2215,10 +2230,6 @@ msgstr "Відключитися від {name}?"
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
 msgid "Disconnect from soju bouncer?"
 msgstr "Відключитися від soju bouncer?"
-
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "Disconnect network?"
-msgstr "Відключити мережу?"
 
 #: src/components/layout/ChannelList.tsx
 msgid "Discover"
@@ -2526,6 +2537,10 @@ msgstr "Введіть назву каналу для паків каналу."
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "Вкажіть канал, на який перенаправляти користувачів, що не можуть приєднатися до цього. Залиште порожнім, щоб вимкнути."
+
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "Введіть ключ без ком"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
@@ -3250,6 +3265,10 @@ msgstr "IRC сервери:"
 #: src/store/handlers/users.ts
 msgid "is now known as **{newNick}**"
 msgstr "тепер відомий як **{newNick}**"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Its saved chat history stays on this device. A network you add again gets it back only if the bouncer gives it the same ID."
+msgstr "Збережена історія чату залишиться на цьому пристрої. Додана знову мережа отримає її назад, лише якщо bouncer надасть їй той самий ID."
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "JetBrains Mono"
@@ -4388,6 +4407,10 @@ msgstr "Obby завантажує цей файл під час кожного �
 msgid "Obby is up to date."
 msgstr "Obby оновлено."
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Obby stopped working"
+msgstr "Obby перестав працювати"
+
 #: src/components/ui/UpdateSheet.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Obby will close to install the update; open it again afterwards."
@@ -5117,6 +5140,14 @@ msgstr "Розслаблений - менш агресивний захист"
 #: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "Примітки до випуску"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload"
+msgstr "Перезавантажити"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload to continue. Copy the error details to report the problem."
+msgstr "Перезавантажте, щоб продовжити. Скопіюйте відомості про помилку, щоб повідомити про проблему."
 
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/pages/ChannelSettingsPage.tsx
@@ -6258,6 +6289,26 @@ msgstr "Цей екран більше недоступний. Виберіть 
 msgid "That stylesheet is too large."
 msgstr "Ця таблиця стилів завелика."
 
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer drops this network and its channel list for all your devices. It may keep the chat history it stored for the network."
+msgstr "Bouncer видалить цю мережу та її список каналів для всіх ваших пристроїв. Історію чату, збережену для цієї мережі, він може залишити в себе."
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer has not answered, so the saved chat history stays. Delete the network again if it is still listed."
+msgstr "Bouncer не відповів, тому збережена історія чату залишається. Видаліть мережу ще раз, якщо вона досі в списку."
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer is not connected. Delete the network once it is back."
+msgstr "Bouncer не підключено. Видаліть мережу, коли з'єднання відновиться."
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer kept the network and answered: {refusal}"
+msgstr "Bouncer залишив мережу і відповів: {refusal}"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer kept the network."
+msgstr "Bouncer залишив мережу."
+
 #: src/lib/voiceErrors.ts
 msgid "The call server refused the request. Try again in a moment."
 msgstr "Сервер дзвінків відхилив запит. Спробуйте ще раз за мить."
@@ -6375,6 +6426,10 @@ msgstr "Цей браузер не може записувати аудіо."
 msgid "This browser cannot record video."
 msgstr "Цей браузер не може записувати відео."
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "This browser does not let Obby store data, so nothing was saved."
+msgstr "Цей браузер не дозволяє Obby зберігати дані, тому нічого не збережено."
+
 #: src/components/search/SearchQueryBar.tsx
 msgid "This chat"
 msgstr "Цей чат"
@@ -6448,10 +6503,6 @@ msgstr "У цьому наборі ще немає емодзі. Додайте 
 msgid "This release has no Android app to install."
 msgstr "У цьому випуску немає застосунку для Android."
 
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "This removes the network from your soju bouncer. To use it again, you'll need to add it back."
-msgstr "Це видалить мережу з вашого soju bouncer. Щоб знову її використовувати, вам доведеться додати її назад."
-
 #: src/components/ui/InvitationsPanel.tsx
 msgid "This server doesn't support invite links (the<0>obby.world/invitation</0>capability isn't advertised). You can still chat normally; this panel is for obbyircd-powered networks."
 msgstr "Цей сервер не підтримує запрошувальні посилання (можливість<0>obby.world/invitation</0>не оголошена). Ви все ще можете нормально спілкуватися; ця панель призначена для мереж на основі obbyircd."
@@ -6463,6 +6514,10 @@ msgstr "Цей сервер не має хоста файлів. Підключ�
 #: src/components/ui/AddServerModal.tsx
 msgid "This server only supports one connection type"
 msgstr "Цей сервер підтримує лише один тип з'єднання"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "This stylesheet could not be made safe, so it was not saved."
+msgstr "Цю таблицю стилів не вдалося зробити безпечною, тому її не збережено."
 
 #. placeholder {0}: children.length
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
@@ -6754,6 +6809,10 @@ msgstr "Використовуйте * для шаблонів. Приклади
 msgid "Use /{0}"
 msgstr "Використати /{0}"
 
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "Використовуйте назву без пробілів і ком"
+
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."
 msgstr "Використовуйте зображення PNG, JPEG, WebP або GIF."
@@ -6765,6 +6824,10 @@ msgstr "Використовувати безпечний порт WebSocket."
 #: src/components/pages/SettingsPage.tsx
 msgid "Use a server with IRCv3 METADATA to set your avatar, display name, and status."
 msgstr "Використовуйте сервер із підтримкою IRCv3 METADATA, щоб встановити аватар, відображуване ім'я та статус."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Use a smaller stylesheet. This one does not fit in this browser's storage."
+msgstr "Використайте меншу таблицю стилів. Ця не вміщується у сховище цього браузера."
 
 #: src/components/ui/settings/BackupField.tsx
 msgid "Use at least {PASSWORD_MIN_LENGTH} characters."
@@ -7150,10 +7213,6 @@ msgstr "Неправильний пароль, або файл змінено п
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Yellow"
 msgstr "Жовтий"
-
-#: src/components/ui/BouncerNetworkForm.tsx
-msgid "Yes, delete"
-msgstr "Так, видалити"
 
 #: src/components/search/messageSearchProviders.tsx
 msgid "Yesterday"

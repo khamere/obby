@@ -1165,7 +1165,6 @@ msgstr "Nelze odebrat poslední údaj 2FA"
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkForm.tsx
-#: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/E2EERequestBanner.tsx
 #: src/components/ui/FloodSettingsModal.tsx
 #: src/components/ui/InviteUserModal.tsx
@@ -1775,6 +1774,7 @@ msgstr "Kontrolujte načítání externích médií. Vypnuto / Bezpečné / Dův
 msgid "Control media display and external content"
 msgstr "Ovládat zobrazení médií a externího obsahu"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 #: src/components/ui/E2EEVerifyModal.tsx
 #: src/components/ui/ExternalLinkWarningModal.tsx
@@ -1811,10 +1811,16 @@ msgstr "Kopírovat název kanálu"
 msgid "Copy entire JSON"
 msgstr "Kopírovat celý JSON"
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Copy error details"
+msgstr "Kopírovat podrobnosti o chybě"
+
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 msgid "Copy failed, select to retry"
 msgstr "Kopírování selhalo, vyberte k novému pokusu"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/mobile/MessageReaderSheet.tsx
 msgid "Copy failed, tap to retry"
 msgstr "Kopírování selhalo, klepněte k novému pokusu"
@@ -2076,6 +2082,11 @@ msgstr "Zpozdit připojení (+D)"
 msgid "Delete"
 msgstr "Smazat"
 
+#. placeholder {0}: network.name
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Delete <0>{0}</0> from your bouncer?"
+msgstr "Smazat <0>{0}</0> z vašeho bounceru?"
+
 #: src/components/layout/BotPane.tsx
 msgid "Delete bot"
 msgstr "Smazat bota"
@@ -2103,9 +2114,20 @@ msgstr "Smazat také uloženou historii chatu"
 msgid "Delete message"
 msgstr "Smazat zprávu"
 
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/NetworkMenu.tsx
+#: src/components/layout/ServerList.tsx
+#: src/components/mobile/ServerBottomSheet.tsx
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkForm.tsx
+#: src/components/ui/BouncerNetworksPanel.tsx
+#: src/components/ui/BouncerNetworksPanel.tsx
 msgid "Delete network"
 msgstr "Smazat síť"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Delete network?"
+msgstr "Smazat síť?"
 
 #: src/components/pages/EmojiPacksPage.tsx
 #: src/components/pages/EmojiPacksPage.tsx
@@ -2124,13 +2146,13 @@ msgstr "Smazat tuto pozvánku"
 msgid "Delete this message? This cannot be undone."
 msgstr "Smazat tuto zprávu? Tuto akci nelze vrátit zpět."
 
-#: src/components/ui/BouncerNetworkForm.tsx
-msgid "Delete this network?"
-msgstr "Smazat tuto síť?"
-
 #: src/components/layout/BotPane.tsx
 msgid "deleted"
 msgstr "smazáno"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Deleting…"
+msgstr "Mazání…"
 
 #: src/components/voice/ParticipantTile.tsx
 #: src/components/voice/ParticipantTile.tsx
@@ -2197,16 +2219,9 @@ msgstr "Zahodit"
 #: src/components/layout/ServerList.tsx
 #: src/components/mobile/ServerBottomSheet.tsx
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-#: src/components/ui/BouncerNetworksPanel.tsx
 #: src/components/ui/RemoveServerConfirmModal.tsx
 msgid "Disconnect"
 msgstr "Odpojit"
-
-#. placeholder {0}: network.name
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "Disconnect <0>{0}</0>?"
-msgstr "Odpojit <0>{0}</0>?"
 
 #: src/components/ui/RemoveServerConfirmModal.tsx
 msgid "Disconnect from {name}?"
@@ -2215,10 +2230,6 @@ msgstr "Odpojit od {name}?"
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
 msgid "Disconnect from soju bouncer?"
 msgstr "Odpojit od soju bounceru?"
-
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "Disconnect network?"
-msgstr "Odpojit síť?"
 
 #: src/components/layout/ChannelList.tsx
 msgid "Discover"
@@ -2526,6 +2537,10 @@ msgstr "Zadejte název kanálu pro balíčky určené pro kanál."
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "Zadejte kanál, kam se mají přesměrovat uživatelé, kteří se nemohou připojit do tohoto. Nechte prázdné pro vypnutí."
+
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "Zadejte klíč bez čárek"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
@@ -3250,6 +3265,10 @@ msgstr "IRC servery:"
 #: src/store/handlers/users.ts
 msgid "is now known as **{newNick}**"
 msgstr "je nyní znám jako **{newNick}**"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Its saved chat history stays on this device. A network you add again gets it back only if the bouncer gives it the same ID."
+msgstr "Uložená historie chatu zůstane v tomto zařízení. Znovu přidaná síť ji získá zpět jen tehdy, když jí bouncer přidělí stejné ID."
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "JetBrains Mono"
@@ -4388,6 +4407,10 @@ msgstr "Obby tento soubor stáhne při každém spuštění, takže každý se s
 msgid "Obby is up to date."
 msgstr "Obby je aktuální."
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Obby stopped working"
+msgstr "Obby přestalo fungovat"
+
 #: src/components/ui/UpdateSheet.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Obby will close to install the update; open it again afterwards."
@@ -5117,6 +5140,14 @@ msgstr "Uvolněný - méně agresivní ochrana"
 #: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "Poznámky k vydání"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload"
+msgstr "Načíst znovu"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload to continue. Copy the error details to report the problem."
+msgstr "Pokračujte znovunačtením. Chcete-li problém nahlásit, zkopírujte podrobnosti o chybě."
 
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/pages/ChannelSettingsPage.tsx
@@ -6258,6 +6289,26 @@ msgstr "Tato obrazovka už není dostupná. Vyberte jinou obrazovku."
 msgid "That stylesheet is too large."
 msgstr "Tento styl je příliš velký."
 
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer drops this network and its channel list for all your devices. It may keep the chat history it stored for the network."
+msgstr "Bouncer tuto síť a její seznam kanálů odstraní pro všechna vaše zařízení. Historii chatu, kterou pro síť uložil, si může ponechat."
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer has not answered, so the saved chat history stays. Delete the network again if it is still listed."
+msgstr "Bouncer neodpověděl, takže uložená historie chatu zůstává. Pokud je síť stále v seznamu, smažte ji znovu."
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer is not connected. Delete the network once it is back."
+msgstr "Bouncer není připojen. Smažte síť, až bude zpět."
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer kept the network and answered: {refusal}"
+msgstr "Bouncer síť ponechal a odpověděl: {refusal}"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer kept the network."
+msgstr "Bouncer síť ponechal."
+
 #: src/lib/voiceErrors.ts
 msgid "The call server refused the request. Try again in a moment."
 msgstr "Server hovorů žádost odmítl. Zkuste to za chvíli znovu."
@@ -6375,6 +6426,10 @@ msgstr "Tento prohlížeč neumí nahrávat zvuk."
 msgid "This browser cannot record video."
 msgstr "Tento prohlížeč neumí nahrávat video."
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "This browser does not let Obby store data, so nothing was saved."
+msgstr "Tento prohlížeč nedovoluje Obby ukládat data, proto nebylo nic uloženo."
+
 #: src/components/search/SearchQueryBar.tsx
 msgid "This chat"
 msgstr "Tento chat"
@@ -6448,10 +6503,6 @@ msgstr "Tato sada zatím nemá žádné emoji. Přidejte je výše."
 msgid "This release has no Android app to install."
 msgstr "Toto vydání neobsahuje žádnou aplikaci pro Android k instalaci."
 
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "This removes the network from your soju bouncer. To use it again, you'll need to add it back."
-msgstr "Tímto se síť odebere z vašeho soju bounceru. Chcete-li ji použít znovu, budete ji muset přidat zpět."
-
 #: src/components/ui/InvitationsPanel.tsx
 msgid "This server doesn't support invite links (the<0>obby.world/invitation</0>capability isn't advertised). You can still chat normally; this panel is for obbyircd-powered networks."
 msgstr "Tento server nepodporuje pozvánkové odkazy (capability<0>obby.world/invitation</0>není inzerována). Můžete normálně chatovat; tento panel je určen pro sítě poháněné obbyircd."
@@ -6463,6 +6514,10 @@ msgstr "Tento server nemá hostitele souborů. Připojte se k serveru s hostitel
 #: src/components/ui/AddServerModal.tsx
 msgid "This server only supports one connection type"
 msgstr "Tento server podporuje pouze jeden typ připojení"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "This stylesheet could not be made safe, so it was not saved."
+msgstr "Tento styl se nepodařilo zabezpečit, proto nebyl uložen."
 
 #. placeholder {0}: children.length
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
@@ -6754,6 +6809,10 @@ msgstr "Použijte * pro zástupné znaky. Příklady: baduser!*@*, *!*@spammer.c
 msgid "Use /{0}"
 msgstr "Použít /{0}"
 
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "Použijte název bez mezer a čárek"
+
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."
 msgstr "Použijte obrázek PNG, JPEG, WebP nebo GIF."
@@ -6765,6 +6824,10 @@ msgstr "Použijte port zabezpečeného websocketu."
 #: src/components/pages/SettingsPage.tsx
 msgid "Use a server with IRCv3 METADATA to set your avatar, display name, and status."
 msgstr "Použijte server s IRCv3 METADATA pro nastavení avataru, zobrazovaného jména a stavu."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Use a smaller stylesheet. This one does not fit in this browser's storage."
+msgstr "Použijte menší styl. Tento se do úložiště tohoto prohlížeče nevejde."
 
 #: src/components/ui/settings/BackupField.tsx
 msgid "Use at least {PASSWORD_MIN_LENGTH} characters."
@@ -7150,10 +7213,6 @@ msgstr "Špatné heslo, nebo byl soubor od uložení změněn."
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Yellow"
 msgstr "Žlutá"
-
-#: src/components/ui/BouncerNetworkForm.tsx
-msgid "Yes, delete"
-msgstr "Ano, smazat"
 
 #: src/components/search/messageSearchProviders.tsx
 msgid "Yesterday"

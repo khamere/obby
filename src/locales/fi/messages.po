@@ -1165,7 +1165,6 @@ msgstr "Viimeistä 2FA-tunnistetta ei voi poistaa"
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkForm.tsx
-#: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/E2EERequestBanner.tsx
 #: src/components/ui/FloodSettingsModal.tsx
 #: src/components/ui/InviteUserModal.tsx
@@ -1775,6 +1774,7 @@ msgstr "Hallinnoi ulkoisen median lataamista. Pois / Turvallinen / Luotetut läh
 msgid "Control media display and external content"
 msgstr "Hallinnoi median näyttöä ja ulkoista sisältöä"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 #: src/components/ui/E2EEVerifyModal.tsx
 #: src/components/ui/ExternalLinkWarningModal.tsx
@@ -1811,10 +1811,16 @@ msgstr "Kopioi kanavan nimi"
 msgid "Copy entire JSON"
 msgstr "Kopioi koko JSON"
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Copy error details"
+msgstr "Kopioi virheen tiedot"
+
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 msgid "Copy failed, select to retry"
 msgstr "Kopiointi epäonnistui, valitse uudelleen yrittämiseksi"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/mobile/MessageReaderSheet.tsx
 msgid "Copy failed, tap to retry"
 msgstr "Kopiointi epäonnistui, napauta uudelleen yrittämiseksi"
@@ -2076,6 +2082,11 @@ msgstr "Viivästä liittymisiä (+D)"
 msgid "Delete"
 msgstr "Poista"
 
+#. placeholder {0}: network.name
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Delete <0>{0}</0> from your bouncer?"
+msgstr "Poistetaanko <0>{0}</0> bounceristasi?"
+
 #: src/components/layout/BotPane.tsx
 msgid "Delete bot"
 msgstr "Poista botti"
@@ -2103,9 +2114,20 @@ msgstr "Poista myös sen tallennettu keskusteluhistoria"
 msgid "Delete message"
 msgstr "Poista viesti"
 
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/NetworkMenu.tsx
+#: src/components/layout/ServerList.tsx
+#: src/components/mobile/ServerBottomSheet.tsx
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkForm.tsx
+#: src/components/ui/BouncerNetworksPanel.tsx
+#: src/components/ui/BouncerNetworksPanel.tsx
 msgid "Delete network"
 msgstr "Poista verkko"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Delete network?"
+msgstr "Poistetaanko verkko?"
 
 #: src/components/pages/EmojiPacksPage.tsx
 #: src/components/pages/EmojiPacksPage.tsx
@@ -2124,13 +2146,13 @@ msgstr "Poista tämä kutsu"
 msgid "Delete this message? This cannot be undone."
 msgstr "Poistetaanko tämä viesti? Toimintoa ei voi kumota."
 
-#: src/components/ui/BouncerNetworkForm.tsx
-msgid "Delete this network?"
-msgstr "Poistetaanko tämä verkko?"
-
 #: src/components/layout/BotPane.tsx
 msgid "deleted"
 msgstr "poistettu"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Deleting…"
+msgstr "Poistetaan…"
 
 #: src/components/voice/ParticipantTile.tsx
 #: src/components/voice/ParticipantTile.tsx
@@ -2197,16 +2219,9 @@ msgstr "Hylkää"
 #: src/components/layout/ServerList.tsx
 #: src/components/mobile/ServerBottomSheet.tsx
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-#: src/components/ui/BouncerNetworksPanel.tsx
 #: src/components/ui/RemoveServerConfirmModal.tsx
 msgid "Disconnect"
 msgstr "Katkaise yhteys"
-
-#. placeholder {0}: network.name
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "Disconnect <0>{0}</0>?"
-msgstr "Katkaistaanko yhteys kohteeseen <0>{0}</0>?"
 
 #: src/components/ui/RemoveServerConfirmModal.tsx
 msgid "Disconnect from {name}?"
@@ -2215,10 +2230,6 @@ msgstr "Katkaise yhteys: {name}?"
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
 msgid "Disconnect from soju bouncer?"
 msgstr "Katkaistaanko yhteys soju-bounceriin?"
-
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "Disconnect network?"
-msgstr "Katkaistaanko verkon yhteys?"
 
 #: src/components/layout/ChannelList.tsx
 msgid "Discover"
@@ -2526,6 +2537,10 @@ msgstr "Anna kanavan nimi kanavakohtaisia paketteja varten."
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "Anna kanava, jolle käyttäjät ohjataan, kun he eivät voi liittyä tähän kanavaan. Jätä tyhjäksi poistaaksesi käytöstä."
+
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "Anna avain, jossa ei ole pilkkuja"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
@@ -3250,6 +3265,10 @@ msgstr "IRC-palvelimet:"
 #: src/store/handlers/users.ts
 msgid "is now known as **{newNick}**"
 msgstr "on nyt tunnettu nimellä **{newNick}**"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Its saved chat history stays on this device. A network you add again gets it back only if the bouncer gives it the same ID."
+msgstr "Tallennettu keskusteluhistoria säilyy tällä laitteella. Uudelleen lisätty verkko saa sen takaisin vain, jos bouncer antaa sille saman tunnuksen."
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "JetBrains Mono"
@@ -4388,6 +4407,10 @@ msgstr "Obby lataa tämän tiedoston aina käynnistyessään, joten kaikki samaa
 msgid "Obby is up to date."
 msgstr "Obby on ajan tasalla."
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Obby stopped working"
+msgstr "Obby lakkasi toimimasta"
+
 #: src/components/ui/UpdateSheet.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Obby will close to install the update; open it again afterwards."
@@ -5117,6 +5140,14 @@ msgstr "Löysä – vähemmän aggressiivinen suojaus"
 #: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "Julkaisutiedot"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload"
+msgstr "Lataa uudelleen"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload to continue. Copy the error details to report the problem."
+msgstr "Jatka lataamalla uudelleen. Kopioi virheen tiedot, jos haluat ilmoittaa ongelmasta."
 
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/pages/ChannelSettingsPage.tsx
@@ -6258,6 +6289,26 @@ msgstr "Tämä näyttö ei ole enää saatavilla. Valitse toinen näyttö."
 msgid "That stylesheet is too large."
 msgstr "Tyylitiedosto on liian suuri."
 
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer drops this network and its channel list for all your devices. It may keep the chat history it stored for the network."
+msgstr "Bouncer poistaa tämän verkon ja sen kanavaluettelon kaikilta laitteiltasi. Se voi säilyttää verkolle tallentamansa keskusteluhistorian."
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer has not answered, so the saved chat history stays. Delete the network again if it is still listed."
+msgstr "Bouncer ei ole vastannut, joten tallennettu keskusteluhistoria säilyy. Poista verkko uudelleen, jos se on yhä luettelossa."
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer is not connected. Delete the network once it is back."
+msgstr "Bouncer ei ole yhteydessä. Poista verkko, kun yhteys on palannut."
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer kept the network and answered: {refusal}"
+msgstr "Bouncer säilytti verkon ja vastasi: {refusal}"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer kept the network."
+msgstr "Bouncer säilytti verkon."
+
 #: src/lib/voiceErrors.ts
 msgid "The call server refused the request. Try again in a moment."
 msgstr "Puhelupalvelin hylkäsi pyynnön. Yritä hetken kuluttua uudelleen."
@@ -6375,6 +6426,10 @@ msgstr "Tämä selain ei voi nauhoittaa ääntä."
 msgid "This browser cannot record video."
 msgstr "Tämä selain ei voi nauhoittaa videota."
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "This browser does not let Obby store data, so nothing was saved."
+msgstr "Tämä selain ei anna Obbyn tallentaa tietoja, joten mitään ei tallennettu."
+
 #: src/components/search/SearchQueryBar.tsx
 msgid "This chat"
 msgstr "Tämä keskustelu"
@@ -6448,10 +6503,6 @@ msgstr "Tässä paketissa ei ole vielä emojeita. Lisää yksi yllä."
 msgid "This release has no Android app to install."
 msgstr "Tässä julkaisussa ei ole asennettavaa Android-sovellusta."
 
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "This removes the network from your soju bouncer. To use it again, you'll need to add it back."
-msgstr "Tämä poistaa verkon soju-bounceristasi. Käyttääksesi sitä uudelleen sinun täytyy lisätä se takaisin."
-
 #: src/components/ui/InvitationsPanel.tsx
 msgid "This server doesn't support invite links (the<0>obby.world/invitation</0>capability isn't advertised). You can still chat normally; this panel is for obbyircd-powered networks."
 msgstr "Tämä palvelin ei tue kutsulinkkejä (<0>obby.world/invitation</0>-kykyä ei ilmoiteta). Voit silti chattailla normaalisti; tämä paneeli on obbyircd-pohjaisia verkkoja varten."
@@ -6463,6 +6514,10 @@ msgstr "Tällä palvelimella ei ole tiedostopalvelinta. Yhdistä palvelimeen, jo
 #: src/components/ui/AddServerModal.tsx
 msgid "This server only supports one connection type"
 msgstr "Tämä palvelin tukee vain yhtä yhteystyyppiä"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "This stylesheet could not be made safe, so it was not saved."
+msgstr "Tätä tyylitiedostoa ei voitu tehdä turvalliseksi, joten sitä ei tallennettu."
 
 #. placeholder {0}: children.length
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
@@ -6754,6 +6809,10 @@ msgstr "Käytä * jokerimerkkinä. Esimerkkejä: baduser!*@*, *!*@spammer.com, t
 msgid "Use /{0}"
 msgstr "Käytä /{0}"
 
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "Käytä nimeä, jossa ei ole välilyöntejä eikä pilkkuja"
+
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."
 msgstr "Käytä PNG-, JPEG-, WebP- tai GIF-kuvaa."
@@ -6765,6 +6824,10 @@ msgstr "Käytä suojattua websocket-porttia."
 #: src/components/pages/SettingsPage.tsx
 msgid "Use a server with IRCv3 METADATA to set your avatar, display name, and status."
 msgstr "Käytä IRCv3 METADATA -tukea palvelinta asettaaksesi profiilikuvan, näyttönimen ja tilan."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Use a smaller stylesheet. This one does not fit in this browser's storage."
+msgstr "Käytä pienempää tyylitiedostoa. Tämä ei mahdu tämän selaimen tallennustilaan."
 
 #: src/components/ui/settings/BackupField.tsx
 msgid "Use at least {PASSWORD_MIN_LENGTH} characters."
@@ -7150,10 +7213,6 @@ msgstr "Väärä salasana, tai tiedostoa on muutettu tallentamisen jälkeen."
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Yellow"
 msgstr "Keltainen"
-
-#: src/components/ui/BouncerNetworkForm.tsx
-msgid "Yes, delete"
-msgstr "Kyllä, poista"
 
 #: src/components/search/messageSearchProviders.tsx
 msgid "Yesterday"

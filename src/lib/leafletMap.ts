@@ -1,7 +1,7 @@
 import type React from "react";
+import { MAX_TILE_ZOOM } from "./osmTiles";
 
 export const MAP_MIN_ZOOM = 2;
-export const MAP_MAX_ZOOM = 19;
 
 export const MAP_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
@@ -14,7 +14,7 @@ export const MAP_PIN_SVG = `<svg width="28" height="40" viewBox="0 0 24 36" xmln
 </svg>`;
 
 export function clampMapZoom(zoom: number): number {
-  return Math.min(MAP_MAX_ZOOM, Math.max(MAP_MIN_ZOOM, zoom));
+  return Math.min(MAX_TILE_ZOOM, Math.max(MAP_MIN_ZOOM, zoom));
 }
 
 /** Keeps a touch inside an overlay from reaching gesture handlers around its

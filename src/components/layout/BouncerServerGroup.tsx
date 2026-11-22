@@ -344,7 +344,7 @@ const GroupedAvatar: React.FC<GroupedAvatarProps> = ({
                 e.stopPropagation();
                 onDelete();
               }}
-              title={t`Disconnect`}
+              title={isControl ? t`Disconnect` : t`Delete network`}
             >
               <FaTrash />
             </button>
@@ -363,6 +363,7 @@ const GroupedAvatar: React.FC<GroupedAvatarProps> = ({
           serverName={displayName}
           onEdit={onEdit}
           onDisconnect={onDelete}
+          isBouncerNetwork={!isControl}
         />
       )}
     </>

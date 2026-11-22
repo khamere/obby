@@ -456,7 +456,8 @@ export function registerMentionCatchUpHandlers(
       );
   };
 
-  ircClient.on("parsedLine", ({ serverId, command, parv, mtags }) => {
+  ircClient.on("parsedLine", (parsed) => {
+    const { serverId, command, parv, mtags } = parsed;
     if (command === "BATCH") {
       const ref = parv[0] ?? "";
       if (ref.startsWith("-"))
@@ -475,7 +476,8 @@ export function registerMentionCatchUpHandlers(
       ? queue.historyBatches.get(mtags.batch)
       : undefined;
     const time = Date.parse(mtags?.time ?? "");
-    if (!channel || Number.isNaN(time)) return;
+    // A time we stamped says when the line reached us, which is no sign of activity since the search.
+    if (!channel || parsed.hasReceiveTime || Number.isNaN(time)) return;
     if (time > (queue.newestInHistory.get(channel) ?? 0))
       queue.newestInHistory.set(channel, time);
   });
