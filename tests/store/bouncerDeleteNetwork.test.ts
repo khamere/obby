@@ -159,9 +159,35 @@ describe("deleting a bouncer network", () => {
       deleted: true,
       attributes: {},
     });
+
+    // The bouncer's deleted line on this session is its answer to a waiting
+    // delete, whichever device caused it: the network is gone, as asked.
+    expect(hasChild()).toBe(false);
+    expect(settle).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ id: CHILD }),
+      true,
+    );
+    expect(target()).toBeNull();
+    expect(useStore.getState().pendingNetworkDeletes).toEqual({});
+
     ircClient.triggerEvent("BOUNCER_DELNETWORK_OK", {
       serverId: PARENT,
       netid: NETID,
+    });
+
+    expect(settle).toHaveBeenCalledOnce();
+    expect(target()).toBeNull();
+  });
+
+  test("settles a waiting delete on the deleted line and ignores the refusal that follows", () => {
+    seed(true);
+    useStore.getState().requestDeleteServer(CHILD);
+    useStore.getState().confirmDisconnectNetwork(true);
+    ircClient.triggerEvent("BOUNCER_NETWORK", {
+      serverId: PARENT,
+      netid: NETID,
+      deleted: true,
+      attributes: {},
     });
 
     expect(hasChild()).toBe(false);
@@ -169,6 +195,17 @@ describe("deleting a bouncer network", () => {
       expect.objectContaining({ id: CHILD }),
       true,
     );
+
+    ircClient.triggerEvent("BOUNCER_FAIL", {
+      serverId: PARENT,
+      code: "INVALID_NETID",
+      subcommand: "DELNETWORK",
+      netid: NETID,
+      context: [NETID],
+      description: "Invalid network ID",
+    });
+
+    expect(settle).toHaveBeenCalledOnce();
     expect(target()).toBeNull();
   });
 
@@ -246,11 +283,8 @@ describe("deleting a bouncer network", () => {
     dropControl();
 
     expect(hasChild()).toBe(true);
-    expect(target()).toMatchObject({
-      netid: NETID,
-      status: "unanswered",
-      isAwaitingList: true,
-    });
+    expect(target()).toMatchObject({ netid: NETID, status: "unanswered" });
+    expect(useStore.getState().bouncers[PARENT].isListStale).toBe(true);
     expect(useStore.getState().pendingNetworkDeletes).toEqual({});
   });
 
@@ -334,10 +368,8 @@ describe("deleting a bouncer network", () => {
 
     expect(hasChild()).toBe(true);
     expect(settle).not.toHaveBeenCalled();
-    expect(target()).toMatchObject({
-      status: "unanswered",
-      isAwaitingList: false,
-    });
+    expect(target()?.status).toBe("unanswered");
+    expect(useStore.getState().bouncers[PARENT].isListStale).toBe(false);
   });
 
   test("keeps every network when a list is cut short and its batch reference comes back as another batch", () => {
@@ -499,20 +531,90 @@ describe("deleting a bouncer network", () => {
     expect(listRequest).not.toHaveBeenCalled();
   });
 
+  const logIn = () =>
+    useStore.setState((state) => ({
+      servers: state.servers.map((server) =>
+        server.id === PARENT
+          ? { ...server, isConnected: true, isRegistered: true }
+          : server,
+      ),
+    }));
+
+  test("sends nothing from a dialog reopened after a reconnect until the list has arrived", () => {
+    seed(true);
+    dropControl();
+    logIn();
+    useStore.getState().requestDeleteServer(CHILD);
+    useStore.getState().confirmDisconnectNetwork(true);
+
+    expect(delNetwork).not.toHaveBeenCalled();
+    expect(target()?.status).toBeUndefined();
+    listNetworks([NETID]);
+    useStore.getState().confirmDisconnectNetwork(true);
+    expect(delNetwork).toHaveBeenCalledExactlyOnceWith(PARENT, NETID);
+  });
+
+  test("sends nothing and closes a reopened dialog when the list shows another network under the id", () => {
+    seed(true);
+    dropControl();
+    logIn();
+    useStore.getState().requestDeleteServer(CHILD);
+    openBatch("soju.im/bouncer-networks");
+    listNetwork(NETID, "irc.other.example");
+    closeBatch();
+
+    expect(target()).toBeNull();
+    useStore.getState().confirmDisconnectNetwork(true);
+    expect(delNetwork).not.toHaveBeenCalled();
+    expect(hasChild()).toBe(true);
+  });
+
+  test("sends nothing and closes the dialog when the network changed under it", () => {
+    seed(true);
+    useStore.getState().requestDeleteServer(CHILD);
+    ircClient.triggerEvent("BOUNCER_NETWORK", {
+      serverId: PARENT,
+      netid: NETID,
+      deleted: false,
+      attributes: { host: "irc.other.example" },
+    });
+    useStore.getState().confirmDisconnectNetwork(true);
+
+    expect(delNetwork).not.toHaveBeenCalled();
+    expect(target()).toBeNull();
+  });
+
+  test("asks a bouncer without the notify capability for its list at every login until one has arrived", () => {
+    seed(true);
+    useStore.setState((state) => ({
+      bouncers: {
+        [PARENT]: { ...state.bouncers[PARENT], notifyEnabled: false },
+      },
+    }));
+    const ready = () =>
+      ircClient.triggerEvent("ready", {
+        serverId: PARENT,
+        serverName: "bouncer.example",
+        nickname: "me",
+      });
+    dropControl();
+    ready();
+    openBatch("soju.im/bouncer-networks");
+    dropControl();
+    ready();
+    expect(listRequest).toHaveBeenCalledTimes(2);
+    listNetworks([NETID]);
+    ready();
+
+    expect(listRequest).toHaveBeenCalledTimes(2);
+  });
+
   test("offers no second delete until the list after a dropped connection has arrived", () => {
     seed(true);
     useStore.getState().requestDeleteServer(CHILD);
     useStore.getState().confirmDisconnectNetwork(true);
     dropControl();
     useStore.getState().confirmDisconnectNetwork(true);
-    const logIn = () =>
-      useStore.setState((state) => ({
-        servers: state.servers.map((server) =>
-          server.id === PARENT
-            ? { ...server, isConnected: true, isRegistered: true }
-            : server,
-        ),
-      }));
     logIn();
     useStore.getState().confirmDisconnectNetwork(true);
     expect(delNetwork).toHaveBeenCalledOnce();
@@ -551,7 +653,7 @@ describe("deleting a bouncer network", () => {
     vi.advanceTimersByTime(1);
 
     expect(target()?.status).toBe("unanswered");
-    expect(target()?.isAwaitingList).toBeFalsy();
+    expect(useStore.getState().bouncers[PARENT].isListStale).toBeFalsy();
     expect(useStore.getState().pendingNetworkDeletes).toEqual({});
     expect(listRequest).toHaveBeenCalledExactlyOnceWith(PARENT);
     expect(hasChild()).toBe(true);

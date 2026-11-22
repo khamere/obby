@@ -478,9 +478,6 @@ interface UIState {
     shouldDeleteHistory?: boolean;
     // The bouncer's own words for a refused delete.
     refusal?: string;
-    // Set from a dropped connection until the bouncer's next full network
-    // list, which shows what the id names by then.
-    isAwaitingList?: boolean;
   } | null;
   quickActions: QuickActionsState | null;
   // The message list holding this id scrolls to it and flashes it.
@@ -3516,7 +3513,19 @@ const useStore = create<AppState>((set, get) => ({
   confirmDisconnectNetwork: (shouldDeleteHistory) => {
     const state = get();
     const target = state.ui.disconnectNetworkConfirmTarget;
-    if (!target || target.isAwaitingList) return;
+    if (!target) return;
+    // After a reconnect the id may name another network, so we send nothing
+    // until the bouncer's list of this session has arrived, and only for the
+    // network the dialog asked about.
+    const bouncer = state.bouncers[target.bouncerServerId];
+    if (bouncer?.isListStale) return;
+    if (
+      target.identity !== undefined &&
+      target.identity !== networkIdentity(bouncer?.networks[target.netid])
+    ) {
+      state.cancelDisconnectNetwork();
+      return;
+    }
     // One delete per network waits for its answer at a time, and it keeps
     // the choice it was sent with.
     const key = networkDeleteKey(target.bouncerServerId, target.netid);

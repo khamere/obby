@@ -261,32 +261,30 @@ export function registerBouncerHandlers(store: StoreApi<AppState>): void {
 
   // An answer counts only on the session that sent the delete, so a dropped
   // control connection ends every pending delete and any network list it was
-  // sending. The list of the next session then shows what became of them.
+  // sending. Our rows are stale from here until the list of the next session.
   ircClient.on("connectionStateChange", ({ serverId, connectionState }) => {
     if (connectionState === "connected") return;
     for (const key of snapshots.keys())
       if (key.startsWith(`${serverId}:`)) snapshots.delete(key);
-    const netids = pendingNetids(store.getState(), serverId);
-    if (netids.length === 0) return;
-    for (const netid of netids) takePendingDelete(store, serverId, netid);
-    listWantedAfterLogin.add(serverId);
+    if (store.getState().bouncers[serverId])
+      store.setState((state) => ({
+        bouncers: ensureBouncer(state, serverId, { isListStale: true }),
+      }));
+    for (const netid of pendingNetids(store.getState(), serverId))
+      takePendingDelete(store, serverId, netid);
     const target = store.getState().ui.disconnectNetworkConfirmTarget;
     if (target?.bouncerServerId === serverId && target.status === "deleting")
-      setNetworkDeleteTarget(store, {
-        ...target,
-        status: "unanswered",
-        isAwaitingList: true,
-      });
+      setNetworkDeleteTarget(store, { ...target, status: "unanswered" });
   });
 
   // Only a bouncer with the notify capability sends its network list on its
-  // own after a login, so we ask the others for it after a lost delete.
-  const listWantedAfterLogin = new Set<string>();
+  // own after a login, so we ask the others for it while our rows are stale.
   ircClient.on("ready", ({ serverId }) => {
-    if (!listWantedAfterLogin.delete(serverId)) return;
     const state = store.getState();
-    if (!state.bouncers[serverId]?.notifyEnabled)
-      state.bouncerListNetworks(serverId);
+    const bouncer = state.bouncers[serverId];
+    if (!bouncer?.isListStale || bouncer.notifyEnabled) return;
+    if (state.servers.find((s) => s.id === serverId)?.bouncerNetid) return;
+    state.bouncerListNetworks(serverId);
   });
 
   // Errors from any subcommand. Stash on the bouncer state so the UI
@@ -390,13 +388,13 @@ export function registerBouncerHandlers(store: StoreApi<AppState>): void {
       const isSameNetwork =
         target.identity === undefined ||
         target.identity === networkIdentity(network);
-      setNetworkDeleteTarget(
-        store,
-        isSameNetwork ? { ...target, isAwaitingList: false } : null,
-      );
+      if (!isSameNetwork) setNetworkDeleteTarget(store, null);
     }
     store.setState((state) => ({
-      bouncers: ensureBouncer(state, serverId, { listed: true }),
+      bouncers: ensureBouncer(state, serverId, {
+        listed: true,
+        isListStale: false,
+      }),
     }));
     autoBindConnectedNetworks(store, serverId);
   });

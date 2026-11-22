@@ -15,6 +15,9 @@ export const BouncerNetworkDisconnectConfirmModal: React.FC = () => {
   const confirm = useStore((s) => s.confirmDisconnectNetwork);
   const [shouldDeleteHistory, setShouldDeleteHistory] = useState(false);
   const childServerId = target?.childServerId;
+  const isListStale = useStore(
+    (s) => s.bouncers[target?.bouncerServerId ?? ""]?.isListStale === true,
+  );
   const isControlUp = useStore((s) => {
     const control = s.servers.find((srv) => srv.id === target?.bouncerServerId);
     return control?.isConnected === true && control.isRegistered === true;
@@ -132,7 +135,7 @@ export const BouncerNetworkDisconnectConfirmModal: React.FC = () => {
         <Button
           variant="danger"
           onClick={() => confirm(isHistoryDeleted)}
-          disabled={isDeleting || !isControlUp || target.isAwaitingList}
+          disabled={isDeleting || !isControlUp || isListStale}
         >
           {isDeleting ? (
             <Trans>Deleting…</Trans>

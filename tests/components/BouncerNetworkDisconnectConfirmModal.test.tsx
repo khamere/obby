@@ -15,6 +15,7 @@ const state = {
     bnc: {
       networks: { "7": { netid: "7", attributes: { name: "TestNet" } } },
       lastError: undefined as { description: string } | undefined,
+      isListStale: false,
     },
   },
   ui: {
@@ -25,7 +26,6 @@ const state = {
       status: undefined as "deleting" | "unanswered" | "refused" | undefined,
       shouldDeleteHistory: undefined as boolean | undefined,
       refusal: undefined as string | undefined,
-      isAwaitingList: undefined as boolean | undefined,
     },
   },
   confirmDisconnectNetwork,
@@ -52,12 +52,12 @@ describe("BouncerNetworkDisconnectConfirmModal", () => {
     state.ui.disconnectNetworkConfirmTarget.status = undefined;
     state.ui.disconnectNetworkConfirmTarget.shouldDeleteHistory = undefined;
     state.ui.disconnectNetworkConfirmTarget.refusal = undefined;
-    state.ui.disconnectNetworkConfirmTarget.isAwaitingList = undefined;
+    state.bouncers.bnc.isListStale = false;
   });
 
   it("holds the second delete back until the network list is in", () => {
     state.ui.disconnectNetworkConfirmTarget.status = "unanswered";
-    state.ui.disconnectNetworkConfirmTarget.isAwaitingList = true;
+    state.bouncers.bnc.isListStale = true;
     render(<BouncerNetworkDisconnectConfirmModal />);
 
     expect(
