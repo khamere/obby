@@ -83,6 +83,7 @@ export function handlePrivmsg(
     const batch = serverBatches?.get(batchId);
     const isSearchResult = takeSearchResult(ctx, serverId, {
       command: "PRIVMSG",
+      hasServerTime: ctx.hasLineServerTime,
       sender,
       target,
       message,
@@ -156,6 +157,7 @@ export function handleNotice(
 
   const isSearchResult = takeSearchResult(ctx, serverId, {
     command: "NOTICE",
+    hasServerTime: ctx.hasLineServerTime,
     sender,
     target,
     message,

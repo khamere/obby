@@ -51,6 +51,8 @@ const DEAD_SOCKET_CLOSE_WAIT_MS = 2_000;
 // One message of a `soju.im/search` answer.
 export interface SearchResult {
   command: "PRIVMSG" | "NOTICE";
+  // An old line is placed by the server's time alone, never by ours.
+  hasServerTime: boolean;
   sender: string;
   target: string;
   message: string;
@@ -749,6 +751,8 @@ export class IRCClient implements IRCClientContext {
    *  append form.  See IRCClientContext for the contract. */
   isupportValues: Map<string, Map<string, string>> = new Map();
   private diskOnlyBatches = new Set<string>();
+  // Whether the line being handled came with the server's own time.
+  hasLineServerTime = true;
   motdLines: Map<string, string[]> = new Map();
 
   private ourCaps: string[] = [
@@ -2239,6 +2243,7 @@ export class IRCClient implements IRCClientContext {
       }
       // Servers without server-time leave the time to us, so we stamp one
       // receive time that the chat and the saved history both read.
+      this.hasLineServerTime = !!mtags?.time;
       if (!mtags?.time) mtags = { ...mtags, time: new Date().toISOString() };
 
       // Parse IRC message properly handling colon-prefixed trailing parameter
