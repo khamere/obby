@@ -172,6 +172,56 @@ describe("history windows", { timeout: 2 * WRITE_TIMEOUT_MS }, () => {
     await vi.waitFor(() => expect(w.shown()).toEqual(ids(51, 399)));
   });
 
+  it("shows the last saved page before the window joins the present", async () => {
+    const w = await boot();
+    await w.save(380);
+    await w.jumpTo(100);
+    for (let page = 0; page < 4; page++) await w.pageNewer();
+    expect(w.shown()).toEqual(ids(51, 350));
+    expect(w.window()?.present).toEqual([]);
+    const shownAtJoin: (string | undefined)[][] = [];
+    const stop = w.useStore.subscribe((state, previous) => {
+      if (previous.historyWindows[KEY] && !state.historyWindows[KEY])
+        shownAtJoin.push(w.shown());
+    });
+
+    await w.pageNewer();
+    stop();
+
+    expect(w.window()).toBeUndefined();
+    expect(shownAtJoin).toEqual([ids(51, 379)]);
+  });
+
+  it("drops a newer page that answers after the chat returned to the present", async () => {
+    const w = await boot();
+    await w.save(400);
+    await w.showNewest();
+    await w.jumpTo(100);
+
+    const page = w.pageNewer();
+    w.history.showPresent(w.useStore, SERVER, "#chan");
+    await page;
+
+    expect(w.window()).toBeUndefined();
+    expect(w.shown()).toEqual(ids(300, 399));
+  });
+
+  it("drops the last saved page when it answers after the chat returned to the present", async () => {
+    const w = await boot();
+    await w.save(380);
+    await w.showNewest();
+    await w.jumpTo(100);
+    for (let page = 0; page < 4; page++) await w.pageNewer();
+    expect(w.shown()).toEqual(ids(51, 350));
+
+    const page = w.pageNewer();
+    w.history.showPresent(w.useStore, SERVER, "#chan");
+    await page;
+
+    expect(w.window()).toBeUndefined();
+    expect(w.shown()).toEqual(ids(280, 379));
+  });
+
   it("drops the oldest messages while paging newer and loads them back above", async () => {
     const w = await boot();
     await w.save(700);
