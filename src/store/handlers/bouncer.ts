@@ -88,8 +88,11 @@ export const networkDeleteKey = (serverId: string, netid: string) =>
 
 // A bouncer can hand a deleted network's id to a new network, so we tell
 // networks apart by their name and what they connect to as well.
-export function networkIdentity(network: BouncerNetwork | undefined): string {
-  const attrs = network?.attributes ?? {};
+export function networkIdentity(
+  network: BouncerNetwork | undefined,
+): string | undefined {
+  if (!network) return undefined;
+  const attrs = network.attributes;
   return [attrs.name, attrs.host, attrs.port].join("\n");
 }
 
@@ -354,14 +357,8 @@ export function registerBouncerHandlers(store: StoreApi<AppState>): void {
     }));
   });
 
-  // BATCH_END for a soju.im/bouncer-networks batch finalises the
-  // "listed" flag so the UI can swap from a skeleton to the list. We
-  // listen on BATCH_START to know the type and stash it; on BATCH_END
-  // we look it up.
-  // Batch reference tags are only unique per connection, so key by
-  // serverId too — otherwise a same-tagged batch on another connection
-  // (a bound child, a direct server) would flip the wrong bouncer's
-  // "listed" flag and orphan the real LISTNETWORKS batch.
+  // Batch references are unique per connection only, so we key each open
+  // network list by its server as well.
   ircClient.on("BATCH_START", ({ serverId, batchId, type }) => {
     // Batch references repeat, so one opened as anything else ends a list
     // we still hold under the same reference.
@@ -380,15 +377,17 @@ export function registerBouncerHandlers(store: StoreApi<AppState>): void {
     for (const netid of Object.keys(held))
       if (!listedNetids.has(netid)) dropNetwork(store, serverId, netid, false);
     // The dialog asked about one network, so it closes when its id names
-    // another one by now.
+    // another one by now. A dialog opened before we knew the network takes
+    // what this list says it is.
     const target = store.getState().ui.disconnectNetworkConfirmTarget;
     if (target?.bouncerServerId === serverId) {
-      const network =
-        store.getState().bouncers[serverId]?.networks[target.netid];
-      const isSameNetwork =
-        target.identity === undefined ||
-        target.identity === networkIdentity(network);
-      if (!isSameNetwork) setNetworkDeleteTarget(store, null);
+      const identity = networkIdentity(
+        store.getState().bouncers[serverId]?.networks[target.netid],
+      );
+      if (target.identity === undefined)
+        setNetworkDeleteTarget(store, { ...target, identity });
+      else if (target.identity !== identity)
+        setNetworkDeleteTarget(store, null);
     }
     store.setState((state) => ({
       bouncers: ensureBouncer(state, serverId, {

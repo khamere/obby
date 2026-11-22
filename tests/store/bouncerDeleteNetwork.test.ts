@@ -569,6 +569,41 @@ describe("deleting a bouncer network", () => {
     expect(hasChild()).toBe(true);
   });
 
+  test("keeps a dialog opened before the first list and takes the network from that list", () => {
+    seed(true);
+    useStore.setState((state) => ({
+      bouncers: { [PARENT]: { ...state.bouncers[PARENT], networks: {} } },
+    }));
+    useStore.getState().requestDeleteBouncerNetwork(PARENT, NETID);
+    expect(target()?.identity).toBeUndefined();
+    listNetworks([NETID]);
+
+    expect(target()).toMatchObject({
+      netid: NETID,
+      identity: "Net\nirc.example\n",
+    });
+    useStore.getState().confirmDisconnectNetwork(false);
+    expect(delNetwork).toHaveBeenCalledExactlyOnceWith(PARENT, NETID);
+  });
+
+  test("keeps the saved history when a list on the same session lacks the network while its delete still waits", () => {
+    seed(true);
+    useStore.getState().requestDeleteServer(CHILD);
+    useStore.getState().confirmDisconnectNetwork(true);
+    listNetworks(["7"]);
+
+    expect(hasChild()).toBe(false);
+    expect(useStore.getState().bouncers[PARENT].networks[NETID]).toBe(
+      undefined,
+    );
+    expect(settle).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ id: CHILD }),
+      false,
+    );
+    expect(target()).toBeNull();
+    expect(useStore.getState().pendingNetworkDeletes).toEqual({});
+  });
+
   test("sends nothing and closes the dialog when the network changed under it", () => {
     seed(true);
     useStore.getState().requestDeleteServer(CHILD);
