@@ -55,48 +55,36 @@ describe("ChannelKeyModal", () => {
     expect(useStore.getState().channelKeyPrompt).toBeNull();
   });
 
-  it("drops the spaces around a pasted key", () => {
+  it.each([
+    ["two words", "JOIN #vault :two words"],
+    [" hunter2\u00a0 ", "JOIN #vault : hunter2\u00a0 "],
+    [":secret", "JOIN #vault ::secret"],
+  ])("sends the key %j as typed and closes", (key, line) => {
     const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
     render(<ChannelKeyModal />);
 
     fireEvent.change(screen.getByLabelText("Channel key"), {
-      target: { value: " hunter2 " },
+      target: { value: key },
     });
     fireEvent.click(screen.getByRole("button", { name: "Join" }));
 
-    expect(sendRaw).toHaveBeenCalledWith(SERVER, "JOIN #vault hunter2");
+    expect(sendRaw).toHaveBeenCalledWith(SERVER, line);
+    expect(useStore.getState().channelKeyPrompt).toBeNull();
   });
 
-  it("keeps a non-breaking space at the end of a key", () => {
+  it("keeps the prompt open for a key with a comma and sends nothing", () => {
     const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
     render(<ChannelKeyModal />);
 
     fireEvent.change(screen.getByLabelText("Channel key"), {
-      target: { value: " hunter2\u00a0 " },
+      target: { value: "hunter2,other" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Join" }));
 
-    expect(sendRaw).toHaveBeenCalledWith(SERVER, "JOIN #vault hunter2\u00a0");
+    expect(sendRaw).not.toHaveBeenCalled();
+    expect(useStore.getState().channelKeyPrompt).not.toBeNull();
+    expect(screen.getByText("Wrong key, try again")).toBeInTheDocument();
   });
-
-  it.each(["hunter2 #other", "hunter2,other"])(
-    "keeps the prompt open for %j and sends nothing",
-    (key) => {
-      const sendRaw = vi
-        .spyOn(ircClient, "sendRaw")
-        .mockImplementation(() => {});
-      render(<ChannelKeyModal />);
-
-      fireEvent.change(screen.getByLabelText("Channel key"), {
-        target: { value: key },
-      });
-      fireEvent.click(screen.getByRole("button", { name: "Join" }));
-
-      expect(sendRaw).not.toHaveBeenCalled();
-      expect(useStore.getState().channelKeyPrompt).not.toBeNull();
-      expect(screen.getByText("Wrong key, try again")).toBeInTheDocument();
-    },
-  );
 
   it("tells the user when the last key was wrong", () => {
     useStore.setState({

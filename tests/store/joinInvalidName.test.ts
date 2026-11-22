@@ -87,7 +87,8 @@ describe("joining a name that is not one channel", () => {
 
   it.each([
     ["a line break", "key\r\nQUIT"],
-    ["a space", "key #other"],
+    ["a lone line feed", "key\nQUIT"],
+    ["a NUL", "key\0"],
     ["a comma", "key,other"],
   ])("sends and saves nothing for a key with %s", (_, key) => {
     useStore.getState().joinChannel(SERVER, "#locked", key);
@@ -139,17 +140,35 @@ describe("joining a name that is not one channel", () => {
     ).toEqual(saved.map((name) => `JOIN ${name}`));
   });
 
-  it.each([":secret", "::", ":", "se:cret", "secret"])(
-    "sends the key %j so the server reads it as typed",
-    (key) => {
-      useStore.getState().joinChannel(SERVER, "#vault", key);
+  it.each([
+    "two words",
+    ":secret",
+    " leading",
+    "trailing ",
+    "a  b",
+    "key #other :more",
+    "::",
+    ":",
+    "se:cret",
+    "secret",
+  ])("sends the key %j so the server reads it as typed", (key) => {
+    useStore.getState().joinChannel(SERVER, "#vault", key);
 
-      const joins = sentLines().filter((line: string) =>
-        line.startsWith("JOIN"),
-      );
-      expect(joins.map(serverArguments)).toEqual([["JOIN", "#vault", key]]);
-    },
-  );
+    const joins = sentLines().filter((line: string) => line.startsWith("JOIN"));
+    expect(joins.map(serverArguments)).toEqual([["JOIN", "#vault", key]]);
+  });
+
+  it("sends a plain key without the colon form", () => {
+    useStore.getState().joinChannel(SERVER, "#vault", "secret");
+
+    expect(sentLines()).toContain("JOIN #vault secret");
+  });
+
+  it("sends no key next to a list of channels", () => {
+    useStore.getState().joinChannel(SERVER, "#vault,#other", "two words");
+
+    expect(sentLines()).toEqual([]);
+  });
 
   it("rejoins the saved channels when the saved list holds an entry that is no name", () => {
     lsBacking.set(
@@ -197,6 +216,45 @@ describe("joining a name that is not one channel", () => {
     useStore.getState().forgetChannel(SERVER, "#open");
     expect(savedChannels()).toEqual(["#saved"]);
   });
+
+  it.each([
+    ["an empty string", ""],
+    ["null", null],
+    ["an object", { name: "#x" }],
+  ])(
+    "finishes registration when the saved channels field is %s",
+    (_, channels) => {
+      lsBacking.set(
+        "savedServers",
+        JSON.stringify([
+          {
+            id: SERVER,
+            host: "irc.test",
+            port: 6667,
+            nickname: "me",
+            channels,
+          },
+        ]),
+      );
+      const afterStore = vi.fn();
+      ircClient.on("ready", afterStore);
+
+      ircClient.triggerEvent("ready", {
+        serverId: SERVER,
+        serverName: "Test",
+        nickname: "me",
+      });
+      ircClient.deleteHook("ready", afterStore);
+
+      expect(afterStore).toHaveBeenCalledTimes(1);
+      expect(
+        sentLines().filter((line: string) => line.startsWith("JOIN")),
+      ).toEqual([]);
+
+      useStore.getState().joinChannel(SERVER, "#open");
+      expect(savedChannels()).toEqual(["#open"]);
+    },
+  );
 
   it("drops such a saved name on connect and rejoins the others", () => {
     saveChannels(["#saved", INJECTED, "#a b"]);

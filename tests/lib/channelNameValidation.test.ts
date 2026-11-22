@@ -61,11 +61,12 @@ describe("breaksJoinLine", () => {
 });
 
 describe("isJoinableChannelKey", () => {
-  test.each(["secret", "pässword", "a:b"])("%j is one key", (key) =>
-    expect(isJoinableChannelKey(key)).toBe(true),
+  test.each(["secret", "pässword", "a:b", "two words", ":secret", " x "])(
+    "%j is one key",
+    (key) => expect(isJoinableChannelKey(key)).toBe(true),
   );
 
-  test.each(["two words", "one,two", "key\r\nQUIT", "key\0"])(
+  test.each(["one,two", "key\r\nQUIT", "key\nQUIT", "key\0"])(
     "%j is more than one key",
     (key) => expect(isJoinableChannelKey(key)).toBe(false),
   );

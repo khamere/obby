@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { settings, uiSelections } from "../../src/store/localStorage";
+import { servers, settings, uiSelections } from "../../src/store/localStorage";
 
 describe("settings.load migration", () => {
   beforeEach(() => {
@@ -113,5 +113,37 @@ describe("uiSelections.load", () => {
     expect(loaded.perServerSelections.s1.selectedChannelId).toBeNull();
     expect(loaded.perServerSelections.s2.selectedChannelId).toBe("id-dev");
     expect(loaded.lastSelection?.channelName).toBeNull();
+  });
+});
+
+describe("servers.load", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  test.each([
+    ["an empty string", ""],
+    ["null", null],
+    ["an object", { name: "#lobby" }],
+    ["a missing field", undefined],
+  ])(
+    "reads a saved server whose channels is %s as one with no channels",
+    (_, channels) => {
+      vi.mocked(window.localStorage.getItem).mockReturnValue(
+        JSON.stringify([{ id: "srv-1", host: "irc.test", channels }]),
+      );
+
+      expect(servers.load()).toEqual([
+        { id: "srv-1", host: "irc.test", channels: [] },
+      ]);
+    },
+  );
+
+  test("keeps a saved channel list as it is", () => {
+    vi.mocked(window.localStorage.getItem).mockReturnValue(
+      JSON.stringify([{ id: "srv-1", channels: ["#lobby", "#two"] }]),
+    );
+
+    expect(servers.load()[0].channels).toEqual(["#lobby", "#two"]);
   });
 });

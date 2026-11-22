@@ -63,9 +63,19 @@ export function isJoinableChannelName(
   );
 }
 
-/** True when `key` stays the one key argument of a JOIN line. */
+// A comma starts another entry in the key list, and NUL, CR or LF ends the line.
+const KEY_BREAKS = [",", "\0", "\r", "\n"];
+
+/** True when `key` can be sent as the one key of a JOIN line. */
 export function isJoinableChannelKey(key: string): boolean {
-  return !breaksJoinLine(key);
+  return !KEY_BREAKS.some((character) => key.includes(character));
+}
+
+/** The key as the last argument of a JOIN line. A key with a space or a
+ * leading colon goes in the colon form, which runs to the end of the line, so
+ * the server reads the key exactly as typed. */
+export function joinKeyArgument(key: string): string {
+  return key.includes(" ") || key.startsWith(":") ? `:${key}` : key;
 }
 
 /** The channel a link asks us to join, or null when its value is not one

@@ -91,7 +91,7 @@ describe("opening the app from a link with a channel parameter", () => {
     window.history.replaceState({}, "", "/");
   });
 
-  it("joins an encoded channel once and keeps the other parameters", () => {
+  it("adds one JOIN for an encoded channel to the repeat every channel gets, and keeps the other parameters", () => {
     startWithAddress("/app?theme=dark&channel=%23weather&lang=de#top");
 
     expect(window.location.pathname).toBe("/app");
