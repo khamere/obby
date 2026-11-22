@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { nextMemberRequestNumber } from "../../src/lib/irc/utils";
 import ircClient from "../../src/lib/ircClient";
 import type { AppState } from "../../src/store";
 import useStore from "../../src/store";
@@ -513,11 +514,12 @@ describe("member list after coming back to a channel", () => {
       seed([user("me", "@"), user("bob")]);
 
       ownJoin();
-      const lost = ourToken();
+      const lost = Number(ourToken());
+      expect(lost).toBeGreaterThanOrEqual(100);
       vi.advanceTimersByTime(61_000);
       ownJoin();
       expect(whoLines()).toHaveLength(2);
-      expect(ourToken()).not.toBe(lost);
+      expect(Number(ourToken())).toBe(lost === 999 ? 100 : lost + 1);
 
       receive(whoxRow("me", "H@"), whoxRow("dave"), endOfWho());
       expect(members()).toEqual(["@me", "dave"]);
@@ -587,12 +589,28 @@ describe("member list after coming back to a channel", () => {
     ownJoin();
     whoReply("me");
     whoReply("bob");
-    whoReply("carol");
     whoEnd();
+    expect(members()).toEqual(["bob", "me"]);
+
+    otherJoin("dave");
     whoReply("me");
     whoEnd();
 
+    expect(members()).toEqual(["bob", "dave", "me"]);
+  });
+
+  test("a reply the bouncer aborts removes nobody, and the next join asks again", () => {
+    seed([user("me"), user("bob"), user("carol")]);
+
+    ownJoin();
+    receive(whoxRow("me"), `:irc.test 315 me ${channelName} :Command aborted`);
     expect(members()).toEqual(["bob", "carol", "me"]);
+
+    ownJoin();
+    expect(whoLines()).toHaveLength(2);
+    receive(whoxRow("me"), whoxRow("bob"), endOfWho());
+
+    expect(members()).toEqual(["bob", "me"]);
   });
 
   test("a reply cut off by a dropped connection leaves nothing for the next one", () => {
@@ -671,5 +689,19 @@ describe("member list after coming back to a channel", () => {
       expect(whoLines()).toHaveLength(1);
       expect(channel().needsKey).toBe(false);
     });
+  });
+});
+
+describe("the number our member request carries", () => {
+  test("starts anywhere from 100 to 999 on a connection", () => {
+    expect(nextMemberRequestNumber(undefined, () => 0)).toBe(100);
+    expect(nextMemberRequestNumber(undefined, () => 0.5)).toBe(550);
+    expect(nextMemberRequestNumber(undefined, () => 0.9999)).toBe(999);
+  });
+
+  test("counts up and returns to 100 after 999", () => {
+    expect(nextMemberRequestNumber(100)).toBe(101);
+    expect(nextMemberRequestNumber(998)).toBe(999);
+    expect(nextMemberRequestNumber(999)).toBe(100);
   });
 });

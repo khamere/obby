@@ -39,7 +39,7 @@ import {
   parseMultilineLimits,
   splitAtSpaces,
 } from "./multiline";
-import { parseServerTime } from "./utils";
+import { nextMemberRequestNumber, parseServerTime } from "./utils";
 
 // Namespace UUID for generating deterministic channel/chat IDs
 const CHANNEL_NAMESPACE = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
@@ -302,7 +302,7 @@ export interface EventMap {
     opLevel: string;
     token?: string;
   };
-  WHO_END: { serverId: string; mask: string };
+  WHO_END: { serverId: string; mask: string; isAborted?: boolean };
   MEMBERS_REQUESTED: { serverId: string; channelName: string; token: string };
   RPL_AWAY: {
     serverId: string;
@@ -691,7 +691,7 @@ function splitCapToken(token: string): { cap: string; value?: string } {
 
 export class IRCClient implements IRCClientContext {
   private sockets: Map<string, ISocket> = new Map();
-  private memberRequestCount = 0;
+  private memberRequestNumbers = new WeakMap<ISocket, number>();
   servers: Map<string, Server> = new Map();
   nicks: Map<string, string> = new Map();
   myIdents: Map<string, string> = new Map(); // Our own ident per server, populated by draft/whoami SETNAME burst and CHGHOST
@@ -1605,8 +1605,12 @@ export class IRCClient implements IRCClientContext {
 
   // The server repeats the number we send in every row of its answer, so the member list can tell the answer to this request from any other WHO reply.
   requestMembers(serverId: string, channelName: string): void {
-    this.memberRequestCount = (this.memberRequestCount % 999) + 1;
-    const token = String(this.memberRequestCount);
+    const socket = this.sockets.get(serverId);
+    const number = nextMemberRequestNumber(
+      socket && this.memberRequestNumbers.get(socket),
+    );
+    if (socket) this.memberRequestNumbers.set(socket, number);
+    const token = String(number);
     this.sendRaw(serverId, `WHO ${channelName} %tcuhnfaro,${token}`);
     this.triggerEvent("MEMBERS_REQUESTED", { serverId, channelName, token });
   }

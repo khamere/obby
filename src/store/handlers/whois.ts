@@ -436,12 +436,12 @@ export function registerWhoisHandlers(store: StoreApi<AppState>): void {
     forgetWhoReplies(serverId),
   );
 
-  ircClient.on("WHO_END", ({ serverId, mask }) => {
+  ircClient.on("WHO_END", ({ serverId, mask, isAborted }) => {
     // Flush any pending batched WHO replies for this channel so the
     // member list updates at the END_OF_WHO boundary instead of waiting
     // out the idle timer.
     if (mask && ircClient.isChannel(serverId, mask)) {
-      finishWhoReplies(store, serverId, mask);
+      finishWhoReplies(store, serverId, mask, isAborted);
     }
     // When WHO list is complete for a channel, request metadata for all users
     // This ensures we get current metadata for users who were already in the channel

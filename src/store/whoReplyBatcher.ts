@@ -355,11 +355,14 @@ export function finishWhoReplies(
   store: StoreApi<AppState>,
   serverId: string,
   channel: string,
+  isAborted = false,
 ): void {
   flushWhoReplies(store, serverId, channel);
   const k = key(serverId, channel);
   const refresh = openRefresh(k);
-  if (!refresh?.hasRows) return;
+  // An aborted reply is missing rows, so we give the request up and the next join asks again.
+  if (isAborted) refreshes.delete(k);
+  if (isAborted || !refresh?.hasRows) return;
   refreshes.delete(k);
   // The server lists every member only to someone inside the channel, so we drop the members the answer left out only when it names us.
   const present = refresh.present;

@@ -484,5 +484,7 @@ export function handleWhoEnd(
   _mtags: Record<string, string> | undefined,
 ): void {
   const mask = parv[1];
-  ctx.triggerEvent("WHO_END", { serverId, mask });
+  // A bouncer that loses its own connection mid-reply ends the reply with exactly this text, the only sign that rows are missing.
+  const isAborted = parv[2] === "Command aborted";
+  ctx.triggerEvent("WHO_END", { serverId, mask, isAborted });
 }
