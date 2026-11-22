@@ -352,6 +352,110 @@ describe("a channel we were removed from", () => {
       readyProcessedServers.delete(reloaded);
     });
 
+    test("the user starts by hand keeps the channel as left before and after the server greets us", async () => {
+      kick("me");
+      useStore.setState((state) => ({
+        servers: state.servers.map((s) =>
+          s.id === serverId ? { ...s, isConnected: false } : s,
+        ),
+      }));
+      vi.spyOn(ircClient, "connect").mockResolvedValue(
+        clientServers().get(serverId) as never,
+      );
+      sendRaw.mockClear();
+
+      await useStore
+        .getState()
+        .connect(
+          "test",
+          "irc.test",
+          6697,
+          "me",
+          false,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          serverId,
+        );
+
+      expect(channel().leftReason).toBe("kicked");
+      expect(channel().users).toEqual([]);
+      welcome();
+      expect(channel().leftReason).toBe("kicked");
+      expect(new Set(sentJoins())).toEqual(new Set(["JOIN #other"]));
+    });
+
+    test("after the server was removed starts with no channel marked as left", () => {
+      kick("me");
+      useStore.getState().deleteServer(serverId);
+      useStore.setState((state) => ({
+        servers: [
+          {
+            ...state.servers[0],
+            id: serverId,
+            channels: [],
+          },
+          ...state.servers,
+        ],
+      }));
+      saveEntries([{ id: serverId }, { id: OTHER_SERVER }]);
+      clientServers().set(serverId, {
+        id: serverId,
+        channels: [],
+        capabilities: [],
+      });
+
+      welcome();
+
+      expect(channel().leftReason).toBeUndefined();
+      expect(sentJoins()).toContain("JOIN #Lounge");
+    });
+
+    test.each([
+      ["a string", "#Lounge"],
+      ["a list", ["#Lounge"]],
+      ["a reason we never write", { "#Lounge": "banned" }],
+      ["a name that is no channel", { Lounge: "kicked", "#a b": "parted" }],
+    ])("ignores a saved mark that is %s", (_what, leftChannels) => {
+      const loaded = `left-srv-loaded-${++counter}`;
+      saveEntries([
+        { id: loaded, leftChannels: leftChannels as never },
+        { id: OTHER_SERVER },
+      ]);
+      useStore.setState((state) => ({
+        servers: [
+          { ...state.servers[0], id: loaded, channels: [] },
+          state.servers[1],
+        ],
+      }));
+      ircClient.nicks.set(loaded, "me");
+      clientServers().set(loaded, {
+        id: loaded,
+        channels: [],
+        capabilities: [],
+      });
+      sendRaw.mockClear();
+
+      welcome(loaded);
+
+      const rows = useStore.getState().servers[0].channels;
+      expect(rows.map((c) => [c.name, c.leftReason])).toEqual([
+        ["#Lounge", undefined],
+        ["#other", undefined],
+      ]);
+      expect(new Set(sentJoins())).toEqual(
+        new Set(["JOIN #Lounge", "JOIN #other"]),
+      );
+      ircClient.nicks.delete(loaded);
+      clientServers().delete(loaded);
+      readyProcessedServers.delete(loaded);
+    });
+
     test("to a bouncer shows the channel as left until the bouncer joins us", () => {
       seed({ channels: () => [], server: { bouncerNetid: "1" } });
       saveEntries([

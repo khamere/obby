@@ -4,8 +4,7 @@ import { forgetAutoAway, forgetExpectedBack } from "../../lib/autoAway";
 import { isLiveChannel } from "../../lib/channelFolders";
 import ircClient from "../../lib/ircClient";
 import { cannotBeChannelName } from "../../lib/ircUtils";
-import { leftChannelsOf } from "../../lib/leftChannels";
-import type { Channel, PrivateChat, Server } from "../../types";
+import type { PrivateChat, Server } from "../../types";
 import {
   generateDeterministicId,
   getServerSelection,
@@ -14,43 +13,24 @@ import {
   setServerSelection,
 } from "../helpers";
 import type { AppState } from "../index";
+import { withLeftChannels } from "../leftChannelRows";
 import * as storage from "../localStorage";
 import { forgetJoins } from "../pendingJoins";
 import { findConversation } from "./history";
 import { reportServerReply } from "./serverReplies";
 
-// A page load starts with no channels, so we put back the ones we are out of as left and leave joining them to the user.
+// A page load starts with no channels and a new connection can bring rows that look joined, so we show every channel we are out of as left.
 function restoreLeftChannels(
   store: StoreApi<AppState>,
   serverId: string,
 ): void {
-  const leftChannels = leftChannelsOf(serverId);
-  store.setState((state) => {
-    const server = state.servers.find((s) => s.id === serverId);
-    if (!server) return {};
-    const shown = new Set(server.channels.map((c) => c.name.toLowerCase()));
-    const restored: Channel[] = Object.entries(leftChannels)
-      .filter(([name]) => !shown.has(name.toLowerCase()))
-      .map(([name, leftReason]) => ({
-        id: generateDeterministicId(serverId, name),
-        name,
-        isPrivate: false,
-        serverId,
-        unreadCount: 0,
-        isMentioned: false,
-        messages: [],
-        users: [],
-        leftReason,
-      }));
-    if (restored.length === 0) return {};
-    return {
-      servers: state.servers.map((s) =>
-        s.id === serverId
-          ? { ...s, channels: [...s.channels, ...restored] }
-          : s,
-      ),
-    };
-  });
+  store.setState((state) => ({
+    servers: state.servers.map((s) =>
+      s.id === serverId
+        ? { ...s, channels: withLeftChannels(serverId, s.channels) }
+        : s,
+    ),
+  }));
 }
 
 // Track which servers have had their ready handler run to prevent duplicate processing

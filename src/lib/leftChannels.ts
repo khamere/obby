@@ -1,18 +1,33 @@
 import * as storage from "../store/localStorage";
 import type { Channel } from "../types";
+import { isJoinableChannelName } from "./ircUtils";
 
 export type LeftReason = NonNullable<Channel["leftReason"]>;
 
 // We read the saved marks of a server once and answer from memory after that, so asking costs nothing where storage is slow or closed to us.
 const leftChannels = new Map<string, Record<string, LeftReason>>();
 
+// Storage can hold anything a restored backup or an older build wrote, so we keep only the entries that read as a channel and a reason.
 function savedLeftChannels(serverId: string): Record<string, LeftReason> {
+  let saved: unknown;
   try {
-    const saved = storage.servers.load().find((s) => s.id === serverId);
-    return { ...saved?.leftChannels };
+    saved = storage.servers.load().find((s) => s.id === serverId)?.leftChannels;
   } catch {
     return {};
   }
+  if (!saved || typeof saved !== "object" || Array.isArray(saved)) return {};
+  return Object.fromEntries(
+    Object.entries(saved).filter(
+      ([name, leftReason]) =>
+        isJoinableChannelName(name) &&
+        (leftReason === "kicked" || leftReason === "parted"),
+    ),
+  );
+}
+
+/** Drops what we hold for a server that is gone, so a server added again under the same id starts with what storage says. */
+export function forgetLeftChannels(serverId: string): void {
+  leftChannels.delete(serverId);
 }
 
 /** The channels of one server we still show but are out of, by the name we show. */

@@ -10,7 +10,11 @@ import type { E2EEScheme, E2EESessionState } from "../lib/e2ee/session";
 import { e2eeSessionKey } from "../lib/e2ee/session";
 import ircClient from "../lib/ircClient";
 import { makeLabel } from "../lib/labeledResponse";
-import { leftReasonOf, saveLeftReason } from "../lib/leftChannels";
+import {
+  forgetLeftChannels,
+  leftReasonOf,
+  saveLeftReason,
+} from "../lib/leftChannels";
 import type { MediaType } from "../lib/mediaUtils";
 import { recordPlace, recordSearch } from "../lib/search/recents";
 import { serializeSearchQuery } from "../lib/search/searchQuery";
@@ -72,6 +76,7 @@ import {
   MAX_MESSAGES_PER_CHANNEL,
   normalizeHost,
 } from "./helpers";
+import { withLeftChannels } from "./leftChannelRows";
 import * as storage from "./localStorage";
 import {
   addMention,
@@ -1605,6 +1610,8 @@ const useStore = create<AppState>((set, get) => ({
             ...existingServer,
             ...server,
             id: existingServer.id,
+            // The client's own list of channels knows nothing of the ones we are out of, so we mark them here.
+            channels: withLeftChannels(existingServer.id, server.channels),
           };
           return {
             servers: updatedServers,
@@ -3330,6 +3337,7 @@ const useStore = create<AppState>((set, get) => ({
       clearServerConnectionTimeout(id);
       releaseServerVoiceClients(id);
       ircClient.removeServer(id);
+      forgetLeftChannels(id);
     }
 
     set((state) => {

@@ -29,7 +29,7 @@ export const RejoinChannelBar: React.FC<{
       </div>
       <button
         type="button"
-        className={`rounded button-primary px-3 text-xs font-medium ${isTouch ? "min-h-11" : "py-1"}`}
+        className={`rounded button-primary px-3 text-xs font-medium ${isTouch ? "min-h-11 min-w-11" : "py-1"}`}
         onClick={() => joinChannel(serverId, channelName)}
       >
         <Trans>Rejoin</Trans>
