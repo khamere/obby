@@ -279,4 +279,28 @@ describe("retrying a connection the server keeps closing", () => {
     client.wakeReconnect(SERVER);
     expect(await retryAfter(2000)).toBe(true);
   });
+
+  test("a wake redials at once a server that welcomed us after turning us away", async () => {
+    await connect(client);
+    latest().close();
+    expect(await retryAfter(2000)).toBe(true);
+    latest().receive(":irc.example 001 alice :Welcome");
+    latest().close();
+    const before = sockets.length;
+    client.wakeReconnect(SERVER);
+    expect(sockets).toHaveLength(before + 1);
+  });
+
+  test("a wake redials at once a server the user reconnected after it turned us away", async () => {
+    await connect(client);
+    latest().close();
+    client.disconnect(SERVER);
+    await failToConnect(client);
+    client.wakeReconnect(SERVER);
+    await failRetryAfter(2000);
+    await vi.advanceTimersByTimeAsync(3000);
+    const before = sockets.length;
+    client.wakeReconnect(SERVER);
+    expect(sockets).toHaveLength(before + 1);
+  });
 });
