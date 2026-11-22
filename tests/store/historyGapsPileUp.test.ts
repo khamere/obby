@@ -39,7 +39,7 @@ const line = (index: number) => {
 const chatIds = (indexes: number[]) => indexes.map((index) => `m${index}`);
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-type Gap = { from: number; to: number; lost: boolean };
+type Gap = { from: number; to: number; lost: boolean; toMsgid?: string };
 
 // Many records for one stretch: each starts at a saved chat line and ends at
 // an event line after it, with no saved line in between.
@@ -81,6 +81,7 @@ async function boot({
   keepsDisk = false,
   hasToday = true,
   oldestHeld = 0,
+  olderPagesAnswered = Number.POSITIVE_INFINITY,
 } = {}) {
   if (!keepsDisk) globalThis.indexedDB = new IDBFactory();
   vi.resetModules();
@@ -116,6 +117,7 @@ async function boot({
       );
     if (!request) return;
     const [, subcommand, value, asked] = request;
+    if (subcommand === "BEFORE" && olderPagesAnswered-- <= 0) return;
     const limit = Number(asked);
     const at = value ? Date.parse(value) : 0;
     const picked =
@@ -181,6 +183,18 @@ async function boot({
   const channel = () => useStore.getState().servers[0].channels[0];
   const openGaps = async () =>
     (await db.gapsFor(SERVER, "#chan")).filter((gap) => !gap.lost);
+  const gapEdges = async () =>
+    (await db.gapsFor(SERVER, "#chan")).map(({ from, to, lost }) => ({
+      from,
+      to,
+      lost,
+    }));
+  const settle = async () => {
+    await sleep(60);
+    await db.whenHistoryIdle();
+    await sleep(60);
+    await db.whenHistoryIdle();
+  };
   const requests = (subcommand: string) =>
     sent.filter((raw) => raw.startsWith(`CHATHISTORY ${subcommand} `));
 
@@ -236,6 +250,11 @@ async function boot({
 
   return {
     db,
+    history,
+    useStore,
+    feed,
+    gapEdges,
+    settle,
     shownChat,
     channel,
     openGaps,
@@ -355,5 +374,127 @@ describe("gap records piled up over an event-only stretch", {
     expect(next.requests("BEFORE")).toEqual([
       `CHATHISTORY BEFORE #chan timestamp=${iso(0)} ${DISK_PAGE}`,
     ]);
+  });
+
+  it("leaves a gap above the time the server answered with an empty page open", async () => {
+    const seed = await boot();
+    await seed.db.gapsFor(SERVER, "#chan");
+    await writeGapRecords(
+      [
+        [10, 15],
+        [40, 60],
+      ].map(([from, to]) => ({
+        from: timeOf(from),
+        to: timeOf(to),
+        lost: false,
+      })),
+    );
+    await seed.db.whenHistoryIdle();
+    const w = await boot({ keepsDisk: true, oldestHeld: 1000 });
+    await w.loadLatest();
+
+    await w.history.loadOlderMessages(w.useStore, SERVER, "#chan", timeOf(30));
+    await w.settle();
+
+    expect(w.requests("BEFORE")).toEqual([
+      `CHATHISTORY BEFORE #chan timestamp=${iso(15)} ${DISK_PAGE}`,
+    ]);
+    expect(await w.gapEdges()).toEqual([
+      { from: timeOf(10), to: timeOf(15), lost: true },
+      { from: timeOf(40), to: timeOf(60), lost: false },
+    ]);
+  });
+});
+
+describe("gaps an older page passes", {
+  timeout: 4 * WRITE_TIMEOUT_MS,
+}, () => {
+  const stretches: [number, number, string?][] = [
+    [101, 109],
+    [901, 975, "stale"],
+    [1051, 1059],
+    [1125, 1150],
+    [1160, 1170],
+  ];
+
+  async function deviceWithGapsApart() {
+    const seed = await boot();
+    await seed.saveChatLines([...oldChat, ...TODAY_CHAT]);
+    await writeGapRecords(
+      stretches.map(([from, to, toMsgid]) => ({
+        from: timeOf(from),
+        to: timeOf(to),
+        lost: false,
+        ...(toMsgid ? { toMsgid } : {}),
+      })),
+    );
+    await seed.db.whenHistoryIdle();
+  }
+
+  it("closes the gaps inside one page, shortens the one reaching below it and leaves the others", async () => {
+    await deviceWithGapsApart();
+    const w = await boot({ keepsDisk: true, olderPagesAnswered: 1 });
+    await w.loadLatest();
+
+    // The page asked from line 1150 holds lines 950 to 1149.
+    await w.history.loadOlderMessages(
+      w.useStore,
+      SERVER,
+      "#chan",
+      timeOf(1151),
+    );
+    await w.settle();
+
+    expect(w.requests("BEFORE")[0]).toBe(
+      `CHATHISTORY BEFORE #chan timestamp=${iso(1150)} ${DISK_PAGE}`,
+    );
+    expect(await w.db.gapsFor(SERVER, "#chan")).toMatchObject([
+      { from: timeOf(101), to: timeOf(109), lost: false },
+      { from: timeOf(901), to: timeOf(950), lost: false, toMsgid: "m950" },
+      { from: timeOf(1160), to: timeOf(1170), lost: false },
+    ]);
+    expect(await w.db.gapsFor(SERVER, "#chan")).toHaveLength(3);
+  });
+
+  it("shows every saved line and ends the offer once the reader scrolls on", async () => {
+    await deviceWithGapsApart();
+    const first = await boot({ keepsDisk: true, olderPagesAnswered: 1 });
+    await first.loadLatest();
+    await first.history.loadOlderMessages(
+      first.useStore,
+      SERVER,
+      "#chan",
+      timeOf(1151),
+    );
+    await first.settle();
+
+    const w = await boot({ keepsDisk: true });
+    await w.loadLatest();
+    await w.scrollToTop();
+
+    expect(w.shownChat()).toEqual(chatIds([...oldChat, ...TODAY_CHAT]));
+    expect(await w.db.gapsFor(SERVER, "#chan")).toEqual([]);
+    expect(w.channel().hasMoreHistory).toBe(false);
+  });
+});
+
+describe("a gap recorded again after the newest page", {
+  timeout: 4 * WRITE_TIMEOUT_MS,
+}, () => {
+  it("fills the record it joined when the line before the gap is on screen", async () => {
+    const w = await boot({ hasToday: false });
+    w.feed(chatLine(LAST_OLD_CHAT));
+    await vi.waitFor(() => expect(w.shownChat()).toEqual(["m1120"]));
+    await w.settle();
+    await writeGapRecords([
+      { from: timeOf(LAST_OLD_CHAT), to: timeOf(1160), lost: false },
+    ]);
+
+    await w.loadLatest();
+    await w.settle();
+
+    expect(w.requests("BEFORE")[0]).toMatch(
+      new RegExp(`^CHATHISTORY BEFORE #chan timestamp=${iso(1160)} `),
+    );
   });
 });

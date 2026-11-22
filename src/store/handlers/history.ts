@@ -632,11 +632,7 @@ async function saveHistoryPage(
   await refreshHasMore(store, serverId, target, page.size > 0);
 }
 
-// An older page holds every line the server has between its oldest line and
-// the time it was asked from, so a gap inside that stretch misses nothing and
-// a gap reaching below it starts at the page's oldest line. An empty page is
-// the end of the server's history, which no gap below that time can outlast.
-// The gap the page was asked for is decided by its own fill.
+// A page holds every line the server has from its oldest line up to the time we asked from, and an empty one ends the server's history, so we settle each gap below that time.
 async function settleGapsBelow(
   server: string,
   target: string,
@@ -644,17 +640,14 @@ async function settleGapsBelow(
   page: HistoryPage,
   filling: HistoryGap | undefined,
 ) {
+  const { oldest } = page;
+  if (page.size > 0 && oldest === undefined) return;
   for (const gap of await gapsFor(server, target)) {
-    if (gap.lost || gap.id === filling?.id) continue;
-    if (page.size === 0) {
-      if (gap.from < before) await updateGap({ ...gap, lost: true });
-    } else if (page.oldest === undefined) {
-    } else if (gap.to <= before && gap.from >= page.oldest) {
-      await deleteGap(gap.id);
-    } else if (gap.to <= before && gap.to > page.oldest) {
-      const { toMsgid: _, ...rest } = gap;
-      await updateGap({ ...rest, to: page.oldest });
-    }
+    if (gap.lost || gap.id === filling?.id || gap.to > before) continue;
+    if (oldest === undefined) await updateGap({ ...gap, lost: true });
+    else if (gap.from >= oldest) await deleteGap(gap.id);
+    else if (gap.to > oldest)
+      await updateGap({ ...gap, to: oldest, toMsgid: page.oldestMsgid });
   }
 }
 

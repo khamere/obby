@@ -640,7 +640,7 @@ export function mergeGaps(gaps: HistoryGap[]): GapMerge {
   const kept: HistoryGap[] = [];
   for (const isLost of [false, true]) {
     const sorted = gaps
-      .filter((gap) => gap.lost === isLost)
+      .filter((gap) => !gap.lost === !isLost)
       .sort((a, b) => a.from - b.from || a.to - b.to);
     for (let start = 0; start < sorted.length; ) {
       let end = start + 1;
@@ -660,7 +660,9 @@ export function mergeGaps(gaps: HistoryGap[]): GapMerge {
         const { fromMsgid } = sameStart.find((gap) => gap.fromMsgid) ?? {};
         const { toMsgid } =
           group.find((gap) => gap.to === segmentTo && gap.toMsgid) ?? {};
-        const { fromMsgid: _from, toMsgid: _to, ...edges } = sameStart[0];
+        // A fill in flight names its gap by id, so the record saved first keeps its own.
+        const [first] = [...sameStart].sort((a, b) => a.id - b.id);
+        const { fromMsgid: _from, toMsgid: _to, ...edges } = first;
         kept.push({
           ...edges,
           to: segmentTo,
@@ -706,8 +708,7 @@ const mergeChatGaps = async (
     ),
   );
 
-// Records saved before gaps were merged as they are written can overlap, so
-// we merge every chat's records once when the database opens.
+// We merge every chat's records when the database opens, so overlapping records never outlive a session.
 function mergeAllGaps(db: IDBDatabase): Promise<void> {
   return inTx(db, [GAPS], "readwrite", async (tx) => {
     const store = tx.objectStore(GAPS);

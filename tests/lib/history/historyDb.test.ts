@@ -234,6 +234,50 @@ describe("gaps for one stretch", () => {
     expect(await edges()).toEqual([{ from: 10, to: 20, lost: true }]);
   });
 
+  const reopenWith = async (records: object[]) => {
+    await db.gapsFor("s1", "#a");
+    await new Promise<void>((resolve, reject) => {
+      const open = indexedDB.open("obby-history");
+      open.onsuccess = () => {
+        const tx = open.result.transaction(["gaps"], "readwrite");
+        for (const record of records) tx.objectStore("gaps").add(record);
+        tx.oncomplete = () => {
+          open.result.close();
+          resolve();
+        };
+        tx.onerror = () => reject(tx.error);
+      };
+    });
+    vi.resetModules();
+    db = await import("../../../src/lib/history/historyDb");
+  };
+
+  it("keeps the id of the record saved first when records for one stretch merge", async () => {
+    await reopenWith([
+      { ...gap, from: 10, to: 30 },
+      { ...gap, from: 10, to: 20 },
+    ]);
+
+    const merged = await db.gapsFor("s1", "#a");
+    expect(merged).toMatchObject([{ from: 10, to: 30 }]);
+    await reopenWith([{ ...gap, from: 10, to: 15 }]);
+    expect(await db.gapsFor("s1", "#a")).toEqual(merged);
+  });
+
+  it("keeps a record that does not say whether it is lost, as an open one", async () => {
+    const { lost: _, ...unmarked } = gap;
+    await reopenWith([
+      { ...unmarked, from: 10, to: 20 },
+      { ...gap, from: 10, to: 30 },
+      { ...unmarked, from: 50, to: 60 },
+    ]);
+
+    expect(await db.gapsFor("s1", "#a")).toMatchObject([
+      { from: 10, to: 30 },
+      { from: 50, to: 60 },
+    ]);
+  });
+
   it("merges the records already saved when the database opens", async () => {
     await db.gapsFor("s1", "#a");
     await new Promise<void>((resolve, reject) => {
