@@ -494,15 +494,27 @@ describe("a line longer in bytes than one message carries", () => {
     expect(lines.map(payload).join("")).toBe(text);
   });
 
-  it("sends a typed link wider than a line whole", () => {
-    const link = `https://example.org/${"a".repeat(400)}`;
+  it("moves a typed link that fits a line whole to its own message", () => {
+    const link = `https://example.org/${"a".repeat(350)}`;
+
+    const lines = send(`look at this one ${link}`, []);
+
+    expect(lines).toEqual([
+      "PRIVMSG #lobby :look at this one",
+      `PRIVMSG #lobby :${link}`,
+    ]);
+  });
+
+  it("cuts a typed link wider than a line so the server accepts every part", () => {
+    const link = `https://example.org/${"a".repeat(600)}`;
 
     const lines = send(`look at ${link} please`, []);
 
-    expect(lines).toEqual([
-      "PRIVMSG #lobby :look at",
-      `PRIVMSG #lobby :${link}`,
-      "PRIVMSG #lobby :please",
-    ]);
+    expect(lines[0]).toBe("PRIVMSG #lobby :look at");
+    expect(lines.slice(1).map(payload).join("").replace(/ /g, "")).toBe(
+      `${link}please`,
+    );
+    for (const line of lines)
+      expect(utf8.encode(payload(line)).length).toBeLessThanOrEqual(lineBytes);
   });
 });

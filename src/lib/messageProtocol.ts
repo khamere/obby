@@ -3,8 +3,6 @@
  * IRC protocol utilities for message handling
  */
 
-import { makeUrlRegex } from "./ircUtils";
-
 // We count bytes because the IRC line limit applies on the wire, where one character takes up to four.
 export const byteLength = (text: string): number => {
   let bytes = 0;
@@ -61,8 +59,8 @@ export type LineSplitter = (
  * where the part holds one and between characters where it holds none.
  * With `keepSpaces` the parts concatenate back to the exact line, as the
  * receiver of a draft/multiline-concat joins them. By default each part is a
- * message of its own, so the spaces at a split point become the line break
- * and a link wider than a part goes out whole for the server to rule on.
+ * message of its own, so the spaces at a split point become the line break.
+ * A word that fits a part, a link included, is never cut.
  */
 export const splitToBytes = (
   line: string,
@@ -70,28 +68,8 @@ export const splitToBytes = (
   keepSpaces = false,
 ): string[] => {
   if (byteLength(line) <= maxBytes) return [line];
-  if (keepSpaces) return cutToBytes(line, maxBytes, true);
-
-  const parts: string[] = [];
-  let rest = 0;
-  for (const word of line.matchAll(/[^ ]+/g)) {
-    if (!isWideLink(word[0], maxBytes)) continue;
-    parts.push(
-      ...cutToBytes(line.slice(rest, word.index), maxBytes, false),
-      word[0],
-    );
-    rest = word.index + word[0].length;
-    while (line[rest] === " ") rest++;
-  }
-  parts.push(...cutToBytes(line.slice(rest), maxBytes, false));
-  return parts;
+  return cutToBytes(line, maxBytes, keepSpaces);
 };
-
-// Half a link opens nothing or opens another page, so we never send one as a message of its own.
-const isWideLink = (word: string, maxBytes: number): boolean =>
-  word.length * 3 > maxBytes &&
-  byteLength(word) > maxBytes &&
-  makeUrlRegex().test(word);
 
 const cutToBytes = (
   text: string,

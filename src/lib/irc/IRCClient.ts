@@ -1769,7 +1769,7 @@ export class IRCClient implements IRCClientContext {
     split: LineSplitter = splitToBytes,
   ): void {
     const limits = this.multilineLimits(serverId);
-    const partBytes = Math.min(maxMessageBytes(target), limits.maxBytes);
+    const lineBytes = maxMessageBytes(target);
     let batchable: string[][] = [];
     const sendBatches = () => {
       for (const batch of chunkForMultiline(batchable, limits))
@@ -1778,7 +1778,7 @@ export class IRCClient implements IRCClientContext {
     };
 
     for (const line of lines) {
-      const parts = split(line, partBytes, true);
+      const parts = split(line, lineBytes, true);
       if (fitsOneBatch(parts, limits)) {
         batchable.push(parts);
         continue;

@@ -687,12 +687,28 @@ describe("IRCClient", () => {
         expect(sent).toEqual(["PRIVMSG #a :photo https://files.example/a.png"]);
       });
 
-      test("keeps a long link whole on a server without batches", () => {
+      test("keeps a link that fits a line whole on a server without batches", () => {
+        const link = `https://files.example/${"a".repeat(340)}.png`;
+
+        const sent = sentBy(() =>
+          client.sendText(server.id, "#a", `a caption for the photo ${link}`),
+        );
+
+        expect(sent).toEqual([
+          "PRIVMSG #a :a caption for the photo",
+          `PRIVMSG #a :${link}`,
+        ]);
+      });
+
+      test("cuts a link wider than a line on a server without batches", () => {
         const sent = sentBy(() =>
           client.sendText(server.id, "#a", `photo ${longLink}`),
         );
 
-        expect(sent).toEqual(["PRIVMSG #a :photo", `PRIVMSG #a :${longLink}`]);
+        expect(sent[0]).toBe("PRIVMSG #a :photo");
+        expect(sent.slice(1).map(payload).join("")).toBe(longLink);
+        for (const line of sent)
+          expect(payloadBytes(line)).toBeLessThanOrEqual(lineBytes);
       });
 
       test("joins a link wider than a line back together inside a batch", () => {
@@ -760,19 +776,18 @@ describe("IRCClient", () => {
           expect(sent.at(-2)).toMatch(/^@batch=\S+ PRIVMSG #a :last$/);
         });
 
-        test("keeps a long link whole in a line no batch can hold", () => {
+        test("cuts a link wider than a line in a line no batch can hold", () => {
           const sent = sentBy(() =>
             client.sendText(server.id, "#a", `see\nphoto ${longLink} done`),
           );
 
-          expect(privmsgs(sent).map(payload)).toEqual([
-            "see",
-            "photo",
-            longLink,
-            "done",
-          ]);
-          expect(sent[3]).toBe("PRIVMSG #a :photo");
-          expect(sent[4]).toBe(`PRIVMSG #a :${longLink}`);
+          const plain = sent.filter((line) => line.startsWith("PRIVMSG #a :"));
+          expect(plain[0]).toBe("PRIVMSG #a :photo");
+          expect(plain.slice(1).map(payload).join("").replace(/ /g, "")).toBe(
+            `${longLink}done`,
+          );
+          for (const line of plain)
+            expect(payloadBytes(line)).toBeLessThanOrEqual(lineBytes);
         });
 
         test("puts no more bytes in any batch than the server allows", () => {
@@ -788,6 +803,9 @@ describe("IRCClient", () => {
           for (const line of sent) {
             if (line.startsWith("BATCH +")) batchBytes = 0;
             else if (line.startsWith("@batch=")) {
+              // The server counts the break before every line of a batch but its first and its concat parts.
+              const opensLine = !line.includes(";draft/multiline-concat ");
+              batchBytes += opensLine && batchBytes > 0 ? 1 : 0;
               batchBytes += payloadBytes(line);
               expect(batchBytes).toBeLessThanOrEqual(256);
             }

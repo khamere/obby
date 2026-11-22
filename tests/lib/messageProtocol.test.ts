@@ -216,16 +216,105 @@ describe("splitToBytes", () => {
     expect(splitToBytes("aaaaa aaaaa", 12)).toEqual(["aaaaa aaaaa"]);
   });
 
-  test("sends a link wider than a line whole on a line of its own", () => {
-    expect(splitToBytes(`photo ${link} done`, 40)).toEqual([
-      "photo",
-      link,
-      "done",
+  test("moves a link that fits a line whole to the next line", () => {
+    expect(splitToBytes(`a photo of it ${link} done`, 95)).toEqual([
+      "a photo of it",
+      `${link} done`,
     ]);
-    expect(
-      splitToBytes(`(${link}), and  www.${"b".repeat(50)}.example`, 40),
-    ).toEqual([`(${link}),`, "and", `www.${"b".repeat(50)}.example`]);
-    expect(splitToBytes(link, 40)).toEqual([link]);
+    expect(splitToBytes(`(${link}), and \x0304${link}\x0f`, 95)).toEqual([
+      `(${link}), and`,
+      `\x0304${link}\x0f`,
+    ]);
+  });
+
+  test("cuts a link wider than a line so every part fits", () => {
+    const parts = splitToBytes(`photo ${link} done`, 40);
+
+    expect(parts[0]).toBe("photo");
+    expect(parts.slice(1).join("").replace(/ /g, "")).toBe(`${link}done`);
+    for (const part of parts) expect(bytes(part)).toBeLessThanOrEqual(40);
+  });
+
+  test("cuts a word wider than a line that holds a link so every part fits", () => {
+    for (const word of [
+      `${"x".repeat(300)}www.a.b`,
+      `漢字仮名交じり文${link}漢字仮名交じり文`.repeat(4),
+    ]) {
+      const parts = splitToBytes(word, 40);
+
+      expect(parts.join("")).toBe(word);
+      for (const part of parts) expect(bytes(part)).toBeLessThanOrEqual(40);
+    }
+  });
+
+  test("sends no part of only tabs or spaces", () => {
+    const word = "x".repeat(40);
+
+    expect(splitToBytes(`${word} \t\t `, 40)).toEqual([word]);
+    expect(splitToBytes(`   ${word}`, 40)).toEqual([word]);
+    expect(splitToBytes(`${word}   ${word} \t`, 40)).toEqual([word, word]);
+  });
+
+  // A fixed seed gives the same texts on every run.
+  test("returns no part wider than the budget for any mix of scripts and links", () => {
+    let seed = 0x2f6e2b1;
+    const random = (n: number) => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      return seed % n;
+    };
+    const pieces = [
+      "a",
+      "word",
+      "x".repeat(70),
+      "д",
+      "привет",
+      "漢字",
+      "仮名交じり文".repeat(9),
+      "\u{1F600}",
+      FAMILY,
+      FLAG,
+      WAVE,
+      "e\u0301",
+      " ",
+      "  ",
+      "\t",
+      "\x0304",
+      "\x02",
+      "(",
+      ").",
+      "www.a.b",
+      "https://example.org/path?q=1",
+      link,
+      `https://example.org/${"a".repeat(200)}`,
+      "ircs://irc.example/#chan",
+    ];
+    const links = pieces.filter((piece) => /^(https|ircs):/.test(piece));
+
+    for (let run = 0; run < 400; run++) {
+      const text = Array.from(
+        { length: 1 + random(40) },
+        () => pieces[random(pieces.length)],
+      ).join(random(3) === 0 ? " " : "");
+      const maxBytes = 8 + random(400);
+
+      const concat = splitToBytes(text, maxBytes, true);
+      expect(concat.join("")).toBe(text);
+      for (const part of concat)
+        expect(bytes(part)).toBeLessThanOrEqual(maxBytes);
+
+      const separate = splitToBytes(text, maxBytes);
+      for (const part of separate)
+        expect(bytes(part)).toBeLessThanOrEqual(maxBytes);
+      if (bytes(text) > maxBytes) {
+        expect(separate.join("").replace(/ /g, "")).toBe(
+          text.replace(/ /g, "").replace(/^\t+$/, ""),
+        );
+        for (const part of separate) expect(part.trim()).not.toBe("");
+      }
+      for (const word of text.split(" "))
+        if (links.includes(word) && bytes(word) <= maxBytes)
+          expect(separate.some((part) => part.includes(word))).toBe(true);
+    }
   });
 
   test("cuts a word wider than a line that is no link so every part fits", () => {

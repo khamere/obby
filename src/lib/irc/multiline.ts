@@ -43,10 +43,7 @@ export function fitsOneBatch(
   );
 }
 
-// `lines` holds one entry per logical line, already split into the parts that
-// fit a single PRIVMSG, and each line fits a batch by itself (`fitsOneBatch`). A logical line's parts stay in one batch: the receiver
-// concatenates them, so a batch break between them lands mid-word. The server
-// counts the line break between two logical lines as a byte of the batch.
+// We keep the parts of a line in one batch, where the receiver joins them, and count the break between two lines as a byte.
 export function chunkForMultiline(
   lines: readonly (readonly string[])[],
   limits: MultilineLimits,
