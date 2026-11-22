@@ -90,7 +90,8 @@ describe("ChannelKeyModal", () => {
 
     expect(sendRaw).not.toHaveBeenCalled();
     expect(useStore.getState().channelKeyPrompt).not.toBeNull();
-    expect(screen.getByText("Wrong key, try again")).toBeInTheDocument();
+    expect(screen.getByText("Enter a key without commas")).toBeInTheDocument();
+    expect(screen.queryByText("Wrong key, try again")).not.toBeInTheDocument();
   });
 
   it("tells the user when the last key was wrong", () => {

@@ -2527,6 +2527,10 @@ msgstr "請為頻道範圍的表情包輸入頻道名稱。"
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "輸入一個頻道，當使用者無法加入此頻道時將其轉到該頻道。留空則停用。"
 
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "請輸入不含逗號的金鑰"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
 msgstr "可包含空格、表情符號或符號。IRC 指令仍使用真實名稱（{channelName}）。"

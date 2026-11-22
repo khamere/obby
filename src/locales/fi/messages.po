@@ -2527,6 +2527,10 @@ msgstr "Anna kanavan nimi kanavakohtaisia paketteja varten."
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "Anna kanava, jolle käyttäjät ohjataan, kun he eivät voi liittyä tähän kanavaan. Jätä tyhjäksi poistaaksesi käytöstä."
 
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "Anna avain, jossa ei ole pilkkuja"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
 msgstr "Kirjoita nimi, jossa voi olla välilyöntejä, emojeita tai symboleita. IRC-komennot käyttävät edelleen todellista nimeä ({channelName})."

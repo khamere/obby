@@ -174,6 +174,25 @@ describe("/join", () => {
     ]);
   });
 
+  it.each([
+    ["/join #vault hunter2", ["JOIN #vault hunter2"]],
+    ["/join #vault :hunter2", ["JOIN #vault hunter2"]],
+    ["/join #vault :two words", ["JOIN #vault :two words"]],
+    ["/join #vault :two  words ", ["JOIN #vault :two  words"]],
+    ["/join #vault ::secret", ["JOIN #vault ::secret"]],
+    ["/join #a,#b k1,k2", ["JOIN #a k1", "JOIN #b k2"]],
+    ["/join #a,#b :k1,two words", ["JOIN #a k1", "JOIN #b :two words"]],
+    ["/join #vault hunter2 extra", ["JOIN #vault hunter2"]],
+    ["/join #vault", ["JOIN #vault"]],
+  ])("%j sends what the same line sends as raw IRC", (text, lines) => {
+    const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    runCommand(text);
+    const joins = sendRaw.mock.calls
+      .map(([, line]) => line)
+      .filter((line) => line.startsWith("JOIN"));
+    expect(joins).toEqual(lines);
+  });
+
   it("reads the key after repeated spaces", () => {
     const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
     runCommand("/join #secret   hunter2");

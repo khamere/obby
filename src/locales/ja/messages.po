@@ -2527,6 +2527,10 @@ msgstr "チャンネル限定パックにはチャンネル名を入力してく
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "このチャンネルに参加できないユーザーの転送先チャンネルを入力してください。無効にするには空のままにします。"
 
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "カンマを含まないキーを入力してください"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
 msgstr "スペース、絵文字、記号を含む名前を入力してください。IRC コマンドでは実際の名前（{channelName}）が使われます。"

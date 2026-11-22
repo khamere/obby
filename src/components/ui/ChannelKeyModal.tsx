@@ -64,7 +64,11 @@ export const ChannelKeyModal: React.FC = () => {
               setIsUnusableKey(false);
             }}
             error={
-              isWrongKey || isUnusableKey ? t`Wrong key, try again` : undefined
+              isUnusableKey
+                ? t`Enter a key without commas`
+                : isWrongKey
+                  ? t`Wrong key, try again`
+                  : undefined
             }
           />
         </ModalBody>

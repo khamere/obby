@@ -2526,6 +2526,10 @@ msgstr "Enter a channel name for channel-scoped packs."
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "Enter a key without commas"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
 msgstr "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."

@@ -2527,6 +2527,10 @@ msgstr "Введіть назву каналу для паків каналу."
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "Вкажіть канал, на який перенаправляти користувачів, що не можуть приєднатися до цього. Залиште порожнім, щоб вимкнути."
 
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "Введіть ключ без ком"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
 msgstr "Введіть назву з будь-якими пробілами, емодзі чи символами. IRC-команди все одно використовують справжню назву ({channelName})."

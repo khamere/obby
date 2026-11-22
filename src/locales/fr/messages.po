@@ -2527,6 +2527,10 @@ msgstr "Saisissez un nom de canal pour les packs limités à un canal."
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "Saisissez un salon vers lequel rediriger les utilisateurs qui ne peuvent pas rejoindre celui-ci. Laissez vide pour désactiver."
 
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "Saisissez une clé sans virgules"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
 msgstr "Saisissez un nom avec des espaces, des emojis ou des symboles. Les commandes IRC utilisent toujours le nom réel ({channelName})."

@@ -78,6 +78,22 @@ export function joinKeyArgument(key: string): string {
   return key.includes(" ") || key.startsWith(":") ? `:${key}` : key;
 }
 
+/** The channels and keys of a typed `/join`, read as the server reads a JOIN
+ * line: the second argument is the key list, and after a colon it runs to the
+ * end of the line, spaces included. */
+export function parseJoinCommand(
+  argumentText: string,
+): { name: string; key: string | undefined }[] {
+  const [, channels = "", rest = ""] =
+    /^ *([^ ]*) *(.*)$/.exec(argumentText) ?? [];
+  const keyList = rest.startsWith(":") ? rest.slice(1) : rest.split(" ")[0];
+  const keys = keyList.split(",");
+  return channels
+    .split(",")
+    .map((name, i) => ({ name, key: keys[i] || undefined }))
+    .filter(({ name }) => name);
+}
+
 /** The channel a link asks us to join, or null when its value is not one
  * channel name. A bare name gets the `#` prefix. */
 export function channelFromLink(raw: string | null): string | null {

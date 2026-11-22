@@ -2527,6 +2527,10 @@ msgstr "Inserisci un nome di canale per i pacchetti limitati al canale."
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "Inserisci un canale a cui inviare gli utenti che non possono entrare in questo. Lascia vuoto per disattivare."
 
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "Inserisci una chiave senza virgole"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
 msgstr "Inserisci un nome con spazi, emoji o simboli. I comandi IRC usano comunque il nome reale ({channelName})."
