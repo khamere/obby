@@ -61,6 +61,8 @@ const PING_INTERVAL_MS = 30_000;
 const PONG_TIMEOUT_MS = 10_000;
 const WAKE_PONG_TIMEOUT_MS = 5_000;
 const DEAD_SOCKET_CLOSE_WAIT_MS = 2_000;
+// The server echoes a CAP REQ in its answer behind its own name and our nick, so we keep the request well under the 512-byte line.
+const MAX_CAP_REQ_LINE = 400;
 
 // One message of a `soju.im/search` answer.
 export interface SearchResult {
@@ -971,6 +973,12 @@ export class IRCClient implements IRCClientContext {
       }
       this.closeReplacedSocket(server.id);
       this.sockets.set(server.id, socket);
+      // We negotiate capabilities afresh on every connection, from that connection's own CAP LS.
+      this.capLsAccumulated.delete(server.id);
+      this.pendingCapReqs.delete(server.id);
+      this.saslMechanisms.delete(server.id);
+      server.capabilities = [];
+      server.capabilityValues = undefined;
       // Network selection belongs to the session, not just its first socket.
       const bouncerNetid = this.bouncerBindings.get(server.id);
       if (bouncerNetid) this.pendingBouncerBind.set(server.id, bouncerNetid);
@@ -2533,8 +2541,10 @@ export class IRCClient implements IRCClientContext {
         for (const cap of capsToRequest) {
           const capLength = cap.length + (currentBatch.length > 0 ? 1 : 0); // +1 for space if not first
 
-          if (currentLength + capLength > 500 && currentBatch.length > 0) {
-            // Leave some margin
+          if (
+            currentLength + capLength > MAX_CAP_REQ_LINE &&
+            currentBatch.length > 0
+          ) {
             // Send current batch
             const reqMessage = `CAP REQ :${currentBatch.join(" ")}`;
             this.sendRaw(serverId, reqMessage);
@@ -2552,11 +2562,12 @@ export class IRCClient implements IRCClientContext {
           this.sendRaw(serverId, reqMessage);
         }
 
-        this.pendingCapReqs.set(serverId, new Set(capsToRequest));
+        const pending = new Set(capsToRequest);
+        this.pendingCapReqs.set(serverId, pending);
 
         // Set a timeout to send CAP END if server doesn't respond
         setTimeout(() => {
-          if (this.pendingCapReqs.has(serverId)) {
+          if (this.pendingCapReqs.get(serverId) === pending) {
             this.pendingCapReqs.delete(serverId);
 
             // Check if SASL is in progress before timing out
@@ -2582,13 +2593,6 @@ export class IRCClient implements IRCClientContext {
             }
           }
         }, 5000); // 5 second timeout
-
-        if (
-          capsToRequest.includes("draft/extended-isupport") ||
-          capsToRequest.includes("draft/extended-isupport-0.2")
-        ) {
-          this.sendRaw(serverId, "ISUPPORT");
-        }
       } else if (!this.capNegotiationComplete.get(serverId)) {
         // No capabilities to request, end CAP negotiation immediately
         console.log(
@@ -2611,14 +2615,8 @@ export class IRCClient implements IRCClientContext {
     const offered = cliCaps.split(" ").filter(Boolean).map(splitCapToken);
     if (offered.length === 0) return;
 
-    let accumulated = this.capLsAccumulated.get(serverId);
-    if (!accumulated) {
-      accumulated = new Set();
-      this.capLsAccumulated.set(serverId, accumulated);
-    }
     const server = this.servers.get(serverId);
     for (const { cap, value } of offered) {
-      accumulated.add(cap);
       if (value && server) {
         server.capabilityValues = {
           ...(server.capabilityValues ?? {}),
@@ -2679,15 +2677,23 @@ export class IRCClient implements IRCClientContext {
   }
 
   onCapAck(serverId: string, cliCaps: string): void {
-    // Trigger the original event for compatibility
-    this.triggerEvent("CAP ACK", { serverId, cliCaps });
-
     // Values are tracked separately (capabilityValues); every consumer of
     // `capabilities` matches on the bare name, so store names only.
     const ackedNames = cliCaps
       .split(" ")
       .filter(Boolean)
       .map((cap) => cap.split("=", 1)[0]);
+
+    // A server accepts ISUPPORT only once it has enabled the capability, so we send it after the acknowledgement.
+    if (
+      !this.capNegotiationComplete.get(serverId) &&
+      ackedNames.some((cap) => cap.startsWith("draft/extended-isupport"))
+    ) {
+      this.sendRaw(serverId, "ISUPPORT");
+    }
+
+    // Trigger the original event for compatibility
+    this.triggerEvent("CAP ACK", { serverId, cliCaps });
 
     const server = this.servers.get(serverId);
     if (server) {
@@ -2701,17 +2707,39 @@ export class IRCClient implements IRCClientContext {
       }
     }
 
+    this.settleCapReqs(serverId, ackedNames);
+  }
+
+  // A server refuses a whole CAP REQ line over a single cap, so we ask again in halves until that cap stands alone.
+  onCapNak(serverId: string, cliCaps: string): void {
     const pending = this.pendingCapReqs.get(serverId);
     if (!pending) return;
-    for (const cap of ackedNames) {
+    // We retry only what this connection still waits for, whatever else the refusal names.
+    const refused = [
+      ...new Set(cliCaps.split(" ").map((cap) => cap.split("=", 1)[0])),
+    ].filter((cap) => pending.has(cap));
+    if (refused.length > 1) {
+      const half = Math.ceil(refused.length / 2);
+      this.sendRaw(serverId, `CAP REQ :${refused.slice(0, half).join(" ")}`);
+      this.sendRaw(serverId, `CAP REQ :${refused.slice(half).join(" ")}`);
+      return;
+    }
+    this.settleCapReqs(serverId, refused);
+  }
+
+  private settleCapReqs(serverId: string, answered: string[]): void {
+    const pending = this.pendingCapReqs.get(serverId);
+    if (!pending) return;
+    for (const cap of answered) {
       pending.delete(cap);
     }
-    // Caps the server never ACKs (or NAKs) leave the set non-empty; the CAP LS
+    // Caps the server never answers leave the set non-empty; the CAP LS
     // timeout is the backstop that finalises negotiation in that case.
     if (pending.size > 0) return;
 
     this.pendingCapReqs.delete(serverId);
 
+    const server = this.servers.get(serverId);
     const saslEnabled = this.saslEnabled.get(serverId) ?? false;
     const saslAcknowledged = server?.capabilities?.includes("sasl") ?? false;
 
