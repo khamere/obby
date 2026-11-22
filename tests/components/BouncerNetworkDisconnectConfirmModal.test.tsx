@@ -125,12 +125,16 @@ describe("BouncerNetworkDisconnectConfirmModal", () => {
     state.ui.disconnectNetworkConfirmTarget.shouldDeleteHistory = true;
     render(<BouncerNetworkDisconnectConfirmModal />);
 
-    expect(screen.getByTestId("bouncer-delete-unanswered")).toBeInTheDocument();
-    expect(await screen.findByRole("checkbox")).toBeDisabled();
+    expect(screen.getByTestId("bouncer-delete-unanswered")).toHaveTextContent(
+      "the saved chat history stays",
+    );
+    const choice = await screen.findByRole("checkbox");
+    expect(choice).toBeEnabled();
+    expect(choice).not.toBeChecked();
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(cancelDisconnectNetwork).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByRole("button", { name: "Delete network" }));
-    expect(confirmDisconnectNetwork).toHaveBeenCalledExactlyOnceWith(true);
+    expect(confirmDisconnectNetwork).toHaveBeenCalledExactlyOnceWith(false);
   });
 
   it("refuses the delete while the bouncer is not connected", () => {
@@ -148,7 +152,8 @@ describe("BouncerNetworkDisconnectConfirmModal", () => {
     render(<BouncerNetworkDisconnectConfirmModal />);
 
     expect(screen.getByRole("button", { name: "Deleting…" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(cancelDisconnectNetwork).toHaveBeenCalledOnce();
   });
 
   it("shows the bouncer's refusal and offers the delete again", () => {

@@ -105,7 +105,6 @@ const NARROW_VIEW_QUERY = "(max-width: 768px)";
 const CHANNEL_NAMESPACE = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
 
 export const NETWORK_DELETE_WAIT_MS = 15_000;
-let networkDeleteWait: ReturnType<typeof setTimeout> | undefined;
 
 /**
  * Generate a deterministic UUID for a channel or private chat
@@ -471,13 +470,16 @@ interface UIState {
     bouncerServerId: string;
     netid: string;
     childServerId: string;
+    // What the network was when the dialog opened, see networkIdentity.
+    identity?: string;
     // "deleting" from our DELNETWORK until the bouncer answers it, and
     // "unanswered" once we stop waiting for that answer.
     status?: "deleting" | "unanswered" | "refused";
     shouldDeleteHistory?: boolean;
     // The bouncer's own words for a refused delete.
     refusal?: string;
-    // Set from a lost answer until the bouncer's next full network list.
+    // Set from a dropped connection until the bouncer's next full network
+    // list, which shows what the id names by then.
     isAwaitingList?: boolean;
   } | null;
   quickActions: QuickActionsState | null;
@@ -727,8 +729,8 @@ export interface AppState {
     attrs: Record<string, string>,
   ) => void;
   bouncerDelNetwork: (bouncerServerId: string, netid: string) => void;
-  // Deletes we sent that the bouncer has neither confirmed nor refused, by
-  // networkDeleteKey. They outlive the dialog so a late confirmation still
+  // Deletes sent on the current control session that the bouncer has yet to
+  // answer, by networkDeleteKey. They outlive the dialog so the answer still
   // applies the saved-history choice.
   pendingNetworkDeletes: Record<string, PendingNetworkDelete>;
   clearBouncerError: (bouncerServerId: string) => void;
@@ -3447,20 +3449,33 @@ const useStore = create<AppState>((set, get) => ({
   },
 
   requestDeleteBouncerNetwork: (bouncerServerId, netid) => {
-    if (get().ui.disconnectNetworkConfirmTarget?.status === "deleting") return;
-    set((s) => ({
-      ui: {
-        ...s.ui,
-        disconnectNetworkConfirmTarget: {
-          bouncerServerId,
-          netid,
-          childServerId: uuidv5(
-            `${bouncerServerId}:${netid}`,
-            CHANNEL_NAMESPACE,
-          ),
+    set((s) => {
+      // A delete still waiting for its answer reopens as it was sent.
+      const pending =
+        s.pendingNetworkDeletes[networkDeleteKey(bouncerServerId, netid)];
+      return {
+        ui: {
+          ...s.ui,
+          disconnectNetworkConfirmTarget: {
+            bouncerServerId,
+            netid,
+            childServerId: uuidv5(
+              `${bouncerServerId}:${netid}`,
+              CHANNEL_NAMESPACE,
+            ),
+            identity: networkIdentity(
+              s.bouncers[bouncerServerId]?.networks[netid],
+            ),
+            ...(pending
+              ? {
+                  status: "deleting" as const,
+                  shouldDeleteHistory: pending.shouldDeleteHistory,
+                }
+              : {}),
+          },
         },
-      },
-    }));
+      };
+    });
   },
 
   confirmRemoveServer: (shouldDeleteHistory) => {
@@ -3483,9 +3498,6 @@ const useStore = create<AppState>((set, get) => ({
   },
 
   cancelDisconnectNetwork: () => {
-    // The saved-history choice travels with the dialog until the bouncer
-    // answers, so we keep it open for that long.
-    if (get().ui.disconnectNetworkConfirmTarget?.status === "deleting") return;
     set((state) => ({
       ui: { ...state.ui, disconnectNetworkConfirmTarget: null },
     }));
@@ -3504,13 +3516,19 @@ const useStore = create<AppState>((set, get) => ({
   confirmDisconnectNetwork: (shouldDeleteHistory) => {
     const state = get();
     const target = state.ui.disconnectNetworkConfirmTarget;
-    if (!target || target.status === "deleting" || target.isAwaitingList)
-      return;
+    if (!target || target.isAwaitingList) return;
+    // One delete per network waits for its answer at a time, and it keeps
+    // the choice it was sent with.
+    const key = networkDeleteKey(target.bouncerServerId, target.netid);
+    if (state.pendingNetworkDeletes[key]) return;
     // Only the bouncer's answer tells us the network is gone, and the bouncer
     // answers commands only on a control connection that has logged in.
     const control = state.servers.find((s) => s.id === target.bouncerServerId);
     if (!control?.isConnected || !control.isRegistered) return;
-    const key = networkDeleteKey(target.bouncerServerId, target.netid);
+    const pending = {
+      childServerId: target.childServerId,
+      shouldDeleteHistory,
+    };
     set((s) => ({
       ui: {
         ...s.ui,
@@ -3521,42 +3539,28 @@ const useStore = create<AppState>((set, get) => ({
           refusal: undefined,
         },
       },
-      pendingNetworkDeletes: {
-        ...s.pendingNetworkDeletes,
-        [key]: {
-          childServerId: target.childServerId,
-          shouldDeleteHistory,
-          identity: networkIdentity(
-            s.bouncers[target.bouncerServerId]?.networks[target.netid],
-          ),
-        },
-      },
+      pendingNetworkDeletes: { ...s.pendingNetworkDeletes, [key]: pending },
     }));
     state.bouncerDelNetwork(target.bouncerServerId, target.netid);
-    // An answer can get lost on the way, so we wait this long and then ask
-    // for the network list, which tells us whether the network is gone.
-    clearTimeout(networkDeleteWait);
-    networkDeleteWait = setTimeout(() => {
-      const pending = get().pendingNetworkDeletes[key];
-      if (!pending || pending.isUnanswered) return;
+    // An answer can get lost on the way, so we wait this long, let the user
+    // try again and ask for the network list to refresh the row.
+    setTimeout(() => {
+      if (get().pendingNetworkDeletes[key] !== pending) return;
       set((s) => {
+        const { [key]: _, ...pendingNetworkDeletes } = s.pendingNetworkDeletes;
         const waiting = s.ui.disconnectNetworkConfirmTarget;
         const isWaitingHere =
           waiting?.bouncerServerId === target.bouncerServerId &&
           waiting.netid === target.netid &&
           waiting.status === "deleting";
         return {
-          pendingNetworkDeletes: {
-            ...s.pendingNetworkDeletes,
-            [key]: { ...pending, isUnanswered: true },
-          },
+          pendingNetworkDeletes,
           ui: isWaitingHere
             ? {
                 ...s.ui,
                 disconnectNetworkConfirmTarget: {
                   ...waiting,
                   status: "unanswered",
-                  isAwaitingList: true,
                 },
               }
             : s.ui,

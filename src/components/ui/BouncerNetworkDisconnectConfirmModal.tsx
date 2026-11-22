@@ -38,10 +38,9 @@ export const BouncerNetworkDisconnectConfirmModal: React.FC = () => {
   if (!target || !network) return null;
 
   const isDeleting = target.status === "deleting";
-  // A delete we sent applies the choice it was sent with whenever the bouncer
+  // A delete we sent applies the choice it was sent with when the bouncer
   // confirms it, so the checkbox shows that choice until then.
-  const isSent = isDeleting || target.status === "unanswered";
-  const isHistoryDeleted = isSent
+  const isHistoryDeleted = isDeleting
     ? target.shouldDeleteHistory === true
     : shouldDeleteHistory;
   const refusal = target.refusal;
@@ -78,7 +77,7 @@ export const BouncerNetworkDisconnectConfirmModal: React.FC = () => {
           serverIds={[target.childServerId]}
           shouldDelete={isHistoryDeleted}
           onChange={setShouldDeleteHistory}
-          isDisabled={isSent}
+          isDisabled={isDeleting}
           keptHint={
             <Trans>
               Its saved chat history stays on this device. A network you add
@@ -104,8 +103,8 @@ export const BouncerNetworkDisconnectConfirmModal: React.FC = () => {
             data-testid="bouncer-delete-unanswered"
           >
             <Trans>
-              The bouncer has not answered. Delete the network again if it is
-              still listed.
+              The bouncer has not answered, so the saved chat history stays.
+              Delete the network again if it is still listed.
             </Trans>
           </p>
         )}
@@ -127,7 +126,7 @@ export const BouncerNetworkDisconnectConfirmModal: React.FC = () => {
       </ModalBody>
 
       <ModalFooter>
-        <Button variant="secondary" onClick={cancel} disabled={isDeleting}>
+        <Button variant="secondary" onClick={cancel}>
           <Trans>Cancel</Trans>
         </Button>
         <Button

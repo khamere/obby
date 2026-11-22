@@ -6292,8 +6292,8 @@ msgid "The bouncer drops this network and its channel list for all your devices.
 msgstr "Bouncer видалить цю мережу та її список каналів для всіх ваших пристроїв. Історію чату, збережену для цієї мережі, він може залишити в себе."
 
 #: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "The bouncer has not answered. Delete the network again if it is still listed."
-msgstr "Bouncer не відповів. Видаліть мережу ще раз, якщо вона досі в списку."
+msgid "The bouncer has not answered, so the saved chat history stays. Delete the network again if it is still listed."
+msgstr "Bouncer не відповів, тому збережена історія чату залишається. Видаліть мережу ще раз, якщо вона досі в списку."
 
 #: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 msgid "The bouncer is not connected. Delete the network once it is back."

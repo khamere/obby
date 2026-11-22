@@ -210,19 +210,17 @@ describe("deleting a bouncer network", () => {
     useStore.getState().confirmDisconnectNetwork(true);
     ircClient.triggerEvent("BOUNCER_FAIL", {
       serverId: PARENT,
-      code: "INVALID_NETID",
+      code: "INTERNAL_ERROR",
       subcommand: "DELNETWORK",
       netid: NETID,
       context: [NETID],
-      description: "Invalid network ID",
+      description: "Not allowed",
     });
 
     expect(hasChild()).toBe(true);
     expect(settle).not.toHaveBeenCalled();
     expect(target()?.status).toBe("refused");
-    expect(useStore.getState().bouncers[PARENT].lastError?.description).toBe(
-      "Invalid network ID",
-    );
+    expect(target()?.refusal).toBe("Not allowed");
   });
 
   test("leaves the dialog alone when another command fails", () => {
@@ -245,25 +243,22 @@ describe("deleting a bouncer network", () => {
     seed(true);
     useStore.getState().requestDeleteServer(CHILD);
     useStore.getState().confirmDisconnectNetwork(true);
-    ircClient.triggerEvent("connectionStateChange", {
-      serverId: PARENT,
-      connectionState: "reconnecting",
-    });
+    dropControl();
 
     expect(hasChild()).toBe(true);
-    expect(target()).toMatchObject({ netid: NETID, status: "unanswered" });
-    useStore.getState().cancelDisconnectNetwork();
-    expect(target()).toBeNull();
+    expect(target()).toMatchObject({
+      netid: NETID,
+      status: "unanswered",
+      isAwaitingList: true,
+    });
+    expect(useStore.getState().pendingNetworkDeletes).toEqual({});
   });
 
-  test("finishes a delete whose answer was lost once the network list lacks it", () => {
+  test("keeps the saved history when only the network list shows a lost delete went through", () => {
     seed(true);
     useStore.getState().requestDeleteServer(CHILD);
     useStore.getState().confirmDisconnectNetwork(true);
-    ircClient.triggerEvent("connectionStateChange", {
-      serverId: PARENT,
-      connectionState: "reconnecting",
-    });
+    dropControl();
     listNetworks(["7"]);
 
     expect(hasChild()).toBe(false);
@@ -272,9 +267,59 @@ describe("deleting a bouncer network", () => {
     );
     expect(settle).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ id: CHILD }),
-      true,
+      false,
     );
     expect(target()).toBeNull();
+  });
+
+  test("keeps the saved history when the acknowledgement arrives on a later session", () => {
+    seed(true);
+    useStore.getState().requestDeleteServer(CHILD);
+    useStore.getState().confirmDisconnectNetwork(true);
+    dropControl();
+    ircClient.triggerEvent("BOUNCER_DELNETWORK_OK", {
+      serverId: PARENT,
+      netid: NETID,
+    });
+
+    expect(hasChild()).toBe(false);
+    expect(settle).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ id: CHILD }),
+      false,
+    );
+  });
+
+  test("keeps the saved history of a network the list of another login lacks", () => {
+    seed(true);
+    useStore.getState().requestDeleteServer(CHILD);
+    useStore.getState().confirmDisconnectNetwork(true);
+    useStore.getState().cancelDisconnectNetwork();
+    ircClient.triggerEvent("connectionStateChange", {
+      serverId: PARENT,
+      connectionState: "disconnected",
+    });
+    listNetworks([]);
+
+    expect(settle).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ id: CHILD }),
+      false,
+    );
+  });
+
+  test("keeps the saved history of a network another device deleted", () => {
+    seed(true);
+    ircClient.triggerEvent("BOUNCER_NETWORK", {
+      serverId: PARENT,
+      netid: NETID,
+      deleted: true,
+      attributes: {},
+    });
+
+    expect(hasChild()).toBe(false);
+    expect(settle).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ id: CHILD }),
+      false,
+    );
   });
 
   test("keeps a network the list still has after a lost answer", () => {
@@ -317,14 +362,16 @@ describe("deleting a bouncer network", () => {
     expect(hasChild()).toBe(true);
   });
 
-  test("applies the history choice of a delete whose dialog was closed before the list confirmed it", () => {
+  test("applies the history choice when the dialog was closed before the bouncer acknowledged", () => {
     seed(true);
     useStore.getState().requestDeleteServer(CHILD);
     useStore.getState().confirmDisconnectNetwork(true);
-    dropControl();
     useStore.getState().cancelDisconnectNetwork();
     expect(target()).toBeNull();
-    listNetworks(["7"]);
+    ircClient.triggerEvent("BOUNCER_DELNETWORK_OK", {
+      serverId: PARENT,
+      netid: NETID,
+    });
 
     expect(hasChild()).toBe(false);
     expect(settle).toHaveBeenCalledExactlyOnceWith(
@@ -334,25 +381,30 @@ describe("deleting a bouncer network", () => {
     expect(useStore.getState().pendingNetworkDeletes).toEqual({});
   });
 
-  test("forgets a closed delete once the list still has the network", () => {
+  test("reopens a waiting delete as it was sent and sends nothing more", () => {
     seed(true);
     useStore.getState().requestDeleteServer(CHILD);
     useStore.getState().confirmDisconnectNetwork(true);
-    dropControl();
     useStore.getState().cancelDisconnectNetwork();
-    listNetworks([NETID]);
-    ircClient.triggerEvent("BOUNCER_NETWORK", {
+    useStore.getState().requestDeleteServer(CHILD);
+
+    expect(target()).toMatchObject({
+      status: "deleting",
+      shouldDeleteHistory: true,
+    });
+    useStore.getState().confirmDisconnectNetwork(false);
+    expect(delNetwork).toHaveBeenCalledOnce();
+    ircClient.triggerEvent("BOUNCER_DELNETWORK_OK", {
       serverId: PARENT,
       netid: NETID,
-      deleted: true,
-      attributes: {},
     });
-
-    expect(hasChild()).toBe(false);
-    expect(settle).not.toHaveBeenCalled();
+    expect(settle).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ id: CHILD }),
+      true,
+    );
   });
 
-  test("forgets a refused delete", () => {
+  test("treats a network the bouncer does not know as already gone and keeps its history", () => {
     seed(true);
     useStore.getState().requestDeleteServer(CHILD);
     useStore.getState().confirmDisconnectNetwork(true);
@@ -363,6 +415,49 @@ describe("deleting a bouncer network", () => {
       netid: NETID,
       context: [NETID],
       description: "Invalid network ID",
+    });
+
+    expect(target()).toBeNull();
+    expect(hasChild()).toBe(false);
+    expect(useStore.getState().bouncers[PARENT].networks[NETID]).toBe(
+      undefined,
+    );
+    expect(settle).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ id: CHILD }),
+      false,
+    );
+  });
+
+  test("shows a refusal that names no network on the one waiting delete", () => {
+    seed(true);
+    useStore.getState().requestDeleteServer(CHILD);
+    useStore.getState().confirmDisconnectNetwork(true);
+    ircClient.triggerEvent("BOUNCER_FAIL", {
+      serverId: PARENT,
+      code: "UNKNOWN_COMMAND",
+      subcommand: "DELNETWORK",
+      context: [],
+      description: "Unknown subcommand",
+    });
+
+    expect(target()).toMatchObject({
+      status: "refused",
+      refusal: "Unknown subcommand",
+    });
+    expect(useStore.getState().pendingNetworkDeletes).toEqual({});
+  });
+
+  test("forgets a refused delete", () => {
+    seed(true);
+    useStore.getState().requestDeleteServer(CHILD);
+    useStore.getState().confirmDisconnectNetwork(true);
+    ircClient.triggerEvent("BOUNCER_FAIL", {
+      serverId: PARENT,
+      code: "INTERNAL_ERROR",
+      subcommand: "DELNETWORK",
+      netid: NETID,
+      context: [NETID],
+      description: "Not allowed",
     });
 
     expect(useStore.getState().pendingNetworkDeletes).toEqual({});
@@ -404,18 +499,34 @@ describe("deleting a bouncer network", () => {
     expect(listRequest).not.toHaveBeenCalled();
   });
 
-  test("offers no second delete until the list after a lost answer has arrived", () => {
+  test("offers no second delete until the list after a dropped connection has arrived", () => {
     seed(true);
     useStore.getState().requestDeleteServer(CHILD);
     useStore.getState().confirmDisconnectNetwork(true);
     dropControl();
     useStore.getState().confirmDisconnectNetwork(true);
-
-    expect(target()).toMatchObject({ isAwaitingList: true });
+    const logIn = () =>
+      useStore.setState((state) => ({
+        servers: state.servers.map((server) =>
+          server.id === PARENT
+            ? { ...server, isConnected: true, isRegistered: true }
+            : server,
+        ),
+      }));
+    logIn();
+    useStore.getState().confirmDisconnectNetwork(true);
     expect(delNetwork).toHaveBeenCalledOnce();
+    listNetworks([NETID]);
+    useStore.getState().confirmDisconnectNetwork(false);
+
+    expect(delNetwork).toHaveBeenCalledTimes(2);
+    expect(target()).toMatchObject({
+      status: "deleting",
+      shouldDeleteHistory: false,
+    });
   });
 
-  test("ends the delete without touching a different network that took over the id", () => {
+  test("closes the dialog without touching a different network that took over the id", () => {
     seed(true);
     useStore.getState().requestDeleteServer(CHILD);
     useStore.getState().confirmDisconnectNetwork(true);
@@ -425,14 +536,13 @@ describe("deleting a bouncer network", () => {
     closeBatch();
 
     expect(target()).toBeNull();
-    expect(useStore.getState().pendingNetworkDeletes).toEqual({});
     expect(settle).not.toHaveBeenCalled();
     expect(hasChild()).toBe(true);
     expect(useStore.getState().bouncers[PARENT].networks[NETID]).toBeDefined();
     expect(delNetwork).toHaveBeenCalledOnce();
   });
 
-  test("stops waiting for an answer that never comes and asks for the list", () => {
+  test("stops waiting for an answer that never comes, asks for the list and offers the delete again", () => {
     seed(true);
     useStore.getState().requestDeleteServer(CHILD);
     useStore.getState().confirmDisconnectNetwork(true);
@@ -440,14 +550,27 @@ describe("deleting a bouncer network", () => {
     expect(target()?.status).toBe("deleting");
     vi.advanceTimersByTime(1);
 
-    expect(target()).toMatchObject({
-      status: "unanswered",
-      isAwaitingList: true,
-    });
+    expect(target()?.status).toBe("unanswered");
+    expect(target()?.isAwaitingList).toBeFalsy();
+    expect(useStore.getState().pendingNetworkDeletes).toEqual({});
     expect(listRequest).toHaveBeenCalledExactlyOnceWith(PARENT);
     expect(hasChild()).toBe(true);
-    useStore.getState().cancelDisconnectNetwork();
-    expect(target()).toBeNull();
+    useStore.getState().confirmDisconnectNetwork(true);
+    expect(delNetwork).toHaveBeenCalledTimes(2);
+  });
+
+  test("keeps the saved history when a list shows the network gone after the wait ran out", () => {
+    seed(true);
+    useStore.getState().requestDeleteServer(CHILD);
+    useStore.getState().confirmDisconnectNetwork(true);
+    vi.advanceTimersByTime(NETWORK_DELETE_WAIT_MS);
+    listNetworks(["7"]);
+
+    expect(hasChild()).toBe(false);
+    expect(settle).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ id: CHILD }),
+      false,
+    );
   });
 
   test("leaves an answered delete alone when the wait runs out", () => {
@@ -456,11 +579,11 @@ describe("deleting a bouncer network", () => {
     useStore.getState().confirmDisconnectNetwork(true);
     ircClient.triggerEvent("BOUNCER_FAIL", {
       serverId: PARENT,
-      code: "INVALID_NETID",
+      code: "INTERNAL_ERROR",
       subcommand: "DELNETWORK",
       netid: NETID,
       context: [NETID],
-      description: "Invalid network ID",
+      description: "Not allowed",
     });
     vi.advanceTimersByTime(NETWORK_DELETE_WAIT_MS);
 
@@ -496,6 +619,7 @@ describe("deleting a bouncer network", () => {
     });
 
     expect(target()?.status).toBe("deleting");
+    expect(hasChild()).toBe(true);
   });
 
   test("keeps the bouncer's refusal when a later command fails", () => {
@@ -504,11 +628,11 @@ describe("deleting a bouncer network", () => {
     useStore.getState().confirmDisconnectNetwork(true);
     ircClient.triggerEvent("BOUNCER_FAIL", {
       serverId: PARENT,
-      code: "INVALID_NETID",
+      code: "INTERNAL_ERROR",
       subcommand: "DELNETWORK",
       netid: NETID,
       context: [NETID],
-      description: "Invalid network ID",
+      description: "Not allowed",
     });
     ircClient.triggerEvent("BOUNCER_FAIL", {
       serverId: PARENT,
@@ -521,7 +645,7 @@ describe("deleting a bouncer network", () => {
 
     expect(target()).toMatchObject({
       status: "refused",
-      refusal: "Invalid network ID",
+      refusal: "Not allowed",
     });
   });
 
@@ -584,15 +708,17 @@ describe("deleting a bouncer network", () => {
     expect(target()).toBeNull();
   });
 
-  test("stays open while the bouncer has not answered", () => {
+  test("closes while the bouncer has not answered and keeps the delete waiting", () => {
     seed(true);
     useStore.getState().requestDeleteServer(CHILD);
     useStore.getState().confirmDisconnectNetwork(true);
     useStore.getState().cancelDisconnectNetwork();
-    useStore.getState().confirmDisconnectNetwork(true);
 
-    expect(target()?.status).toBe("deleting");
-    expect(delNetwork).toHaveBeenCalledOnce();
+    expect(target()).toBeNull();
+    expect(Object.keys(useStore.getState().pendingNetworkDeletes)).toEqual([
+      `${PARENT}:${NETID}`,
+    ]);
+    expect(hasChild()).toBe(true);
   });
 
   test("asks before deleting a network that has no connection here", () => {
@@ -604,6 +730,7 @@ describe("deleting a bouncer network", () => {
       bouncerServerId: PARENT,
       netid: NETID,
       childServerId: CHILD,
+      identity: "Net\nirc.example\n",
     });
   });
 });
