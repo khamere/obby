@@ -1775,6 +1775,7 @@ msgstr "控制載入的外部媒體量。關閉 / 安全 / 可信來源 / 所有
 msgid "Control media display and external content"
 msgstr "控制媒体显示和外部内容"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 #: src/components/ui/E2EEVerifyModal.tsx
 #: src/components/ui/ExternalLinkWarningModal.tsx
@@ -1811,10 +1812,16 @@ msgstr "複製頻道名稱"
 msgid "Copy entire JSON"
 msgstr "複製完整 JSON"
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Copy error details"
+msgstr "複製錯誤詳細資料"
+
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 msgid "Copy failed, select to retry"
 msgstr "複製失敗，選擇重試"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/mobile/MessageReaderSheet.tsx
 msgid "Copy failed, tap to retry"
 msgstr "複製失敗，點擊重試"
@@ -4387,6 +4394,10 @@ msgstr "Obby 每次啟動都會下載此檔案，因此使用同一連結的每�
 msgid "Obby is up to date."
 msgstr "Obby 已是最新版本。"
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Obby stopped working"
+msgstr "Obby 已停止運作"
+
 #: src/components/ui/UpdateSheet.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Obby will close to install the update; open it again afterwards."
@@ -5115,6 +5126,14 @@ msgstr "寬鬆 – 較弱的保護"
 #: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "更新說明"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload"
+msgstr "重新載入"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload to continue. Copy the error details to report the problem."
+msgstr "重新載入以繼續。複製錯誤詳細資料以回報此問題。"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/pages/ChannelSettingsPage.tsx

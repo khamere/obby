@@ -1775,6 +1775,7 @@ msgstr "Controlează câtă media externă se încarcă. Dezactivat / Sigur / Su
 msgid "Control media display and external content"
 msgstr "Controlează afișarea media și conținutul extern"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 #: src/components/ui/E2EEVerifyModal.tsx
 #: src/components/ui/ExternalLinkWarningModal.tsx
@@ -1811,10 +1812,16 @@ msgstr "Copiază numele canalului"
 msgid "Copy entire JSON"
 msgstr "Copiați JSON complet"
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Copy error details"
+msgstr "Copiază detaliile erorii"
+
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 msgid "Copy failed, select to retry"
 msgstr "Copie eșuată, selectați pentru a încerca din nou"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/mobile/MessageReaderSheet.tsx
 msgid "Copy failed, tap to retry"
 msgstr "Copie eșuată, atingeți pentru a încerca din nou"
@@ -4387,6 +4394,10 @@ msgstr "Obby descarcă acest fișier la fiecare pornire, așa că toți cei care
 msgid "Obby is up to date."
 msgstr "Obby este la zi."
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Obby stopped working"
+msgstr "Obby a încetat să funcționeze"
+
 #: src/components/ui/UpdateSheet.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Obby will close to install the update; open it again afterwards."
@@ -5115,6 +5126,14 @@ msgstr "Relaxat – Protecție mai puțin agresivă"
 #: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "Note de lansare"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload"
+msgstr "Reîncarcă"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload to continue. Copy the error details to report the problem."
+msgstr "Reîncarcă pentru a continua. Copiază detaliile erorii pentru a raporta problema."
 
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/pages/ChannelSettingsPage.tsx

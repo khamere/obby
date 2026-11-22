@@ -1775,6 +1775,7 @@ msgstr "Controlla quanti media esterni vengono caricati. Disattivato / Sicuro / 
 msgid "Control media display and external content"
 msgstr "Controlla la visualizzazione dei media e dei contenuti esterni"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 #: src/components/ui/E2EEVerifyModal.tsx
 #: src/components/ui/ExternalLinkWarningModal.tsx
@@ -1811,10 +1812,16 @@ msgstr "Copia nome canale"
 msgid "Copy entire JSON"
 msgstr "Copia JSON completo"
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Copy error details"
+msgstr "Copia dettagli dell'errore"
+
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 msgid "Copy failed, select to retry"
 msgstr "Copia non riuscita, seleziona per riprovare"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/mobile/MessageReaderSheet.tsx
 msgid "Copy failed, tap to retry"
 msgstr "Copia non riuscita, tocca per riprovare"
@@ -4387,6 +4394,10 @@ msgstr "Obby scarica questo file a ogni avvio, così chiunque usi lo stesso link
 msgid "Obby is up to date."
 msgstr "Obby è aggiornato."
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Obby stopped working"
+msgstr "Obby ha smesso di funzionare"
+
 #: src/components/ui/UpdateSheet.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Obby will close to install the update; open it again afterwards."
@@ -5115,6 +5126,14 @@ msgstr "Rilassato – Protezione meno aggressiva"
 #: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "Note di rilascio"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload"
+msgstr "Ricarica"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload to continue. Copy the error details to report the problem."
+msgstr "Ricarica per continuare. Copia i dettagli dell'errore per segnalare il problema."
 
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/pages/ChannelSettingsPage.tsx

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { IRCClient } from "../../src/lib/ircClient";
+import { parseMessageTags } from "../../src/lib/ircUtils";
 import type { Server } from "../../src/types";
 
 // Mock WebSocket class
@@ -585,6 +586,134 @@ describe("IRCClient", () => {
 
       mockSocket.simulateOpen();
       server = await connectionPromise;
+    });
+
+    test.each([
+      ["a line feed", "PRIVMSG #a :one\nPRIVMSG #b :two"],
+      ["a carriage return", "PRIVMSG #a :one\rPRIVMSG #b :two"],
+      ["a NUL", "PRIVMSG #a :one\u0000PRIVMSG #b :two"],
+      ["a trailing line end", "PRIVMSG #a :one\r\n"],
+    ])("sends one line when a command holds %s", (_, command) => {
+      const lines: string[] = [];
+      client.on("rawLine", ({ direction, line }) => {
+        if (direction === "tx") lines.push(line);
+      });
+
+      client.sendRaw(server.id, command);
+
+      expect(mockSocket.sentMessages.at(-1)).toBe("PRIVMSG #a :one");
+      expect(lines.at(-1)).toBe("PRIVMSG #a :one");
+      expect(mockSocket.sentMessages.join("")).not.toContain("#b");
+    });
+
+    test("keeps a channel name inside the whisper tags", () => {
+      client.sendWhisper(server.id, "bob", "#a;b", "hi");
+
+      expect(mockSocket.sentMessages.at(-1)).toBe(
+        "@+channel-context=#a\\:b;+draft/channel-context=#a\\:b PRIVMSG bob :hi",
+      );
+    });
+
+    describe("a message with line breaks and a reply", () => {
+      const text = "see this\nand that https://files.example/a.png";
+      const replyTags = (line: string) =>
+        parseMessageTags(line.slice(0, line.indexOf(" ")));
+      const sentBy = (send: () => void) => {
+        const before = mockSocket.sentMessages.length;
+        send();
+        return mockSocket.sentMessages.slice(before);
+      };
+
+      test("goes out as one batch that carries every line", () => {
+        server.capabilities = ["draft/multiline"];
+
+        const sent = sentBy(() =>
+          client.sendText(server.id, "#a", text, { replyTo: "id;1 x" }),
+        );
+
+        expect(sent).toHaveLength(4);
+        const batch = /BATCH \+(\S+) draft\/multiline #a$/.exec(sent[0])?.[1];
+        expect(replyTags(sent[0])).toEqual({
+          "+reply": "id;1 x",
+          "+draft/reply": "id;1 x",
+        });
+        expect(sent.slice(1)).toEqual([
+          `@batch=${batch} PRIVMSG #a :see this`,
+          `@batch=${batch} PRIVMSG #a :and that https://files.example/a.png`,
+          `BATCH -${batch}`,
+        ]);
+      });
+
+      test("goes out line by line on a server without batches", () => {
+        const sent = sentBy(() =>
+          client.sendText(server.id, "#a", text, { replyTo: "id;1 x" }),
+        );
+
+        expect(sent.map((line) => line.slice(line.indexOf(" ") + 1))).toEqual([
+          "PRIVMSG #a :see this",
+          "PRIVMSG #a :and that https://files.example/a.png",
+        ]);
+        for (const line of sent)
+          expect(replyTags(line)).toEqual({
+            "+reply": "id;1 x",
+            "+draft/reply": "id;1 x",
+          });
+      });
+
+      test("goes out as one line when the lines are joined", () => {
+        const sent = sentBy(() =>
+          client.sendText(server.id, "#a", text, { joinLines: true }),
+        );
+
+        expect(sent).toEqual([
+          "PRIVMSG #a :see this and that https://files.example/a.png",
+        ]);
+      });
+
+      // A relayed line to #a carries 381 bytes at most by our count, and the
+      // server decides about a link past that, which we send as it is.
+      const longLink = `https://files.example/${"a".repeat(373)}.png`;
+
+      test("sends a caption and its link as the one line they fit", () => {
+        const sent = sentBy(() =>
+          client.sendText(server.id, "#a", "photo https://files.example/a.png"),
+        );
+
+        expect(sent).toEqual(["PRIVMSG #a :photo https://files.example/a.png"]);
+      });
+
+      test("keeps a long link whole on a server without batches", () => {
+        const sent = sentBy(() =>
+          client.sendText(server.id, "#a", `photo ${longLink}`),
+        );
+
+        expect(sent).toEqual(["PRIVMSG #a :photo", `PRIVMSG #a :${longLink}`]);
+      });
+
+      test("keeps a long link whole inside a batch", () => {
+        server.capabilities = ["draft/multiline"];
+
+        const sent = sentBy(() =>
+          client.sendText(server.id, "#a", `see\nphoto ${longLink}`),
+        );
+
+        const batch = /BATCH \+(\S+) /.exec(sent[0])?.[1];
+        expect(sent.slice(1, -1)).toEqual([
+          `@batch=${batch} PRIVMSG #a :see`,
+          `@batch=${batch} PRIVMSG #a :photo `,
+          `@batch=${batch};draft/multiline-concat PRIVMSG #a :${longLink}`,
+        ]);
+      });
+
+      test("keeps a single line as one tagged message", () => {
+        const sent = sentBy(() =>
+          client.sendText(server.id, "#a", "hello", { replyTo: "abc" }),
+        );
+
+        expect(sent).toEqual([
+          "@+reply=abc;+draft/reply=abc PRIVMSG #a :hello",
+        ]);
+      });
     });
 
     test("should send LIST command", () => {

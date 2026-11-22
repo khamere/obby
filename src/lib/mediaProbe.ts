@@ -1,3 +1,4 @@
+import { isRejectedLocationShareUrl } from "./geolocation";
 import { detectMediaType, extractHostname, type MediaType } from "./mediaUtils";
 
 export interface ProbeResult {
@@ -164,6 +165,11 @@ export function probeMediaUrl(url: string): Promise<ProbeResult | null> {
 }
 
 async function probeUncached(url: string): Promise<ProbeResult | null> {
+  if (isRejectedLocationShareUrl(url)) {
+    cacheSet(url, null);
+    return null;
+  }
+
   // A provider page or a map link is a web page with no file behind it, so the
   // host answers a content-type request with a CORS failure and nothing else.
   const pageType = detectMediaType(url);

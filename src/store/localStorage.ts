@@ -29,7 +29,12 @@ export const mentionLog = {
   load: (): MentionEntry[] => {
     try {
       const data = JSON.parse(localStorage.getItem(KEYS.MENTION_LOG) || "[]");
-      return Array.isArray(data) ? data : [];
+      if (!Array.isArray(data)) return [];
+      // New mentions are inserted by time, which needs the saved ones in
+      // that order too.
+      return (data as MentionEntry[]).sort((a, b) =>
+        a.timestamp < b.timestamp ? -1 : a.timestamp > b.timestamp ? 1 : 0,
+      );
     } catch {
       return [];
     }

@@ -7,10 +7,13 @@ import {
   clampMapZoom,
   loadLeaflet,
   MAP_ATTRIBUTION,
-  MAP_MAX_ZOOM,
   MAP_MIN_ZOOM,
 } from "../../lib/leafletMap";
-import { TILE_URL_TEMPLATE } from "../../lib/osmTiles";
+import {
+  MAX_TILE_ZOOM,
+  TILE_URL_TEMPLATE,
+  wrapLongitude,
+} from "../../lib/osmTiles";
 
 export interface PickedLocation extends Coordinates {
   zoom: number;
@@ -53,21 +56,21 @@ export const LocationPicker: React.FC<{
         center: [start.latitude, start.longitude],
         zoom: clampMapZoom(start.zoom),
         minZoom: MAP_MIN_ZOOM,
-        maxZoom: MAP_MAX_ZOOM,
+        maxZoom: MAX_TILE_ZOOM,
         zoomControl: false,
         attributionControl: true,
       });
       mapRef.current = map;
       L.tileLayer(TILE_URL_TEMPLATE, {
         attribution: MAP_ATTRIBUTION,
-        maxZoom: MAP_MAX_ZOOM,
+        maxZoom: MAX_TILE_ZOOM,
       }).addTo(map);
       map.on("moveend", () => {
         if (!map) return;
         const center = map.getCenter();
         onChangeRef.current({
           latitude: center.lat,
-          longitude: center.lng,
+          longitude: wrapLongitude(center.lng),
           zoom: map.getZoom(),
         });
       });
