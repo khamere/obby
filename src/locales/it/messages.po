@@ -6284,8 +6284,12 @@ msgid "That stylesheet is too large."
 msgstr "Questo foglio di stile è troppo grande."
 
 #: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "The bouncer drops this network for all your devices, together with its channel list and the chat history the bouncer keeps for it."
-msgstr "Il bouncer rimuove questa rete per tutti i tuoi dispositivi, insieme al suo elenco dei canali e alla cronologia delle chat che il bouncer conserva per essa."
+msgid "The bouncer drops this network and its channel list for all your devices. It may keep the chat history it stored for the network."
+msgstr "Il bouncer rimuove questa rete e il suo elenco dei canali per tutti i tuoi dispositivi. Potrebbe conservare la cronologia delle chat che ha salvato per la rete."
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer has not answered. Delete the network again if it is still listed."
+msgstr "Il bouncer non ha risposto. Elimina di nuovo la rete se è ancora in elenco."
 
 #: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 msgid "The bouncer is not connected. Delete the network once it is back."

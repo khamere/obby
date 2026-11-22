@@ -15,11 +15,10 @@ export const BouncerNetworkDisconnectConfirmModal: React.FC = () => {
   const confirm = useStore((s) => s.confirmDisconnectNetwork);
   const [shouldDeleteHistory, setShouldDeleteHistory] = useState(false);
   const childServerId = target?.childServerId;
-  const isControlUp = useStore(
-    (s) =>
-      s.servers.find((srv) => srv.id === target?.bouncerServerId)
-        ?.isConnected === true,
-  );
+  const isControlUp = useStore((s) => {
+    const control = s.servers.find((srv) => srv.id === target?.bouncerServerId);
+    return control?.isConnected === true && control.isRegistered === true;
+  });
 
   useEffect(() => {
     if (childServerId) setShouldDeleteHistory(false);
@@ -39,10 +38,13 @@ export const BouncerNetworkDisconnectConfirmModal: React.FC = () => {
   if (!target || !network) return null;
 
   const isDeleting = target.status === "deleting";
-  const refusal =
-    target.status === "refused"
-      ? bouncers[target.bouncerServerId]?.lastError?.description
-      : undefined;
+  // A delete we sent applies the choice it was sent with whenever the bouncer
+  // confirms it, so the checkbox shows that choice until then.
+  const isSent = isDeleting || target.status === "unanswered";
+  const isHistoryDeleted = isSent
+    ? target.shouldDeleteHistory === true
+    : shouldDeleteHistory;
+  const refusal = target.refusal;
 
   return (
     <BaseModal
@@ -68,14 +70,15 @@ export const BouncerNetworkDisconnectConfirmModal: React.FC = () => {
         )}
         <p className="text-sm text-discord-text-normal">
           <Trans>
-            The bouncer drops this network for all your devices, together with
-            its channel list and the chat history the bouncer keeps for it.
+            The bouncer drops this network and its channel list for all your
+            devices. It may keep the chat history it stored for the network.
           </Trans>
         </p>
         <SavedHistoryChoice
           serverIds={[target.childServerId]}
-          shouldDelete={shouldDeleteHistory}
+          shouldDelete={isHistoryDeleted}
           onChange={setShouldDeleteHistory}
+          isDisabled={isSent}
         />
         {!isControlUp && (
           <p
@@ -85,6 +88,18 @@ export const BouncerNetworkDisconnectConfirmModal: React.FC = () => {
           >
             <Trans>
               The bouncer is not connected. Delete the network once it is back.
+            </Trans>
+          </p>
+        )}
+        {isControlUp && target.status === "unanswered" && (
+          <p
+            role="alert"
+            className="rounded bg-red-600/10 border border-red-600/40 text-red-300 px-3 py-2 text-sm"
+            data-testid="bouncer-delete-unanswered"
+          >
+            <Trans>
+              The bouncer has not answered. Delete the network again if it is
+              still listed.
             </Trans>
           </p>
         )}
@@ -111,7 +126,7 @@ export const BouncerNetworkDisconnectConfirmModal: React.FC = () => {
         </Button>
         <Button
           variant="danger"
-          onClick={() => confirm(shouldDeleteHistory)}
+          onClick={() => confirm(isHistoryDeleted)}
           disabled={isDeleting || !isControlUp}
         >
           {isDeleting ? (

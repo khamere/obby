@@ -6284,8 +6284,12 @@ msgid "That stylesheet is too large."
 msgstr "此樣式表過大。"
 
 #: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "The bouncer drops this network for all your devices, together with its channel list and the chat history the bouncer keeps for it."
-msgstr "bouncer 會為您的所有裝置移除此網路，連同其頻道清單和 bouncer 為它保存的聊天記錄。"
+msgid "The bouncer drops this network and its channel list for all your devices. It may keep the chat history it stored for the network."
+msgstr "bouncer 會為您的所有裝置移除此網路及其頻道清單。它為該網路保存的聊天記錄可能仍會保留。"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer has not answered. Delete the network again if it is still listed."
+msgstr "bouncer 沒有回應。如果該網路仍在清單中，請再次刪除。"
 
 #: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 msgid "The bouncer is not connected. Delete the network once it is back."

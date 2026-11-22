@@ -99,6 +99,9 @@ const NARROW_VIEW_QUERY = "(max-width: 768px)";
 // Namespace UUID for generating deterministic channel/chat IDs
 const CHANNEL_NAMESPACE = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
 
+export const NETWORK_DELETE_WAIT_MS = 15_000;
+let networkDeleteWait: ReturnType<typeof setTimeout> | undefined;
+
 /**
  * Generate a deterministic UUID for a channel or private chat
  * based on the server ID and channel/chat name
@@ -463,9 +466,12 @@ interface UIState {
     bouncerServerId: string;
     netid: string;
     childServerId: string;
-    // "deleting" from our DELNETWORK until the bouncer answers it.
-    status?: "deleting" | "refused";
+    // "deleting" from our DELNETWORK until the bouncer answers it, and
+    // "unanswered" once we stop waiting for that answer.
+    status?: "deleting" | "unanswered" | "refused";
     shouldDeleteHistory?: boolean;
+    // The bouncer's own words for a refused delete.
+    refusal?: string;
   } | null;
   quickActions: QuickActionsState | null;
   // The message list holding this id scrolls to it and flashes it.
@@ -3312,6 +3318,10 @@ const useStore = create<AppState>((set, get) => ({
       const remainingServers = state.servers.filter(
         (server) => !toRemove.has(server.id),
       );
+      // A server removed in the background leaves the open chat where it is.
+      const isSelectionKept = remainingServers.some(
+        (server) => server.id === state.ui.selectedServerId,
+      );
       const newSelectedServerId =
         remainingServers.length > 0 ? remainingServers[0].id : null;
 
@@ -3325,10 +3335,14 @@ const useStore = create<AppState>((set, get) => ({
         ...clearConnectionState,
         ui: {
           ...state.ui,
-          selectedServerId: newSelectedServerId,
-          selectedChannelId: newSelectedServerId
-            ? remainingServers[0].channels[0]?.id || null
-            : null,
+          ...(isSelectionKept
+            ? {}
+            : {
+                selectedServerId: newSelectedServerId,
+                selectedChannelId: newSelectedServerId
+                  ? remainingServers[0].channels[0]?.id || null
+                  : null,
+              }),
           disconnectConfirmTarget: null,
         },
       };
@@ -3479,10 +3493,10 @@ const useStore = create<AppState>((set, get) => ({
     const state = get();
     const target = state.ui.disconnectNetworkConfirmTarget;
     if (!target || target.status === "deleting") return;
-    // Only the bouncer's answer tells us the network is gone, and a command
-    // sent on a closed control connection never gets one.
+    // Only the bouncer's answer tells us the network is gone, and the bouncer
+    // answers commands only on a control connection that has logged in.
     const control = state.servers.find((s) => s.id === target.bouncerServerId);
-    if (!control?.isConnected) return;
+    if (!control?.isConnected || !control.isRegistered) return;
     set((s) => ({
       ui: {
         ...s.ui,
@@ -3490,10 +3504,30 @@ const useStore = create<AppState>((set, get) => ({
           ...target,
           status: "deleting",
           shouldDeleteHistory,
+          refusal: undefined,
         },
       },
     }));
     state.bouncerDelNetwork(target.bouncerServerId, target.netid);
+    // An answer can get lost on the way, so we wait this long and then ask
+    // for the network list, which tells us whether the network is gone.
+    clearTimeout(networkDeleteWait);
+    networkDeleteWait = setTimeout(() => {
+      const waiting = get().ui.disconnectNetworkConfirmTarget;
+      if (
+        waiting?.bouncerServerId !== target.bouncerServerId ||
+        waiting.netid !== target.netid ||
+        waiting.status !== "deleting"
+      )
+        return;
+      set((s) => ({
+        ui: {
+          ...s.ui,
+          disconnectNetworkConfirmTarget: { ...waiting, status: "unanswered" },
+        },
+      }));
+      get().bouncerListNetworks(target.bouncerServerId);
+    }, NETWORK_DELETE_WAIT_MS);
   },
 
   setBouncerGroupAccent: (parentServerId, hex) => {

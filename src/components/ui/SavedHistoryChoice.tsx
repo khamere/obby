@@ -9,7 +9,8 @@ export const SavedHistoryChoice: React.FC<{
   serverIds: string[];
   shouldDelete: boolean;
   onChange: (shouldDelete: boolean) => void;
-}> = ({ serverIds, shouldDelete, onChange }) => {
+  isDisabled?: boolean;
+}> = ({ serverIds, shouldDelete, onChange, isDisabled }) => {
   const [hasHistory, setHasHistory] = useState(false);
   const idsKey = serverIds.join(",");
 
@@ -41,6 +42,7 @@ export const SavedHistoryChoice: React.FC<{
         <input
           type="checkbox"
           checked={shouldDelete}
+          disabled={isDisabled}
           onChange={(event) => onChange(event.target.checked)}
           className="accent-discord-primary rounded"
         />

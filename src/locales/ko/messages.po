@@ -6284,8 +6284,12 @@ msgid "That stylesheet is too large."
 msgstr "스타일시트가 너무 큽니다."
 
 #: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "The bouncer drops this network for all your devices, together with its channel list and the chat history the bouncer keeps for it."
-msgstr "bouncer가 이 네트워크를 채널 목록과 bouncer가 보관하는 채팅 기록과 함께 모든 기기에서 삭제합니다."
+msgid "The bouncer drops this network and its channel list for all your devices. It may keep the chat history it stored for the network."
+msgstr "bouncer가 이 네트워크와 채널 목록을 모든 기기에서 삭제합니다. 이 네트워크용으로 저장한 채팅 기록은 bouncer에 남을 수 있습니다."
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer has not answered. Delete the network again if it is still listed."
+msgstr "bouncer가 응답하지 않았습니다. 네트워크가 아직 목록에 있으면 다시 삭제하세요."
 
 #: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 msgid "The bouncer is not connected. Delete the network once it is back."

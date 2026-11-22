@@ -12,6 +12,7 @@ import {
   FaTrash,
 } from "react-icons/fa";
 import { v5 as uuidv5 } from "uuid";
+import { useIsTouchInput } from "../../hooks/useIsTouchInput";
 import useStore from "../../store";
 import type { BouncerNetwork } from "../../types";
 import { BouncerNetworkForm } from "./BouncerNetworkForm";
@@ -56,6 +57,7 @@ export const BouncerNetworksPanel: React.FC<BouncerNetworksPanelProps> = ({
   const server = useStore((s) =>
     s.servers.find((srv) => srv.id === bouncerServerId),
   );
+  const isTouch = useIsTouchInput();
   const servers = useStore((s) => s.servers);
   const bouncerAddNetwork = useStore((s) => s.bouncerAddNetwork);
   const bouncerChangeNetwork = useStore((s) => s.bouncerChangeNetwork);
@@ -155,6 +157,14 @@ export const BouncerNetworksPanel: React.FC<BouncerNetworksPanelProps> = ({
     selectServer(childId, { clearSelection: true });
     return result;
   };
+
+  // A finger has no hover, so on touch the row actions always show and are
+  // large enough to hit; with a mouse they appear on hover or keyboard focus.
+  const rowActionClass = `rounded text-discord-text-muted hover:bg-discord-dark-300 ${
+    isTouch
+      ? "w-11 h-11 shrink-0 flex items-center justify-center"
+      : "p-2 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+  }`;
 
   const editingNetwork =
     mode.kind === "edit" ? bouncer?.networks[mode.netid] : undefined;
@@ -316,7 +326,7 @@ export const BouncerNetworksPanel: React.FC<BouncerNetworksPanelProps> = ({
                         onClick={() =>
                           setMode({ kind: "edit", netid: net.netid })
                         }
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded text-discord-text-muted hover:text-discord-text-strong hover:bg-discord-dark-300"
+                        className={`${rowActionClass} hover:text-discord-text-strong`}
                         aria-label={t`Edit`}
                         data-testid={`bouncer-row-edit-${net.netid}`}
                       >
@@ -352,7 +362,7 @@ export const BouncerNetworksPanel: React.FC<BouncerNetworksPanelProps> = ({
                             net.netid,
                           )
                         }
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded text-discord-text-muted hover:text-red-400 hover:bg-discord-dark-300"
+                        className={`${rowActionClass} hover:text-red-400`}
                         aria-label={t`Delete network`}
                         title={t`Delete network`}
                         data-testid={`bouncer-row-delete-${net.netid}`}
