@@ -14,6 +14,7 @@ import type {
   WhoisSession,
 } from "../../types";
 import { APP_VERSION } from "../appVersion";
+import { encodeBouncerAttrs } from "../bouncerAttrs";
 import { parseIrcUrl } from "../ircUrlParser";
 import { chantypesOf, isChannelTarget, parseMessageTags } from "../ircUtils";
 import { createBatchId, splitLongMessage } from "../messageProtocol";
@@ -46,6 +47,18 @@ const PING_INTERVAL_MS = 30_000;
 const PONG_TIMEOUT_MS = 10_000;
 const WAKE_PONG_TIMEOUT_MS = 5_000;
 const DEAD_SOCKET_CLOSE_WAIT_MS = 2_000;
+
+// One message of a `soju.im/search` answer.
+export interface SearchResult {
+  command: "PRIVMSG" | "NOTICE";
+  // An old line is placed by the server's time alone, never by ours.
+  hasServerTime: boolean;
+  sender: string;
+  target: string;
+  message: string;
+  mtags: Record<string, string> | undefined;
+  timestamp: Date;
+}
 
 export interface EventMap {
   ready: BaseIRCEvent & { serverName: string; nickname: string };
@@ -410,6 +423,9 @@ export interface EventMap {
     target?: string;
     message: string;
   };
+  // soju.im/search: the messages of one answered SEARCH, in server order.
+  SEARCH_RESULTS: BaseIRCEvent & { results: SearchResult[]; label?: string };
+  SEARCH_FAIL: EventWithTags & { code: string; message: string };
   // draft/chathistory: one `CHATHISTORY TARGETS <target> <timestamp>`
   // reply line, i.e. a conversation that had activity in the window
   // we asked about.
@@ -706,6 +722,7 @@ export class IRCClient implements IRCClientContext {
         parameters?: string[];
         messages: string[];
         concatFlags?: boolean[];
+        searchResults?: SearchResult[];
         sender?: string;
         messageIds?: string[];
         timestamps?: Date[];
@@ -734,6 +751,10 @@ export class IRCClient implements IRCClientContext {
    *  append form.  See IRCClientContext for the contract. */
   isupportValues: Map<string, Map<string, string>> = new Map();
   private diskOnlyBatches = new Set<string>();
+  // Whether the line being handled came with the server's own time.
+  hasLineServerTime = true;
+  // The labels of the searches we sent and still expect an answer to.
+  private pendingSearches = new Map<string, Set<string>>();
   motdLines: Map<string, string[]> = new Map();
 
   private ourCaps: string[] = [
@@ -802,6 +823,7 @@ export class IRCClient implements IRCClientContext {
     "obby.world/invitation",
     "draft/webpush",
     "soju.im/webpush",
+    "soju.im/search",
     // Note: unrealircd.org/link-security is informational only, don't request it
   ];
 
@@ -2060,6 +2082,36 @@ export class IRCClient implements IRCClientContext {
     this.sendRaw(serverId, `MARKREAD ${target} timestamp=${timestamp}`);
   }
 
+  // soju.im/search: the server answers with one `soju.im/search` batch, which
+  // carries no reference to the question, so callers ask one at a time.
+  // The answer names its question only through the label.
+  search(
+    serverId: string,
+    attributes: Record<string, string>,
+    label: string,
+  ): boolean {
+    if (!this.hasCapability(serverId, "soju.im/search")) return false;
+    const pending = this.pendingSearches.get(serverId) ?? new Set<string>();
+    pending.add(label);
+    this.pendingSearches.set(serverId, pending);
+    this.sendRaw(
+      serverId,
+      `@label=${label} SEARCH ${encodeBouncerAttrs(attributes)}`,
+    );
+    return true;
+  }
+
+  // An answer is ours when it carries the label of a search we sent, however
+  // late it comes. Any other answers a search the user typed, and reaches
+  // the chat like other lines.
+  claimSearchAnswer(serverId: string, label: string | undefined): boolean {
+    return !!label && !!this.pendingSearches.get(serverId)?.delete(label);
+  }
+
+  forgetSearches(serverId: string): void {
+    this.pendingSearches.delete(serverId);
+  }
+
   // Explicit /motd: the reply (including ERR_NOMOTD) is shown to the user.
   // Servers we asked for the MOTD, so a "no MOTD" reply is shown only as an
   // answer: bouncers like soju send one on every connect.
@@ -2208,6 +2260,7 @@ export class IRCClient implements IRCClientContext {
       }
       // Servers without server-time leave the time to us, so we stamp one
       // receive time that the chat and the saved history both read.
+      this.hasLineServerTime = !!mtags?.time;
       if (!mtags?.time) mtags = { ...mtags, time: new Date().toISOString() };
 
       // Parse IRC message properly handling colon-prefixed trailing parameter
