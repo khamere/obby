@@ -7,7 +7,7 @@ import {
   readBytes,
   TERMS,
 } from "./idb";
-import { serverTimeOf, splitTags } from "./searchFields";
+import { serverTimeOf, splitTags, stripTags } from "./searchFields";
 import {
   backfillChunk,
   indexRow,
@@ -865,7 +865,7 @@ function withTarget(raw: string, from: string, to: string): string {
     .join("\r\n");
 }
 
-/** Files what we saved of a channel under the name the server gave it since. */
+/** Files what we saved of a channel under the name the server gave it since. Rows already saved under that name belong to an earlier channel of the name, so both sets then stay where they are. */
 export function moveChannelHistory(
   server: string,
   oldName: string,
@@ -876,25 +876,26 @@ export function moveChannelHistory(
   if (from === to) return Promise.resolve();
   return enqueue(undefined, (db) =>
     inTx(db, [ROWS, GAPS, META, TERMS], "readwrite", async (tx) => {
-      const freed = await moveRows(
-        tx,
-        tx.objectStore(ROWS).index("conv"),
+      const conversations = tx.objectStore(ROWS).index("conv");
+      const whole = (target: string) =>
         convRange(
           server,
-          from,
+          target,
           Number.NEGATIVE_INFINITY,
           Number.POSITIVE_INFINITY,
-        ),
-        (row) => {
-          const raw = withTarget(row.raw, from, newName);
-          return {
-            ...row,
-            target: to,
-            raw,
-            bytes: row.bytes + raw.length - row.raw.length,
-          };
-        },
-      );
+        );
+      if (await awaitRequest(conversations.count(whole(to)))) return;
+      const freed = await moveRows(tx, conversations, whole(from), (row) => {
+        const raw = withTarget(row.raw, from, newName);
+        return {
+          ...row,
+          target: to,
+          // A line without a msgid is told apart by its time and text, so its key follows the line it now holds.
+          key: row.msgid ? row.key : `${row.time}|${stripTags(raw)}`,
+          raw,
+          bytes: row.bytes + raw.length - row.raw.length,
+        };
+      });
       await addBytes(tx, -freed);
       await walk(
         tx.objectStore(GAPS).index("conv"),

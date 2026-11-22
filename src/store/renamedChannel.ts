@@ -83,7 +83,6 @@ export function carrySavedChannelName(
   // We are in the channel under its new name, so a mark that says we left a channel of that name goes.
   saveLeftReason(serverId, newName, undefined);
   renameRecentPlace(serverId, oldName, newName);
-  void moveChannelHistory(serverId, oldName, newName).catch(() => undefined);
   try {
     renameInSavedServer(serverId, oldName, newName);
     renameInFolders(serverId, oldName, newName);
@@ -91,4 +90,7 @@ export function carrySavedChannelName(
   } catch {
     // Storage is full or closed to us, and the channel still carries its new name until the page reloads.
   }
+  moveChannelHistory(serverId, oldName, newName).catch((error: unknown) =>
+    console.warn("saved history stays under the old channel name", error),
+  );
 }

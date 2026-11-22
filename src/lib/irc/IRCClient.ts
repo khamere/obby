@@ -1753,6 +1753,20 @@ export class IRCClient implements IRCClientContext {
       );
   }
 
+  // We send messages and rejoin after a reconnect by the names we hold here, so a renamed channel takes its new name and replaces any entry already under it.
+  renameKnownChannel(serverId: string, oldName: string, newName: string): void {
+    const server = this.servers.get(serverId);
+    if (!server) return;
+    const isOld = (name: string) =>
+      name.toLowerCase() === oldName.toLowerCase();
+    const isNew = (name: string) =>
+      name.toLowerCase() === newName.toLowerCase();
+    if (!server.channels.some((c) => isOld(c.name))) return;
+    server.channels = server.channels
+      .filter((c) => isOld(c.name) || !isNew(c.name))
+      .map((c) => (isOld(c.name) ? { ...c, name: newName } : c));
+  }
+
   sendMessage(serverId: string, channelId: string, content: string): void {
     const server = this.servers.get(serverId);
     if (!server) throw new Error(`Server ${serverId} not found`);

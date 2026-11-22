@@ -99,8 +99,10 @@ export function handleRename(
   serverId: string,
   source: string,
   parv: string[],
-  _mtags: Record<string, string> | undefined,
+  mtags: Record<string, string> | undefined,
 ): void {
+  // A rename inside a batch is one the server plays back from the past, and the channel already carries the name it has now.
+  if (mtags?.batch) return;
   const user = getNickFromNuh(source);
   const oldName = parv[0];
   const newName = parv[1];
@@ -114,18 +116,6 @@ export function handleRename(
   )
     return;
   const reason = parv.slice(2).join(" "); // trailing already parsed into parv
-  // We send messages and rejoin after a reconnect by the names we hold here, so the channel takes its new name and replaces any entry already under it.
-  const server = ctx.servers.get(serverId);
-  if (server) {
-    const isOld = (name: string) =>
-      name.toLowerCase() === oldName.toLowerCase();
-    const isNew = (name: string) =>
-      name.toLowerCase() === newName.toLowerCase();
-    if (server.channels.some((c) => isOld(c.name)))
-      server.channels = server.channels
-        .filter((c) => isOld(c.name) || !isNew(c.name))
-        .map((c) => (isOld(c.name) ? { ...c, name: newName } : c));
-  }
   ctx.triggerEvent("RENAME", {
     serverId,
     oldName,

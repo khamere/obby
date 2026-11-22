@@ -587,18 +587,46 @@ describe("moveChannelHistory", () => {
     expect(await db.usageBytes()).toBe(before + 2 * 5);
   });
 
-  it("drops a row the new name already holds", async () => {
+  it("leaves both names alone when the new one already holds rows", async () => {
     await db.appendRows([
       row({ target: "#old", key: "a", time: 1 }),
       row({ target: "#old", key: "b", time: 2 }),
       row({ target: "#new", key: "a", time: 1 }),
     ]);
+    await db.addGap({
+      server: "s1",
+      target: "#old",
+      from: 1,
+      to: 2,
+      lost: false,
+    });
 
     await db.moveChannelHistory("s1", "#old", "#new");
 
-    const rows = await db.newestEventRows("s1", "#new", 10);
-    expect(rows.map((r) => r.key)).toEqual(["a", "b"]);
-    expect(await db.usageBytes()).toBe(2 * ROW_BYTES);
+    const keys = async (target: string) =>
+      (await db.newestEventRows("s1", target, 10)).map((r) => r.key);
+    expect(await keys("#old")).toEqual(["a", "b"]);
+    expect(await keys("#new")).toEqual(["a"]);
+    expect(await db.gapsFor("s1", "#old")).toHaveLength(1);
+    expect(await db.usageBytes()).toBe(3 * ROW_BYTES);
+  });
+
+  it("keys a moved line without a msgid by the line it now holds", async () => {
+    const said = (target: string) =>
+      `@time=1970-01-01T00:00:01.000Z :al!u@h PRIVMSG ${target} :hello`;
+    const keyOf = (target: string) => `1000|:al!u@h PRIVMSG ${target} :hello`;
+    await db.appendRows([
+      row({ target: "#old", key: keyOf("#old"), raw: said("#old") }),
+    ]);
+
+    await db.moveChannelHistory("s1", "#old", "#new");
+
+    expect(
+      await db.appendRows([
+        row({ target: "#new", key: keyOf("#new"), raw: said("#new") }),
+      ]),
+    ).toEqual([false]);
+    expect(await db.newestEventRows("s1", "#new", 10)).toHaveLength(1);
   });
 
   it("leaves the rows alone when only the letter case changes", async () => {

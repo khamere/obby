@@ -1154,11 +1154,18 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
       name.toLowerCase() === oldName.toLowerCase();
     const isNew = (name: string) =>
       name.toLowerCase() === newName.toLowerCase();
+    const rows =
+      store.getState().servers.find((s) => s.id === serverId)?.channels ?? [];
+    const renamed = rows.find((c) => isOld(c.name));
+    // A server renames a channel only for its members and never onto a channel that exists, so we follow a rename only for a channel we are in and never onto another one we are in.
+    if (!renamed || renamed.leftReason) return;
+    if (rows.some((c) => c.id !== renamed.id && isNew(c.name) && !c.leftReason))
+      return;
     store.setState((state) => {
       const server = state.servers.find((s) => s.id === serverId);
       if (!server) return {};
 
-      const channel = server.channels.find((c) => isOld(c.name));
+      const channel = server.channels.find((c) => c.id === renamed.id);
       if (!channel) return {};
 
       const renameMessage: Message = {
@@ -1220,6 +1227,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
         },
       };
     });
+    ircClient.renameKnownChannel(serverId, oldName, newName);
     const { channelOrder, servers } = store.getState();
     if (channelOrder[serverId]) storage.channelOrder.save(channelOrder);
     // The channel keeps its id and everything we save for it is kept by name, so the saved state moves once the channel carries the new name.

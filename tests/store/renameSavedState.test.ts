@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import ircClient from "../../src/lib/ircClient";
 import { saveLeftReason } from "../../src/lib/leftChannels";
+import { muteChat, resetMutesForTests, silencesFor } from "../../src/lib/mutes";
 import { getRecentPlaces, recordPlace } from "../../src/lib/search/recents";
 import type { AppState } from "../../src/store";
 import useStore from "../../src/store";
@@ -266,6 +267,14 @@ describe("a channel the server renames", () => {
     seed(["#Lounge", "#den"]);
     saveEntry({ channels: ["#Lounge", "#den"] });
     saveLeftReason(serverId, "#den", "parted");
+    useStore.setState((state) => ({
+      servers: state.servers.map((s) => ({
+        ...s,
+        channels: s.channels.map((c) =>
+          c.name === "#den" ? { ...c, leftReason: "parted" as const } : c,
+        ),
+      })),
+    }));
     const { id } = server().channels[0];
 
     feed(":op!u@h RENAME #lounge #Den");
@@ -327,6 +336,109 @@ describe("a channel the server renames", () => {
     expect(useStore.getState().mentionLog[0]).toMatchObject({
       channelId: row?.id,
       channelName: "#den",
+    });
+  });
+
+  describe("only when the rename is ours to follow", () => {
+    const everything = () => ({
+      rows: server().channels.map((c) => [c.name, c.leftReason]),
+      known: (
+        clientServers().get(serverId) as { channels: Channel[] }
+      ).channels.map((c) => c.name),
+      saved: savedEntry(),
+      order: useStore.getState().channelOrder,
+      folders: useChannelFolders.getState().folders,
+      selections: saved<UISelections>("uiSelections"),
+      places: getRecentPlaces(),
+      mutes: silencesFor(server()),
+      mentions: useStore.getState().mentionLog,
+      said: Object.values(useStore.getState().messages).flat(),
+    });
+    const mention = (name: string): MentionEntry => ({
+      messageId: `m-${name}`,
+      serverId,
+      channelId: generateDeterministicId(serverId, name),
+      channelName: name,
+      sender: "op",
+      content: "me: hello",
+      timestamp: "2026-01-01T12:00:00.000Z",
+      seen: false,
+    });
+
+    beforeEach(() => {
+      resetMutesForTests();
+      seed(["#Lounge", "#other"]);
+      useStore.setState({
+        channelOrder: { [serverId]: ["#Lounge", "#other"] },
+        mentionLog: [mention("#Lounge"), mention("#other")],
+      });
+      useChannelFolders.getState().createFolder(serverId, "Work", "#Lounge");
+      useStore.getState().selectChannel(server().channels[0].id);
+      recordPlace({ serverId, name: "#Lounge", kind: "channel" });
+      muteChat(
+        serverId,
+        { id: server().channels[0].id, kind: "channel", name: "#Lounge" },
+        null,
+      );
+    });
+
+    test("carries all of it for a channel we are in", () => {
+      feed(":op!u@h RENAME #lounge #den");
+      const after = everything();
+      expect(after.rows).toEqual([
+        ["#den", undefined],
+        ["#other", undefined],
+      ]);
+      expect(after.known).toEqual(["#den", "#other"]);
+      expect(after.saved.channels).toEqual(["#den", "#other"]);
+      expect(after.order[serverId]).toEqual(["#den", "#other"]);
+      expect(after.folders[serverId][0].channels).toEqual(["#den"]);
+      expect(
+        after.selections.perServerSelections[serverId].selectedChannelName,
+      ).toBe("#den");
+      expect(after.places[0].name).toBe("#den");
+      expect(after.mutes).toEqual([{ chat: "#den", until: null }]);
+      expect(after.mentions.map((m) => m.channelName)).toEqual([
+        "#den",
+        "#other",
+      ]);
+    });
+
+    test("changes nothing when the line is part of a history page", () => {
+      const before = everything();
+      feed(":irc.test BATCH +h1 chathistory #other");
+      feed("@batch=h1 :op!u@h RENAME #Lounge #den");
+      feed(":irc.test BATCH -h1");
+      expect(everything()).toEqual(before);
+    });
+
+    test("changes nothing for a channel we hold no row for", () => {
+      saveEntry({ channels: ["#Lounge", "#other", "#ghost"] });
+      saveLeftReason(serverId, "#gone", "parted");
+      recordPlace({ serverId, name: "#ghost", kind: "channel" });
+      muteChat(serverId, { id: "x", kind: "channel", name: "#ghost" }, null);
+      const before = everything();
+      feed(":op!u@h RENAME #ghost #gone");
+      expect(everything()).toEqual(before);
+      expect(savedEntry().leftChannels).toEqual({ "#gone": "parted" });
+    });
+
+    test("changes nothing for a channel we have left", () => {
+      ircClient.triggerEvent("PART", {
+        serverId,
+        username: "me",
+        channelName: "#lounge",
+      });
+      expect(server().channels[0].leftReason).toBe("parted");
+      const before = everything();
+      feed(":op!u@h RENAME #lounge #den");
+      expect(everything()).toEqual(before);
+    });
+
+    test("changes nothing when the new name is another channel we are in", () => {
+      const before = everything();
+      feed(":op!u@h RENAME #lounge #OTHER");
+      expect(everything()).toEqual(before);
     });
   });
 });
