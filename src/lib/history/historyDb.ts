@@ -7,7 +7,7 @@ import {
   readBytes,
   TERMS,
 } from "./idb";
-import { serverTimeOf, splitTags, stripTags } from "./searchFields";
+import { serverTimeOf, splitTags, stripTags, termsOf } from "./searchFields";
 import {
   backfillChunk,
   indexRow,
@@ -606,6 +606,50 @@ async function deleteWithReactions(
     for (const reaction of reactions) doomed.set(reaction.id, reaction);
   }
   await deleteRows(tx, [...doomed.values()]);
+}
+
+// Rows sharing a millisecond are read back in id order. A server page lies
+// after the rows we held at its oldest time and before the ones we held at its
+// newest time, so at that edge we give new ids to the rows that sit out of
+// that order.
+export function orderRowsAtPageEdge(
+  server: string,
+  target: string,
+  time: number,
+  pageMsgids: string[],
+  edge: "oldest" | "newest",
+): Promise<void> {
+  const rank = new Map(pageMsgids.map((msgid, index) => [msgid, index]));
+  const outside = edge === "oldest" ? -1 : pageMsgids.length;
+  const rankOf = (row: HistoryRow) =>
+    (row.msgid ? rank.get(row.msgid) : undefined) ?? outside;
+  return enqueue(undefined, (db) =>
+    inTx(db, [ROWS, TERMS], "readwrite", async (tx) => {
+      const store = tx.objectStore(ROWS);
+      const rows = (
+        await awaitRequest<HistoryRow[]>(
+          store.index("conv").getAll(IDBKeyRange.only([server, target, time])),
+        )
+      ).filter((row) => row.ref === undefined);
+      const ordered = [...rows].sort((a, b) => rankOf(a) - rankOf(b));
+      const firstMoved = ordered.findIndex((row, index) => row !== rows[index]);
+      if (firstMoved < 0) return;
+      const moved = ordered.slice(firstMoved);
+      for (const row of moved) {
+        store.delete(row.id);
+        unindexRow(tx, row);
+      }
+      for (const { id: _, ...record } of moved) {
+        const id = await awaitRequest<IDBValidKey>(store.add(record));
+        await indexRow(
+          tx,
+          record,
+          id as number,
+          record.text === undefined ? [] : termsOf(record.text),
+        );
+      }
+    }),
+  );
 }
 
 export function gapsFor(server: string, target: string): Promise<HistoryGap[]> {

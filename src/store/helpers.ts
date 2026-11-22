@@ -133,6 +133,58 @@ export function compareMessageOrder(a: Message, b: Message): number {
   return messageTime(a) - messageTime(b);
 }
 
+// A history page holds the server's lines in the server's order, which their
+// times cannot give back once several lines share a millisecond. So the page
+// keeps its own order, and a line we hold that the page leaves out goes ahead
+// of it or behind it by where its time falls against the page's edges.
+export function mergeHistoryPage(
+  existing: Message[],
+  page: Message[],
+): { merged: Message[]; added: Message[] } {
+  const byMsgid = new Map(
+    existing.flatMap((m) => (m.msgid ? [[m.msgid, m] as const] : [])),
+  );
+  const held = new Set<Message>();
+  const added: Message[] = [];
+  const run = page.flatMap((m) => {
+    const time = messageTime(m);
+    const copy =
+      (m.msgid ? byMsgid.get(m.msgid) : undefined) ??
+      existing.find(
+        (e) =>
+          e.content === m.content &&
+          e.userId === m.userId &&
+          messageTime(e) === time,
+      );
+    if (!copy) {
+      added.push(m);
+      return [m];
+    }
+    if (held.has(copy)) return [];
+    held.add(copy);
+    return [copy];
+  });
+  const times = page.map(messageTime);
+  const oldest = Math.min(...times);
+  const newest = Math.max(...times);
+  const others = existing.filter((m) => !held.has(m));
+  // A page inside one millisecond has a single edge time, so a line we hold there counts as older when we hold lines before that time.
+  const isOlderAtEdge =
+    oldest === newest && others.some((m) => messageTime(m) < newest);
+  const isBeforePage = (m: Message) => {
+    const time = messageTime(m);
+    return time < newest || (time === newest && isOlderAtEdge);
+  };
+  return {
+    merged: [
+      ...others.filter(isBeforePage),
+      ...run,
+      ...others.filter((m) => !isBeforePage(m)),
+    ].sort(compareMessageOrder),
+    added,
+  };
+}
+
 export const isChatMessage = (message: Message) =>
   message.type === "message" || message.type === undefined;
 

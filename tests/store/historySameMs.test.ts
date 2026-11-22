@@ -28,8 +28,6 @@ const ids = (from: number, to: number) =>
   Array.from({ length: to - from + 1 }, (_, index) => `m${from + index}`);
 const range = (from: number, to: number) =>
   Array.from({ length: to - from + 1 }, (_, index) => from + index);
-const byNumber = (msgids: string[]) =>
-  [...msgids].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)));
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 type World = {
@@ -273,15 +271,15 @@ describe("history pages that end inside a millisecond", {
   timeout: 4 * WRITE_TIMEOUT_MS,
 }, () => {
   describe("older pages on a server that pages by msgid", () => {
-    it("shows every line of a channel once", async () => {
+    it("shows every line of a channel once and in order", async () => {
       const w = await boot("msgid,timestamp");
       w.world.has = range(0, 299);
       await w.loadLatest();
-      expect(byNumber(w.shown())).toEqual(ids(250, 299));
+      expect(w.shown()).toEqual(ids(250, 299));
 
       await w.scrollToTop();
 
-      expect(byNumber(w.shown())).toEqual(ids(0, 299));
+      expect(w.shown()).toEqual(ids(0, 299));
       expect(await w.saved()).toHaveLength(300);
       expect(w.requests("BEFORE").slice(0, 5)).toEqual(
         [250, 200, 150, 100, 50].map(
@@ -290,14 +288,14 @@ describe("history pages that end inside a millisecond", {
       );
     });
 
-    it("shows every line of a private chat once", async () => {
+    it("shows every line of a private chat once and in order", async () => {
       const w = await boot("msgid,timestamp");
       w.world.has = range(0, 299);
       await w.loadLatest("bob", PM_KEY);
 
       await w.scrollToTop("bob", PM_KEY);
 
-      expect(byNumber(w.shown(PM_KEY))).toEqual(ids(0, 299));
+      expect(w.shown(PM_KEY)).toEqual(ids(0, 299));
       expect(w.requests("BEFORE")[0]).toBe(
         `CHATHISTORY BEFORE bob msgid=m250 ${PAGE}`,
       );
@@ -310,10 +308,25 @@ describe("history pages that end inside a millisecond", {
 
       await w.scrollToTop();
 
-      expect(byNumber(w.shown())).toEqual(ids(0, 299));
+      expect(w.shown()).toEqual(ids(0, 299));
       expect(w.requests("BEFORE")[0]).toBe(
         `CHATHISTORY BEFORE #chan msgid=m250 ${PAGE}`,
       );
+    });
+
+    it("shows the saved lines in the server's order when they are read back from disk", async () => {
+      const w = await boot("msgid,timestamp");
+      w.world.has = range(0, 299);
+      await w.loadLatest();
+      await w.scrollToTop();
+      expect(w.shown()).toEqual(ids(0, 299));
+
+      w.useStore.setState({ messages: {} });
+      w.sent.length = 0;
+      await w.loadLatest();
+      await w.scrollToTop();
+
+      expect(w.shown()).toEqual(ids(0, 299));
     });
 
     it("asks again by time when the server no longer knows the line at the edge", async () => {
@@ -398,7 +411,7 @@ describe("history pages that end inside a millisecond", {
         { timeout: WRITE_TIMEOUT_MS },
       );
 
-      expect(byNumber(w.shown())).toEqual(ids(0, 403));
+      expect(w.shown()).toEqual(ids(0, 403));
       expect(w.requests("BEFORE")[0]).toBe(
         `CHATHISTORY BEFORE #chan msgid=m354 ${PAGE}`,
       );
@@ -423,7 +436,7 @@ describe("history pages that end inside a millisecond", {
 
       await w.scrollToTop();
 
-      expect(byNumber(w.shown())).toEqual(ids(0, 803));
+      expect(w.shown()).toEqual(ids(0, 803));
       expect(await w.db.gapsFor(SERVER, "#chan")).toEqual([]);
       expect(w.requests("BEFORE")[0]).toBe(
         `CHATHISTORY BEFORE #chan msgid=m754 ${PAGE}`,
@@ -445,7 +458,7 @@ describe("history pages that end inside a millisecond", {
 
       const seen = await w.pageToPresent();
 
-      expect(byNumber(seen)).toEqual(ids(first, 803));
+      expect(seen).toEqual(ids(first, 803));
       expect(await w.db.gapsFor(SERVER, "#chan")).toEqual([]);
       expect(w.requests("AFTER")[0]).toBe(
         `CHATHISTORY AFTER #chan msgid=m102 ${PAGE}`,

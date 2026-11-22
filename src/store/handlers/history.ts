@@ -18,6 +18,7 @@ import {
   hasServerHistory,
   type NewHistoryRow,
   newestEventRows,
+  orderRowsAtPageEdge,
   parkServerHistory,
   pruneToLimit,
   refRowsFor,
@@ -516,6 +517,15 @@ async function saveHistoryPage(
     return;
   }
   const inserted = rows.length ? await saveRows(store, rows) : [];
+  if (page.oldest !== undefined && inserted.some((wasNew) => wasNew)) {
+    const { oldest, newest = oldest, msgids } = page;
+    // A page inside one millisecond tells its place only when it was asked as the next older page of the chat.
+    const isBeforeAllHeld = request?.kind === "before" && !request.fill?.gap;
+    if (oldest !== newest)
+      await orderRowsAtPageEdge(key, target, oldest, msgids, "oldest");
+    if (oldest !== newest || isBeforeAllHeld)
+      await orderRowsAtPageEdge(key, target, newest, msgids, "newest");
+  }
   const canPageByMsgid = ircClient.canPageByMsgid(serverId);
   if (page.size > 0) {
     if (page.msgids.length === 0) historyWithoutMsgids.add(key);

@@ -8,8 +8,8 @@ import type { Channel, Message } from "../../types";
 import {
   type BatchInfo,
   capMergedMessages,
-  compareMessageOrder,
   hasMsgid,
+  mergeHistoryPage,
   redactedMessage,
   withoutReaction,
   withReaction,
@@ -399,24 +399,14 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
 
           // Dedup buffered messages against what's already in the store (event messages
           // like JOIN/PART arrive immediately and will already be in existing).
-          const existingIds = new Set(
-            existing.map((m) => m.msgid).filter(Boolean),
-          );
-          const newMessages = pending.filter(
-            (m) =>
-              !(m.msgid && existingIds.has(m.msgid)) &&
-              !existing.some(
-                (e) =>
-                  e.content === m.content &&
-                  new Date(e.timestamp).getTime() ===
-                    new Date(m.timestamp).getTime() &&
-                  e.userId === m.userId,
-              ),
+          const { merged: withPage, added: newMessages } = mergeHistoryPage(
+            existing,
+            pending,
           );
 
           const capped = capMergedMessages(
             existing,
-            [...existing, ...newMessages].sort(compareMessageOrder),
+            withPage,
             state.historyWindows[key],
           );
           const merged = capped.messages;
@@ -481,24 +471,14 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
           historyEditBuffers.delete(historyBufferKey(serverId, batchId));
           const existing = state.messages[key] || [];
 
-          const existingIds = new Set(
-            existing.map((m) => m.msgid).filter(Boolean),
-          );
-          const newMessages = pending.filter(
-            (m) =>
-              !(m.msgid && existingIds.has(m.msgid)) &&
-              !existing.some(
-                (e) =>
-                  e.content === m.content &&
-                  new Date(e.timestamp).getTime() ===
-                    new Date(m.timestamp).getTime() &&
-                  e.userId === m.userId,
-              ),
+          const { merged: withPage, added: newMessages } = mergeHistoryPage(
+            existing,
+            pending,
           );
 
           const capped = capMergedMessages(
             existing,
-            [...existing, ...newMessages].sort(compareMessageOrder),
+            withPage,
             state.historyWindows[key],
           );
           const merged = capped.messages;

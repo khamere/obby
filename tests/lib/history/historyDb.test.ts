@@ -813,6 +813,97 @@ describe("ordering", () => {
   });
 });
 
+describe("orderRowsAtPageEdge", () => {
+  const msgidsAt = async (time: number) =>
+    (await db.newestEventRows("s1", "#a", 50))
+      .filter((r) => r.time === time)
+      .map((r) => r.msgid);
+  const said = (msgid: string, time = 1000) =>
+    row({ key: msgid, msgid, time, raw: `:n!u@h PRIVMSG #a :${msgid}` });
+
+  it("moves the rows we held behind an older page that ends in their millisecond", async () => {
+    await db.appendRows([said("m3"), said("m4"), said("m5", 2000)]);
+    await db.appendRows([said("m0", 500), said("m1"), said("m2")]);
+    expect(await msgidsAt(1000)).toEqual(["m3", "m4", "m1", "m2"]);
+    const bytes = await db.usageBytes();
+
+    await db.orderRowsAtPageEdge(
+      "s1",
+      "#a",
+      1000,
+      ["m0", "m1", "m2"],
+      "newest",
+    );
+
+    expect(await msgidsAt(1000)).toEqual(["m1", "m2", "m3", "m4"]);
+    expect(await db.usageBytes()).toBe(bytes);
+    expect(
+      (await db.newestEventRows("s1", "#a", 50)).map((r) => r.msgid),
+    ).toEqual(["m0", "m1", "m2", "m3", "m4", "m5"]);
+  });
+
+  it("puts the page's own rows in the page's order where we held some of them", async () => {
+    await db.appendRows([said("m2"), said("m4")]);
+    await db.appendRows([said("m0", 500), said("m1"), said("m3")]);
+
+    await db.orderRowsAtPageEdge(
+      "s1",
+      "#a",
+      1000,
+      ["m0", "m1", "m2", "m3"],
+      "newest",
+    );
+
+    expect(await msgidsAt(1000)).toEqual(["m1", "m2", "m3", "m4"]);
+  });
+
+  it("keeps the rows we held ahead of a newer page that starts in their millisecond", async () => {
+    await db.appendRows([said("m4"), said("m5", 2000)]);
+    await db.appendRows([said("m1"), said("m2")]);
+    await db.appendRows([said("m3")]);
+
+    await db.orderRowsAtPageEdge(
+      "s1",
+      "#a",
+      1000,
+      ["m3", "m4", "m5"],
+      "oldest",
+    );
+
+    expect(await msgidsAt(1000)).toEqual(["m1", "m2", "m3", "m4"]);
+  });
+
+  it("leaves rows that are in order as they are, reactions included", async () => {
+    await db.appendRows([
+      said("m1"),
+      said("m2"),
+      row({ key: "r1", time: 1000, ref: "m1", raw: "reaction" }),
+    ]);
+    const before = await db.newestEventRows("s1", "#a", 50);
+
+    await db.orderRowsAtPageEdge("s1", "#a", 1000, ["m1"], "newest");
+
+    expect(await db.newestEventRows("s1", "#a", 50)).toEqual(before);
+    expect(await db.refRowsFor("s1", ["m1"])).toHaveLength(1);
+  });
+
+  it("keeps a moved row findable by its text", async () => {
+    const { searchMessages } = await import(
+      "../../../src/lib/history/historySearch"
+    );
+    await db.appendRows([said("m3")]);
+    await db.appendRows([said("m1")]);
+
+    await db.orderRowsAtPageEdge("s1", "#a", 1000, ["m1"], "newest");
+
+    const page = await searchMessages(
+      { text: "m3", scope: { kind: "everywhere" } },
+      { ownNicks: {} },
+    );
+    expect(page.hits.map((hit) => hit.msgid)).toEqual(["m3"]);
+  });
+});
+
 describe("other tabs", () => {
   it("closes for a newer tab and reopens on the next call", async () => {
     await db.appendRows([row({ key: "a" })]);

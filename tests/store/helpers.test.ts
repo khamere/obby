@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   dialsSavedAddress,
+  mergeHistoryPage,
   resolveUserMetadata,
   withoutReaction,
   withReaction,
@@ -170,5 +171,77 @@ describe("a connection dialling the address a login is saved for", () => {
     ).toBe(false);
     expect(dialsSavedAddress({ ...saved, port: 8443 }, saved)).toBe(false);
     expect(dialsSavedAddress(undefined, saved)).toBe(false);
+  });
+});
+
+describe("mergeHistoryPage", () => {
+  const said = (msgid: string, time: number): Message =>
+    ({
+      id: `id-${msgid}`,
+      msgid,
+      content: msgid,
+      userId: "alice",
+      timestamp: new Date(time),
+    }) as Message;
+  const order = (existing: Message[], page: Message[]) =>
+    mergeHistoryPage(existing, page).merged.map((m) => m.msgid);
+
+  it("puts an older page ahead of the lines we hold in the millisecond it ends in", () => {
+    const existing = [said("m3", 1000), said("m4", 1000), said("m5", 2000)];
+    const page = [said("m0", 500), said("m1", 1000), said("m2", 1000)];
+
+    expect(order(existing, page)).toEqual(["m0", "m1", "m2", "m3", "m4", "m5"]);
+  });
+
+  it("puts a newer page behind the lines we hold in the millisecond it starts in", () => {
+    const existing = [said("m0", 500), said("m1", 1000)];
+    const page = [said("m2", 1000), said("m3", 1000), said("m4", 2000)];
+
+    expect(order(existing, page)).toEqual(["m0", "m1", "m2", "m3", "m4"]);
+  });
+
+  it("fits a page between the lines we hold on both sides of it", () => {
+    const existing = [said("m0", 1000), said("m5", 2000), said("m6", 2000)];
+    const page = [
+      said("m1", 1000),
+      said("m2", 1500),
+      said("m3", 2000),
+      said("m4", 2000),
+    ];
+
+    expect(order(existing, page)).toEqual([
+      "m0",
+      "m1",
+      "m2",
+      "m3",
+      "m4",
+      "m5",
+      "m6",
+    ]);
+  });
+
+  it("keeps the page's order around a line we already hold, and adds it once", () => {
+    const held = said("m2", 1000);
+    const existing = [said("m0", 500), held];
+    const page = [said("m1", 1000), said("m2", 1000), said("m3", 1000)];
+
+    const { merged, added } = mergeHistoryPage(existing, page);
+
+    expect(merged.map((m) => m.msgid)).toEqual(["m0", "m1", "m2", "m3"]);
+    expect(merged[2]).toBe(held);
+    expect(added.map((m) => m.msgid)).toEqual(["m1", "m3"]);
+  });
+
+  it("puts a page of one millisecond ahead of our lines there when we hold nothing older", () => {
+    const existing = [said("m2", 1000), said("m3", 2000)];
+    const page = [said("m0", 1000), said("m1", 1000)];
+
+    expect(order(existing, page)).toEqual(["m0", "m1", "m2", "m3"]);
+  });
+
+  it("returns what we hold, in order, for an empty page", () => {
+    const existing = [said("m1", 2000), said("m0", 1000)];
+
+    expect(order(existing, [])).toEqual(["m0", "m1"]);
   });
 });
