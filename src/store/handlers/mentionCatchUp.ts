@@ -145,6 +145,11 @@ function newestLoaded(
 function askNext(store: StoreApi<AppState>, serverId: string): void {
   const queue = queues.get(serverId);
   if (!queue || queue.asked || queue.isStopped) return;
+  // The server may have withdrawn labels since the question was queued.
+  if (!canSearch(serverId)) {
+    dropQueue(serverId);
+    return;
+  }
   // Pages asked on both sides share one budget, which a sibling may have
   // used up since this one was queued.
   let next = queue.waiting.shift();

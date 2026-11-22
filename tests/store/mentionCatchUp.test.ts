@@ -599,6 +599,18 @@ describe("mention catch-up by server search", () => {
     expect(searches()).toHaveLength(2);
   });
 
+  it("stops asking when the server withdraws labels while questions wait", () => {
+    feed(
+      `:server MARKREAD #one timestamp=${READ_AT}`,
+      `:server MARKREAD #two timestamp=${READ_AT}`,
+    );
+    expect(searches()).toHaveLength(1);
+    hasLabels = false;
+    feed(...emptyAnswer("s"));
+    expect(searches()).toHaveLength(1);
+    expect(sent.filter((line) => line.includes("SEARCH "))).toHaveLength(1);
+  });
+
   it("stays quiet on a server that returns no labels", () => {
     hasLabels = false;
     feed(`:server MARKREAD #two timestamp=${READ_AT}`);
