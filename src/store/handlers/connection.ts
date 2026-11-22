@@ -21,7 +21,7 @@ import { reportServerReply } from "./serverReplies";
 // Track which servers have had their ready handler run to prevent duplicate processing
 export const readyProcessedServers = new Set<string>();
 
-// We fall back to the bouncer's account until the network's next connection names its own.
+// We fall back to the bouncer's account until the network names its own.
 function accountBetweenConnections(
   servers: Server[],
   server: Server,
@@ -160,7 +160,7 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
           ? undefined
           : state.servers.find((s) => s.id === serverId)?.account;
       const updatedServers = state.servers.map((server) => {
-        // We reset the networks here because we forget the bouncer's account with this connection.
+        // We reset the networks while we still know the bouncer's account.
         if (server.bouncerServerId === serverId && controlAccount)
           return { ...server, account: controlAccount };
         if (server.id !== serverId) return server;

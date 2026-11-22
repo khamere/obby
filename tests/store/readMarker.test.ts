@@ -628,6 +628,44 @@ describe("read markers", () => {
     expect(bob()).toMatchObject({ unreadCount: 1, readMarker: null });
   });
 
+  it("asks for a private chat's marker again after a logout and a new login", async () => {
+    const { useStore, ircClient } = await boot({ selected: false });
+    const markreadGet = vi
+      .spyOn(ircClient, "markreadGet")
+      .mockImplementation(() => {});
+    useStore.setState((state) => ({
+      servers: state.servers.map((server) => ({
+        ...server,
+        privateChats: [
+          {
+            id: "pm-bob",
+            username: "bob",
+            serverId: SERVER,
+            unreadCount: 0,
+            isMentioned: false,
+            readMarker: new Date(BASE).toISOString(),
+            readMarkerFetched: true,
+          },
+        ],
+      })),
+    }));
+    ircClient.triggerEvent("parsedLine", {
+      serverId: SERVER,
+      line: ":irc.test 001 tester :Welcome",
+      command: "001",
+      source: "irc.test",
+      parv: ["tester", "Welcome"],
+      mtags: undefined,
+    });
+    expect(markreadGet).not.toHaveBeenCalledWith(SERVER, "bob");
+
+    ircClient.triggerEvent("LOGGED_OUT", { serverId: SERVER } as never);
+    ircClient.triggerEvent("LOGGED_IN", { serverId: SERVER, account: "other" });
+    expect(
+      markreadGet.mock.calls.filter(([, target]) => target === "bob"),
+    ).toEqual([[SERVER, "bob"]]);
+  });
+
   it("leaves the chats alone when an update touches neither chats nor messages", async () => {
     const { useStore } = await boot({ selected: false });
     const privateChats = [

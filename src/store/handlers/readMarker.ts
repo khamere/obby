@@ -22,11 +22,9 @@ const MARK_READ_DELAY_MS = 1000;
 // start local markers from then on.
 const registeredAt = new Map<string, string>();
 
-// A connection can end before the server stores what the user read, so we keep
-// each chat's newest read here until the server names it or a later one.
+// We keep each chat's newest read until the server names it or a later one.
 const unsentMarkers = new Map<string, string>();
-// A server that stores nothing for a chat answers our marker with its old one,
-// so we send each waiting marker once per connection.
+// We send a waiting marker once per connection, whatever the server answers.
 const resentMarkers = new Map<string, Set<string>>();
 
 const NOTHING_UNREAD: UnreadCounts = {
@@ -231,8 +229,7 @@ function startMissingMarkers(store: StoreApi<AppState>) {
   }
 }
 
-// Every store update runs the subscriber again, so we flag all the chats in
-// one update before we send the first request.
+// We flag every chat in one update, since each update runs the subscriber.
 function askPrivateMarkers(store: StoreApi<AppState>, serverId: string) {
   const server = store.getState().servers.find((s) => s.id === serverId);
   const pending = (server?.privateChats ?? []).filter(
@@ -249,8 +246,7 @@ function askPrivateMarkers(store: StoreApi<AppState>, serverId: string) {
   for (const pc of pending) ircClient.markreadGet(serverId, pc.username);
 }
 
-// A bouncer answers for a channel before the upstream has joined it, so we
-// ask there instead of waiting for the join to bring the marker.
+// A bouncer keeps channel markers itself, so we ask once it welcomes us.
 function askWaitingChannelMarkers(store: StoreApi<AppState>, serverId: string) {
   const state = store.getState();
   const server = state.servers.find((s) => s.id === serverId);
@@ -271,8 +267,7 @@ export function registerReadMarkerHandlers(store: StoreApi<AppState>): void {
         if (!eqIC(targetOf(chat), target)) return chat;
         const key = chatKey(serverId, chat);
         const unsent = unsentMarkers.get(key);
-        // An answer older than what the user read here was on its way before
-        // ours arrived, so the chat stays read and our marker keeps waiting.
+        // An older answer left before ours arrived, so the chat stays read.
         const isWaiting =
           unsent !== undefined &&
           (timestamp === null || Date.parse(unsent) > Date.parse(timestamp));
@@ -335,8 +330,7 @@ export function registerReadMarkerHandlers(store: StoreApi<AppState>): void {
     }
   });
 
-  // An answer can be lost with the connection, and another client or another
-  // account can move a marker while we are away, so we ask for each again.
+  // Our copy can be stale after a drop or a logout, so we ask for each again.
   const askPrivateMarkersAgain = (serverId: string) =>
     store.setState((state) => ({
       servers: mapChats(state.servers, serverId, (chat) =>
@@ -382,7 +376,6 @@ export function registerReadMarkerHandlers(store: StoreApi<AppState>): void {
     const server = state.servers.find((s) => s.id === serverId);
     if (!server || !registeredAt.has(serverId)) return;
     if (!serverTracksReadMarker(state, serverId)) return;
-    startMissingMarkers(store);
     for (const channel of server.channels)
       ircClient.markreadGet(serverId, channel.name);
   });

@@ -85,7 +85,7 @@ describe("a bouncer child's account across a reconnect", () => {
 
   beforeEach(() => {
     const row = {
-      host: "soju.example",
+      host: "bouncer.example",
       port: 6697,
       isConnected: true,
       connectionState: "connected",
@@ -96,11 +96,11 @@ describe("a bouncer child's account across a reconnect", () => {
     };
     useStore.setState({
       servers: [
-        { ...row, id: "parent", name: "soju", isBouncerControl: true },
+        { ...row, id: "parent", name: "bouncer", isBouncerControl: true },
         {
           ...row,
           id: "child",
-          name: "Libera",
+          name: "network",
           bouncerServerId: "parent",
           bouncerNetid: "1",
         },
@@ -209,9 +209,9 @@ describe("a bouncer child's account across a reconnect", () => {
     const welcome = (time: string) =>
       ircClient.triggerEvent("parsedLine", {
         serverId: "child",
-        line: ":soju.example 001 me :Welcome",
+        line: ":bouncer.example 001 me :Welcome",
         command: "001",
-        source: "soju.example",
+        source: "bouncer.example",
         parv: ["me", "Welcome"],
         mtags: { time },
       });
