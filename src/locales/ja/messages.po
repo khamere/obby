@@ -1774,6 +1774,7 @@ msgstr "外部メディアの読み込み範囲を制御します。オフ／安
 msgid "Control media display and external content"
 msgstr "メディア表示と外部コンテンツを制御する"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 #: src/components/ui/E2EEVerifyModal.tsx
 #: src/components/ui/ExternalLinkWarningModal.tsx
@@ -1810,10 +1811,16 @@ msgstr "チャンネル名をコピー"
 msgid "Copy entire JSON"
 msgstr "JSON全体をコピー"
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Copy error details"
+msgstr "エラーの詳細をコピー"
+
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 msgid "Copy failed, select to retry"
 msgstr "コピー失敗、再試行するには選択"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/mobile/MessageReaderSheet.tsx
 msgid "Copy failed, tap to retry"
 msgstr "コピー失敗、再試行するにはタップ"
@@ -2530,6 +2537,10 @@ msgstr "チャンネル限定パックにはチャンネル名を入力してく
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "このチャンネルに参加できないユーザーの転送先チャンネルを入力してください。無効にするには空のままにします。"
+
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "カンマを含まないキーを入力してください"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
@@ -4391,6 +4402,10 @@ msgstr "Obby は起動するたびにこのファイルをダウンロードす�
 msgid "Obby is up to date."
 msgstr "Obbyは最新です。"
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Obby stopped working"
+msgstr "Obby が動作を停止しました"
+
 #: src/components/ui/UpdateSheet.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Obby will close to install the update; open it again afterwards."
@@ -5119,6 +5134,14 @@ msgstr "緩め — 控えめな保護"
 #: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "リリースノート"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload"
+msgstr "再読み込み"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload to continue. Copy the error details to report the problem."
+msgstr "続けるには再読み込みしてください。問題を報告するには、エラーの詳細をコピーしてください。"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/pages/ChannelSettingsPage.tsx
@@ -6759,6 +6782,10 @@ msgstr "ワイルドカードには * を使用してください。例：baduse
 #: src/components/message/BotInvocationChip.tsx
 msgid "Use /{0}"
 msgstr "/{0} を使う"
+
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "スペースやカンマを含まない名前を使ってください"
 
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."

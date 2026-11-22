@@ -1,6 +1,7 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type React from "react";
 import { useEffect, useState } from "react";
+import { isJoinableChannelKey, trimPlainSpaces } from "../../lib/ircUtils";
 import BaseModal from "../../lib/modal/BaseModal";
 import {
   Button,
@@ -16,9 +17,13 @@ export const ChannelKeyModal: React.FC = () => {
   const joinChannel = useStore((s) => s.joinChannel);
   const closeChannelKeyPrompt = useStore((s) => s.closeChannelKeyPrompt);
   const [key, setKey] = useState("");
+  const [isUnusableKey, setIsUnusableKey] = useState(false);
 
   useEffect(() => {
-    if (prompt) setKey("");
+    if (prompt) {
+      setKey("");
+      setIsUnusableKey(false);
+    }
   }, [prompt]);
 
   if (!prompt) return null;
@@ -26,8 +31,14 @@ export const ChannelKeyModal: React.FC = () => {
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!key) return;
-    joinChannel(serverId, channelName, key);
+    // A pasted key often carries a space at either end. Servers compare every other character exactly, so we send those as typed.
+    const typedKey = trimPlainSpaces(key);
+    if (!typedKey) return;
+    if (!isJoinableChannelKey(typedKey)) {
+      setIsUnusableKey(true);
+      return;
+    }
+    joinChannel(serverId, channelName, typedKey);
     closeChannelKeyPrompt();
   };
 
@@ -46,12 +57,25 @@ export const ChannelKeyModal: React.FC = () => {
             aria-label={t`Channel key`}
             placeholder={t`Channel key`}
             value={key}
-            onChange={(e) => setKey(e.target.value)}
-            error={isWrongKey ? t`Wrong key, try again` : undefined}
+            onChange={(e) => {
+              setKey(e.target.value);
+              setIsUnusableKey(false);
+            }}
+            error={
+              isUnusableKey
+                ? t`Enter a key without commas`
+                : isWrongKey
+                  ? t`Wrong key, try again`
+                  : undefined
+            }
           />
         </ModalBody>
         <ModalFooter>
-          <Button type="submit" variant="primary" disabled={!key}>
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={!trimPlainSpaces(key)}
+          >
             <Trans>Join</Trans>
           </Button>
         </ModalFooter>

@@ -1774,6 +1774,7 @@ msgstr "Контролюйте завантаження зовнішніх ме�
 msgid "Control media display and external content"
 msgstr "Керувати відображенням медіа та зовнішнього вмісту"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 #: src/components/ui/E2EEVerifyModal.tsx
 #: src/components/ui/ExternalLinkWarningModal.tsx
@@ -1810,10 +1811,16 @@ msgstr "Копіювати назву каналу"
 msgid "Copy entire JSON"
 msgstr "Скопіювати весь JSON"
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Copy error details"
+msgstr "Скопіювати відомості про помилку"
+
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 msgid "Copy failed, select to retry"
 msgstr "Копіювання не вдалося, виберіть для повтору"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/mobile/MessageReaderSheet.tsx
 msgid "Copy failed, tap to retry"
 msgstr "Копіювання не вдалося, торкніться для повтору"
@@ -2530,6 +2537,10 @@ msgstr "Введіть назву каналу для паків каналу."
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "Вкажіть канал, на який перенаправляти користувачів, що не можуть приєднатися до цього. Залиште порожнім, щоб вимкнути."
+
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "Введіть ключ без ком"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
@@ -4391,6 +4402,10 @@ msgstr "Obby завантажує цей файл під час кожного �
 msgid "Obby is up to date."
 msgstr "Obby оновлено."
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Obby stopped working"
+msgstr "Obby перестав працювати"
+
 #: src/components/ui/UpdateSheet.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Obby will close to install the update; open it again afterwards."
@@ -5119,6 +5134,14 @@ msgstr "Розслаблений - менш агресивний захист"
 #: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "Примітки до випуску"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload"
+msgstr "Перезавантажити"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload to continue. Copy the error details to report the problem."
+msgstr "Перезавантажте, щоб продовжити. Скопіюйте відомості про помилку, щоб повідомити про проблему."
 
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/pages/ChannelSettingsPage.tsx
@@ -6759,6 +6782,10 @@ msgstr "Використовуйте * для шаблонів. Приклади
 #: src/components/message/BotInvocationChip.tsx
 msgid "Use /{0}"
 msgstr "Використати /{0}"
+
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "Використовуйте назву без пробілів і ком"
 
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."

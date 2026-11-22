@@ -1774,6 +1774,7 @@ msgstr "Ne kadar harici medya yükleneceğini denetleyin. Kapalı / Güvenli / G
 msgid "Control media display and external content"
 msgstr "Medya gösterimini ve harici içeriği denetleyin"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 #: src/components/ui/E2EEVerifyModal.tsx
 #: src/components/ui/ExternalLinkWarningModal.tsx
@@ -1810,10 +1811,16 @@ msgstr "Kanal adını kopyala"
 msgid "Copy entire JSON"
 msgstr "Tüm JSON'u kopyala"
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Copy error details"
+msgstr "Hata ayrıntılarını kopyala"
+
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 msgid "Copy failed, select to retry"
 msgstr "Kopya başarısız, yeniden denemek için seç"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/mobile/MessageReaderSheet.tsx
 msgid "Copy failed, tap to retry"
 msgstr "Kopya başarısız, yeniden denemek için dokunun"
@@ -2530,6 +2537,10 @@ msgstr "Kanala özel paketler için bir kanal adı girin."
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "Bu kanala katılamayan kullanıcıların yönlendirileceği bir kanal girin. Devre dışı bırakmak için boş bırakın."
+
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "Virgül içermeyen bir anahtar girin"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
@@ -4391,6 +4402,10 @@ msgstr "Obby bu dosyayı her açılışta indirir, böylece aynı bağlantıyı 
 msgid "Obby is up to date."
 msgstr "Obby güncel."
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Obby stopped working"
+msgstr "Obby çalışmayı durdurdu"
+
 #: src/components/ui/UpdateSheet.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Obby will close to install the update; open it again afterwards."
@@ -5119,6 +5134,14 @@ msgstr "Rahat - Daha az agresif koruma"
 #: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "Sürüm notları"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload"
+msgstr "Yeniden yükle"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload to continue. Copy the error details to report the problem."
+msgstr "Devam etmek için yeniden yükleyin. Sorunu bildirmek için hata ayrıntılarını kopyalayın."
 
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/pages/ChannelSettingsPage.tsx
@@ -6759,6 +6782,10 @@ msgstr "Joker karakter için * kullanın. Örnekler: baduser!*@*, *!*@spammer.co
 #: src/components/message/BotInvocationChip.tsx
 msgid "Use /{0}"
 msgstr "/{0} kullan"
+
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "Boşluk veya virgül içermeyen bir ad kullanın"
 
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."

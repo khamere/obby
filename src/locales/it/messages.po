@@ -1774,6 +1774,7 @@ msgstr "Controlla quanti media esterni vengono caricati. Disattivato / Sicuro / 
 msgid "Control media display and external content"
 msgstr "Controlla la visualizzazione dei media e dei contenuti esterni"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 #: src/components/ui/E2EEVerifyModal.tsx
 #: src/components/ui/ExternalLinkWarningModal.tsx
@@ -1810,10 +1811,16 @@ msgstr "Copia nome canale"
 msgid "Copy entire JSON"
 msgstr "Copia JSON completo"
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Copy error details"
+msgstr "Copia dettagli dell'errore"
+
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 msgid "Copy failed, select to retry"
 msgstr "Copia non riuscita, seleziona per riprovare"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/mobile/MessageReaderSheet.tsx
 msgid "Copy failed, tap to retry"
 msgstr "Copia non riuscita, tocca per riprovare"
@@ -2530,6 +2537,10 @@ msgstr "Inserisci un nome di canale per i pacchetti limitati al canale."
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "Inserisci un canale a cui inviare gli utenti che non possono entrare in questo. Lascia vuoto per disattivare."
+
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "Inserisci una chiave senza virgole"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
@@ -4391,6 +4402,10 @@ msgstr "Obby scarica questo file a ogni avvio, così chiunque usi lo stesso link
 msgid "Obby is up to date."
 msgstr "Obby è aggiornato."
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Obby stopped working"
+msgstr "Obby ha smesso di funzionare"
+
 #: src/components/ui/UpdateSheet.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Obby will close to install the update; open it again afterwards."
@@ -5119,6 +5134,14 @@ msgstr "Rilassato – Protezione meno aggressiva"
 #: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "Note di rilascio"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload"
+msgstr "Ricarica"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload to continue. Copy the error details to report the problem."
+msgstr "Ricarica per continuare. Copia i dettagli dell'errore per segnalare il problema."
 
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/pages/ChannelSettingsPage.tsx
@@ -6759,6 +6782,10 @@ msgstr "Usa * come wildcard. Esempi: baduser!*@*, *!*@spammer.com, troll*!*@*"
 #: src/components/message/BotInvocationChip.tsx
 msgid "Use /{0}"
 msgstr "Usa /{0}"
+
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "Usa un nome senza spazi né virgole"
 
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."

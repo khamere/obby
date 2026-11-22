@@ -1812,7 +1812,10 @@ const useStore = create<AppState>((set, get) => ({
         } else {
           const savedServers = loadSavedServers();
           const savedServer = savedServers.find((s) => s.id === serverId);
-          if (savedServer && !savedServer.channels.some(isSameChannel)) {
+          // A restored saved list can hold an entry that is no name.
+          const isSavedChannel = (name: unknown) =>
+            typeof name === "string" && isSameChannel(name);
+          if (savedServer && !savedServer.channels.some(isSavedChannel)) {
             // We track only channels this join adds to the saved list, so a refused autojoin keeps the channels the user saved.
             markPendingJoin(serverId, channel.name);
             savedServer.channels.push(channel.name);
@@ -1875,8 +1878,9 @@ const useStore = create<AppState>((set, get) => ({
         const savedServers = loadSavedServers();
         const savedServer = savedServers.find((s) => s.id === serverId);
         if (savedServer) {
+          // A restored saved list can hold an entry that is no name, and we drop it here too.
           savedServer.channels = savedServer.channels.filter(
-            (name) => !isForgotten(name),
+            (name: unknown) => typeof name === "string" && !isForgotten(name),
           );
           saveServersToLocalStorage(savedServers);
         }

@@ -445,6 +445,14 @@ describe("pages with no file behind them", () => {
     expect(result?.type).toBe("map");
     expect(vi.mocked(fetch)).not.toHaveBeenCalled();
   });
+
+  test("a map link with an unusable position is never requested", async () => {
+    const result = await probeMediaUrl(
+      "https://www.openstreetmap.org/?mlat=91&mlon=13.4",
+    );
+    expect(result).toBeNull();
+    expect(vi.mocked(fetch)).not.toHaveBeenCalled();
+  });
 });
 
 describe("shouldProbeUrl", () => {

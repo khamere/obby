@@ -1774,6 +1774,7 @@ msgstr "Styr hur mycket externt media som laddas. Av / Säkert / Betrodda källo
 msgid "Control media display and external content"
 msgstr "Styr medievisning och externt innehåll"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 #: src/components/ui/E2EEVerifyModal.tsx
 #: src/components/ui/ExternalLinkWarningModal.tsx
@@ -1810,10 +1811,16 @@ msgstr "Kopiera kanalnamn"
 msgid "Copy entire JSON"
 msgstr "Kopiera hela JSON"
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Copy error details"
+msgstr "Kopiera felinformation"
+
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 msgid "Copy failed, select to retry"
 msgstr "Kopie misslyckades, välj för att försöka igen"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/mobile/MessageReaderSheet.tsx
 msgid "Copy failed, tap to retry"
 msgstr "Kopie misslyckades, tryck för att försöka igen"
@@ -2530,6 +2537,10 @@ msgstr "Ange ett kanalnamn för kanalspecifika paket."
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "Ange en kanal att skicka användare till när de inte kan gå med i den här. Lämna tomt för att inaktivera."
+
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "Ange en nyckel utan kommatecken"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
@@ -4391,6 +4402,10 @@ msgstr "Obby laddar ner filen varje gång den startar, så alla som använder sa
 msgid "Obby is up to date."
 msgstr "Obby är uppdaterat."
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Obby stopped working"
+msgstr "Obby har slutat fungera"
+
 #: src/components/ui/UpdateSheet.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Obby will close to install the update; open it again afterwards."
@@ -5119,6 +5134,14 @@ msgstr "Avslappnat – mindre aggressivt skydd"
 #: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "Versionsinformation"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload"
+msgstr "Ladda om"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload to continue. Copy the error details to report the problem."
+msgstr "Ladda om för att fortsätta. Kopiera felinformationen för att rapportera problemet."
 
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/pages/ChannelSettingsPage.tsx
@@ -6759,6 +6782,10 @@ msgstr "Använd * som jokertecken. Exempel: baduser!*@*, *!*@spammer.com, troll*
 #: src/components/message/BotInvocationChip.tsx
 msgid "Use /{0}"
 msgstr "Använd /{0}"
+
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "Använd ett namn utan mellanslag eller kommatecken"
 
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."

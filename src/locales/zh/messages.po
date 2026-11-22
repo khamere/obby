@@ -1774,6 +1774,7 @@ msgstr "控制加载的外部媒体量。关闭 / 安全 / 可信来源 / 所有
 msgid "Control media display and external content"
 msgstr "控制媒体显示和外部内容"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 #: src/components/ui/E2EEVerifyModal.tsx
 #: src/components/ui/ExternalLinkWarningModal.tsx
@@ -1810,10 +1811,16 @@ msgstr "复制频道名称"
 msgid "Copy entire JSON"
 msgstr "复制完整 JSON"
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Copy error details"
+msgstr "复制错误详情"
+
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 msgid "Copy failed, select to retry"
 msgstr "复制失败，选择重试"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/mobile/MessageReaderSheet.tsx
 msgid "Copy failed, tap to retry"
 msgstr "复制失败，点击重试"
@@ -2530,6 +2537,10 @@ msgstr "请为频道范围的表情包输入频道名称。"
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "输入一个频道，当用户无法加入此频道时将其转到该频道。留空则停用。"
+
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "请输入不含逗号的密钥"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
@@ -4391,6 +4402,10 @@ msgstr "Obby 每次启动都会下载此文件，因此使用同一链接的每�
 msgid "Obby is up to date."
 msgstr "Obby 已是最新版本。"
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Obby stopped working"
+msgstr "Obby 已停止工作"
+
 #: src/components/ui/UpdateSheet.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Obby will close to install the update; open it again afterwards."
@@ -5119,6 +5134,14 @@ msgstr "宽松 – 较弱的保护"
 #: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "更新说明"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload"
+msgstr "重新加载"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload to continue. Copy the error details to report the problem."
+msgstr "重新加载以继续。复制错误详情以报告此问题。"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/pages/ChannelSettingsPage.tsx
@@ -6759,6 +6782,10 @@ msgstr "用 * 作通配符。示例：baduser!*@*, *!*@spammer.com, troll*!*@*"
 #: src/components/message/BotInvocationChip.tsx
 msgid "Use /{0}"
 msgstr "使用 /{0}"
+
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "请使用不含空格或逗号的名称"
 
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."
