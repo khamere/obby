@@ -8,6 +8,7 @@ import {
   encodeE2EEPayload,
 } from "../../src/lib/e2ee/protocol";
 import ircClient from "../../src/lib/ircClient";
+import { parseMessageTags } from "../../src/lib/ircUtils";
 import useStore from "../../src/store";
 import {
   registerE2EEHandlers,
@@ -190,6 +191,16 @@ describe("a fragmented message keeps one identity", () => {
   function carrierLines() {
     return sent.filter((line) => line.includes(E2EE_BODY_MARKER));
   }
+
+  test("a reply id stays inside its tags", () => {
+    sendEncryptedMessage(serverId, nick, "hello", "id;1 x\\y");
+
+    const line = carrierLines().at(-1) ?? "";
+    expect(parseMessageTags(line.slice(0, line.indexOf(" ")))).toMatchObject({
+      "+reply": "id;1 x\\y",
+      "+draft/reply": "id;1 x\\y",
+    });
+  });
 
   test("only the completing frame names the message", () => {
     sendEncryptedMessage(serverId, nick, "x".repeat(2000), "m1");

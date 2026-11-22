@@ -3,8 +3,10 @@
  */
 import { useCallback, useRef, useState } from "react";
 import ircClient from "../lib/ircClient";
+import { escapeTagValue } from "../lib/ircUtils";
 import useStore from "../store";
 import {
+  isReactionBy,
   updateMessageByMsgid,
   withoutReaction,
   withReaction,
@@ -32,6 +34,16 @@ interface UseReactionsReturn {
   directReaction: (emoji: string, message: Message) => void;
   unreact: (emoji: string, message: Message) => void;
 }
+
+const reactionLine = (
+  tag: "+draft/react" | "+draft/unreact",
+  emoji: string,
+  msgid: string,
+  target: string,
+) => {
+  const id = escapeTagValue(msgid);
+  return `@${tag}=${escapeTagValue(emoji)};+reply=${id};+draft/reply=${id} TAGMSG ${target}`;
+};
 
 /**
  * Manages message reactions and reaction modal state
@@ -117,18 +129,18 @@ export function useReactions({
         const liveReactions =
           storeMsg?.reactions ?? reactionModal.message.reactions;
         const existingReaction = liveReactions.find(
-          (r) => r.emoji === emoji && r.userId === currentUser?.username,
+          (r) => r.emoji === emoji && isReactionBy(r, currentUser?.username),
         );
 
-        if (existingReaction) {
-          // Send unreact message
-          const tagMsg = `@+draft/unreact=${emoji};+reply=${reactionModal.message.msgid};+draft/reply=${reactionModal.message.msgid} TAGMSG ${target}`;
-          ircClient.sendRaw(server.id, tagMsg);
-        } else {
-          // Send react message
-          const tagMsg = `@+draft/react=${emoji};+reply=${reactionModal.message.msgid};+draft/reply=${reactionModal.message.msgid} TAGMSG ${target}`;
-          ircClient.sendRaw(server.id, tagMsg);
-        }
+        ircClient.sendRaw(
+          server.id,
+          reactionLine(
+            existingReaction ? "+draft/unreact" : "+draft/react",
+            emoji,
+            reactionModal.message.msgid,
+            target,
+          ),
+        );
 
         const message = reactionModal.message;
         const { msgid } = message;
@@ -161,8 +173,10 @@ export function useReactions({
       const { server, target } = findServerAndTarget(message);
 
       if (server && target) {
-        const tagMsg = `@+draft/react=${emoji};+reply=${message.msgid};+draft/reply=${message.msgid} TAGMSG ${target}`;
-        ircClient.sendRaw(server.id, tagMsg);
+        ircClient.sendRaw(
+          server.id,
+          reactionLine("+draft/react", emoji, msgid, target),
+        );
 
         set((state) =>
           updateMessageByMsgid(state, messageKey(message), msgid, (m) =>
@@ -185,8 +199,10 @@ export function useReactions({
       const { server, target } = findServerAndTarget(message);
 
       if (server && target) {
-        const tagMsg = `@+draft/unreact=${emoji};+reply=${message.msgid};+draft/reply=${message.msgid} TAGMSG ${target}`;
-        ircClient.sendRaw(server.id, tagMsg);
+        ircClient.sendRaw(
+          server.id,
+          reactionLine("+draft/unreact", emoji, msgid, target),
+        );
 
         set((state) =>
           updateMessageByMsgid(state, messageKey(message), msgid, (m) =>

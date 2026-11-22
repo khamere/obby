@@ -29,7 +29,12 @@ export const mentionLog = {
   load: (): MentionEntry[] => {
     try {
       const data = JSON.parse(localStorage.getItem(KEYS.MENTION_LOG) || "[]");
-      return Array.isArray(data) ? data : [];
+      if (!Array.isArray(data)) return [];
+      // New mentions are inserted by time, which needs the saved ones in
+      // that order too.
+      return (data as MentionEntry[]).sort((a, b) =>
+        a.timestamp < b.timestamp ? -1 : a.timestamp > b.timestamp ? 1 : 0,
+      );
     } catch {
       return [];
     }
@@ -60,8 +65,16 @@ export const bouncerGroupAccents = {
 
 export const servers = {
   load: (): ServerConfig[] => {
-    const data = JSON.parse(localStorage.getItem(KEYS.SERVERS) || "[]");
-    return [...data].sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0));
+    const data: ServerConfig[] = JSON.parse(
+      localStorage.getItem(KEYS.SERVERS) || "[]",
+    );
+    // A restored backup is stored as it was written, so we give every server a channel list here.
+    return data
+      .map((server) => ({
+        ...server,
+        channels: Array.isArray(server.channels) ? server.channels : [],
+      }))
+      .sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0));
   },
 
   save: (servers: ServerConfig[]) => {

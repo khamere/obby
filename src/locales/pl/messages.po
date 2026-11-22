@@ -1775,6 +1775,7 @@ msgstr "Kontroluj ilość wczytywanego zewnętrznego medium. Wyłączone / Bezpi
 msgid "Control media display and external content"
 msgstr "Kontroluj wyświetlanie mediów i zewnętrznych treści"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 #: src/components/ui/E2EEVerifyModal.tsx
 #: src/components/ui/ExternalLinkWarningModal.tsx
@@ -1811,10 +1812,16 @@ msgstr "Kopiuj nazwę kanału"
 msgid "Copy entire JSON"
 msgstr "Kopiuj cały JSON"
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Copy error details"
+msgstr "Kopiuj szczegóły błędu"
+
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 msgid "Copy failed, select to retry"
 msgstr "Kopiowanie nie powiodło się, wybierz aby spróbować ponownie"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/mobile/MessageReaderSheet.tsx
 msgid "Copy failed, tap to retry"
 msgstr "Kopiowanie nie powiodło się, dotknij aby spróbować ponownie"
@@ -2526,6 +2533,10 @@ msgstr "Wpisz nazwę kanału dla pakietów kanałowych."
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "Podaj kanał, na który mają trafiać użytkownicy, gdy nie mogą dołączyć do tego. Zostaw puste, aby wyłączyć."
+
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "Wpisz klucz bez przecinków"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
@@ -4387,6 +4398,10 @@ msgstr "Obby pobiera ten plik przy każdym uruchomieniu, więc każdy, kto używ
 msgid "Obby is up to date."
 msgstr "Obby jest aktualne."
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Obby stopped working"
+msgstr "Obby przestało działać"
+
 #: src/components/ui/UpdateSheet.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Obby will close to install the update; open it again afterwards."
@@ -5115,6 +5130,14 @@ msgstr "Łagodny – mniej agresywna ochrona"
 #: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "Informacje o wersji"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload"
+msgstr "Wczytaj ponownie"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload to continue. Copy the error details to report the problem."
+msgstr "Wczytaj ponownie, aby kontynuować. Skopiuj szczegóły błędu, aby zgłosić problem."
 
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/pages/ChannelSettingsPage.tsx
@@ -6743,6 +6766,10 @@ msgstr "Użyj * jako symbolu wieloznacznego. Przykłady: baduser!*@*, *!*@spamme
 #: src/components/message/BotInvocationChip.tsx
 msgid "Use /{0}"
 msgstr "Użyj /{0}"
+
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "Użyj nazwy bez spacji i przecinków"
 
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."
