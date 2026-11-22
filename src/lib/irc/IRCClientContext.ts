@@ -57,6 +57,12 @@ export interface IRCClientContext {
   noteTagmsgRefused(serverId: string): void;
   hasLineServerTime: boolean;
   claimSearchAnswer(serverId: string, label: string | undefined): boolean;
+  // The server sent 001, so this connection counts as a successful one.
+  noteWelcomed(serverId: string): void;
+  // The server turned our login down before welcoming us.
+  noteLoginRefused(serverId: string): void;
+  // The server only takes logged-in users.
+  noteAccountRequired(serverId: string): void;
   activeBatches: Map<
     string,
     Map<

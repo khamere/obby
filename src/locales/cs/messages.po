@@ -3584,6 +3584,7 @@ msgid "Log in"
 msgstr "Přihlásit se"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Log in again"
 msgstr "Přihlásit se znovu"
 
@@ -5033,6 +5034,7 @@ msgid "Recent searches"
 msgstr "Nedávná hledání"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Reconnect"
 msgstr "Připojit znovu"
 
@@ -6374,6 +6376,14 @@ msgstr "Nahrávku se nepodařilo pořídit."
 #: src/lib/voiceErrors.ts
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "Server odmítl vaše připojení. Zkontrolujte režimy kanálu a zkuste to znovu."
+
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "The server refused your login. Fix your account name or password to connect"
+msgstr "Server odmítl vaše přihlášení. Opravte název účtu nebo heslo, abyste se připojili"
 
 #: src/components/ui/UpdateSheet.tsx
 msgid "The update could not start. Try again."

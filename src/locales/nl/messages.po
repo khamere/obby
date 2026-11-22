@@ -3584,6 +3584,7 @@ msgid "Log in"
 msgstr "Inloggen"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Log in again"
 msgstr "Opnieuw inloggen"
 
@@ -5033,6 +5034,7 @@ msgid "Recent searches"
 msgstr "Recente zoekopdrachten"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Reconnect"
 msgstr "Opnieuw verbinden"
 
@@ -6374,6 +6376,14 @@ msgstr "De opname kon niet worden gemaakt."
 #: src/lib/voiceErrors.ts
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "De server heeft je deelname geweigerd. Controleer de kanaalmodi en probeer het opnieuw."
+
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "The server refused your login. Fix your account name or password to connect"
+msgstr "De server heeft je login geweigerd. Herstel je accountnaam of wachtwoord om te verbinden"
 
 #: src/components/ui/UpdateSheet.tsx
 msgid "The update could not start. Try again."

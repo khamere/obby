@@ -196,6 +196,16 @@ export const IRC_DISPATCH: Record<string, HandlerFn> = {
       text: parv.slice(1).join(" "),
     });
   },
+  // ERR_PASSWDMISMATCH: the server password is wrong.
+  "464": (ctx, serverId, source, parv) => {
+    ctx.noteLoginRefused(serverId);
+    ctx.triggerEvent("SERVER_REPLY", {
+      serverId,
+      source,
+      numeric: "464",
+      text: parv.slice(1).join(" "),
+    });
+  },
   CAP: (ctx, serverId, source, parv, mtags, trailing) =>
     handleCap(ctx, serverId, source, parv, mtags, trailing),
   "381": (ctx, serverId, source, parv) =>

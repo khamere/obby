@@ -66,6 +66,7 @@ import * as tictactoeActions from "./handlers/tictactoeActions";
 import { rememberRequestedNick } from "./handlers/users";
 import {
   compareMessageOrder,
+  dialsSavedAddress,
   ensureUrlFormat,
   isAppInFront,
   MAX_MESSAGES_PER_CHANNEL,
@@ -3251,11 +3252,15 @@ const useStore = create<AppState>((set, get) => ({
     releaseServerVoiceClients(serverId);
     ircClient.disconnect(serverId, state.globalSettings.quitMessage);
 
-    // Update server state to connecting
+    // A refusal belongs to the attempt it answered, so this one starts without it.
     set((state) => ({
       servers: state.servers.map((s) =>
         s.id === serverId
-          ? { ...s, connectionState: "connecting" as const }
+          ? {
+              ...s,
+              connectionState: "connecting" as const,
+              loginRefused: false,
+            }
           : s,
       ),
     }));
@@ -3367,6 +3372,17 @@ const useStore = create<AppState>((set, get) => ({
     if (serverIndex !== -1) {
       savedServers[serverIndex] = { ...savedServers[serverIndex], ...config };
       saveServersToLocalStorage(savedServers);
+    }
+    // A bouncer network left dialling an address its bouncer no longer has would retry there, so we close it.
+    const moved = savedServers[serverIndex];
+    if (moved && (config.host !== undefined || config.port !== undefined)) {
+      for (const child of get().servers) {
+        if (child.bouncerServerId !== serverId) continue;
+        const target = ircClient.getConnectTarget(child.id);
+        if (!target || dialsSavedAddress(target, moved)) continue;
+        releaseServerVoiceClients(child.id);
+        ircClient.disconnect(child.id);
+      }
     }
     if (config.accentColor !== undefined) {
       set((state) => {

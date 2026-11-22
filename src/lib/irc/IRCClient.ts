@@ -85,6 +85,7 @@ export interface EventMap {
     connectionState: ConnectionState;
   };
   saslFailed: BaseIRCEvent;
+  loginRefused: BaseIRCEvent;
   NICK: EventWithTags & {
     oldNick: string;
     newNick: string;
@@ -1030,6 +1031,8 @@ export class IRCClient implements IRCClientContext {
 
       socket.onopen = () => {
         //registerAllProtocolHandlers(this);
+        this.welcomed.delete(server.id);
+        this.loginRefused.delete(server.id);
 
         this.triggerEvent("rawLine", {
           serverId: server.id,
@@ -1072,7 +1075,11 @@ export class IRCClient implements IRCClientContext {
             connectionState: "disconnected",
           });
           this.pendingConnections.delete(connectionKey);
-          if (!wasReconnecting) {
+          if (!this.welcomed.has(server.id)) this.turnedAway.add(server.id);
+          if (this.loginRefused.has(server.id)) {
+            this.reconnectionAttempts.delete(server.id);
+            this.triggerEvent("loginRefused", { serverId: server.id });
+          } else if (!wasReconnecting) {
             this.startReconnection(
               server.id,
               name,
@@ -1144,9 +1151,8 @@ export class IRCClient implements IRCClientContext {
     this.pendingConnections.set(connectionKey, connectionPromise);
 
     // Clean up the pending connection when it resolves or rejects
-    connectionPromise.finally(() => {
-      this.pendingConnections.delete(connectionKey);
-    });
+    const forgetPending = () => this.pendingConnections.delete(connectionKey);
+    connectionPromise.then(forgetPending, forgetPending);
 
     return connectionPromise;
   }
@@ -1177,6 +1183,11 @@ export class IRCClient implements IRCClientContext {
       socket.close();
     }
     this.registered.delete(serverId);
+    this.welcomed.delete(serverId);
+    this.loginRefused.delete(serverId);
+    this.turnedAway.delete(serverId);
+    // A closed server stays closed until its owner connects it again, so a wake finds nothing to redial.
+    this.serverConnectParams.delete(serverId);
     this.pendingMonitor.delete(serverId);
     this.tagmsgRefused.delete(serverId);
     const server = this.servers.get(serverId);
@@ -1323,9 +1334,6 @@ export class IRCClient implements IRCClientContext {
         saslPassword,
         serverId,
       );
-      console.log(`Reconnection successful for server ${serverId}`);
-      // Success - reset reconnection attempts
-      this.reconnectionAttempts.delete(serverId);
       this.reconnectionTimeouts.delete(serverId);
     } catch (error) {
       console.log(`Reconnection failed for server ${serverId}:`, error);
@@ -1354,6 +1362,37 @@ export class IRCClient implements IRCClientContext {
 
   noteTagmsgRefused(serverId: string): void {
     this.tagmsgRefused.add(serverId);
+  }
+
+  // A server can open the socket and still turn us away, so only its welcome restarts the retry delay.
+  private welcomed = new Set<string>();
+  // A retry would send a refused login again, so we wait for the user once such a connection closes.
+  private loginRefused = new Set<string>();
+  // A server that took our connection and closed it before its welcome is owed the full retry wait.
+  private turnedAway = new Set<string>();
+
+  noteWelcomed(serverId: string): void {
+    this.welcomed.add(serverId);
+    this.loginRefused.delete(serverId);
+    this.turnedAway.delete(serverId);
+    this.reconnectionAttempts.delete(serverId);
+  }
+
+  noteLoginRefused(serverId: string): void {
+    if (!this.welcomed.has(serverId)) this.loginRefused.add(serverId);
+  }
+
+  // A login we hold but could not present on this connection may still pass on the next one.
+  noteAccountRequired(serverId: string): void {
+    if (!this.saslEnabled.get(serverId)) this.noteLoginRefused(serverId);
+  }
+
+  // Saved credentials belong to one address, so callers compare it with the one this connection dials.
+  getConnectTarget(
+    serverId: string,
+  ): { host: string; port: number } | undefined {
+    const params = this.serverConnectParams.get(serverId);
+    return params && { host: params.host, port: params.port };
   }
 
   // When we last sent a PRIVMSG to each target, so a refusal that carries no
@@ -2828,6 +2867,7 @@ export class IRCClient implements IRCClientContext {
   }
 
   wakeReconnect(serverId: string): void {
+    if (this.loginRefused.has(serverId)) return;
     const now = Date.now();
     const last = this.lastWakeReconnect.get(serverId) ?? 0;
     if (now - last < 5000) return;
@@ -2840,6 +2880,8 @@ export class IRCClient implements IRCClientContext {
     if (!params) return;
 
     if (server.connectionState === "reconnecting") {
+      // A wake means the network may be back, which changes nothing for a server that reached us and closed before its welcome.
+      if (this.turnedAway.has(serverId)) return;
       // Already reconnecting but may be stuck in a long backoff (e.g. after many
       // failed attempts while sleeping). Cancel the pending timeout and retry now.
       const existingTimeout = this.reconnectionTimeouts.get(serverId);

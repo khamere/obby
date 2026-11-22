@@ -44,6 +44,7 @@ export function handleFail(
     parv,
     trailing,
   );
+  if (code === "ACCOUNT_REQUIRED") ctx.noteAccountRequired(serverId);
   ctx.triggerEvent("FAIL", {
     serverId,
     mtags,

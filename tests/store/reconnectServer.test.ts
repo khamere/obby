@@ -70,4 +70,27 @@ describe("reconnectServer", () => {
       serverId,
     );
   });
+
+  test("drops an earlier refusal when the new attempt cannot reach the server", async () => {
+    useStore.setState((state) => ({
+      servers: state.servers.map((s) => ({
+        ...s,
+        isConnected: false,
+        connectionState: "disconnected" as const,
+        loginRefused: true,
+      })),
+    }));
+    vi.spyOn(ircClient, "disconnect").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const connect = vi
+      .spyOn(useStore.getState(), "connect")
+      .mockRejectedValue(new Error("unreachable"));
+    useStore.setState({ connect });
+
+    await useStore.getState().reconnectServer(serverId);
+
+    const server = useStore.getState().servers.find((s) => s.id === serverId);
+    expect(server?.connectionState).toBe("disconnected");
+    expect(server?.loginRefused).toBe(false);
+  });
 });
