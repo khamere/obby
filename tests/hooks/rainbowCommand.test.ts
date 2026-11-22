@@ -273,16 +273,26 @@ describe("/rainbow", () => {
         } as unknown as Server,
       ],
     });
-    vi.spyOn(ircClient, "sendMultiline").mockImplementation(() => {});
     const text = `Hello  there\n${"🌈 ".repeat(200)}`;
     send(`/rainbow ${text}`);
-    const [server, target, lines] = vi.mocked(ircClient.sendMultiline).mock
-      .calls[0];
-    expect(server).toBe("s1");
-    expect(target).toBe("#chat");
+    const sent = vi
+      .mocked(ircClient.sendRaw)
+      .mock.calls.map(([, line]) => line);
+    expect(sent[0]).toMatch(/^BATCH \+\S+ draft\/multiline #chat$/);
+    expect(sent.at(-1)).toMatch(/^BATCH -/);
+    let received = "";
+    for (const line of sent.slice(1, -1)) {
+      const payload = line.slice(line.indexOf(" :") + 2);
+      expect(new TextEncoder().encode(payload).length).toBeLessThanOrEqual(
+        512 - calculateProtocolOverhead("#chat"),
+      );
+      if (received && !line.includes(";draft/multiline-concat "))
+        received += "\n";
+      received += payload;
+    }
+    expect(stripIrcFormatting(received)).toBe(text);
     expect(
-      lines.map((chunks) => stripIrcFormatting(chunks.join(""))).join("\n"),
-    ).toBe(text);
-    expect(ircClient.sendRaw).not.toHaveBeenCalled();
+      sent.filter((l) => l.includes("multiline-concat")).length,
+    ).toBeGreaterThan(0);
   });
 });
