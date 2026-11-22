@@ -6388,6 +6388,10 @@ msgstr "Ta przeglądarka nie może nagrywać audio."
 msgid "This browser cannot record video."
 msgstr "Ta przeglądarka nie może nagrywać wideo."
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "This browser does not let Obby store data, so nothing was saved."
+msgstr "Ta przeglądarka nie pozwala Obby zapisywać danych, więc nic nie zostało zapisane."
+
 #: src/components/search/SearchQueryBar.tsx
 msgid "This chat"
 msgstr "Ten czat"
@@ -6476,6 +6480,10 @@ msgstr "Ten serwer nie ma hosta plików. Połącz się z serwerem z hostem plik�
 #: src/components/ui/AddServerModal.tsx
 msgid "This server only supports one connection type"
 msgstr "Ten serwer obsługuje tylko jeden typ połączenia"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "This stylesheet could not be made safe, so it was not saved."
+msgstr "Nie udało się zabezpieczyć tego arkusza stylów, więc nie został zapisany."
 
 #. placeholder {0}: children.length
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
@@ -6782,6 +6790,10 @@ msgstr "Użyj bezpiecznego portu websocket."
 #: src/components/pages/SettingsPage.tsx
 msgid "Use a server with IRCv3 METADATA to set your avatar, display name, and status."
 msgstr "Użyj serwera z IRCv3 METADATA, aby ustawić awatar, wyświetlaną nazwę i status."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Use a smaller stylesheet. This one does not fit in this browser's storage."
+msgstr "Użyj mniejszego arkusza stylów. Ten nie mieści się w pamięci tej przeglądarki."
 
 #: src/components/ui/settings/BackupField.tsx
 msgid "Use at least {PASSWORD_MIN_LENGTH} characters."
