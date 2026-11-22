@@ -29,6 +29,7 @@ import {
 import { confirmDestructive } from "../../lib/modal/ConfirmDialog";
 import { isMobileDevice, isTauriMobile } from "../../lib/platformUtils";
 import useStore from "../../store";
+import { isReactionBy } from "../../store/helpers";
 import type { Message } from "../../types";
 import { nickProvider } from "../chat/completionProviders";
 import { MessageItem } from "../message/MessageItem";
@@ -170,7 +171,7 @@ export function MediaCommentsSidebar({
       const live =
         (state.messages[key] ?? []).find((m) => m.id === msg.id) ?? msg;
       return live.reactions
-        .filter((r) => r.userId === currentUser?.username)
+        .filter((r) => isReactionBy(r, currentUser?.username))
         .map((r) => r.emoji);
     }),
   );

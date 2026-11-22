@@ -16,8 +16,17 @@ import type {
 import { APP_VERSION } from "../appVersion";
 import { encodeBouncerAttrs } from "../bouncerAttrs";
 import { parseIrcUrl } from "../ircUrlParser";
-import { chantypesOf, isChannelTarget, parseMessageTags } from "../ircUtils";
-import { createBatchId, splitLongMessage } from "../messageProtocol";
+import {
+  chantypesOf,
+  escapeTagValue,
+  isChannelTarget,
+  parseMessageTags,
+} from "../ircUtils";
+import {
+  calculateProtocolOverhead,
+  createBatchId,
+  splitLongMessage,
+} from "../messageProtocol";
 import { createSocket, type ISocket } from "../socket";
 import { IRC_DISPATCH } from "./handlers";
 import type { IRCClientContext } from "./IRCClientContext";
@@ -25,6 +34,7 @@ import {
   chunkForMultiline,
   type MultilineLimits,
   parseMultilineLimits,
+  splitAtSpaces,
 } from "./multiline";
 
 // Namespace UUID for generating deterministic channel/chat IDs
@@ -1339,7 +1349,10 @@ export class IRCClient implements IRCClientContext {
     return Date.now() - at <= IRCClient.RECENT_SEND_MS;
   }
 
-  sendRaw(serverId: string, command: string): void {
+  sendRaw(serverId: string, text: string): void {
+    // The server reads every line of a frame as a command of its own, so we
+    // send only the first line of whatever a caller hands us.
+    const command = text.split(/[\r\n\0]/, 1)[0];
     if (this.tagmsgRefused.has(serverId) && /^(?:@\S+ )?TAGMSG /i.test(command))
       return;
     const privmsg = /^(?:@\S+ )?PRIVMSG (\S+) /i.exec(command);
@@ -1653,9 +1666,10 @@ export class IRCClient implements IRCClientContext {
     content: string,
   ): void {
     // Send a whisper with both the ratified and draft channel-context tags for backwards compat
+    const context = escapeTagValue(channelName);
     this.sendRaw(
       serverId,
-      `@+channel-context=${channelName};+draft/channel-context=${channelName} PRIVMSG ${targetUser} :${content}`,
+      `@+channel-context=${context};+draft/channel-context=${context} PRIVMSG ${targetUser} :${content}`,
     );
   }
 
@@ -1688,6 +1702,35 @@ export class IRCClient implements IRCClientContext {
       // preserveBoundarySpace, or concat rejoins "AAA BBB CCC" as "AAA BBBCCC".
       lines.map((line) => splitLongMessage(line, target, true)),
     );
+  }
+
+  // One command is one line, so we send text with line breaks as a multiline
+  // batch, or line by line where the server has none.
+  sendText(
+    serverId: string,
+    target: string,
+    text: string,
+    options: { replyTo?: string; joinLines?: boolean } = {},
+  ): void {
+    const replyTo = options.replyTo ? escapeTagValue(options.replyTo) : "";
+    const tags = replyTo ? `@+reply=${replyTo};+draft/reply=${replyTo} ` : "";
+    const maxBytes = 512 - calculateProtocolOverhead(target);
+    const lines = text.split(/\r?\n/);
+    if (lines.length > 1 && this.hasCapability(serverId, "draft/multiline")) {
+      this.sendMultiline(
+        serverId,
+        target,
+        lines.map((line) => splitAtSpaces(line, maxBytes, true)),
+        tags,
+      );
+      return;
+    }
+    const separate = options.joinLines
+      ? [lines.filter(Boolean).join(" ")]
+      : lines;
+    for (const line of separate)
+      for (const part of splitAtSpaces(line, maxBytes, false))
+        if (part) this.sendRaw(serverId, `${tags}PRIVMSG ${target} :${part}`);
   }
 
   sendMultiline(
