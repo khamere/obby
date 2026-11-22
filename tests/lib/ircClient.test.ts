@@ -670,6 +670,41 @@ describe("IRCClient", () => {
         ]);
       });
 
+      // A relayed line to #a carries 381 bytes at most by our count, and the
+      // server decides about a link past that, which we send as it is.
+      const longLink = `https://files.example/${"a".repeat(373)}.png`;
+
+      test("sends a caption and its link as the one line they fit", () => {
+        const sent = sentBy(() =>
+          client.sendText(server.id, "#a", "photo https://files.example/a.png"),
+        );
+
+        expect(sent).toEqual(["PRIVMSG #a :photo https://files.example/a.png"]);
+      });
+
+      test("keeps a long link whole on a server without batches", () => {
+        const sent = sentBy(() =>
+          client.sendText(server.id, "#a", `photo ${longLink}`),
+        );
+
+        expect(sent).toEqual(["PRIVMSG #a :photo", `PRIVMSG #a :${longLink}`]);
+      });
+
+      test("keeps a long link whole inside a batch", () => {
+        server.capabilities = ["draft/multiline"];
+
+        const sent = sentBy(() =>
+          client.sendText(server.id, "#a", `see\nphoto ${longLink}`),
+        );
+
+        const batch = /BATCH \+(\S+) /.exec(sent[0])?.[1];
+        expect(sent.slice(1, -1)).toEqual([
+          `@batch=${batch} PRIVMSG #a :see`,
+          `@batch=${batch} PRIVMSG #a :photo `,
+          `@batch=${batch};draft/multiline-concat PRIVMSG #a :${longLink}`,
+        ]);
+      });
+
       test("keeps a single line as one tagged message", () => {
         const sent = sentBy(() =>
           client.sendText(server.id, "#a", "hello", { replyTo: "abc" }),

@@ -214,11 +214,31 @@ describe("a reply to a message whose id needs escaping", () => {
     expectReplyTo(lines[0]);
   });
 
+  const withJoining = (autoFallbackToSingleLine: boolean) =>
+    useStore.setState((state) => ({
+      globalSettings: { ...state.globalSettings, autoFallbackToSingleLine },
+    }));
+
   it("names it on each line when the server has no batches", () => {
+    withJoining(false);
+    const lines = reply("one\ntwo");
+    withJoining(true);
+
+    expect(lines.map((line) => line.slice(line.indexOf(" ") + 1))).toEqual([
+      "PRIVMSG #lobby :one",
+      "PRIVMSG #lobby :two",
+    ]);
+    for (const line of lines) expectReplyTo(line);
+  });
+
+  it("names it on the one line that joins the lines", () => {
+    withJoining(true);
     const lines = reply("one\ntwo");
 
-    expect(lines.length).toBeGreaterThan(0);
-    for (const line of lines) expectReplyTo(line);
+    expect(lines.map((line) => line.slice(line.indexOf(" ") + 1))).toEqual([
+      "PRIVMSG #lobby :one two",
+    ]);
+    expectReplyTo(lines[0]);
   });
 });
 

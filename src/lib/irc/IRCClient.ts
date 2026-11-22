@@ -21,7 +21,11 @@ import {
   isChannelTarget,
   parseMessageTags,
 } from "../ircUtils";
-import { createBatchId, splitLongMessage } from "../messageProtocol";
+import {
+  calculateProtocolOverhead,
+  createBatchId,
+  splitLongMessage,
+} from "../messageProtocol";
 import { createSocket, type ISocket } from "../socket";
 import { IRC_DISPATCH } from "./handlers";
 import type { IRCClientContext } from "./IRCClientContext";
@@ -29,6 +33,7 @@ import {
   chunkForMultiline,
   type MultilineLimits,
   parseMultilineLimits,
+  splitAtSpaces,
 } from "./multiline";
 
 // Namespace UUID for generating deterministic channel/chat IDs
@@ -1687,20 +1692,23 @@ export class IRCClient implements IRCClientContext {
   ): void {
     const replyTo = options.replyTo ? escapeTagValue(options.replyTo) : "";
     const tags = replyTo ? `@+reply=${replyTo};+draft/reply=${replyTo} ` : "";
+    const maxBytes = 512 - calculateProtocolOverhead(target);
     const lines = text.split(/\r?\n/);
     if (lines.length > 1 && this.hasCapability(serverId, "draft/multiline")) {
       this.sendMultiline(
         serverId,
         target,
-        lines.map((line) => splitLongMessage(line, target, true)),
+        lines.map((line) => splitAtSpaces(line, maxBytes, true)),
         tags,
       );
       return;
     }
-    const separate = options.joinLines ? [lines.join(" ")] : lines;
-    for (const line of separate.filter(Boolean))
-      for (const part of splitLongMessage(line, target))
-        this.sendRaw(serverId, `${tags}PRIVMSG ${target} :${part}`);
+    const separate = options.joinLines
+      ? [lines.filter(Boolean).join(" ")]
+      : lines;
+    for (const line of separate)
+      for (const part of splitAtSpaces(line, maxBytes, false))
+        if (part) this.sendRaw(serverId, `${tags}PRIVMSG ${target} :${part}`);
   }
 
   sendMultiline(
