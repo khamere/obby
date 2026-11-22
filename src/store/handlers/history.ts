@@ -14,6 +14,7 @@ import {
   gapsFor,
   type HistoryGap,
   type HistoryRow,
+  hasRowForEach,
   hasServerHistory,
   type NewHistoryRow,
   newestEventRows,
@@ -480,12 +481,14 @@ async function refreshHasMore(
   const conversation = findConversation(store, serverId, target);
   if (!conversation) return;
   const oldest = store.getState().messages[conversation.key]?.[0];
-  const isBelowScreen = (gap: HistoryGap) =>
+  const isOlderThanOldestShown = (gap: HistoryGap) =>
     !oldest || gap.from < messageTime(oldest);
   const hasMore =
     serverMayHaveMore ||
     (await olderDiskRows(store, serverId, target, 1)).length > 0 ||
-    (await gapsServerCanFill(store, serverId, target)).some(isBelowScreen);
+    (await gapsServerCanFill(store, serverId, target)).some(
+      isOlderThanOldestShown,
+    );
   store.setState((state) => ({
     servers: state.servers.map((server) =>
       server.id !== serverId
@@ -682,16 +685,6 @@ function settleGap(
   );
 }
 
-async function isSaved(serverId: string, target: string, message: Message) {
-  const msgids = [message.msgid, ...(message.multilineMessageIds ?? [])];
-  const rows = await Promise.all(
-    msgids.map((msgid) =>
-      msgid ? rowByMsgid(serverId, target.toLowerCase(), msgid) : undefined,
-    ),
-  );
-  return rows.some((row) => row !== undefined);
-}
-
 // A gap longer than we fill at once goes above the messages on screen, where
 // load more fills it as the reader scrolls up to it. Scrolling on brings the
 // messages before it back from disk, so when one of them is not saved there
@@ -713,10 +706,16 @@ async function showOnlyAfterGap(
     .filter(
       (message) => message.type === "message" || message.type === "notice",
     );
-  const saved = await Promise.all(
-    said.map((message) => isSaved(serverId, target, message)),
+  const isEverySaved = await hasRowForEach(
+    serverId,
+    target.toLowerCase(),
+    said.map((message) =>
+      [message.msgid, ...(message.multilineMessageIds ?? [])].filter(
+        (msgid) => msgid !== undefined,
+      ),
+    ),
   );
-  if (saved.includes(false)) {
+  if (!isEverySaved) {
     if (canMark)
       showMissingMarker(store, serverId, conversation.channelId, gap);
     return;
