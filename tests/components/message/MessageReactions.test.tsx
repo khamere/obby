@@ -48,4 +48,18 @@ describe("MessageReactions", () => {
     expect(chip.textContent).toBe("well done1");
     expect(chip.firstElementChild?.className).toContain("whitespace-pre");
   });
+
+  it("marks a reaction as ours when the nick differs only by case", () => {
+    render(
+      <MessageReactions
+        reactions={[{ emoji: "👍", userId: "Alice" }]}
+        currentUserUsername="alice"
+        onReactionClick={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Remove reaction 👍" }),
+    ).toBeTruthy();
+  });
 });

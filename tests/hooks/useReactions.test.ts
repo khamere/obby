@@ -72,6 +72,40 @@ describe("useReactions", () => {
     ]);
   });
 
+  // The reaction keeps the spelling of the nick it was made under.
+  it("removes our reaction from the picker after the nick changed case", () => {
+    const stored = {
+      ...message,
+      reactions: [{ emoji: "👍", userId: "Tester" }],
+    };
+    useStore.setState({
+      servers: [
+        {
+          id: "s1",
+          channels: [{ id: "chan1", name: "#a", users: [] }],
+          privateChats: [],
+        },
+      ] as never,
+      messages: { "s1-chan1": [stored] },
+    });
+    vi.mocked(ircClient.sendRaw).mockClear();
+    const { result } = renderHook(() =>
+      useReactions({
+        selectedServerId: "s1",
+        currentUser: { id: "u", username: "tester" } as never,
+      }),
+    );
+
+    act(() => result.current.openReactionModal(stored));
+    act(() => result.current.selectReaction("👍"));
+
+    expect(ircClient.sendRaw).toHaveBeenCalledExactlyOnceWith(
+      "s1",
+      "@+draft/unreact=👍;+reply=abc;+draft/reply=abc TAGMSG #a",
+    );
+    expect(useStore.getState().messages["s1-chan1"][0].reactions).toEqual([]);
+  });
+
   describe("a reaction text sent by another client", () => {
     const hostile = "x PRIVMSG #a :injected ;k=v\r\nQUIT";
     const escaped = "x\\sPRIVMSG\\s#a\\s:injected\\s\\:k=v\\r\\nQUIT";

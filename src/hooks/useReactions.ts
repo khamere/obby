@@ -6,6 +6,7 @@ import ircClient from "../lib/ircClient";
 import { escapeTagValue } from "../lib/ircUtils";
 import useStore from "../store";
 import {
+  isReactionBy,
   updateMessageByMsgid,
   withoutReaction,
   withReaction,
@@ -128,7 +129,7 @@ export function useReactions({
         const liveReactions =
           storeMsg?.reactions ?? reactionModal.message.reactions;
         const existingReaction = liveReactions.find(
-          (r) => r.emoji === emoji && r.userId === currentUser?.username,
+          (r) => r.emoji === emoji && isReactionBy(r, currentUser?.username),
         );
 
         ircClient.sendRaw(

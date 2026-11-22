@@ -1,5 +1,6 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type React from "react";
+import { isReactionBy } from "../../store/helpers";
 import type { MessageType } from "../../types";
 import { HoverTooltip } from "../ui/HoverTooltip";
 import { MdAddReaction } from "./icons";
@@ -106,7 +107,7 @@ export const MessageReactions: React.FC<MessageReactionsProps> = ({
     }
     group.count++;
     group.users.push(reaction.userId);
-    if (reaction.userId === currentUserUsername)
+    if (isReactionBy(reaction, currentUserUsername))
       group.currentUserReacted = true;
   }
 

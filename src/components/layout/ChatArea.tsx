@@ -101,6 +101,7 @@ import {
   routeOutgoingPM,
 } from "../../store/handlers/e2eeOutbound";
 import { queryUncachedBotsInChannel } from "../../store/handlers/pushbot";
+import { isReactionBy } from "../../store/helpers";
 import type { Channel, Message as MessageType, User } from "../../types";
 import { COMMAND_DETAIL_ID, CommandArgHint } from "../chat/CommandArgHint";
 import { CommandArgPill, CommandChip } from "../chat/CommandChip";
@@ -1048,7 +1049,7 @@ export const ChatArea: React.FC<{
       const live =
         (state.messages[key] ?? []).find((m) => m.id === msg.id) ?? msg;
       return live.reactions
-        .filter((r) => r.userId === currentUser?.username)
+        .filter((r) => isReactionBy(r, currentUser?.username))
         .map((r) => r.emoji);
     }),
   );

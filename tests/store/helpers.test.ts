@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { resolveUserMetadata, withReaction } from "../../src/store/helpers";
+import {
+  resolveUserMetadata,
+  withoutReaction,
+  withReaction,
+} from "../../src/store/helpers";
 import type { Channel, Message } from "../../src/types";
 
 function makeChannel(
@@ -119,5 +123,25 @@ describe("withReaction", () => {
     ["nothing", ""],
   ])("drops a reaction with %s", (_, value) => {
     expect(withReaction(message, value, "alice")).toBeNull();
+  });
+});
+
+// A nick is the same nick in any case, and it can change case while a reaction
+// made under the earlier spelling is still on the message.
+describe("a reaction made before a nick changed case", () => {
+  const message = {
+    reactions: [{ emoji: "👍", userId: "Alice" }],
+  } as unknown as Message;
+
+  it("is not added a second time", () => {
+    expect(withReaction(message, "👍", "alice")).toBeNull();
+  });
+
+  it("is removed", () => {
+    expect(withoutReaction(message, "👍", "alice")?.reactions).toEqual([]);
+  });
+
+  it("leaves another nick's reaction alone", () => {
+    expect(withoutReaction(message, "👍", "alicia")).toBeNull();
   });
 });

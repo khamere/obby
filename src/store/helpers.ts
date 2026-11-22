@@ -225,13 +225,21 @@ export const isReactionValue = (value: string): boolean =>
   value.length <= MAX_REACTION_LENGTH &&
   !/^ | $|[^\S ]|\p{Cc}/u.test(value);
 
+// Nicks compare without case, so a reaction stays ours when only the case of
+// our nick changes.
+export const isReactionBy = (
+  reaction: { userId: string },
+  nick: string | undefined,
+): boolean =>
+  nick !== undefined && reaction.userId.toLowerCase() === nick.toLowerCase();
+
 export function withReaction(
   message: Message,
   emoji: string,
   userId: string,
 ): Message | null {
   return !isReactionValue(emoji) ||
-    message.reactions.some((r) => r.emoji === emoji && r.userId === userId)
+    message.reactions.some((r) => r.emoji === emoji && isReactionBy(r, userId))
     ? null
     : { ...message, reactions: [...message.reactions, { emoji, userId }] };
 }
@@ -242,7 +250,7 @@ export function withoutReaction(
   userId: string,
 ): Message | null {
   const reactions = message.reactions.filter(
-    (r) => !(r.emoji === emoji && r.userId === userId),
+    (r) => !(r.emoji === emoji && isReactionBy(r, userId)),
   );
   return reactions.length === message.reactions.length
     ? null
