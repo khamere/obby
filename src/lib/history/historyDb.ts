@@ -165,10 +165,18 @@ function openDb(): Promise<IDBDatabase> {
       setTimeout(continueBackfill, 0);
     };
     open.onerror = () => reject(open.error);
-  }).catch((error: unknown) => {
-    forget();
-    throw error;
-  });
+  })
+    .then(async (db) => {
+      // The merge is a repair, so a failure leaves the records as they are.
+      await mergeAllGaps(db).catch((error: unknown) =>
+        console.warn("history gap merge failed", error),
+      );
+      return db;
+    })
+    .catch((error: unknown) => {
+      forget();
+      throw error;
+    });
   dbPromise = opening;
   return opening;
 }
@@ -622,10 +630,104 @@ export async function fillableGaps(): Promise<HistoryGap[]> {
   return gaps.filter((gap) => !gap.lost);
 }
 
+type GapMerge = { kept: HistoryGap[]; removed: number[] };
+
+// Records for one stretch of a chat say the same thing many times over, and a
+// fill closes one record at a time, so we keep a single record per stretch.
+// Each record keeps its older edge, the saved line the stretch starts after,
+// so a wider record is cut where another one starts inside it.
+export function mergeGaps(gaps: HistoryGap[]): GapMerge {
+  const kept: HistoryGap[] = [];
+  for (const isLost of [false, true]) {
+    const sorted = gaps
+      .filter((gap) => !gap.lost === !isLost)
+      .sort((a, b) => a.from - b.from || a.to - b.to);
+    for (let start = 0; start < sorted.length; ) {
+      let end = start + 1;
+      let to = sorted[start].to;
+      while (
+        end < sorted.length &&
+        (sorted[end].from < to || sorted[end].from === sorted[start].from)
+      ) {
+        to = Math.max(to, sorted[end].to);
+        end++;
+      }
+      const group = sorted.slice(start, end);
+      const starts = [...new Set(group.map((gap) => gap.from))];
+      starts.forEach((from, index) => {
+        const sameStart = group.filter((gap) => gap.from === from);
+        const segmentTo = starts[index + 1] ?? to;
+        const { fromMsgid } = sameStart.find((gap) => gap.fromMsgid) ?? {};
+        const { toMsgid } =
+          group.find((gap) => gap.to === segmentTo && gap.toMsgid) ?? {};
+        // A fill in flight names its gap by id, so the record saved first keeps its own.
+        const [first] = [...sameStart].sort((a, b) => a.id - b.id);
+        const { fromMsgid: _from, toMsgid: _to, ...edges } = first;
+        kept.push({
+          ...edges,
+          to: segmentTo,
+          ...(fromMsgid ? { fromMsgid } : {}),
+          ...(toMsgid ? { toMsgid } : {}),
+        });
+      });
+      start = end;
+    }
+  }
+  const keptIds = new Set(kept.map((gap) => gap.id));
+  return {
+    kept,
+    removed: gaps.filter((gap) => !keptIds.has(gap.id)).map((gap) => gap.id),
+  };
+}
+
+const isSameGap = (a: HistoryGap, b: HistoryGap) =>
+  a.from === b.from &&
+  a.to === b.to &&
+  a.fromMsgid === b.fromMsgid &&
+  a.toMsgid === b.toMsgid;
+
+async function mergeStoredGaps(store: IDBObjectStore, gaps: HistoryGap[]) {
+  const byId = new Map(gaps.map((gap) => [gap.id, gap]));
+  const { kept, removed } = mergeGaps(gaps);
+  for (const id of removed) await awaitRequest(store.delete(id));
+  for (const gap of kept) {
+    const stored = byId.get(gap.id);
+    if (!stored || !isSameGap(stored, gap)) await awaitRequest(store.put(gap));
+  }
+}
+
+const mergeChatGaps = async (
+  store: IDBObjectStore,
+  server: string,
+  target: string,
+) =>
+  mergeStoredGaps(
+    store,
+    await awaitRequest<HistoryGap[]>(
+      store.index("conv").getAll(IDBKeyRange.only([server, target])),
+    ),
+  );
+
+// We merge every chat's records when the database opens, so overlapping records never outlive a session.
+function mergeAllGaps(db: IDBDatabase): Promise<void> {
+  return inTx(db, [GAPS], "readwrite", async (tx) => {
+    const store = tx.objectStore(GAPS);
+    const byChat = new Map<string, HistoryGap[]>();
+    for (const gap of await awaitRequest<HistoryGap[]>(store.getAll())) {
+      const chat = conversationOf(gap);
+      byChat.set(chat, [...(byChat.get(chat) ?? []), gap]);
+    }
+    for (const gaps of byChat.values())
+      if (gaps.length > 1) await mergeStoredGaps(store, gaps);
+  });
+}
+
 export function addGap(gap: Omit<HistoryGap, "id">): Promise<void> {
   return enqueue(undefined, (db) =>
     inTx(db, [GAPS], "readwrite", async (tx) => {
-      await awaitRequest(tx.objectStore(GAPS).add(gap));
+      const gaps = tx.objectStore(GAPS);
+      await awaitRequest(gaps.add(gap));
+      await mergeChatGaps(gaps, gap.server, gap.target);
     }),
   );
 }
@@ -635,8 +737,9 @@ export function updateGap(gap: HistoryGap): Promise<void> {
     inTx(db, [GAPS], "readwrite", async (tx) => {
       // A trim may have removed the gap with the rows below it since the caller read it.
       const gaps = tx.objectStore(GAPS);
-      if (await awaitRequest(gaps.get(gap.id)))
-        await awaitRequest(gaps.put(gap));
+      if (!(await awaitRequest(gaps.get(gap.id)))) return;
+      await awaitRequest(gaps.put(gap));
+      await mergeChatGaps(gaps, gap.server, gap.target);
     }),
   );
 }

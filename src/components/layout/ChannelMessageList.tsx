@@ -478,6 +478,17 @@ export const ChannelMessageList = forwardRef<
     const readMarker = channel ? channel.readMarker : privateChat?.readMarker;
     const isServerConnected =
       servers.find((s) => s.id === serverId)?.isConnected === true;
+    // An empty older page ends the history only until the chat offers more or reconnects, so we ask again then.
+    const olderOfferRef = useRef({ serverHasMore, isServerConnected });
+    useLayoutEffect(() => {
+      const previous = olderOfferRef.current;
+      olderOfferRef.current = { serverHasMore, isServerConnected };
+      if (
+        (serverHasMore && !previous.serverHasMore) ||
+        (isServerConnected && !previous.isServerConnected)
+      )
+        emptyOlderPageAtRef.current = undefined;
+    }, [serverHasMore, isServerConnected]);
     const isAppFocused = useStore((state) => state.ui.isAppFocused !== false);
     const isAppFocusedRef = useRef(isAppFocused);
     isAppFocusedRef.current = isAppFocused;
