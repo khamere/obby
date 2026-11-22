@@ -155,6 +155,7 @@ describe("a bouncer child's account across a reconnect", () => {
   it("ends when the control connection logs out", () => {
     drop("child");
     open("child");
+    expect(server("child")?.account).toBe("me");
     ircClient.triggerEvent("LOGGED_OUT", { serverId: "parent" });
 
     expect(server("child")?.account).toBeUndefined();
@@ -183,6 +184,19 @@ describe("a bouncer child's account across a reconnect", () => {
     });
     expect(server("child")?.account).toBe("upstream");
 
+    drop("child");
+    open("child");
+
+    expect(server("child")?.account).toBe("me");
+  });
+
+  it("drops the upstream account when the control connection went first", () => {
+    ircClient.triggerEvent("LOGGED_IN", {
+      serverId: "child",
+      account: "upstream",
+    });
+
+    drop("parent");
     drop("child");
     open("child");
 
@@ -279,6 +293,37 @@ describe("a bouncer child's account across a reconnect", () => {
       welcome("2026-01-03T00:00:00.000Z");
 
       expect(markreadGet.mock.calls).toEqual([["child", "friend"]]);
+    });
+
+    it("asks for every private chat once, however many there are", () => {
+      welcome("2026-01-02T00:00:00.000Z");
+      const names = Array.from({ length: 3000 }, (_, i) => `friend${i}`);
+      useStore.setState((s) => ({
+        servers: s.servers.map((row) =>
+          row.id === "child"
+            ? {
+                ...row,
+                privateChats: names.map((username) => ({
+                  id: `pm-${username}`,
+                  username,
+                  serverId: "child",
+                  unreadCount: 0,
+                  isMentioned: false,
+                  readMarker: null,
+                  readMarkerFetched: true,
+                })),
+              }
+            : row,
+        ),
+      }));
+
+      drop("child");
+      open("child");
+      welcome("2026-01-03T00:00:00.000Z");
+
+      expect(markreadGet.mock.calls).toEqual(
+        names.map((name) => ["child", name]),
+      );
     });
 
     it("asks again for a marker it knows, since another client can have moved it", () => {

@@ -157,7 +157,16 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
     }
 
     store.setState((state) => {
+      const controlAccount =
+        connectionState === "connected"
+          ? undefined
+          : state.servers.find((s) => s.id === serverId)?.account;
       const updatedServers = state.servers.map((server) => {
+        // The bouncer names an upstream account per connection, so a network
+        // whose control connection drops goes back to the bouncer's account
+        // while we still know it.
+        if (server.bouncerServerId === serverId && controlAccount)
+          return { ...server, account: controlAccount };
         if (server.id !== serverId) return server;
 
         // On disconnect, reset chathistoryRequested so history is re-fetched after rejoin
