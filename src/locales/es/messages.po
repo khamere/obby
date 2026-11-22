@@ -1165,7 +1165,6 @@ msgstr "No se puede quitar tu última credencial 2FA"
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkForm.tsx
-#: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/E2EERequestBanner.tsx
 #: src/components/ui/FloodSettingsModal.tsx
 #: src/components/ui/InviteUserModal.tsx
@@ -2083,6 +2082,11 @@ msgstr "Retrasar entradas (+D)"
 msgid "Delete"
 msgstr "Eliminar"
 
+#. placeholder {0}: network.name
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Delete <0>{0}</0> from your bouncer?"
+msgstr "¿Eliminar <0>{0}</0> de tu bouncer?"
+
 #: src/components/layout/BotPane.tsx
 msgid "Delete bot"
 msgstr "Eliminar bot"
@@ -2110,9 +2114,20 @@ msgstr "Eliminar también su historial de chat guardado"
 msgid "Delete message"
 msgstr "Eliminar mensaje"
 
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/NetworkMenu.tsx
+#: src/components/layout/ServerList.tsx
+#: src/components/mobile/ServerBottomSheet.tsx
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkForm.tsx
+#: src/components/ui/BouncerNetworksPanel.tsx
+#: src/components/ui/BouncerNetworksPanel.tsx
 msgid "Delete network"
 msgstr "Eliminar red"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Delete network?"
+msgstr "¿Eliminar red?"
 
 #: src/components/pages/EmojiPacksPage.tsx
 #: src/components/pages/EmojiPacksPage.tsx
@@ -2131,13 +2146,13 @@ msgstr "Eliminar esta invitación"
 msgid "Delete this message? This cannot be undone."
 msgstr "¿Eliminar este mensaje? Esta acción no se puede deshacer."
 
-#: src/components/ui/BouncerNetworkForm.tsx
-msgid "Delete this network?"
-msgstr "¿Eliminar esta red?"
-
 #: src/components/layout/BotPane.tsx
 msgid "deleted"
 msgstr "eliminado"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Deleting…"
+msgstr "Eliminando…"
 
 #: src/components/voice/ParticipantTile.tsx
 #: src/components/voice/ParticipantTile.tsx
@@ -2204,16 +2219,9 @@ msgstr "Descartar"
 #: src/components/layout/ServerList.tsx
 #: src/components/mobile/ServerBottomSheet.tsx
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-#: src/components/ui/BouncerNetworksPanel.tsx
 #: src/components/ui/RemoveServerConfirmModal.tsx
 msgid "Disconnect"
 msgstr "Desconectar"
-
-#. placeholder {0}: network.name
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "Disconnect <0>{0}</0>?"
-msgstr "¿Desconectar <0>{0}</0>?"
 
 #: src/components/ui/RemoveServerConfirmModal.tsx
 msgid "Disconnect from {name}?"
@@ -2222,10 +2230,6 @@ msgstr "¿Desconectar de {name}?"
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
 msgid "Disconnect from soju bouncer?"
 msgstr "¿Desconectar del bouncer soju?"
-
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "Disconnect network?"
-msgstr "¿Desconectar la red?"
 
 #: src/components/layout/ChannelList.tsx
 msgid "Discover"
@@ -3261,6 +3265,10 @@ msgstr "Servidores IRC:"
 #: src/store/handlers/users.ts
 msgid "is now known as **{newNick}**"
 msgstr "ahora se llama **{newNick}**"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Its saved chat history stays on this device. A network you add again gets it back only if the bouncer gives it the same ID."
+msgstr "El historial de chat guardado permanece en este dispositivo. Una red que vuelvas a añadir solo lo recupera si el bouncer le asigna el mismo ID."
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "JetBrains Mono"
@@ -6279,6 +6287,26 @@ msgstr "Esa pantalla ya no está disponible. Elige otra pantalla."
 msgid "That stylesheet is too large."
 msgstr "Esa hoja de estilos es demasiado grande."
 
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer drops this network and its channel list for all your devices. It may keep the chat history it stored for the network."
+msgstr "El bouncer elimina esta red y su lista de canales para todos tus dispositivos. Puede conservar el historial de chat que guardó para la red."
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer has not answered, so the saved chat history stays. Delete the network again if it is still listed."
+msgstr "El bouncer no ha respondido, así que el historial de chat guardado se conserva. Elimina la red de nuevo si sigue en la lista."
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer is not connected. Delete the network once it is back."
+msgstr "El bouncer no está conectado. Elimina la red cuando vuelva."
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer kept the network and answered: {refusal}"
+msgstr "El bouncer conservó la red y respondió: {refusal}"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer kept the network."
+msgstr "El bouncer conservó la red."
+
 #: src/lib/voiceErrors.ts
 msgid "The call server refused the request. Try again in a moment."
 msgstr "El servidor de llamadas rechazó la solicitud. Inténtalo de nuevo en un momento."
@@ -6464,10 +6492,6 @@ msgstr "Este paquete aún no tiene emojis. Añade uno arriba."
 #: src/components/ui/UpdateSheet.tsx
 msgid "This release has no Android app to install."
 msgstr "Esta versión no incluye ninguna app de Android para instalar."
-
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "This removes the network from your soju bouncer. To use it again, you'll need to add it back."
-msgstr "Esto elimina la red de tu bouncer soju. Para volver a usarla, tendrás que agregarla de nuevo."
 
 #: src/components/ui/InvitationsPanel.tsx
 msgid "This server doesn't support invite links (the<0>obby.world/invitation</0>capability isn't advertised). You can still chat normally; this panel is for obbyircd-powered networks."
@@ -7179,10 +7203,6 @@ msgstr "Contraseña incorrecta, o el archivo cambió desde que se guardó."
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Yellow"
 msgstr "Amarillo"
-
-#: src/components/ui/BouncerNetworkForm.tsx
-msgid "Yes, delete"
-msgstr "Sí, eliminar"
 
 #: src/components/search/messageSearchProviders.tsx
 msgid "Yesterday"

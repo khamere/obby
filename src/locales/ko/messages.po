@@ -1165,7 +1165,6 @@ msgstr "마지막 2FA 인증 수단은 삭제할 수 없습니다"
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkForm.tsx
-#: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/E2EERequestBanner.tsx
 #: src/components/ui/FloodSettingsModal.tsx
 #: src/components/ui/InviteUserModal.tsx
@@ -2083,6 +2082,11 @@ msgstr "입장 지연 (+D)"
 msgid "Delete"
 msgstr "삭제"
 
+#. placeholder {0}: network.name
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Delete <0>{0}</0> from your bouncer?"
+msgstr "bouncer에서 <0>{0}</0>을(를) 삭제할까요?"
+
 #: src/components/layout/BotPane.tsx
 msgid "Delete bot"
 msgstr "봇 삭제"
@@ -2110,9 +2114,20 @@ msgstr "저장된 채팅 기록도 함께 삭제"
 msgid "Delete message"
 msgstr "메시지 삭제"
 
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/NetworkMenu.tsx
+#: src/components/layout/ServerList.tsx
+#: src/components/mobile/ServerBottomSheet.tsx
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkForm.tsx
+#: src/components/ui/BouncerNetworksPanel.tsx
+#: src/components/ui/BouncerNetworksPanel.tsx
 msgid "Delete network"
 msgstr "네트워크 삭제"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Delete network?"
+msgstr "네트워크를 삭제할까요?"
 
 #: src/components/pages/EmojiPacksPage.tsx
 #: src/components/pages/EmojiPacksPage.tsx
@@ -2131,13 +2146,13 @@ msgstr "이 초대 삭제"
 msgid "Delete this message? This cannot be undone."
 msgstr "이 메시지를 삭제하시겠습니까? 이 작업은 취소할 수 없습니다."
 
-#: src/components/ui/BouncerNetworkForm.tsx
-msgid "Delete this network?"
-msgstr "이 네트워크를 삭제할까요?"
-
 #: src/components/layout/BotPane.tsx
 msgid "deleted"
 msgstr "삭제됨"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Deleting…"
+msgstr "삭제 중…"
 
 #: src/components/voice/ParticipantTile.tsx
 #: src/components/voice/ParticipantTile.tsx
@@ -2204,16 +2219,9 @@ msgstr "삭제"
 #: src/components/layout/ServerList.tsx
 #: src/components/mobile/ServerBottomSheet.tsx
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-#: src/components/ui/BouncerNetworksPanel.tsx
 #: src/components/ui/RemoveServerConfirmModal.tsx
 msgid "Disconnect"
 msgstr "연결 끊기"
-
-#. placeholder {0}: network.name
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "Disconnect <0>{0}</0>?"
-msgstr "<0>{0}</0> 연결을 끊을까요?"
 
 #: src/components/ui/RemoveServerConfirmModal.tsx
 msgid "Disconnect from {name}?"
@@ -2222,10 +2230,6 @@ msgstr "{name}에서 연결을 끊을까요?"
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
 msgid "Disconnect from soju bouncer?"
 msgstr "soju bouncer 연결을 끊을까요?"
-
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "Disconnect network?"
-msgstr "네트워크 연결을 끊을까요?"
 
 #: src/components/layout/ChannelList.tsx
 msgid "Discover"
@@ -3261,6 +3265,10 @@ msgstr "IRC 서버:"
 #: src/store/handlers/users.ts
 msgid "is now known as **{newNick}**"
 msgstr "이제 **{newNick}**(으)로 알려져 있습니다"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Its saved chat history stays on this device. A network you add again gets it back only if the bouncer gives it the same ID."
+msgstr "저장된 채팅 기록은 이 기기에 남습니다. 다시 추가한 네트워크는 bouncer가 같은 ID를 부여한 경우에만 기록을 되찾습니다."
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "JetBrains Mono"
@@ -6279,6 +6287,26 @@ msgstr "해당 화면은 더 이상 사용할 수 없습니다. 다른 화면을
 msgid "That stylesheet is too large."
 msgstr "스타일시트가 너무 큽니다."
 
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer drops this network and its channel list for all your devices. It may keep the chat history it stored for the network."
+msgstr "bouncer가 이 네트워크와 채널 목록을 모든 기기에서 삭제합니다. 이 네트워크용으로 저장한 채팅 기록은 bouncer에 남을 수 있습니다."
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer has not answered, so the saved chat history stays. Delete the network again if it is still listed."
+msgstr "bouncer가 응답하지 않아 저장된 채팅 기록은 그대로 남습니다. 네트워크가 아직 목록에 있으면 다시 삭제하세요."
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer is not connected. Delete the network once it is back."
+msgstr "bouncer가 연결되어 있지 않습니다. 다시 연결되면 네트워크를 삭제하세요."
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer kept the network and answered: {refusal}"
+msgstr "bouncer가 네트워크를 유지했으며 다음과 같이 응답했습니다: {refusal}"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer kept the network."
+msgstr "bouncer가 네트워크를 유지했습니다."
+
 #: src/lib/voiceErrors.ts
 msgid "The call server refused the request. Try again in a moment."
 msgstr "통화 서버가 요청을 거부했습니다. 잠시 후 다시 시도하세요."
@@ -6464,10 +6492,6 @@ msgstr "이 팩에는 아직 이모지가 없습니다. 위에서 추가하세�
 #: src/components/ui/UpdateSheet.tsx
 msgid "This release has no Android app to install."
 msgstr "이 릴리스에는 설치할 Android 앱이 없습니다."
-
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "This removes the network from your soju bouncer. To use it again, you'll need to add it back."
-msgstr "이 작업은 soju bouncer에서 네트워크를 제거합니다. 다시 사용하려면 네트워크를 다시 추가해야 합니다."
 
 #: src/components/ui/InvitationsPanel.tsx
 msgid "This server doesn't support invite links (the<0>obby.world/invitation</0>capability isn't advertised). You can still chat normally; this panel is for obbyircd-powered networks."
@@ -7179,10 +7203,6 @@ msgstr "비밀번호가 틀렸거나 저장 후 파일이 변경되었습니다.
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Yellow"
 msgstr "노랑"
-
-#: src/components/ui/BouncerNetworkForm.tsx
-msgid "Yes, delete"
-msgstr "예, 삭제합니다"
 
 #: src/components/search/messageSearchProviders.tsx
 msgid "Yesterday"

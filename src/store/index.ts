@@ -37,6 +37,11 @@ import type {
   WhoisData,
 } from "../types";
 import { registerAllHandlers } from "./handlers";
+import {
+  networkDeleteKey,
+  networkIdentity,
+  type PendingNetworkDelete,
+} from "./handlers/bouncer";
 import { readyProcessedServers } from "./handlers/connection";
 import {
   acceptE2EEOffer as e2eeAccept,
@@ -98,6 +103,8 @@ const NARROW_VIEW_QUERY = "(max-width: 768px)";
 
 // Namespace UUID for generating deterministic channel/chat IDs
 const CHANNEL_NAMESPACE = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
+
+export const NETWORK_DELETE_WAIT_MS = 15_000;
 
 /**
  * Generate a deterministic UUID for a channel or private chat
@@ -463,6 +470,14 @@ interface UIState {
     bouncerServerId: string;
     netid: string;
     childServerId: string;
+    // What the network was when the dialog opened, see networkIdentity.
+    identity?: string;
+    // "deleting" from our DELNETWORK until the bouncer answers it, and
+    // "unanswered" once we stop waiting for that answer.
+    status?: "deleting" | "unanswered" | "refused";
+    shouldDeleteHistory?: boolean;
+    // The bouncer's own words for a refused delete.
+    refusal?: string;
   } | null;
   quickActions: QuickActionsState | null;
   // The message list holding this id scrolls to it and flashes it.
@@ -711,6 +726,10 @@ export interface AppState {
     attrs: Record<string, string>,
   ) => void;
   bouncerDelNetwork: (bouncerServerId: string, netid: string) => void;
+  // Deletes sent on the current control session that the bouncer has yet to
+  // answer, by networkDeleteKey. They outlive the dialog so the answer still
+  // applies the saved-history choice.
+  pendingNetworkDeletes: Record<string, PendingNetworkDelete>;
   clearBouncerError: (bouncerServerId: string) => void;
   // Open a child IRC connection to the bouncer that is bound to the
   // given upstream network via BOUNCER BIND <netid> before CAP END.
@@ -1040,6 +1059,7 @@ export interface AppState {
   editBouncerNetwork: (childServerId: string) => void;
   consumePendingBouncerEdit: () => void;
   requestDeleteServer: (serverId: string) => void;
+  requestDeleteBouncerNetwork: (bouncerServerId: string, netid: string) => void;
   confirmRemoveServer: (shouldDeleteHistory: boolean) => void;
   cancelRemoveServer: () => void;
   cancelDeleteServer: () => void;
@@ -1299,6 +1319,7 @@ const useStore = create<AppState>((set, get) => ({
   userMetadataRequested: {},
   metadataChangeCounter: 0,
   bouncers: {},
+  pendingNetworkDeletes: {},
   whoisData: {},
   inviteLinks: {},
   pendingRegistration: null,
@@ -3308,6 +3329,10 @@ const useStore = create<AppState>((set, get) => ({
       const remainingServers = state.servers.filter(
         (server) => !toRemove.has(server.id),
       );
+      // A server removed in the background leaves the open chat where it is.
+      const isSelectionKept = remainingServers.some(
+        (server) => server.id === state.ui.selectedServerId,
+      );
       const newSelectedServerId =
         remainingServers.length > 0 ? remainingServers[0].id : null;
 
@@ -3321,10 +3346,14 @@ const useStore = create<AppState>((set, get) => ({
         ...clearConnectionState,
         ui: {
           ...state.ui,
-          selectedServerId: newSelectedServerId,
-          selectedChannelId: newSelectedServerId
-            ? remainingServers[0].channels[0]?.id || null
-            : null,
+          ...(isSelectionKept
+            ? {}
+            : {
+                selectedServerId: newSelectedServerId,
+                selectedChannelId: newSelectedServerId
+                  ? remainingServers[0].channels[0]?.id || null
+                  : null,
+              }),
           disconnectConfirmTarget: null,
         },
       };
@@ -3396,16 +3425,10 @@ const useStore = create<AppState>((set, get) => ({
       return;
     }
     if (target?.bouncerServerId && target.bouncerNetid) {
-      set((s) => ({
-        ui: {
-          ...s.ui,
-          disconnectNetworkConfirmTarget: {
-            bouncerServerId: target.bouncerServerId as string,
-            netid: target.bouncerNetid as string,
-            childServerId: serverId,
-          },
-        },
-      }));
+      state.requestDeleteBouncerNetwork(
+        target.bouncerServerId,
+        target.bouncerNetid,
+      );
       return;
     }
     if (!target) return;
@@ -3420,6 +3443,36 @@ const useStore = create<AppState>((set, get) => ({
           }));
       })
       .catch(() => get().deleteServer(serverId));
+  },
+
+  requestDeleteBouncerNetwork: (bouncerServerId, netid) => {
+    set((s) => {
+      // A delete still waiting for its answer reopens as it was sent.
+      const pending =
+        s.pendingNetworkDeletes[networkDeleteKey(bouncerServerId, netid)];
+      return {
+        ui: {
+          ...s.ui,
+          disconnectNetworkConfirmTarget: {
+            bouncerServerId,
+            netid,
+            childServerId: uuidv5(
+              `${bouncerServerId}:${netid}`,
+              CHANNEL_NAMESPACE,
+            ),
+            identity: networkIdentity(
+              s.bouncers[bouncerServerId]?.networks[netid],
+            ),
+            ...(pending
+              ? {
+                  status: "deleting" as const,
+                  shouldDeleteHistory: pending.shouldDeleteHistory,
+                }
+              : {}),
+          },
+        },
+      };
+    });
   },
 
   confirmRemoveServer: (shouldDeleteHistory) => {
@@ -3461,13 +3514,69 @@ const useStore = create<AppState>((set, get) => ({
     const state = get();
     const target = state.ui.disconnectNetworkConfirmTarget;
     if (!target) return;
-    const child = state.servers.find((s) => s.id === target.childServerId);
-    if (child) void settleSavedHistory(child, shouldDeleteHistory);
-    state.bouncerDelNetwork(target.bouncerServerId, target.netid);
-    state.deleteServer(target.childServerId);
+    // After a reconnect the id may name another network, so we send nothing
+    // until the bouncer's list of this session has arrived, and only for the
+    // network the dialog asked about.
+    const bouncer = state.bouncers[target.bouncerServerId];
+    if (bouncer?.isListStale) return;
+    if (
+      target.identity !== undefined &&
+      target.identity !== networkIdentity(bouncer?.networks[target.netid])
+    ) {
+      state.cancelDisconnectNetwork();
+      return;
+    }
+    // One delete per network waits for its answer at a time, and it keeps
+    // the choice it was sent with.
+    const key = networkDeleteKey(target.bouncerServerId, target.netid);
+    if (state.pendingNetworkDeletes[key]) return;
+    // Only the bouncer's answer tells us the network is gone, and the bouncer
+    // answers commands only on a control connection that has logged in.
+    const control = state.servers.find((s) => s.id === target.bouncerServerId);
+    if (!control?.isConnected || !control.isRegistered) return;
+    const pending = {
+      childServerId: target.childServerId,
+      shouldDeleteHistory,
+    };
     set((s) => ({
-      ui: { ...s.ui, disconnectNetworkConfirmTarget: null },
+      ui: {
+        ...s.ui,
+        disconnectNetworkConfirmTarget: {
+          ...target,
+          status: "deleting",
+          shouldDeleteHistory,
+          refusal: undefined,
+        },
+      },
+      pendingNetworkDeletes: { ...s.pendingNetworkDeletes, [key]: pending },
     }));
+    state.bouncerDelNetwork(target.bouncerServerId, target.netid);
+    // An answer can get lost on the way, so we wait this long, let the user
+    // try again and ask for the network list to refresh the row.
+    setTimeout(() => {
+      if (get().pendingNetworkDeletes[key] !== pending) return;
+      set((s) => {
+        const { [key]: _, ...pendingNetworkDeletes } = s.pendingNetworkDeletes;
+        const waiting = s.ui.disconnectNetworkConfirmTarget;
+        const isWaitingHere =
+          waiting?.bouncerServerId === target.bouncerServerId &&
+          waiting.netid === target.netid &&
+          waiting.status === "deleting";
+        return {
+          pendingNetworkDeletes,
+          ui: isWaitingHere
+            ? {
+                ...s.ui,
+                disconnectNetworkConfirmTarget: {
+                  ...waiting,
+                  status: "unanswered",
+                },
+              }
+            : s.ui,
+        };
+      });
+      get().bouncerListNetworks(target.bouncerServerId);
+    }, NETWORK_DELETE_WAIT_MS);
   },
 
   setBouncerGroupAccent: (parentServerId, hex) => {

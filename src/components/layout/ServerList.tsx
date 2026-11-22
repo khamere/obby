@@ -223,7 +223,7 @@ const ServerIcon: React.FC<ServerIconProps> = ({
                 e.stopPropagation();
                 onDelete();
               }}
-              title={t`Disconnect`}
+              title={server.bouncerNetid ? t`Delete network` : t`Disconnect`}
             >
               <FaTrash />
             </button>
@@ -242,6 +242,7 @@ const ServerIcon: React.FC<ServerIconProps> = ({
           serverName={displayName}
           onEdit={onEdit}
           onDisconnect={onDelete}
+          isBouncerNetwork={!!server.bouncerNetid}
         />
       )}
     </>
