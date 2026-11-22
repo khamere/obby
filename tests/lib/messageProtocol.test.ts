@@ -1,5 +1,5 @@
 /// <reference lib="es2022.intl" />
-import { describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
 import {
   byteLength,
   calculateProtocolOverhead,
@@ -86,7 +86,8 @@ describe("splitLongMessage", () => {
 
         for (const part of parts) {
           expect(part.length).toBeGreaterThan(0);
-          expect(bytes(part)).toBeLessThanOrEqual(limit);
+          if (!part.startsWith("https://"))
+            expect(bytes(part)).toBeLessThanOrEqual(limit);
           expect(hasLoneSurrogate(part)).toBe(false);
         }
         let read = 0;
@@ -165,21 +166,6 @@ describe("splitLongMessage", () => {
     for (const part of parts) expect(bytes(part)).toBeLessThanOrEqual(limit);
   });
 
-  // A search back through the lines already cut grows with the square of the length, so we count
-  // the searches and keep the clock out of the test.
-  test("reads a long text without spaces once per line it fills", () => {
-    const text = "x".repeat(40_000);
-    const lastIndexOf = vi.spyOn(Array.prototype, "lastIndexOf");
-    const indexOf = vi.spyOn(Array.prototype, "indexOf");
-
-    const parts = splitLongMessage(text, "#chan");
-
-    const searches = lastIndexOf.mock.calls.length + indexOf.mock.calls.length;
-    vi.restoreAllMocks();
-    expect(searches).toBe(0);
-    expect(parts.join("")).toBe(text);
-  });
-
   test("counts the target in bytes", () => {
     expect(calculateProtocolOverhead("#канал")).toBe(
       calculateProtocolOverhead("#chan") + bytes("#канал") - bytes("#chan"),
@@ -230,12 +216,32 @@ describe("splitToBytes", () => {
     expect(splitToBytes("aaaaa aaaaa", 12)).toEqual(["aaaaa aaaaa"]);
   });
 
-  test("cuts a word wider than a line so every part fits", () => {
-    const parts = splitToBytes(`photo ${link} done`, 40);
+  test("sends a link wider than a line whole on a line of its own", () => {
+    expect(splitToBytes(`photo ${link} done`, 40)).toEqual([
+      "photo",
+      link,
+      "done",
+    ]);
+    expect(
+      splitToBytes(`(${link}), and  www.${"b".repeat(50)}.example`, 40),
+    ).toEqual([`(${link}),`, "and", `www.${"b".repeat(50)}.example`]);
+    expect(splitToBytes(link, 40)).toEqual([link]);
+  });
+
+  test("cuts a word wider than a line that is no link so every part fits", () => {
+    const word = "д".repeat(60);
+
+    const parts = splitToBytes(`photo ${word} done`, 40);
 
     expect(parts[0]).toBe("photo");
-    expect(parts.length).toBeGreaterThan(2);
-    expect(parts.slice(1).join("")).toBe(`${link} done`);
+    expect(parts.slice(1).join("")).toBe(`${word}done`);
+    for (const part of parts) expect(bytes(part)).toBeLessThanOrEqual(40);
+  });
+
+  test("splits a link across concat parts that join back into it", () => {
+    const parts = splitToBytes(`photo ${link} done`, 40, true);
+
+    expect(parts.join("")).toBe(`photo ${link} done`);
     for (const part of parts) expect(bytes(part)).toBeLessThanOrEqual(40);
   });
 

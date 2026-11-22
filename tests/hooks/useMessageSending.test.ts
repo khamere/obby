@@ -493,4 +493,16 @@ describe("a line longer in bytes than one message carries", () => {
       expect(utf8.encode(payload(line)).length).toBeLessThanOrEqual(lineBytes);
     expect(lines.map(payload).join("")).toBe(text);
   });
+
+  it("sends a typed link wider than a line whole", () => {
+    const link = `https://example.org/${"a".repeat(400)}`;
+
+    const lines = send(`look at ${link} please`, []);
+
+    expect(lines).toEqual([
+      "PRIVMSG #lobby :look at",
+      `PRIVMSG #lobby :${link}`,
+      "PRIVMSG #lobby :please",
+    ]);
+  });
 });

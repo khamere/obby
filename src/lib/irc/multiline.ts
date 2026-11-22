@@ -44,7 +44,7 @@ export function fitsOneBatch(
 }
 
 // `lines` holds one entry per logical line, already split into the parts that
-// fit a single PRIVMSG. A logical line's parts stay in one batch: the receiver
+// fit a single PRIVMSG, and each line fits a batch by itself (`fitsOneBatch`). A logical line's parts stay in one batch: the receiver
 // concatenates them, so a batch break between them lands mid-word. The server
 // counts the line break between two logical lines as a byte of the batch.
 export function chunkForMultiline(
@@ -65,48 +65,18 @@ export function chunkForMultiline(
   };
 
   for (const line of lines) {
-    for (const part of splitToFit(line, limits)) {
-      const parts = part.length;
-      const bytes = part.reduce((n, p) => n + byteLength(p), 0);
-      if (
-        batch.length > 0 &&
-        (lineCount + parts > limits.maxLines ||
-          byteCount + 1 + bytes > limits.maxBytes)
-      ) {
-        flush();
-      }
-      byteCount += bytes + (batch.length > 0 ? 1 : 0);
-      batch.push([...part]);
-      lineCount += parts;
+    const bytes = line.reduce((n, part) => n + byteLength(part), 0);
+    if (
+      batch.length > 0 &&
+      (lineCount + line.length > limits.maxLines ||
+        byteCount + 1 + bytes > limits.maxBytes)
+    ) {
+      flush();
     }
+    byteCount += bytes + (batch.length > 0 ? 1 : 0);
+    batch.push([...line]);
+    lineCount += line.length;
   }
   flush();
   return batches;
-}
-
-// A line whose own parts fill more than one batch is broken across batches: two
-// messages beat one the server refuses.
-function splitToFit(
-  line: readonly string[],
-  limits: MultilineLimits,
-): (readonly string[])[] {
-  const out: (readonly string[])[] = [];
-  let piece: string[] = [];
-  let bytes = 0;
-  for (const part of line) {
-    const partBytes = byteLength(part);
-    if (
-      piece.length > 0 &&
-      (piece.length + 1 > limits.maxLines ||
-        bytes + partBytes > limits.maxBytes)
-    ) {
-      out.push(piece);
-      piece = [];
-      bytes = 0;
-    }
-    piece.push(part);
-    bytes += partBytes;
-  }
-  if (piece.length > 0) out.push(piece);
-  return out;
 }

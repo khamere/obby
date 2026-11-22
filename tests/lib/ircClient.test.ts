@@ -687,15 +687,12 @@ describe("IRCClient", () => {
         expect(sent).toEqual(["PRIVMSG #a :photo https://files.example/a.png"]);
       });
 
-      test("cuts a link wider than a line on a server without batches", () => {
+      test("keeps a long link whole on a server without batches", () => {
         const sent = sentBy(() =>
           client.sendText(server.id, "#a", `photo ${longLink}`),
         );
 
-        expect(sent[0]).toBe("PRIVMSG #a :photo");
-        expect(sent.slice(1).map(payload).join("")).toBe(longLink);
-        for (const line of sent)
-          expect(payloadBytes(line)).toBeLessThanOrEqual(lineBytes);
+        expect(sent).toEqual(["PRIVMSG #a :photo", `PRIVMSG #a :${longLink}`]);
       });
 
       test("joins a link wider than a line back together inside a batch", () => {
@@ -713,6 +710,7 @@ describe("IRCClient", () => {
           expect(
             line.startsWith(`@batch=${batch};draft/multiline-concat `),
           ).toBe(true);
+        expect(inner.slice(1).map(payload).join("")).toContain(longLink);
         expect(inner.slice(1).map(payload).join("")).toBe(`photo ${longLink}`);
         for (const line of inner)
           expect(payloadBytes(line)).toBeLessThanOrEqual(lineBytes);
@@ -760,6 +758,21 @@ describe("IRCClient", () => {
           expect(sent[3].startsWith("PRIVMSG #a :д")).toBe(true);
           expect(sent.at(-3)).toMatch(/^@batch=\S+ PRIVMSG #a :after$/);
           expect(sent.at(-2)).toMatch(/^@batch=\S+ PRIVMSG #a :last$/);
+        });
+
+        test("keeps a long link whole in a line no batch can hold", () => {
+          const sent = sentBy(() =>
+            client.sendText(server.id, "#a", `see\nphoto ${longLink} done`),
+          );
+
+          expect(privmsgs(sent).map(payload)).toEqual([
+            "see",
+            "photo",
+            longLink,
+            "done",
+          ]);
+          expect(sent[3]).toBe("PRIVMSG #a :photo");
+          expect(sent[4]).toBe(`PRIVMSG #a :${longLink}`);
         });
 
         test("puts no more bytes in any batch than the server allows", () => {
