@@ -65,8 +65,16 @@ export const bouncerGroupAccents = {
 
 export const servers = {
   load: (): ServerConfig[] => {
-    const data = JSON.parse(localStorage.getItem(KEYS.SERVERS) || "[]");
-    return [...data].sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0));
+    const data: ServerConfig[] = JSON.parse(
+      localStorage.getItem(KEYS.SERVERS) || "[]",
+    );
+    // A restored backup is stored as it was written, so we give every server a channel list here.
+    return data
+      .map((server) => ({
+        ...server,
+        channels: Array.isArray(server.channels) ? server.channels : [],
+      }))
+      .sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0));
   },
 
   save: (servers: ServerConfig[]) => {

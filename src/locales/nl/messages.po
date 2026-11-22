@@ -2534,6 +2534,10 @@ msgstr "Voer een kanaalnaam in voor kanaalgebonden pakketten."
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "Voer een kanaal in om gebruikers naartoe te sturen als ze niet kunnen deelnemen aan dit kanaal. Laat leeg om uit te schakelen."
 
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "Voer een sleutel zonder komma's in"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
 msgstr "Voer een naam in met spaties, emoji of symbolen. IRC-commando's gebruiken nog steeds de echte naam ({channelName})."
@@ -6766,6 +6770,10 @@ msgstr "Gebruik * voor jokertekens. Voorbeelden: slechtegebruiker!*@*, *!*@spamm
 #: src/components/message/BotInvocationChip.tsx
 msgid "Use /{0}"
 msgstr "/{0} gebruiken"
+
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "Gebruik een naam zonder spaties of komma's"
 
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."

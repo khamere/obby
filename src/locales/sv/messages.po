@@ -2534,6 +2534,10 @@ msgstr "Ange ett kanalnamn för kanalspecifika paket."
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "Ange en kanal att skicka användare till när de inte kan gå med i den här. Lämna tomt för att inaktivera."
 
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "Ange en nyckel utan kommatecken"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
 msgstr "Ange ett namn med valfria mellanslag, emojis eller symboler. IRC-kommandon använder fortfarande det riktiga namnet ({channelName})."
@@ -6766,6 +6770,10 @@ msgstr "Använd * som jokertecken. Exempel: baduser!*@*, *!*@spammer.com, troll*
 #: src/components/message/BotInvocationChip.tsx
 msgid "Use /{0}"
 msgstr "Använd /{0}"
+
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "Använd ett namn utan mellanslag eller kommatecken"
 
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."

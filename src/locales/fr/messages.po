@@ -2534,6 +2534,10 @@ msgstr "Saisissez un nom de canal pour les packs limités à un canal."
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "Saisissez un salon vers lequel rediriger les utilisateurs qui ne peuvent pas rejoindre celui-ci. Laissez vide pour désactiver."
 
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "Saisissez une clé sans virgules"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
 msgstr "Saisissez un nom avec des espaces, des emojis ou des symboles. Les commandes IRC utilisent toujours le nom réel ({channelName})."
@@ -6766,6 +6770,10 @@ msgstr "Utilisez * comme joker. Exemples : baduser!*@*, *!*@spammer.com, troll*!
 #: src/components/message/BotInvocationChip.tsx
 msgid "Use /{0}"
 msgstr "Utiliser /{0}"
+
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "Utilisez un nom sans espaces ni virgules"
 
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."

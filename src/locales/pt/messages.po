@@ -2534,6 +2534,10 @@ msgstr "Introduza um nome de canal para pacotes de âmbito de canal."
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "Informe um canal para enviar os usuários quando não conseguirem entrar neste. Deixe vazio para desativar."
 
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "Insira uma chave sem vírgulas"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
 msgstr "Digite um nome com espaços, emoji ou símbolos. Os comandos IRC continuam usando o nome real ({channelName})."
@@ -6766,6 +6770,10 @@ msgstr "Use * para curingas. Exemplos: baduser!*@*, *!*@spammer.com, troll*!*@*"
 #: src/components/message/BotInvocationChip.tsx
 msgid "Use /{0}"
 msgstr "Usar /{0}"
+
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "Use um nome sem espaços nem vírgulas"
 
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."
