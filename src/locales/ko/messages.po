@@ -2534,6 +2534,10 @@ msgstr "채널 전용 팩에는 채널 이름을 입력하세요."
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "사용자가 이 채널에 참여할 수 없을 때 보낼 채널을 입력하세요. 비활성화하려면 비워 두세요."
 
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "쉼표가 없는 키를 입력하세요"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
 msgstr "공백, 이모지, 기호를 포함한 이름을 입력하세요. IRC 명령에서는 실제 이름({channelName})이 계속 사용됩니다."
@@ -6762,6 +6766,10 @@ msgstr "와일드카드로 *를 사용하세요. 예: baduser!*@*, *!*@spammer.c
 #: src/components/message/BotInvocationChip.tsx
 msgid "Use /{0}"
 msgstr "/{0} 사용"
+
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "공백이나 쉼표가 없는 이름을 사용하세요"
 
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."

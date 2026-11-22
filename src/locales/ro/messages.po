@@ -2534,6 +2534,10 @@ msgstr "Introdu un nume de canal pentru pachetele specifice canalului."
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "Introdu un canal către care să fie trimiși utilizatorii când nu pot intra pe acesta. Lasă gol pentru a dezactiva."
 
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "Introdu o cheie fără virgule"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
 msgstr "Introduceți un nume cu spații, emoji sau simboluri. Comenzile IRC folosesc în continuare numele real ({channelName})."
@@ -6762,6 +6766,10 @@ msgstr "Folosiți * pentru wildcard. Exemple: baduser!*@*, *!*@spammer.com, trol
 #: src/components/message/BotInvocationChip.tsx
 msgid "Use /{0}"
 msgstr "Folosește /{0}"
+
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "Folosește un nume fără spații sau virgule"
 
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."

@@ -20,6 +20,9 @@ import {
   chantypesOf,
   escapeTagValue,
   isChannelTarget,
+  isJoinableChannelKey,
+  isJoinableChannelName,
+  joinKeyArgument,
   parseMessageTags,
 } from "../ircUtils";
 import {
@@ -1458,9 +1461,20 @@ export class IRCClient implements IRCClientContext {
     return rateLimitPatterns.some((pattern) => pattern.test(message));
   }
 
-  joinChannel(serverId: string, typedName: string, key?: string): Channel {
+  // Names and keys reach us from links, saved lists and other people's
+  // messages, so we send a JOIN only when it carries one channel and one key.
+  joinChannel(
+    serverId: string,
+    typedName: string,
+    key?: string,
+  ): Channel | undefined {
     const channelName = this.withChannelPrefix(serverId, typedName);
-    const joinLine = key ? `JOIN ${channelName} ${key}` : `JOIN ${channelName}`;
+    if (!isJoinableChannelName(channelName, this.chantypes(serverId)))
+      return undefined;
+    if (key && !isJoinableChannelKey(key)) return undefined;
+    const joinLine = key
+      ? `JOIN ${channelName} ${joinKeyArgument(key)}`
+      : `JOIN ${channelName}`;
     const server = this.servers.get(serverId);
     if (server) {
       const existing = server.channels.find((c) => c.name === channelName);

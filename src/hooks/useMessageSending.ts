@@ -10,7 +10,7 @@ import { botPriority } from "../lib/botPriority";
 import { slapAction } from "../lib/clientCommands";
 import { coerceOptionValue } from "../lib/commandInvocation";
 import ircClient from "../lib/ircClient";
-import { escapeTagValue } from "../lib/ircUtils";
+import { escapeTagValue, parseJoinCommand } from "../lib/ircUtils";
 import {
   makeLabel,
   shouldUseLabeledResponse,
@@ -329,13 +329,15 @@ export function useMessageSending({
       if (lowerName === "nick") {
         if (args[0]) useStore.getState().changeNick(selectedServerId, args[0]);
       } else if (lowerName === "join") {
-        const [channels, keyList] = args.filter(Boolean);
-        if (channels) {
-          const keys = keyList?.split(",") ?? [];
-          channels.split(",").forEach((name, i) => {
-            if (name)
-              useStore.getState().joinChannel(selectedServerId, name, keys[i]);
-          });
+        // We read the arguments from the typed text, where only plain spaces are padding.
+        const targets = parseJoinCommand(
+          cleanedText.slice(
+            cleanedText.indexOf(commandName) + commandName.length,
+          ),
+        );
+        if (targets.length > 0) {
+          for (const { name, key } of targets)
+            useStore.getState().joinChannel(selectedServerId, name, key);
         } else {
           console.error("No channel specified for /join command");
         }

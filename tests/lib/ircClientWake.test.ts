@@ -128,7 +128,7 @@ describe("joining a channel typed without its prefix", () => {
 
     const channel = client.joinChannel(SERVER, "qaop");
 
-    expect(channel.name).toBe("#qaop");
+    expect(channel?.name).toBe("#qaop");
     expect(sent).toContain("JOIN #qaop");
   });
 
@@ -145,7 +145,7 @@ describe("joining a channel typed without its prefix", () => {
     });
     internals.isupportValues.set(SERVER, new Map([["CHANTYPES", "#^$"]]));
 
-    expect(client.joinChannel(SERVER, "^voice").name).toBe("^voice");
+    expect(client.joinChannel(SERVER, "^voice")?.name).toBe("^voice");
   });
 
   it("follows the channel types the server advertises", () => {
@@ -161,8 +161,8 @@ describe("joining a channel typed without its prefix", () => {
     });
     internals.isupportValues.set(SERVER, new Map([["CHANTYPES", "&"]]));
 
-    expect(client.joinChannel(SERVER, "&ops").name).toBe("&ops");
-    expect(client.joinChannel(SERVER, "lobby").name).toBe("&lobby");
+    expect(client.joinChannel(SERVER, "&ops")?.name).toBe("&ops");
+    expect(client.joinChannel(SERVER, "lobby")?.name).toBe("&lobby");
   });
 });
 

@@ -2534,6 +2534,10 @@ msgstr "请为频道范围的表情包输入频道名称。"
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "输入一个频道，当用户无法加入此频道时将其转到该频道。留空则停用。"
 
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "请输入不含逗号的密钥"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
 msgstr "可包含空格、表情或符号。IRC 命令仍使用真实名称（{channelName}）。"
@@ -6762,6 +6766,10 @@ msgstr "用 * 作通配符。示例：baduser!*@*, *!*@spammer.com, troll*!*@*"
 #: src/components/message/BotInvocationChip.tsx
 msgid "Use /{0}"
 msgstr "使用 /{0}"
+
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "请使用不含空格或逗号的名称"
 
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."

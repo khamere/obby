@@ -2534,6 +2534,10 @@ msgstr "Zadejte název kanálu pro balíčky určené pro kanál."
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "Zadejte kanál, kam se mají přesměrovat uživatelé, kteří se nemohou připojit do tohoto. Nechte prázdné pro vypnutí."
 
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "Zadejte klíč bez čárek"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
 msgstr "Zadejte název s mezerami, emoji nebo symboly. Příkazy IRC stále používají skutečný název ({channelName})."
@@ -6762,6 +6766,10 @@ msgstr "Použijte * pro zástupné znaky. Příklady: baduser!*@*, *!*@spammer.c
 #: src/components/message/BotInvocationChip.tsx
 msgid "Use /{0}"
 msgstr "Použít /{0}"
+
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "Použijte název bez mezer a čárek"
 
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."
