@@ -3,10 +3,24 @@
  * IRC protocol utilities for message handling
  */
 
-const encoder = new TextEncoder();
-
 // We count bytes because the IRC line limit applies on the wire, where one character takes up to four.
-const byteLength = (text: string): number => encoder.encode(text).length;
+export const byteLength = (text: string): number => {
+  let bytes = 0;
+  for (let i = 0; i < text.length; i++) {
+    const unit = text.charCodeAt(i);
+    if (unit < 0x80) bytes += 1;
+    else if (unit < 0x800) bytes += 2;
+    else if (
+      unit >= 0xd800 &&
+      unit <= 0xdbff &&
+      (text.charCodeAt(i + 1) & 0xfc00) === 0xdc00
+    ) {
+      bytes += 4;
+      i++;
+    } else bytes += 3;
+  }
+  return bytes;
+};
 
 const graphemes =
   typeof Intl !== "undefined" && typeof Intl.Segmenter === "function"
@@ -19,73 +33,93 @@ const splitUnits = (text: string, limit: number): string[] => {
     ? Array.from(graphemes.segment(text), (s) => s.segment)
     : Array.from(text);
   return clusters.flatMap((cluster) =>
-    byteLength(cluster) > limit ? Array.from(cluster) : [cluster],
+    // A UTF-16 unit takes three bytes at most, so a short cluster needs no count.
+    cluster.length * 3 > limit && byteLength(cluster) > limit
+      ? Array.from(cluster)
+      : [cluster],
   );
 };
 
 /** The number of message bytes one PRIVMSG to `target` can carry. */
-const maxMessageBytes = (target: string): number =>
+export const maxMessageBytes = (target: string): number =>
   512 - calculateProtocolOverhead(target);
 
 export const exceedsLineLimit = (message: string, target: string): boolean =>
   byteLength(message) > maxMessageBytes(target);
 
+/** Cuts one line into parts of at most `maxBytes`, given the line and whether its parts are joined again. */
+export type LineSplitter = (
+  line: string,
+  maxBytes: number,
+  keepSpaces: boolean,
+) => string[];
+
 /**
- * Helper function to split long messages while respecting IRC protocol limits
- * @param message - The message to split
- * @param target - The channel or username target
- * @param preserveBoundarySpace - When true, the parts concatenate back to
- *   the exact message, so a draft/multiline-concat join reconstructs the
- *   text with its spacing intact.  By default the parts go out as
- *   independent PRIVMSGs and the space at a split point becomes the
- *   line break.
- * @returns Array of message chunks within IRC limits
+ * Splits a line into parts of at most `maxBytes` UTF-8 bytes, at a space
+ * where the part holds one and between characters where it holds none.
+ * With `keepSpaces` the parts concatenate back to the exact line, as the
+ * receiver of a draft/multiline-concat joins them. By default each part is a
+ * message of its own, so the spaces at a split point become the line break.
  */
-export const splitLongMessage = (
-  message: string,
-  target = "#channel",
-  preserveBoundarySpace = false,
+export const splitToBytes = (
+  line: string,
+  maxBytes: number,
+  keepSpaces = false,
 ): string[] => {
-  const limit = maxMessageBytes(target);
+  if (byteLength(line) <= maxBytes) return [line];
 
-  if (byteLength(message) <= limit) {
-    return [message];
-  }
-
-  const units = splitUnits(message, limit);
-  const sizes = units.map(byteLength);
-  const lines: string[] = [];
+  const units = splitUnits(line, maxBytes);
+  const parts: string[] = [];
   let start = 0;
 
   while (start < units.length) {
     let end = start;
     let bytes = 0;
-    while (end < units.length && bytes + sizes[end] <= limit) {
-      bytes += sizes[end];
+    let lastSpace = -1;
+    while (end < units.length) {
+      const size = byteLength(units[end]);
+      if (bytes + size > maxBytes) break;
+      if (units[end] === " " && end > start) lastSpace = end;
+      bytes += size;
       end++;
     }
-    // We still have to send a unit that is wider than a whole line.
+    // We still have to send a unit that is wider than a whole part.
     if (end === start) end = start + 1;
 
     let next = end;
-    if (end < units.length) {
-      if (!preserveBoundarySpace && units[end] === " ") {
-        next = end + 1;
-      } else {
-        const space = units.lastIndexOf(" ", end - 1);
-        if (space > start) {
-          end = preserveBoundarySpace ? space + 1 : space;
-          next = space + 1;
-        }
+    const breaksInsideWord = end < units.length && units[end] !== " ";
+    if (keepSpaces) {
+      if (end < units.length && lastSpace !== -1) {
+        end = lastSpace + 1;
+        next = end;
       }
+      parts.push(units.slice(start, end).join(""));
+    } else {
+      if (breaksInsideWord && lastSpace !== -1) {
+        end = lastSpace;
+        next = lastSpace + 1;
+      }
+      while (end > start && units[end - 1] === " ") end--;
+      while (next < units.length && units[next] === " ") next++;
+      const part = units.slice(start, end).join("");
+      if (part.trim()) parts.push(part);
     }
-
-    lines.push(units.slice(start, end).join(""));
     start = next;
   }
 
-  return lines;
+  return parts;
 };
+
+/**
+ * Splits a message into the parts one PRIVMSG to `target` can carry.
+ * @param preserveBoundarySpace - see `keepSpaces` of `splitToBytes`
+ */
+export const splitLongMessage = (
+  message: string,
+  target = "#channel",
+  preserveBoundarySpace = false,
+): string[] =>
+  splitToBytes(message, maxMessageBytes(target), preserveBoundarySpace);
 
 /**
  * Calculate protocol overhead for a given target

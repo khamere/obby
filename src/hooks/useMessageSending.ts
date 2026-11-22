@@ -23,7 +23,11 @@ import {
 import { exceedsLineLimit, splitLongMessage } from "../lib/messageProtocol";
 import { showOwnPrivateMessage } from "../lib/ownPrivateMessage";
 import { PRIVILEGED_COMMANDS } from "../lib/privilegedCommands";
-import { rainbowText, splitRainbowMessage } from "../lib/rainbow";
+import {
+  rainbowText,
+  splitRainbowMessage,
+  splitRainbowToBytes,
+} from "../lib/rainbow";
 import useStore, { serverSupportsMultiline } from "../store";
 import { routeOutgoingPM } from "../store/handlers/e2eeOutbound";
 import type { BotCommand, Channel, Message, PrivateChat, User } from "../types";
@@ -472,9 +476,6 @@ export function useMessageSending({
    */
   const sendMultilineMessage = useCallback(
     (cleanedText: string, target: string, lines: string[], rainbow = false) => {
-      const split: typeof splitLongMessage = rainbow
-        ? splitRainbowMessage
-        : splitLongMessage;
       if (!selectedServerId) return;
 
       const whisperContext = getWhisperContext(localReplyTo, currentUser);
@@ -504,24 +505,18 @@ export function useMessageSending({
         ? `@+reply=${escapeTagValue(localReplyTo.msgid)};+draft/reply=${escapeTagValue(localReplyTo.msgid)} `
         : "";
 
-      // preserveBoundarySpace=true so concat reconstructs the original
-      // spacing. Without it the receiver sees "AAA BBBCCC" instead of
-      // "AAA BBB CCC".
       const format = (line: string) =>
-        split(
-          formatMessageForIrc(line, {
-            color: selectedColor || "inherit",
-            formatting: selectedFormatting,
-          }),
-          target,
-          true,
-        );
+        formatMessageForIrc(line, {
+          color: selectedColor || "inherit",
+          formatting: selectedFormatting,
+        });
 
       ircClient.sendMultiline(
         selectedServerId,
         target,
         (lines.length > 1 ? lines : [cleanedText]).map(format),
         replyPrefix,
+        rainbow ? splitRainbowToBytes : undefined,
       );
     },
     [

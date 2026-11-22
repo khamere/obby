@@ -1,6 +1,6 @@
 /// <reference lib="es2022.intl" />
 import { stripIrcFormatting } from "./messageFormatter";
-import { calculateProtocolOverhead } from "./messageProtocol";
+import { maxMessageBytes } from "./messageProtocol";
 
 const colors = ["04", "07", "08", "09", "11", "12", "06"];
 const graphemes = new Intl.Segmenter(undefined, { granularity: "grapheme" });
@@ -51,7 +51,11 @@ export function splitRainbowMessage(
   text: string,
   target = "#channel",
 ): string[] {
-  const limit = 512 - calculateProtocolOverhead(target);
+  return splitRainbowToBytes(text, maxMessageBytes(target));
+}
+
+/** The same split for a part of at most `limit` bytes; the parts always join back into the text. */
+export function splitRainbowToBytes(text: string, limit: number): string[] {
   const encoder = new TextEncoder();
   const chunks: string[] = [];
   let chunk = "";

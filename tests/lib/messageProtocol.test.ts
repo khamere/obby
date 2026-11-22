@@ -1,9 +1,11 @@
 /// <reference lib="es2022.intl" />
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import {
+  byteLength,
   calculateProtocolOverhead,
   exceedsLineLimit,
   splitLongMessage,
+  splitToBytes,
 } from "../../src/lib/messageProtocol";
 
 const encoder = new TextEncoder();
@@ -79,7 +81,7 @@ describe("splitLongMessage", () => {
         );
       });
 
-      test(`separate lines of ${name} for ${target} stay within the byte budget and lose only break spaces`, () => {
+      test(`separate lines of ${name} for ${target} stay within the byte budget and lose only the spaces at a break`, () => {
         const parts = splitLongMessage(text, target);
 
         for (const part of parts) {
@@ -87,10 +89,16 @@ describe("splitLongMessage", () => {
           expect(bytes(part)).toBeLessThanOrEqual(limit);
           expect(hasLoneSurrogate(part)).toBe(false);
         }
-        expect(parts.join("").replace(/ /g, "")).toBe(text.replace(/ /g, ""));
-        const droppedSpaces = text.length - parts.join("").length;
-        expect(droppedSpaces).toBeGreaterThanOrEqual(0);
-        expect(droppedSpaces).toBeLessThan(parts.length);
+        let read = 0;
+        for (const part of parts) {
+          const at = text.indexOf(part, read);
+          expect(text.slice(read, at).trim()).toBe("");
+          read = at + part.length;
+        }
+        expect(text.slice(read).trim()).toBe("");
+        for (const part of parts) expect(part.endsWith(" ")).toBe(false);
+        for (const part of parts.slice(1))
+          expect(part.startsWith(" ")).toBe(false);
       });
     }
   }
@@ -135,10 +143,66 @@ describe("splitLongMessage", () => {
     for (const part of parts) expect(bytes(part)).toBeLessThanOrEqual(limit);
   });
 
+  test("sends no line of only spaces after a split", () => {
+    const limit = 512 - calculateProtocolOverhead("#chan");
+    const word = "x".repeat(limit);
+
+    expect(splitLongMessage(`${word}  `, "#chan")).toEqual([word]);
+    expect(splitLongMessage(`${word}   ${word}  `, "#chan")).toEqual([
+      word,
+      word,
+    ]);
+    expect(splitLongMessage(`one   ${word}`, "#chan")).toEqual(["one", word]);
+  });
+
+  test("keeps the spaces at a split in the concat parts", () => {
+    const limit = 512 - calculateProtocolOverhead("#chan");
+    const text = `${"x".repeat(limit)}  `;
+
+    const parts = splitLongMessage(text, "#chan", true);
+
+    expect(parts.join("")).toBe(text);
+    for (const part of parts) expect(bytes(part)).toBeLessThanOrEqual(limit);
+  });
+
+  // A search back through the lines already cut grows with the square of the length, so we count
+  // the searches and keep the clock out of the test.
+  test("reads a long text without spaces once per line it fills", () => {
+    const text = "x".repeat(40_000);
+    const lastIndexOf = vi.spyOn(Array.prototype, "lastIndexOf");
+    const indexOf = vi.spyOn(Array.prototype, "indexOf");
+
+    const parts = splitLongMessage(text, "#chan");
+
+    const searches = lastIndexOf.mock.calls.length + indexOf.mock.calls.length;
+    vi.restoreAllMocks();
+    expect(searches).toBe(0);
+    expect(parts.join("")).toBe(text);
+  });
+
   test("counts the target in bytes", () => {
     expect(calculateProtocolOverhead("#канал")).toBe(
       calculateProtocolOverhead("#chan") + bytes("#канал") - bytes("#chan"),
     );
+  });
+});
+
+describe("byteLength", () => {
+  test("counts what the encoder writes, lone surrogates included", () => {
+    for (const text of [
+      "",
+      "plain",
+      "é",
+      "д",
+      "字",
+      "\u{1F600}",
+      FAMILY,
+      "a\uD83Db",
+      "\uDE00a",
+      "\uD83D",
+      "\u07FF\u0800\uFFFF",
+    ])
+      expect(byteLength(text)).toBe(bytes(text));
   });
 });
 
@@ -151,5 +215,36 @@ describe("exceedsLineLimit", () => {
     expect(exceedsLineLimit("д".repeat(350), "#chan")).toBe(true);
     expect(exceedsLineLimit("\u{1F600}".repeat(100), "#chan")).toBe(true);
     expect(exceedsLineLimit("д".repeat(100), "#chan")).toBe(false);
+  });
+});
+
+describe("splitToBytes", () => {
+  const link = `https://files.example/${"a".repeat(60)}.png`;
+
+  test("returns a line that fits as one part", () => {
+    expect(splitToBytes(`photo ${link}`, 100)).toEqual([`photo ${link}`]);
+  });
+
+  test("counts the budget in bytes", () => {
+    expect(splitToBytes("ééééé ééééé", 12)).toEqual(["ééééé", "ééééé"]);
+    expect(splitToBytes("aaaaa aaaaa", 12)).toEqual(["aaaaa aaaaa"]);
+  });
+
+  test("cuts a word wider than a line so every part fits", () => {
+    const parts = splitToBytes(`photo ${link} done`, 40);
+
+    expect(parts[0]).toBe("photo");
+    expect(parts.length).toBeGreaterThan(2);
+    expect(parts.slice(1).join("")).toBe(`${link} done`);
+    for (const part of parts) expect(bytes(part)).toBeLessThanOrEqual(40);
+  });
+
+  test("the parts of a concat join back into the exact line", () => {
+    const line = ` two  spaces ${link}  and a tail `;
+
+    const parts = splitToBytes(line, 20, true);
+
+    expect(parts.join("")).toBe(line);
+    for (const part of parts) expect(bytes(part)).toBeLessThanOrEqual(20);
   });
 });

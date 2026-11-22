@@ -3,6 +3,8 @@
 // `FAIL BATCH MULTILINE_MAX_LINES`, and the message reaches nobody), so a long
 // paste is split across batches before it goes out.
 
+import { byteLength } from "../messageProtocol";
+
 export interface MultilineLimits {
   maxLines: number;
   maxBytes: number;
@@ -12,12 +14,6 @@ export const UNLIMITED_MULTILINE: MultilineLimits = {
   maxLines: Number.POSITIVE_INFINITY,
   maxBytes: Number.POSITIVE_INFINITY,
 };
-
-const encoder = new TextEncoder();
-
-function byteLength(text: string): number {
-  return encoder.encode(text).length;
-}
 
 // The cap value looks like `max-bytes=5250,max-lines=15`.
 export function parseMultilineLimits(
@@ -35,27 +31,16 @@ export function parseMultilineLimits(
   return limits;
 }
 
-// A link cut in two opens nothing, so we break a line only at its spaces and
-// leave the server to rule on a word wider than a line. With `keepSpaces` the
-// parts join back into the exact line, as the receiver of a concat does.
-export function splitAtSpaces(
-  line: string,
-  maxBytes: number,
-  keepSpaces: boolean,
-): string[] {
-  if (byteLength(line) <= maxBytes) return [line];
-  const sent = (part: string) => (keepSpaces ? part : part.trimEnd());
-  const parts: string[] = [];
-  let part = "";
-  for (const word of line.match(/[^ ]* */g) ?? []) {
-    if (part && byteLength(sent(part + word)) > maxBytes) {
-      parts.push(sent(part));
-      part = "";
-    }
-    part += word;
-  }
-  if (part) parts.push(sent(part));
-  return parts.filter(Boolean);
+// A batch holds a line whole or not at all: its parts count as lines of the
+// batch and their bytes add up against the byte ceiling.
+export function fitsOneBatch(
+  parts: readonly string[],
+  limits: MultilineLimits,
+): boolean {
+  return (
+    parts.length <= limits.maxLines &&
+    parts.reduce((n, part) => n + byteLength(part), 0) <= limits.maxBytes
+  );
 }
 
 // `lines` holds one entry per logical line, already split into the parts that

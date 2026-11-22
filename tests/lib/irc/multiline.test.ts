@@ -1,8 +1,8 @@
 import { describe, expect, test } from "vitest";
 import {
   chunkForMultiline,
+  fitsOneBatch,
   parseMultilineLimits,
-  splitAtSpaces,
   UNLIMITED_MULTILINE,
 } from "../../../src/lib/irc/multiline";
 
@@ -100,34 +100,13 @@ describe("chunkForMultiline", () => {
   });
 });
 
-describe("splitAtSpaces", () => {
-  const link = `https://files.example/${"a".repeat(60)}.png`;
+describe("fitsOneBatch", () => {
+  const limits = { maxLines: 2, maxBytes: 10 };
 
-  test("a line that fits is one part", () => {
-    expect(splitAtSpaces(`photo ${link}`, 100, false)).toEqual([
-      `photo ${link}`,
-    ]);
-  });
-
-  test("a link wider than a line stays whole on a line of its own", () => {
-    expect(splitAtSpaces(`photo ${link} done`, 40, false)).toEqual([
-      "photo",
-      link,
-      "done",
-    ]);
-  });
-
-  test("the parts of a concat join back into the exact line", () => {
-    const line = ` two  spaces ${link}  and a tail `;
-    const parts = splitAtSpaces(line, 20, true);
-
-    expect(parts.length).toBeGreaterThan(2);
-    expect(parts).toContain(`${link}  `);
-    expect(parts.join("")).toBe(line);
-  });
-
-  test("the budget is counted in bytes", () => {
-    expect(splitAtSpaces("ééééé ééééé", 12, false)).toEqual(["ééééé", "ééééé"]);
-    expect(splitAtSpaces("aaaaa aaaaa", 12, false)).toEqual(["aaaaa aaaaa"]);
+  test("counts a line's parts as lines and their bytes together", () => {
+    expect(fitsOneBatch(["ééé", "éé"], limits)).toBe(true);
+    expect(fitsOneBatch(["ééé", "ééé"], limits)).toBe(false);
+    expect(fitsOneBatch(["a", "b", "c"], limits)).toBe(false);
+    expect(fitsOneBatch(["a".repeat(600)], UNLIMITED_MULTILINE)).toBe(true);
   });
 });

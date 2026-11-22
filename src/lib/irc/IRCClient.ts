@@ -26,18 +26,19 @@ import {
   parseMessageTags,
 } from "../ircUtils";
 import {
-  calculateProtocolOverhead,
   createBatchId,
-  splitLongMessage,
+  type LineSplitter,
+  maxMessageBytes,
+  splitToBytes,
 } from "../messageProtocol";
 import { createSocket, type ISocket } from "../socket";
 import { IRC_DISPATCH } from "./handlers";
 import type { IRCClientContext } from "./IRCClientContext";
 import {
   chunkForMultiline,
+  fitsOneBatch,
   type MultilineLimits,
   parseMultilineLimits,
-  splitAtSpaces,
 } from "./multiline";
 import { nextMemberRequestNumber, parseServerTime } from "./utils";
 
@@ -1692,7 +1693,7 @@ export class IRCClient implements IRCClientContext {
     const lines = content.split("\n");
 
     if (lines.length > 1 && this.hasCapability(serverId, "draft/multiline")) {
-      this.sendMultilineMessage(serverId, channel.name, lines);
+      this.sendMultiline(serverId, channel.name, lines);
     } else if (lines.length > 1) {
       // Server didn't negotiate draft/multiline — degrade to separate PRIVMSGs
       for (const line of lines) {
@@ -1735,19 +1736,6 @@ export class IRCClient implements IRCClientContext {
     this.sendRaw(serverId, `WHOIS ${nickname}`);
   }
 
-  sendMultilineMessage(
-    serverId: string,
-    target: string,
-    lines: string[],
-  ): void {
-    this.sendMultiline(
-      serverId,
-      target,
-      // preserveBoundarySpace, or concat rejoins "AAA BBB CCC" as "AAA BBBCCC".
-      lines.map((line) => splitLongMessage(line, target, true)),
-    );
-  }
-
   // One command is one line, so we send text with line breaks as a multiline
   // batch, or line by line where the server has none.
   sendText(
@@ -1758,51 +1746,81 @@ export class IRCClient implements IRCClientContext {
   ): void {
     const replyTo = options.replyTo ? escapeTagValue(options.replyTo) : "";
     const tags = replyTo ? `@+reply=${replyTo};+draft/reply=${replyTo} ` : "";
-    const maxBytes = 512 - calculateProtocolOverhead(target);
     const lines = text.split(/\r?\n/);
     if (lines.length > 1 && this.hasCapability(serverId, "draft/multiline")) {
-      this.sendMultiline(
-        serverId,
-        target,
-        lines.map((line) => splitAtSpaces(line, maxBytes, true)),
-        tags,
-      );
+      this.sendMultiline(serverId, target, lines, tags);
       return;
     }
     const separate = options.joinLines
       ? [lines.filter(Boolean).join(" ")]
       : lines;
     for (const line of separate)
-      for (const part of splitAtSpaces(line, maxBytes, false))
-        if (part) this.sendRaw(serverId, `${tags}PRIVMSG ${target} :${part}`);
+      this.sendSeparately(serverId, target, line, tags, splitToBytes);
   }
 
+  // A server refuses a whole batch that is past its limits and delivers none
+  // of it, so a line no batch can hold goes out as messages of its own, between
+  // the batches of the lines around it.
   sendMultiline(
     serverId: string,
     target: string,
-    lines: readonly (readonly string[])[],
+    lines: readonly string[],
     openTags = "",
+    split: LineSplitter = splitToBytes,
   ): void {
-    for (const batch of chunkForMultiline(
-      lines,
-      this.multilineLimits(serverId),
-    )) {
-      const batchId = createBatchId();
-      this.sendRaw(
-        serverId,
-        `${openTags}BATCH +${batchId} draft/multiline ${target}`,
-      );
-      for (const parts of batch) {
-        parts.forEach((part, index) => {
-          const concat = index > 0 ? ";draft/multiline-concat" : "";
-          this.sendRaw(
-            serverId,
-            `@batch=${batchId}${concat} PRIVMSG ${target} :${part}`,
-          );
-        });
+    const limits = this.multilineLimits(serverId);
+    const partBytes = Math.min(maxMessageBytes(target), limits.maxBytes);
+    let batchable: string[][] = [];
+    const sendBatches = () => {
+      for (const batch of chunkForMultiline(batchable, limits))
+        this.sendBatch(serverId, target, batch, openTags);
+      batchable = [];
+    };
+
+    for (const line of lines) {
+      const parts = split(line, partBytes, true);
+      if (fitsOneBatch(parts, limits)) {
+        batchable.push(parts);
+        continue;
       }
-      this.sendRaw(serverId, `BATCH -${batchId}`);
+      sendBatches();
+      this.sendSeparately(serverId, target, line, openTags, split);
     }
+    sendBatches();
+  }
+
+  private sendSeparately(
+    serverId: string,
+    target: string,
+    line: string,
+    tags: string,
+    split: LineSplitter,
+  ): void {
+    for (const part of split(line, maxMessageBytes(target), false))
+      if (part) this.sendRaw(serverId, `${tags}PRIVMSG ${target} :${part}`);
+  }
+
+  private sendBatch(
+    serverId: string,
+    target: string,
+    lines: readonly (readonly string[])[],
+    openTags: string,
+  ): void {
+    const batchId = createBatchId();
+    this.sendRaw(
+      serverId,
+      `${openTags}BATCH +${batchId} draft/multiline ${target}`,
+    );
+    for (const parts of lines) {
+      parts.forEach((part, index) => {
+        const concat = index > 0 ? ";draft/multiline-concat" : "";
+        this.sendRaw(
+          serverId,
+          `@batch=${batchId}${concat} PRIVMSG ${target} :${part}`,
+        );
+      });
+    }
+    this.sendRaw(serverId, `BATCH -${batchId}`);
   }
 
   sendTyping(serverId: string, target: string, isActive: boolean): void {

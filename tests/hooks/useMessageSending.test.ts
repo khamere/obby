@@ -2,6 +2,7 @@ import { renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useMessageSending } from "../../src/hooks/useMessageSending";
 import { base64DecodeUtf8 } from "../../src/lib/base64";
+import { parseMultilineLimits } from "../../src/lib/irc/multiline";
 import ircClient from "../../src/lib/ircClient";
 import { parseMessageTags } from "../../src/lib/ircUtils";
 import useStore from "../../src/store";
@@ -418,5 +419,78 @@ describe("client command names in any case", () => {
     const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
     runCommand("/FOO Bar");
     expect(sendRaw).toHaveBeenCalledWith("s1", "FOO Bar");
+  });
+});
+
+describe("a line longer in bytes than one message carries", () => {
+  // 200 Cyrillic letters are 400 bytes, and a line to #lobby carries 377.
+  const text = "д".repeat(200);
+  const lineBytes = 377;
+  const utf8 = new TextEncoder();
+  const payload = (line: string) => line.slice(line.indexOf(" :") + 2);
+
+  function send(message: string, caps: string[], limits?: string) {
+    useStore.setState({
+      servers: [{ ...server, capabilities: caps }],
+      messages: {},
+    });
+    vi.spyOn(ircClient, "hasCapability").mockImplementation((_, cap) =>
+      caps.includes(cap),
+    );
+    vi.spyOn(ircClient, "multilineLimits").mockReturnValue(
+      parseMultilineLimits(limits),
+    );
+    const lines: string[] = [];
+    vi.spyOn(ircClient, "sendRaw").mockImplementation((_, line) => {
+      lines.push(line);
+    });
+    runCommand(message, me);
+    return lines;
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    useStore.setState({ servers: [server], messages: {} });
+  });
+
+  it("goes out as one batch whose parts join back into the text", () => {
+    const lines = send(text, ["draft/multiline", "batch"]);
+
+    const batch = /^BATCH \+(\S+) draft\/multiline #lobby$/.exec(lines[0])?.[1];
+    expect(batch).toBeTruthy();
+    expect(lines.at(-1)).toBe(`BATCH -${batch}`);
+    const parts = lines.slice(1, -1);
+    expect(parts.length).toBeGreaterThan(1);
+    expect(parts[0].startsWith(`@batch=${batch} PRIVMSG #lobby :`)).toBe(true);
+    for (const part of parts.slice(1))
+      expect(
+        part.startsWith(
+          `@batch=${batch};draft/multiline-concat PRIVMSG #lobby :`,
+        ),
+      ).toBe(true);
+    for (const part of parts)
+      expect(utf8.encode(payload(part)).length).toBeLessThanOrEqual(lineBytes);
+    expect(parts.map(payload).join("")).toBe(text);
+  });
+
+  it("goes out as separate messages when the server's batch holds fewer bytes", () => {
+    const lines = send(text, ["draft/multiline", "batch"], "max-bytes=256");
+
+    expect(lines.some((line) => line.includes("BATCH"))).toBe(false);
+    expect(lines.length).toBeGreaterThan(1);
+    for (const line of lines) {
+      expect(line.startsWith("PRIVMSG #lobby :")).toBe(true);
+      expect(utf8.encode(payload(line)).length).toBeLessThanOrEqual(lineBytes);
+    }
+    expect(lines.map(payload).join("")).toBe(text);
+  });
+
+  it("goes out as separate messages on a server without batches", () => {
+    const lines = send(text, []);
+
+    expect(lines.length).toBeGreaterThan(1);
+    for (const line of lines)
+      expect(utf8.encode(payload(line)).length).toBeLessThanOrEqual(lineBytes);
+    expect(lines.map(payload).join("")).toBe(text);
   });
 });
