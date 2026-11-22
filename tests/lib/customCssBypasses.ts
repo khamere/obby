@@ -552,4 +552,33 @@ export const BYPASS_ATTEMPTS: BypassAttempt[] = [
     "a six-digit escape followed by a hex letter",
     ".a{background:\\000075rl(https://evil.example/ld)} .b{background:u\\000072l(https://evil.example/le)}",
   ],
+  // a function in an image list that only some engines read as one
+  [
+    "a type() after a unicode range that holds var() in image-set",
+    '*{--x:"https://evil.example/ma";background-image:image-set(u+1type(var(--x)) 1x)}',
+  ],
+  [
+    "a type() after a unicode range that holds a string in image-set",
+    '*{background-image:image-set(u+1type("https://evil.example/mb") 1x)}',
+  ],
+  [
+    "a var() after an at-word and a no-break space in image-set",
+    '*{--x:"https://evil.example/mc";background-image:image-set(@foo\u00a0var(--x) 1x)}',
+  ],
+  [
+    "a var() after a number and a no-break space in image-set",
+    '*{--x:"https://evil.example/md";background-image:image-set(1\u00a0var(--x) 1x)}',
+  ],
+  [
+    "an env() after a hash and a no-break space in image-set",
+    '*{--x:"https://evil.example/me";background-image:image-set(#a\u00a0env(a,var(--x)) 1x)}',
+  ],
+  [
+    "an env() after a unicode range in image-set",
+    '*{background-image:image-set(u+1env(a,"https://evil.example/mf") 1x)}',
+  ],
+  [
+    "a var() after a no-break space and a unicode range in a prefixed image-set",
+    '*{--x:"https://evil.example/mg";background-image:-webkit-image-set(\u00a0u+0-1var(--x) 1x)}',
+  ],
 ];

@@ -336,8 +336,10 @@ class CssScanner {
   private splitAfterName(nameStart: number): CssToken | undefined {
     const css = this.css;
     const tail = this.tailAt;
-    if (tail !== -1 && tail !== this.pos) {
-      if (css.charAt(this.pos) === "(" && takesAddress(this.tailName)) {
+    if (tail !== -1 && tail !== this.pos && css.charAt(this.pos) === "(") {
+      // After a number, "#" or "@" we read a bracket here where that engine reads a function, so there every name counts.
+      const anyName = nameStart === -1 && this.startsName(tail);
+      if (anyName || takesAddress(this.tailName)) {
         this.pos = tail;
         return SPLIT;
       }
@@ -347,16 +349,17 @@ class CssScanner {
       const end = this.unicodeRangeEnd(u);
       if (end === -1) return undefined;
       this.pos = end;
-      return this.addressFunctionFollows() ? SPLIT : TEXT;
+      return this.functionFollows() ? SPLIT : TEXT;
     }
     return undefined;
   }
 
-  private addressFunctionFollows(): boolean {
+  // A function right after a unicode range is a unit and a bracket to engines without such tokens.
+  private functionFollows(): boolean {
     const from = this.pos;
     if (!this.startsName(from)) return false;
-    const name = this.readName();
-    const found = this.css.charAt(this.pos) === "(" && takesAddress(name);
+    this.readName();
+    const found = this.css.charAt(this.pos) === "(";
     this.pos = from;
     return found;
   }
