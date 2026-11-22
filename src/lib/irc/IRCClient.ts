@@ -1067,6 +1067,7 @@ export class IRCClient implements IRCClientContext {
             connectionState: "disconnected",
           });
           this.pendingConnections.delete(connectionKey);
+          if (!this.welcomed.has(server.id)) this.turnedAway.add(server.id);
           if (this.loginRefused.has(server.id)) {
             this.reconnectionAttempts.delete(server.id);
             this.triggerEvent("loginRefused", { serverId: server.id });
@@ -1142,9 +1143,8 @@ export class IRCClient implements IRCClientContext {
     this.pendingConnections.set(connectionKey, connectionPromise);
 
     // Clean up the pending connection when it resolves or rejects
-    connectionPromise.finally(() => {
-      this.pendingConnections.delete(connectionKey);
-    });
+    const forgetPending = () => this.pendingConnections.delete(connectionKey);
+    connectionPromise.then(forgetPending, forgetPending);
 
     return connectionPromise;
   }
@@ -1177,6 +1177,7 @@ export class IRCClient implements IRCClientContext {
     this.registered.delete(serverId);
     this.welcomed.delete(serverId);
     this.loginRefused.delete(serverId);
+    this.turnedAway.delete(serverId);
     // A closed server stays closed until its owner connects it again, so a wake finds nothing to redial.
     this.serverConnectParams.delete(serverId);
     this.pendingMonitor.delete(serverId);
@@ -1355,16 +1356,17 @@ export class IRCClient implements IRCClientContext {
     this.tagmsgRefused.add(serverId);
   }
 
-  // A server can open the socket and still turn us away, so only its welcome
-  // ends a run of failed attempts and lets the retry delay start over.
+  // A server can open the socket and still turn us away, so only its welcome restarts the retry delay.
   private welcomed = new Set<string>();
-  // Retrying a login the server refused would send the same credentials
-  // again, so we wait for the user once such a connection closes.
+  // A retry would send a refused login again, so we wait for the user once such a connection closes.
   private loginRefused = new Set<string>();
+  // A server that took our connection and closed it before its welcome is owed the full retry wait.
+  private turnedAway = new Set<string>();
 
   noteWelcomed(serverId: string): void {
     this.welcomed.add(serverId);
     this.loginRefused.delete(serverId);
+    this.turnedAway.delete(serverId);
     this.reconnectionAttempts.delete(serverId);
   }
 
@@ -2850,8 +2852,8 @@ export class IRCClient implements IRCClientContext {
     if (!params) return;
 
     if (server.connectionState === "reconnecting") {
-      // A server that closed our last connection before its welcome is turning us away, so we keep the wait we owe it.
-      if (!this.welcomed.has(serverId)) return;
+      // A wake means the network may be back, which changes nothing for a server that reached us and closed before its welcome.
+      if (this.turnedAway.has(serverId)) return;
       // Already reconnecting but may be stuck in a long backoff (e.g. after many
       // failed attempts while sleeping). Cancel the pending timeout and retry now.
       const existingTimeout = this.reconnectionTimeouts.get(serverId);

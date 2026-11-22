@@ -860,6 +860,8 @@ export function registerAuthHandlers(store: StoreApi<AppState>): void {
   ircClient.on("LOGGED_IN", ({ serverId }) => askPersistence(serverId));
   ircClient.on("connectionStateChange", ({ serverId, connectionState }) => {
     if (connectionState !== "connected") registeredServers.delete(serverId);
+    // A login exchange belongs to its connection, so its password goes when that connection closes.
+    if (connectionState === "disconnected") clearSession(serverId);
   });
   // obsidianirc/cmdslist: maintain a lowercase set of invocable
   // commands per server.  Additions and removals can arrive in the

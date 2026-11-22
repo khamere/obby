@@ -92,6 +92,25 @@ describe("a bouncer network logging in", () => {
     expect(setSaslEnabled).toHaveBeenCalledWith(networkId, false);
   });
 
+  test("forgets the password of an exchange its connection closed on", () => {
+    ircClient.triggerEvent("CAP_ACKNOWLEDGED", {
+      serverId: networkId,
+      key: "sasl",
+      capabilities: "sasl",
+    });
+    ircClient.triggerEvent("connectionStateChange", {
+      serverId: networkId,
+      connectionState: "disconnected",
+    });
+    vi.spyOn(ircClient, "getConnectTarget").mockReturnValue({
+      host: "wss://old.example.com",
+      port: 443,
+    });
+    ircClient.triggerEvent("AUTHENTICATE", { serverId: networkId, param: "+" });
+
+    expect(sent).toEqual(["AUTHENTICATE PLAIN"]);
+  });
+
   test("tells the client it holds no login once the saved one is removed", () => {
     vi.spyOn(storage.servers, "load").mockReturnValue([
       {
