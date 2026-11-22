@@ -1,5 +1,6 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type React from "react";
+import { isReactionBy } from "../../store/helpers";
 import type { MessageType } from "../../types";
 import { HoverTooltip } from "../ui/HoverTooltip";
 import { MdAddReaction } from "./icons";
@@ -33,6 +34,7 @@ const ReactionButton: React.FC<{
 
   return (
     <HoverTooltip
+      className="max-w-full"
       content={
         <div className="text-center">
           <div className="mb-1 text-2xl">{emoji}</div>
@@ -47,7 +49,7 @@ const ReactionButton: React.FC<{
     >
       <button
         type="button"
-        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-sm transition-all cursor-pointer ${
+        className={`inline-flex min-w-0 items-center gap-1 px-2 py-0.5 rounded-full text-sm transition-all cursor-pointer ${
           reactionData.currentUserReacted
             ? "bg-blue-500/20 text-blue-300 hover:bg-blue-500/30"
             : "bg-discord-dark-300 text-discord-text-muted hover:bg-discord-dark-200"
@@ -59,7 +61,9 @@ const ReactionButton: React.FC<{
             : t`Add reaction ${emoji}`
         }
       >
-        <span>{emoji}</span>
+        <span className="min-w-0 overflow-hidden text-ellipsis whitespace-pre">
+          {emoji}
+        </span>
         <span className="text-xs font-medium tabular-nums">
           {reactionData.count}
         </span>
@@ -92,36 +96,28 @@ export const MessageReactions: React.FC<MessageReactionsProps> = ({
     );
   }
 
-  // Group reactions by emoji
-  const groupedReactions = reactions.reduce(
-    (
-      acc: Record<string, ReactionData>,
-      reaction: { emoji: string; userId: string },
-    ) => {
-      if (!acc[reaction.emoji]) {
-        acc[reaction.emoji] = {
-          count: 0,
-          users: [],
-          currentUserReacted: false,
-        };
-      }
-      acc[reaction.emoji].count++;
-      acc[reaction.emoji].users.push(reaction.userId);
-      if (reaction.userId === currentUserUsername) {
-        acc[reaction.emoji].currentUserReacted = true;
-      }
-      return acc;
-    },
-    {},
-  );
+  // The reaction text is chosen by other clients, so we group in a Map, where
+  // a name like "constructor" is a key like any other.
+  const groupedReactions = new Map<string, ReactionData>();
+  for (const reaction of reactions) {
+    let group = groupedReactions.get(reaction.emoji);
+    if (!group) {
+      group = { count: 0, users: [], currentUserReacted: false };
+      groupedReactions.set(reaction.emoji, group);
+    }
+    group.count++;
+    group.users.push(reaction.userId);
+    if (isReactionBy(reaction, currentUserUsername))
+      group.currentUserReacted = true;
+  }
 
   return (
     <div className="flex flex-wrap gap-1 mt-0.5 mb-2 select-none">
-      {Object.entries(groupedReactions).map(([emoji, data]) => (
+      {[...groupedReactions].map(([emoji, data]) => (
         <ReactionButton
           key={emoji}
           emoji={emoji}
-          reactionData={data as ReactionData}
+          reactionData={data}
           onReactionClick={onReactionClick}
         />
       ))}

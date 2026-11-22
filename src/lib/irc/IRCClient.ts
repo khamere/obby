@@ -16,8 +16,20 @@ import type {
 import { APP_VERSION } from "../appVersion";
 import { encodeBouncerAttrs } from "../bouncerAttrs";
 import { parseIrcUrl } from "../ircUrlParser";
-import { chantypesOf, isChannelTarget, parseMessageTags } from "../ircUtils";
-import { createBatchId, splitLongMessage } from "../messageProtocol";
+import {
+  chantypesOf,
+  escapeTagValue,
+  isChannelTarget,
+  isJoinableChannelKey,
+  isJoinableChannelName,
+  joinKeyArgument,
+  parseMessageTags,
+} from "../ircUtils";
+import {
+  calculateProtocolOverhead,
+  createBatchId,
+  splitLongMessage,
+} from "../messageProtocol";
 import { createSocket, type ISocket } from "../socket";
 import { IRC_DISPATCH } from "./handlers";
 import type { IRCClientContext } from "./IRCClientContext";
@@ -25,7 +37,9 @@ import {
   chunkForMultiline,
   type MultilineLimits,
   parseMultilineLimits,
+  splitAtSpaces,
 } from "./multiline";
+import { nextMemberRequestNumber, parseServerTime } from "./utils";
 
 // Namespace UUID for generating deterministic channel/chat IDs
 const CHANNEL_NAMESPACE = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
@@ -286,8 +300,15 @@ export interface EventMap {
     realname: string;
     isAway: boolean;
     opLevel: string;
+    token?: string;
   };
-  WHO_END: { serverId: string; mask: string };
+  WHO_END: { serverId: string; mask: string; isAborted?: boolean };
+  MEMBERS_REQUESTED: {
+    serverId: string;
+    channelName: string;
+    token: string;
+    line: string;
+  };
   RPL_AWAY: {
     serverId: string;
     nick: string;
@@ -657,6 +678,8 @@ export interface ParsedLine {
   source: string;
   parv: string[];
   mtags: Record<string, string> | undefined;
+  // The time tag holds the time we received the line at, since the server sent none we could read.
+  hasReceiveTime?: boolean;
 }
 
 type EventKey = keyof EventMap;
@@ -673,6 +696,7 @@ function splitCapToken(token: string): { cap: string; value?: string } {
 
 export class IRCClient implements IRCClientContext {
   private sockets: Map<string, ISocket> = new Map();
+  private memberRequestNumbers = new WeakMap<ISocket, number>();
   servers: Map<string, Server> = new Map();
   nicks: Map<string, string> = new Map();
   myIdents: Map<string, string> = new Map(); // Our own ident per server, populated by draft/whoami SETNAME burst and CHGHOST
@@ -1339,7 +1363,10 @@ export class IRCClient implements IRCClientContext {
     return Date.now() - at <= IRCClient.RECENT_SEND_MS;
   }
 
-  sendRaw(serverId: string, command: string): void {
+  sendRaw(serverId: string, text: string): void {
+    // The server reads every line of a frame as a command of its own, so we
+    // send only the first line of whatever a caller hands us.
+    const command = text.split(/[\r\n\0]/, 1)[0];
     if (this.tagmsgRefused.has(serverId) && /^(?:@\S+ )?TAGMSG /i.test(command))
       return;
     const privmsg = /^(?:@\S+ )?PRIVMSG (\S+) /i.exec(command);
@@ -1442,9 +1469,20 @@ export class IRCClient implements IRCClientContext {
     return rateLimitPatterns.some((pattern) => pattern.test(message));
   }
 
-  joinChannel(serverId: string, typedName: string, key?: string): Channel {
+  // Names and keys reach us from links, saved lists and other people's
+  // messages, so we send a JOIN only when it carries one channel and one key.
+  joinChannel(
+    serverId: string,
+    typedName: string,
+    key?: string,
+  ): Channel | undefined {
     const channelName = this.withChannelPrefix(serverId, typedName);
-    const joinLine = key ? `JOIN ${channelName} ${key}` : `JOIN ${channelName}`;
+    if (!isJoinableChannelName(channelName, this.chantypes(serverId)))
+      return undefined;
+    if (key && !isJoinableChannelKey(key)) return undefined;
+    const joinLine = key
+      ? `JOIN ${channelName} ${joinKeyArgument(key)}`
+      : `JOIN ${channelName}`;
     const server = this.servers.get(serverId);
     if (server) {
       const existing = server.channels.find((c) => c.name === channelName);
@@ -1566,8 +1604,27 @@ export class IRCClient implements IRCClientContext {
   // the server keeps no history. Returns whether history was requested.
   loadHistoryOrMembers(serverId: string, channelName: string): boolean {
     if (this.loadLatestHistory(serverId, channelName)) return true;
-    this.sendRaw(serverId, `WHO ${channelName} %cuhnfaro`);
+    this.requestMembers(serverId, channelName);
     return false;
+  }
+
+  // The server repeats the number we send in every row of its answer, so the member list can tell the answer to this request from any other WHO reply.
+  requestMembers(serverId: string, channelName: string): void {
+    const socket = this.sockets.get(serverId);
+    const number = nextMemberRequestNumber(
+      socket && this.memberRequestNumbers.get(socket),
+    );
+    if (socket) this.memberRequestNumbers.set(socket, number);
+    const token = String(number);
+    const line = `WHO ${channelName} %tcuhnfaro,${token}`;
+    // We announce the request ahead of the line, so the line is known as ours when it goes out.
+    this.triggerEvent("MEMBERS_REQUESTED", {
+      serverId,
+      channelName,
+      token,
+      line,
+    });
+    this.sendRaw(serverId, line);
   }
 
   // Servers state their per-request maximum as CHATHISTORY=<n>, where 0 means
@@ -1653,9 +1710,10 @@ export class IRCClient implements IRCClientContext {
     content: string,
   ): void {
     // Send a whisper with both the ratified and draft channel-context tags for backwards compat
+    const context = escapeTagValue(channelName);
     this.sendRaw(
       serverId,
-      `@+channel-context=${channelName};+draft/channel-context=${channelName} PRIVMSG ${targetUser} :${content}`,
+      `@+channel-context=${context};+draft/channel-context=${context} PRIVMSG ${targetUser} :${content}`,
     );
   }
 
@@ -1688,6 +1746,35 @@ export class IRCClient implements IRCClientContext {
       // preserveBoundarySpace, or concat rejoins "AAA BBB CCC" as "AAA BBBCCC".
       lines.map((line) => splitLongMessage(line, target, true)),
     );
+  }
+
+  // One command is one line, so we send text with line breaks as a multiline
+  // batch, or line by line where the server has none.
+  sendText(
+    serverId: string,
+    target: string,
+    text: string,
+    options: { replyTo?: string; joinLines?: boolean } = {},
+  ): void {
+    const replyTo = options.replyTo ? escapeTagValue(options.replyTo) : "";
+    const tags = replyTo ? `@+reply=${replyTo};+draft/reply=${replyTo} ` : "";
+    const maxBytes = 512 - calculateProtocolOverhead(target);
+    const lines = text.split(/\r?\n/);
+    if (lines.length > 1 && this.hasCapability(serverId, "draft/multiline")) {
+      this.sendMultiline(
+        serverId,
+        target,
+        lines.map((line) => splitAtSpaces(line, maxBytes, true)),
+        tags,
+      );
+      return;
+    }
+    const separate = options.joinLines
+      ? [lines.filter(Boolean).join(" ")]
+      : lines;
+    for (const line of separate)
+      for (const part of splitAtSpaces(line, maxBytes, false))
+        if (part) this.sendRaw(serverId, `${tags}PRIVMSG ${target} :${part}`);
   }
 
   sendMultiline(
@@ -2258,10 +2345,17 @@ export class IRCClient implements IRCClientContext {
           lineAfterTags = line.substring(spaceIndex + 1);
         }
       }
-      // Servers without server-time leave the time to us, so we stamp one
-      // receive time that the chat and the saved history both read.
-      this.hasLineServerTime = !!mtags?.time;
-      if (!mtags?.time) mtags = { ...mtags, time: new Date().toISOString() };
+      // Servers without server-time, or with one that is no date, leave the
+      // time to us, so we stamp one receive time that the chat and the saved
+      // history both read. A server's time goes on in the one form every
+      // reader of the tag takes the same way, whatever fraction it came with.
+      const serverTime = parseServerTime(mtags?.time);
+      const hasServerTime = !Number.isNaN(serverTime);
+      this.hasLineServerTime = hasServerTime;
+      mtags = {
+        ...mtags,
+        time: new Date(hasServerTime ? serverTime : Date.now()).toISOString(),
+      };
 
       // Parse IRC message properly handling colon-prefixed trailing parameter
       const spaceIndex = lineAfterTags.indexOf(" :");
@@ -2301,27 +2395,49 @@ export class IRCClient implements IRCClientContext {
         parv.push(trailing);
       }
 
-      const handler = IRC_DISPATCH[command];
-      if (mtags?.batch && this.isDiskOnlyBatch(serverId, mtags.batch)) {
-        if (command === "BATCH") this.trackNestedDiskOnlyBatch(serverId, parv);
-      } else if (handler) {
-        handler(this, serverId, source, parv, mtags, trailing);
-      } else if (/^\d{3}$/.test(command) && !mtags?.batch) {
-        // parv[0] is our own nick; the rest is what the server has to say.
-        this.triggerEvent("SERVER_REPLY", {
-          serverId,
-          source,
-          numeric: command,
-          text: parv.slice(1).join(" "),
-        });
+      // One frame can carry many lines, so a line we fail on is logged and
+      // the lines after it are still handled.
+      try {
+        this.dispatchLine(serverId, command, source, parv, mtags, trailing);
+      } catch (error) {
+        console.error(`Failed to handle ${command} line:`, error);
       }
-      this.triggerEvent("parsedLine", {
+      try {
+        this.triggerEvent("parsedLine", {
+          serverId,
+          line,
+          command,
+          source,
+          parv,
+          mtags,
+          hasReceiveTime: !hasServerTime,
+        });
+      } catch (error) {
+        console.error(`Failed to record ${command} line:`, error);
+      }
+    }
+  }
+
+  private dispatchLine(
+    serverId: string,
+    command: string,
+    source: string,
+    parv: string[],
+    mtags: Record<string, string>,
+    trailing: string,
+  ): void {
+    const handler = IRC_DISPATCH[command];
+    if (mtags.batch && this.isDiskOnlyBatch(serverId, mtags.batch)) {
+      if (command === "BATCH") this.trackNestedDiskOnlyBatch(serverId, parv);
+    } else if (handler) {
+      handler(this, serverId, source, parv, mtags, trailing);
+    } else if (/^\d{3}$/.test(command) && !mtags.batch) {
+      // parv[0] is our own nick; the rest is what the server has to say.
+      this.triggerEvent("SERVER_REPLY", {
         serverId,
-        line,
-        command,
         source,
-        parv,
-        mtags,
+        numeric: command,
+        text: parv.slice(1).join(" "),
       });
     }
   }

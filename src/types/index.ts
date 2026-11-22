@@ -56,6 +56,9 @@ export interface BouncerState {
   // initial dump has finished). UI uses this to switch from "loading"
   // to "empty / list" states.
   listed: boolean;
+  // Set when the control connection drops and cleared by the next complete
+  // network list, so until then the rows may describe networks that are gone.
+  isListStale?: boolean;
   // Most recent error from this bouncer (UI toasts it then clears).
   lastError?: {
     code: string;

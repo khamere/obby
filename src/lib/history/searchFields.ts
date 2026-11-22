@@ -1,3 +1,4 @@
+import { parseServerTime } from "../irc/utils";
 import { parseMessageTags } from "../ircUtils";
 import { stripIrcFormatting } from "../messageFormatter";
 
@@ -122,4 +123,25 @@ export function mentionsNick(text: string, nick: string): boolean {
   return new RegExp(`(?<!${NICK_CHAR})@?${escaped}(?!${NICK_CHAR})`, "iu").test(
     text,
   );
+}
+
+const TIME_TAG = "time=";
+
+export const isTimeTag = (tag: string) => tag.split("=")[0] === "time";
+
+export function splitTags(line: string): { tags: string[]; rest: string } {
+  if (!line.startsWith("@")) return { tags: [], rest: line };
+  const space = line.indexOf(" ");
+  return {
+    tags: line.slice(1, space).split(";").filter(Boolean),
+    rest: line.slice(space + 1),
+  };
+}
+
+// The server's time for a line, or NaN when the line carries none, more than one, or one that is no server time.
+export function serverTimeOf(tags: string[]): number {
+  const timeTags = tags.filter(isTimeTag);
+  return timeTags.length === 1 && timeTags[0].startsWith(TIME_TAG)
+    ? parseServerTime(timeTags[0].slice(TIME_TAG.length))
+    : Number.NaN;
 }
