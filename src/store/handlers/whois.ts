@@ -8,6 +8,7 @@ import {
   bufferWhoReply,
   finishWhoReplies,
   forgetWhoReplies,
+  noteOtherWhoSent,
 } from "../whoReplyBatcher";
 
 export function registerWhoisHandlers(store: StoreApi<AppState>): void {
@@ -427,9 +428,27 @@ export function registerWhoisHandlers(store: StoreApi<AppState>): void {
     },
   );
 
-  ircClient.on("MEMBERS_REQUESTED", ({ serverId, channelName, token }) =>
-    beginMemberRefresh(serverId, channelName, token),
+  let ownRequestLine: string | undefined;
+  ircClient.on(
+    "MEMBERS_REQUESTED",
+    ({ serverId, channelName, token, line }) => {
+      ownRequestLine = line;
+      beginMemberRefresh(serverId, channelName, token);
+    },
   );
+
+  // A bouncer can answer one WHO from its own records while the answer to another is still arriving, so any other WHO about a channel that goes out leaves our open answers unfit to replace a list.
+  ircClient.on("rawLine", ({ serverId, direction, line }) => {
+    if (direction !== "tx") return;
+    const [command, ...params] = line.trim().split(/\s+/);
+    if (command.toUpperCase() !== "WHO") return;
+    if (line === ownRequestLine) {
+      ownRequestLine = undefined;
+      return;
+    }
+    if (params.some((param) => ircClient.isChannel(serverId, param)))
+      noteOtherWhoSent(serverId);
+  });
 
   // A reply belongs to the connection that asked, so a connection change ends every reply still open.
   ircClient.on("connectionStateChange", ({ serverId }) =>

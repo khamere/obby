@@ -52,8 +52,11 @@ interface MemberRefresh {
   serverId: string;
   channel: string;
   token: string;
-  sentAt: number;
+  // When we sent the request or last got a row of its answer.
+  progressAt: number;
   hasRows: boolean;
+  // Whether no other WHO about a channel could have its reply mixed into this answer.
+  canReplaceList: boolean;
   // Everyone the answer named or we saw join since we asked.
   present: Set<string>;
   // Everyone we saw leave since we asked, whom a row written before they left may still name.
@@ -63,8 +66,11 @@ interface MemberRefresh {
 }
 
 const refreshes = new Map<string, MemberRefresh>();
-// A request with no row of its answer after this long is given up, so the next join asks again.
+// A request whose answer brings no row for this long is given up, so the next join asks again.
 const ANSWER_LOST_AFTER_MS = 60_000;
+// Another WHO sent this shortly before ours may still be unanswered when our answer arrives.
+const OTHER_WHO_UNANSWERED_MS = 10_000;
+const otherWhoSentAt = new Map<string, number>();
 
 function key(serverId: string, channel: string): string {
   return `${serverId}|${channel.toLowerCase()}`;
@@ -73,8 +79,7 @@ function key(serverId: string, channel: string): string {
 function openRefresh(k: string): MemberRefresh | undefined {
   const refresh = refreshes.get(k);
   if (!refresh) return undefined;
-  const isLost =
-    !refresh.hasRows && Date.now() - refresh.sentAt >= ANSWER_LOST_AFTER_MS;
+  const isLost = Date.now() - refresh.progressAt >= ANSWER_LOST_AFTER_MS;
   if (isLost) refreshes.delete(k);
   return isLost ? undefined : refresh;
 }
@@ -97,12 +102,21 @@ export function beginMemberRefresh(
     serverId,
     channel,
     token,
-    sentAt: Date.now(),
+    progressAt: Date.now(),
     hasRows: false,
+    canReplaceList:
+      Date.now() - (otherWhoSentAt.get(serverId) ?? Number.NEGATIVE_INFINITY) >=
+      OTHER_WHO_UNANSWERED_MS,
     present: new Set(),
     gone: new Set(),
     renamed: new Map(),
   });
+}
+
+// The answers still merge and end as usual, and the next join asks again for a list we can trust.
+export function noteOtherWhoSent(serverId: string): void {
+  otherWhoSentAt.set(serverId, Date.now());
+  for (const refresh of refreshesFor(serverId)) refresh.canReplaceList = false;
 }
 
 export function isMemberRefreshPending(
@@ -168,6 +182,7 @@ export function noteMemberRenamed(
 }
 
 export function forgetWhoReplies(serverId: string): void {
+  otherWhoSentAt.delete(serverId);
   for (const [k, refresh] of refreshes)
     if (refresh.serverId === serverId) refreshes.delete(k);
   for (const [k, bucket] of buckets) {
@@ -302,7 +317,10 @@ export function bufferWhoReply(
   const k = key(serverId, channel);
   const open = openRefresh(k);
   const refresh = open && token === open.token ? open : undefined;
-  if (refresh) refresh.hasRows = true;
+  if (refresh) {
+    refresh.hasRows = true;
+    refresh.progressAt = Date.now();
+  }
   const entry = refresh ? currentMember(refresh, row) : row;
   if (!entry) return;
   refresh?.present.add(entry.nick.toLowerCase());
@@ -367,7 +385,7 @@ export function finishWhoReplies(
   // The server lists every member only to someone inside the channel, so we drop the members the answer left out only when it names us.
   const present = refresh.present;
   const ownNick = ircClient.getNick(serverId)?.toLowerCase();
-  if (!ownNick || !present.has(ownNick)) return;
+  if (!refresh.canReplaceList || !ownNick || !present.has(ownNick)) return;
   const isPresent = (user: User) => present.has(user.username.toLowerCase());
 
   store.setState((state) => ({
@@ -389,6 +407,7 @@ export function finishWhoReplies(
 // Test-only helpers.
 export function _resetWhoReplyBatcher(): void {
   refreshes.clear();
+  otherWhoSentAt.clear();
   for (const b of buckets.values()) {
     if (b.idleTimer) clearTimeout(b.idleTimer);
     if (b.ceilingTimer) clearTimeout(b.ceilingTimer);

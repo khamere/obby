@@ -303,7 +303,12 @@ export interface EventMap {
     token?: string;
   };
   WHO_END: { serverId: string; mask: string; isAborted?: boolean };
-  MEMBERS_REQUESTED: { serverId: string; channelName: string; token: string };
+  MEMBERS_REQUESTED: {
+    serverId: string;
+    channelName: string;
+    token: string;
+    line: string;
+  };
   RPL_AWAY: {
     serverId: string;
     nick: string;
@@ -1611,8 +1616,15 @@ export class IRCClient implements IRCClientContext {
     );
     if (socket) this.memberRequestNumbers.set(socket, number);
     const token = String(number);
-    this.sendRaw(serverId, `WHO ${channelName} %tcuhnfaro,${token}`);
-    this.triggerEvent("MEMBERS_REQUESTED", { serverId, channelName, token });
+    const line = `WHO ${channelName} %tcuhnfaro,${token}`;
+    // We announce the request ahead of the line, so the line is known as ours when it goes out.
+    this.triggerEvent("MEMBERS_REQUESTED", {
+      serverId,
+      channelName,
+      token,
+      line,
+    });
+    this.sendRaw(serverId, line);
   }
 
   // Servers state their per-request maximum as CHATHISTORY=<n>, where 0 means
