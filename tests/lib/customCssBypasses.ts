@@ -581,4 +581,25 @@ export const BYPASS_ATTEMPTS: BypassAttempt[] = [
     "a var() after a no-break space and a unicode range in a prefixed image-set",
     '*{--x:"https://evil.example/mg";background-image:-webkit-image-set(\u00a0u+0-1var(--x) 1x)}',
   ],
+  // a backslash before the closing tag of a style element, which we escape ourselves
+  [
+    "an escaped closing tag after a number",
+    ".a{width:1 \\</stylex(1)}",
+    "inert",
+  ],
+  [
+    "an escaped closing tag after an at-word",
+    ".a{color:red} @foo \\</style-x(1) .b{color:blue}",
+    "inert",
+  ],
+  [
+    "an escaped upper-case closing tag after a hash",
+    ".a{x:#a \\</STYLEvar(--y)}",
+    "inert",
+  ],
+  [
+    "an escaped closing tag right after a number",
+    ".a{x:.5\\</style calc(1)}",
+    "inert",
+  ],
 ];

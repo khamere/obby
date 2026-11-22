@@ -365,6 +365,15 @@ describe("sanitizeCss", () => {
     );
   });
 
+  it("keeps a stylesheet that writes a backslash before </style", () => {
+    expect(sanitizeCss(".a{width:1 \\</stylex(1)}")).toBe(
+      ".a{width:1 \\<\\/stylex(1)}",
+    );
+    expect(sanitizeCss(".a{x:.5\\</style calc(1)} .b{y:url(</style)}")).toBe(
+      ".a{x:.5\\<\\/style calc(1)} .b{y:none}",
+    );
+  });
+
   it("cannot close the <style> element", () => {
     expect(sanitizeCss(".a{}</style><script>x</script></STYLE>")).toBe(
       ".a{}<\\/style><script>x</script><\\/style>",

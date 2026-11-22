@@ -584,9 +584,9 @@ const refusedIn = (css: string) => rewrite(css).refused;
 let secondReading = refusedIn;
 
 export function sanitizeCss(input: string): string {
-  const css = preprocess(input);
-  // closing the <style> element would let the rest escape as markup
-  const out = rewrite(css).text.replace(/<\/style/gi, "<\\/style");
+  // Closing the <style> element would let the rest escape as markup, and we escape it before we read so that we judge the text we hand out.
+  const css = preprocess(input).replace(/<\/style/gi, "<\\/style");
+  const out = rewrite(css).text;
   // Text we changed can read differently from the text we judged, so we read it once more and apply nothing if it still holds anything we refuse.
   if (out !== css && secondReading(out) > 0) return "";
   return out;
