@@ -58,7 +58,7 @@ import type {
   SearchQuery,
   SearchScope,
 } from "../../lib/search/searchTypes";
-import type { Message, Server } from "../../types";
+import type { Channel, Message, Server } from "../../types";
 import {
   compareMessageOrder,
   MAX_MESSAGES_PER_CHANNEL,
@@ -477,6 +477,7 @@ async function refreshHasMore(
   serverId: string,
   target: string,
   serverMayHaveMore: boolean,
+  canServerFillGaps = true,
 ) {
   const conversation = findConversation(store, serverId, target);
   if (!conversation) return;
@@ -486,9 +487,23 @@ async function refreshHasMore(
   const hasMore =
     serverMayHaveMore ||
     (await olderDiskRows(store, serverId, target, 1)).length > 0 ||
-    (await gapsServerCanFill(store, serverId, target)).some(
-      isOlderThanOldestShown,
-    );
+    (canServerFillGaps &&
+      (await gapsServerCanFill(store, serverId, target)).some(
+        isOlderThanOldestShown,
+      ));
+  updateChat(store, serverId, conversation.channelId, {
+    hasMoreHistory: hasMore,
+  });
+}
+
+type HistoryOffer = Pick<Channel, "hasMoreHistory" | "historyRefusedAt">;
+
+function updateChat(
+  store: StoreApi<AppState>,
+  serverId: string,
+  chatId: string,
+  update: HistoryOffer,
+) {
   store.setState((state) => ({
     servers: state.servers.map((server) =>
       server.id !== serverId
@@ -496,18 +511,68 @@ async function refreshHasMore(
         : {
             ...server,
             channels: server.channels.map((c) =>
-              c.id === conversation.channelId
-                ? { ...c, hasMoreHistory: hasMore }
-                : c,
+              c.id === chatId ? { ...c, ...update } : c,
             ),
             privateChats: server.privateChats?.map((pc) =>
-              pc.id === conversation.channelId
-                ? { ...pc, hasMoreHistory: hasMore }
-                : pc,
+              pc.id === chatId ? { ...pc, ...update } : pc,
             ),
           },
     ),
   }));
+}
+
+// A request refused with one of these fails the same way when sent again. Any
+// other refusal, like a storage error or a rate limit, can pass on a later try.
+const FINAL_REFUSALS = new Set([
+  "INVALID_TARGET",
+  "INVALID_PARAMS",
+  "INVALID_MSGREFTYPE",
+  "NEED_MORE_PARAMS",
+  "UNKNOWN_COMMAND",
+]);
+
+// Some servers name only the subcommand in a refusal, so we take it for the
+// one chat that waits for a reply to that subcommand.
+function onlyChatAwaiting(
+  serverId: string,
+  subcommand: string | undefined,
+): string | undefined {
+  const kind = subcommand?.toLowerCase();
+  const waiting = [...pendingRequests]
+    .filter(
+      ([key, queue]) =>
+        key.startsWith(`${serverId}\n`) && queue[0]?.kind === kind,
+    )
+    .map(([key]) => key.slice(serverId.length + 1));
+  return waiting.length === 1 ? waiting[0] : undefined;
+}
+
+// A final refusal ends the offer of older history, apart from pages we can
+// still read from disk. After any other refusal the offer stands as it was,
+// and a refused older page is marked so the list can ask for it again.
+function settleRefusedOffer(
+  store: StoreApi<AppState>,
+  serverId: string,
+  target: string,
+  code: string,
+  subcommand: string | undefined,
+) {
+  const conversation = findConversation(store, serverId, target);
+  if (!conversation) return;
+  setLoading(serverId, target, false);
+  if (FINAL_REFUSALS.has(code)) {
+    void refreshHasMore(store, serverId, target, false, false);
+    return;
+  }
+  const server = store.getState().servers.find((s) => s.id === serverId);
+  const chat =
+    server?.channels.find((c) => c.id === conversation.channelId) ??
+    server?.privateChats?.find((pc) => pc.id === conversation.channelId);
+  if (subcommand?.toUpperCase() === "BEFORE")
+    updateChat(store, serverId, conversation.channelId, {
+      historyRefusedAt: Date.now(),
+    });
+  void refreshHasMore(store, serverId, target, chat?.hasMoreHistory === true);
 }
 
 async function gapsServerCanFill(
@@ -872,15 +937,16 @@ export function registerHistoryHandlers(store: StoreApi<AppState>): void {
 
   // A refused CHATHISTORY opens no batch, so we drop its request here or the
   // next reply would be matched to it.
-  ircClient.on("FAIL", ({ serverId, command, context }) => {
+  ircClient.on("FAIL", ({ serverId, command, code, context }) => {
     if (command !== "CHATHISTORY") return;
-    const refused = context.find((part) =>
-      findConversation(store, serverId, part),
-    );
-    if (refused) void refreshHasMore(store, serverId, refused, false);
-    const target = context.find(
-      (part) => pendingRequests.get(conversationKey(serverId, part))?.length,
-    );
+    const [subcommand] = context;
+    const target =
+      context.find(
+        (part) => pendingRequests.get(conversationKey(serverId, part))?.length,
+      ) ?? onlyChatAwaiting(serverId, subcommand);
+    const refused =
+      context.find((part) => findConversation(store, serverId, part)) ?? target;
+    if (refused) settleRefusedOffer(store, serverId, refused, code, subcommand);
     if (!target) return;
     const request = pendingRequests
       .get(conversationKey(serverId, target))

@@ -342,6 +342,8 @@ export interface Channel {
   needsWhoRequest?: boolean;
   chathistoryRequested?: boolean;
   hasMoreHistory?: boolean;
+  // When the server last refused an older page it may serve on a later try.
+  historyRefusedAt?: number;
   historyOldestTime?: string;
   metadata?: Record<string, { value: string | undefined; visibility: string }>;
   modes?: string;
@@ -367,6 +369,8 @@ export interface PrivateChat {
   isMentioned: boolean;
   isLoadingHistory?: boolean;
   hasMoreHistory?: boolean;
+  // When the server last refused an older page it may serve on a later try.
+  historyRefusedAt?: number;
   historyOldestTime?: string;
   lastActivity?: Date;
   isPinned?: boolean;

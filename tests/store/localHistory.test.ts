@@ -648,6 +648,85 @@ describe("local history with a chathistory server", () => {
     });
   });
 
+  describe("a refused older page", () => {
+    const request = `CHATHISTORY BEFORE #chan timestamp=${at(1)} 50`;
+    const offerMore = () =>
+      w.useStore.setState((state) => ({
+        servers: state.servers.map((server) => ({
+          ...server,
+          channels: server.channels.map((c) => ({
+            ...c,
+            hasMoreHistory: true,
+          })),
+        })),
+      }));
+
+    beforeEach(async () => {
+      w.feed(privmsg("m1", 1, "one"), privmsg("m2", 2, "two"));
+      await vi.waitFor(async () => expect(await w.stored()).toHaveLength(2));
+      offerMore();
+      expect(await w.loadOlder(BASE + 1000)).toBe(true);
+      expect(w.chathistoryRequests()).toEqual([request]);
+      expect(w.channel()?.isLoadingHistory).toBe(true);
+    });
+
+    it.each([
+      [
+        "an error that names the chat",
+        `MESSAGE_ERROR BEFORE #chan timestamp=${at(1)} 50 :Messages could not be retrieved`,
+      ],
+      [
+        "an error that names only the subcommand",
+        "MESSAGE_ERROR BEFORE :Messages could not be retrieved",
+      ],
+      ["a code the spec does not list", "RATE_LIMITED BEFORE #chan :Slow down"],
+    ])(
+      "stays on offer after %s, and the same page can be asked for again",
+      async (_name, refusal) => {
+        w.feed(`:irc.test FAIL CHATHISTORY ${refusal}`);
+        await w.drain();
+
+        expect(w.channel()?.isLoadingHistory).toBe(false);
+        expect(w.channel()?.hasMoreHistory).toBe(true);
+        expect(w.channel()?.historyRefusedAt).toEqual(expect.any(Number));
+        w.sent.length = 0;
+        expect(await w.loadOlder(BASE + 1000)).toBe(true);
+        expect(w.chathistoryRequests()).toEqual([request]);
+        w.feed(...inBatch("r1", "#chan", [privmsg("m0", 0, "zero")]));
+        await vi.waitFor(() =>
+          expect(w.channelMessages()[0]?.content).toBe("zero"),
+        );
+      },
+    );
+
+    it.each([
+      "INVALID_TARGET BEFORE #chan :Messages could not be retrieved",
+      `INVALID_PARAMS BEFORE ${at(1)} :Invalid first bound`,
+      "INVALID_MSGREFTYPE BEFORE #chan :timestamp-based history requests are not supported",
+    ])("is no longer on offer after the final refusal %s", async (refusal) => {
+      w.feed(`:irc.test FAIL CHATHISTORY ${refusal}`);
+      await w.drain();
+
+      expect(w.channel()?.isLoadingHistory).toBe(false);
+      expect(w.channel()?.hasMoreHistory).toBe(false);
+      expect(w.channel()?.historyRefusedAt).toBeUndefined();
+    });
+
+    it("leaves a chat alone when a refusal without a target could be for either of two", async () => {
+      w.ircClient.sendRaw(
+        SERVER,
+        `CHATHISTORY BEFORE #other timestamp=${at(1)} 50`,
+      );
+      w.feed(
+        ":irc.test FAIL CHATHISTORY MESSAGE_ERROR BEFORE :Messages could not be retrieved",
+      );
+      await w.drain();
+
+      expect(w.channel()?.historyRefusedAt).toBeUndefined();
+      expect(w.channel()?.hasMoreHistory).toBe(true);
+    });
+  });
+
   describe("gap on reconnect", () => {
     const seedDisk = async () => {
       w.feed(
@@ -985,6 +1064,17 @@ describe("local history with a chathistory server", () => {
           expect(w.chathistoryRequests()).toEqual([
             requestBefore(pageStart(10)),
           ]);
+        });
+
+        it("offers no more history after the server refuses the gap's page for good", async () => {
+          expect(await w.loadOlder(BASE + pageStart(10) * 1000)).toBe(true);
+          w.feed(
+            ":irc.test FAIL CHATHISTORY INVALID_TARGET BEFORE #chan :Messages could not be retrieved",
+          );
+          await w.drain();
+
+          expect(w.channel()?.isLoadingHistory).toBe(false);
+          expect(w.channel()?.hasMoreHistory).toBe(false);
         });
 
         it("keeps no message from before the gap on screen", () => {

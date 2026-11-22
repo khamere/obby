@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { createRef } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ChannelMessageList,
   type ChannelMessageListHandle,
@@ -9,7 +9,7 @@ import {
 import ircClient from "../../../src/lib/ircClient";
 import useStore from "../../../src/store";
 import { loadNewerMessages } from "../../../src/store/handlers/history";
-import type { Server } from "../../../src/types";
+import type { PrivateChat, Server } from "../../../src/types";
 
 vi.mock("../../../src/lib/ircClient", () => ({
   default: {
@@ -233,6 +233,181 @@ describe("private chat history pagination", () => {
       }),
     );
     expect(scroller.scrollTop).toBe(100);
+  });
+});
+
+describe("an older page the server refuses", () => {
+  const RETRY_WAIT_MS = 5_000;
+  const requests = () =>
+    vi.mocked(ircClient.requestChathistoryBefore).mock.calls.length;
+  const updateChat = (update: Partial<PrivateChat>) =>
+    act(() => {
+      useStore.setState((state) => ({
+        servers: state.servers.map((server) => ({
+          ...server,
+          privateChats: server.privateChats?.map((pc) => ({
+            ...pc,
+            ...update,
+          })),
+        })),
+      }));
+    });
+  const liveTraffic = () =>
+    act(() => {
+      useStore.setState((state) => ({ ui: { ...state.ui } }));
+    });
+  const topPlaceholder = (area: Element) =>
+    area.querySelector("[data-message-id]")?.parentElement?.firstElementChild;
+
+  const scrollToTopOfChat = () => {
+    const { container } = render(<ChannelMessageList {...defaultProps} />);
+    const area = container.querySelector(".obby-chat-area") as HTMLElement;
+    // jsdom lays nothing out; the loader skips a container with no height.
+    Object.defineProperty(area, "clientHeight", { value: 600 });
+    Object.defineProperty(area, "scrollHeight", { value: 300 });
+    act(() => {
+      fireEvent.scroll(area);
+    });
+    expect(requests()).toBe(1);
+    updateChat({ isLoadingHistory: true });
+    return area;
+  };
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.mocked(ircClient.requestChathistoryBefore).mockReset();
+    vi.mocked(ircClient.requestChathistoryBefore).mockReturnValue(true);
+    useStore.setState((state) => ({
+      globalSettings: { ...state.globalSettings, keepHistory: false },
+      servers: [
+        {
+          id: "s1",
+          name: "Pebble",
+          host: "irc.pebble.example",
+          port: 6697,
+          isConnected: true,
+          users: [],
+          channels: [],
+          privateChats: [
+            {
+              id: "pm1",
+              username: "kestrel",
+              serverId: "s1",
+              unreadCount: 0,
+              isMentioned: false,
+              hasMoreHistory: true,
+            },
+          ],
+          capabilities: ["draft/chathistory"],
+        },
+      ],
+      messages: { [defaultProps.channelKey]: [makeMsg("recent")] },
+    }));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("asks again when the reader scrolls after the wait, and never on its own", () => {
+    const area = scrollToTopOfChat();
+    updateChat({ isLoadingHistory: false, historyRefusedAt: Date.now() });
+
+    for (let i = 0; i < 3; i++) liveTraffic();
+    expect(requests()).toBe(1);
+    act(() => {
+      fireEvent.scroll(area);
+    });
+    expect(requests()).toBe(1);
+
+    vi.advanceTimersByTime(RETRY_WAIT_MS);
+    for (let i = 0; i < 3; i++) liveTraffic();
+    expect(requests()).toBe(1);
+    act(() => {
+      fireEvent.scroll(area);
+    });
+    expect(requests()).toBe(2);
+  });
+
+  it("asks again when the reader turns the wheel in a chat too short to scroll", () => {
+    const area = scrollToTopOfChat();
+    updateChat({ isLoadingHistory: false, historyRefusedAt: Date.now() });
+
+    vi.advanceTimersByTime(RETRY_WAIT_MS);
+    act(() => {
+      fireEvent.wheel(area, { deltaY: -100 });
+    });
+    expect(requests()).toBe(2);
+  });
+
+  it("waits again when the server refuses the second request too", () => {
+    const area = scrollToTopOfChat();
+    updateChat({ isLoadingHistory: false, historyRefusedAt: Date.now() });
+    vi.advanceTimersByTime(RETRY_WAIT_MS);
+    act(() => {
+      fireEvent.scroll(area);
+    });
+    expect(requests()).toBe(2);
+    updateChat({ isLoadingHistory: true });
+    updateChat({ isLoadingHistory: false, historyRefusedAt: Date.now() });
+
+    act(() => {
+      fireEvent.scroll(area);
+    });
+    expect(requests()).toBe(2);
+    vi.advanceTimersByTime(RETRY_WAIT_MS);
+    act(() => {
+      fireEvent.scroll(area);
+    });
+    expect(requests()).toBe(3);
+  });
+
+  it("stops asking once the page asked for again comes back empty", () => {
+    const area = scrollToTopOfChat();
+    updateChat({ isLoadingHistory: false, historyRefusedAt: Date.now() });
+    vi.advanceTimersByTime(RETRY_WAIT_MS);
+    act(() => {
+      fireEvent.scroll(area);
+    });
+    expect(requests()).toBe(2);
+    updateChat({ isLoadingHistory: true });
+    updateChat({ isLoadingHistory: false });
+
+    vi.advanceTimersByTime(RETRY_WAIT_MS);
+    act(() => {
+      fireEvent.scroll(area);
+    });
+    expect(requests()).toBe(2);
+  });
+
+  it("keeps the placeholder above the messages while the page can be asked for again", () => {
+    const area = scrollToTopOfChat();
+    updateChat({ isLoadingHistory: false, historyRefusedAt: Date.now() });
+
+    expect(topPlaceholder(area)?.getAttribute("aria-hidden")).toBe("true");
+  });
+
+  it("removes the placeholder when the refusal ends the offer", () => {
+    const area = scrollToTopOfChat();
+    updateChat({ isLoadingHistory: false, hasMoreHistory: false });
+
+    expect(topPlaceholder(area)?.getAttribute("aria-hidden")).not.toBe("true");
+    vi.advanceTimersByTime(RETRY_WAIT_MS);
+    act(() => {
+      fireEvent.scroll(area);
+    });
+    expect(requests()).toBe(1);
+  });
+
+  it("asks once for a page that came back empty, however often the reader scrolls", () => {
+    const area = scrollToTopOfChat();
+    updateChat({ isLoadingHistory: false });
+
+    vi.advanceTimersByTime(RETRY_WAIT_MS);
+    act(() => {
+      fireEvent.scroll(area);
+    });
+    expect(requests()).toBe(1);
   });
 });
 

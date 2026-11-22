@@ -53,6 +53,8 @@ export const DEFAULT_VISIBLE_MESSAGE_COUNT = 100;
 const LOAD_AHEAD_PX = 800;
 // How long we wait for an older page before letting scrolling ask again.
 const OLDER_PAGE_TIMEOUT_MS = 10_000;
+// A server that keeps refusing a page gets at most one request per wait.
+const REFUSED_PAGE_RETRY_WAIT_MS = 5_000;
 // How long a chat may stay behind placeholders while it finds its unread line.
 const UNREAD_POSITIONING_LIMIT_MS = 4000;
 // How long a chat may wait for history at all before it opens without it.
@@ -164,6 +166,11 @@ export const ChannelMessageList = forwardRef<
     // The oldest message id (null for an empty chat) at which the server last
     // sent an empty older page; undefined until that happens.
     const emptyOlderPageAtRef = useRef<string | null | undefined>(undefined);
+    // The oldest message id at which the server last refused an older page.
+    const refusedOlderPageRef = useRef<{
+      oldestId: string | null;
+      at: number;
+    } | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const messagesInnerRef = useRef<HTMLDivElement>(null);
@@ -784,6 +791,22 @@ export const ChannelMessageList = forwardRef<
       }
     }, []);
 
+    const historyRefusedAt =
+      channel?.historyRefusedAt ?? privateChat?.historyRefusedAt;
+    const seenHistoryRefusedAtRef = useRef(historyRefusedAt);
+    // A refusal says nothing about what the server holds, so the page stays
+    // open to another request and never counts as an empty one.
+    // biome-ignore lint/correctness/useExhaustiveDependencies: runs once per refusal; the oldest message is read as it stands then
+    useLayoutEffect(() => {
+      if (historyRefusedAt === seenHistoryRefusedAtRef.current) return;
+      seenHistoryRefusedAtRef.current = historyRefusedAt;
+      if (historyRefusedAt === undefined) return;
+      const oldestId = channelMessages[0]?.id ?? null;
+      refusedOlderPageRef.current = { oldestId, at: historyRefusedAt };
+      if (emptyOlderPageAtRef.current === oldestId)
+        emptyOlderPageAtRef.current = undefined;
+    }, [historyRefusedAt]);
+
     // Scroll to bottom after initial join history loads; clear fetch spinner at batch end.
     const wasLoadingHistoryRef = useRef(false);
     // biome-ignore lint/correctness/useExhaustiveDependencies: scrollToBottom is stable via useCallback; refs and setters are stable
@@ -793,7 +816,10 @@ export const ChannelMessageList = forwardRef<
           // delta correction for scroll position is handled by useLayoutEffect([displayedMessages])
           isFetchingMoreRef.current = false;
           setIsFetchingMore(false);
-          if ((channelMessages[0]?.id ?? null) === oldestAtFetchRef.current)
+          if (
+            (channelMessages[0]?.id ?? null) === oldestAtFetchRef.current &&
+            refusedOlderPageRef.current?.oldestId !== oldestAtFetchRef.current
+          )
             emptyOlderPageAtRef.current = oldestAtFetchRef.current;
         } else if (
           !isDetachedRef.current &&
@@ -989,7 +1015,7 @@ export const ChannelMessageList = forwardRef<
       };
     }, []);
 
-    const loadOlder = (): boolean => {
+    const loadOlder = (isReaderScrolling: boolean): boolean => {
       if (!isActive || isLoadingHistory || isFetchingMoreRef.current)
         return false;
       const oldest = channelMessages[0];
@@ -1002,6 +1028,16 @@ export const ChannelMessageList = forwardRef<
       // An empty chat has no oldest message, so the compare is on null: the
       // undefined-vs-null mismatch here used to ask again on every render.
       if ((oldest?.id ?? null) === emptyOlderPageAtRef.current) return false;
+      // We ask for a refused page again only when the reader scrolls, so a
+      // server that keeps refusing gets no requests on our own account.
+      const refused = refusedOlderPageRef.current;
+      if (
+        refused?.oldestId === (oldest?.id ?? null) &&
+        (!isReaderScrolling ||
+          Date.now() - refused.at < REFUSED_PAGE_RETRY_WAIT_MS)
+      )
+        return false;
+      refusedOlderPageRef.current = null;
       isFetchingMoreRef.current = true;
       oldestAtFetchRef.current = oldest?.id ?? null;
       setIsFetchingMore(true);
@@ -1057,15 +1093,15 @@ export const ChannelMessageList = forwardRef<
       );
     };
 
-    const loadNearEdgesRef = useRef(() => {});
-    loadNearEdgesRef.current = () => {
+    const loadNearEdgesRef = useRef((_isReaderScrolling = false) => {});
+    loadNearEdgesRef.current = (isReaderScrolling = false) => {
       const container = messagesContainerRef.current;
       if (!container || container.clientHeight === 0) return;
       // Rows added below never move the held row, so we load newer ones while holding.
       if (isScrolledToBottom(container, LOAD_AHEAD_PX)) loadNewer();
       if (isHoldingRef.current) {
         // Rows landing above leave the held row in place, so we fill the placeholders in view.
-        if (isTopSkeletonInView(container)) loadOlder();
+        if (isTopSkeletonInView(container)) loadOlder(isReaderScrolling);
         return;
       }
       if (
@@ -1073,15 +1109,20 @@ export const ChannelMessageList = forwardRef<
         (!isScrolledToBottom(container) ||
           container.scrollHeight <= container.clientHeight)
       )
-        loadOlder();
+        loadOlder(isReaderScrolling);
     };
 
     useEffect(() => {
       const container = messagesContainerRef.current;
       if (!container) return;
-      const onScroll = () => loadNearEdgesRef.current();
+      const onScroll = () => loadNearEdgesRef.current(true);
       container.addEventListener("scroll", onScroll, { passive: true });
-      return () => container.removeEventListener("scroll", onScroll);
+      // A chat shorter than the list cannot scroll, so the wheel stands in.
+      container.addEventListener("wheel", onScroll, { passive: true });
+      return () => {
+        container.removeEventListener("scroll", onScroll);
+        container.removeEventListener("wheel", onScroll);
+      };
     }, []);
 
     // A page can land with the edge still in view, which fires no scroll event.
