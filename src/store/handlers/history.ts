@@ -286,7 +286,7 @@ export function hasSavedHistory(serverId: string): Promise<boolean> {
 }
 
 export function settleSavedHistory(
-  server: Server,
+  server: Parameters<typeof serverLoginAddress>[0],
   shouldDelete: boolean,
 ): Promise<void> {
   return shouldDelete

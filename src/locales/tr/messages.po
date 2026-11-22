@@ -1165,7 +1165,6 @@ msgstr "Son 2FA kimlik bilgisi kaldırılamaz"
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkForm.tsx
-#: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/E2EERequestBanner.tsx
 #: src/components/ui/FloodSettingsModal.tsx
 #: src/components/ui/InviteUserModal.tsx
@@ -1775,6 +1774,7 @@ msgstr "Ne kadar harici medya yükleneceğini denetleyin. Kapalı / Güvenli / G
 msgid "Control media display and external content"
 msgstr "Medya gösterimini ve harici içeriği denetleyin"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 #: src/components/ui/E2EEVerifyModal.tsx
 #: src/components/ui/ExternalLinkWarningModal.tsx
@@ -1811,10 +1811,16 @@ msgstr "Kanal adını kopyala"
 msgid "Copy entire JSON"
 msgstr "Tüm JSON'u kopyala"
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Copy error details"
+msgstr "Hata ayrıntılarını kopyala"
+
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 msgid "Copy failed, select to retry"
 msgstr "Kopya başarısız, yeniden denemek için seç"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/mobile/MessageReaderSheet.tsx
 msgid "Copy failed, tap to retry"
 msgstr "Kopya başarısız, yeniden denemek için dokunun"
@@ -2076,6 +2082,11 @@ msgstr "Katılımları geciktir (+D)"
 msgid "Delete"
 msgstr "Sil"
 
+#. placeholder {0}: network.name
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Delete <0>{0}</0> from your bouncer?"
+msgstr "<0>{0}</0> bouncer'ınızdan silinsin mi?"
+
 #: src/components/layout/BotPane.tsx
 msgid "Delete bot"
 msgstr "Botu sil"
@@ -2103,9 +2114,20 @@ msgstr "Kayıtlı sohbet geçmişini de sil"
 msgid "Delete message"
 msgstr "Mesajı sil"
 
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/NetworkMenu.tsx
+#: src/components/layout/ServerList.tsx
+#: src/components/mobile/ServerBottomSheet.tsx
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkForm.tsx
+#: src/components/ui/BouncerNetworksPanel.tsx
+#: src/components/ui/BouncerNetworksPanel.tsx
 msgid "Delete network"
 msgstr "Ağı sil"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Delete network?"
+msgstr "Ağ silinsin mi?"
 
 #: src/components/pages/EmojiPacksPage.tsx
 #: src/components/pages/EmojiPacksPage.tsx
@@ -2124,13 +2146,13 @@ msgstr "Bu daveti sil"
 msgid "Delete this message? This cannot be undone."
 msgstr "Bu mesaj silinsin mi? Bu işlem geri alınamaz."
 
-#: src/components/ui/BouncerNetworkForm.tsx
-msgid "Delete this network?"
-msgstr "Bu ağ silinsin mi?"
-
 #: src/components/layout/BotPane.tsx
 msgid "deleted"
 msgstr "silindi"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Deleting…"
+msgstr "Siliniyor…"
 
 #: src/components/voice/ParticipantTile.tsx
 #: src/components/voice/ParticipantTile.tsx
@@ -2197,16 +2219,9 @@ msgstr "Sil"
 #: src/components/layout/ServerList.tsx
 #: src/components/mobile/ServerBottomSheet.tsx
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-#: src/components/ui/BouncerNetworksPanel.tsx
 #: src/components/ui/RemoveServerConfirmModal.tsx
 msgid "Disconnect"
 msgstr "Bağlantıyı Kes"
-
-#. placeholder {0}: network.name
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "Disconnect <0>{0}</0>?"
-msgstr "<0>{0}</0> bağlantısı kesilsin mi?"
 
 #: src/components/ui/RemoveServerConfirmModal.tsx
 msgid "Disconnect from {name}?"
@@ -2215,10 +2230,6 @@ msgstr "{name} bağlantısı kesilsin mi?"
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
 msgid "Disconnect from soju bouncer?"
 msgstr "soju bouncer bağlantısı kesilsin mi?"
-
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "Disconnect network?"
-msgstr "Ağ bağlantısı kesilsin mi?"
 
 #: src/components/layout/ChannelList.tsx
 msgid "Discover"
@@ -2526,6 +2537,10 @@ msgstr "Kanala özel paketler için bir kanal adı girin."
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "Bu kanala katılamayan kullanıcıların yönlendirileceği bir kanal girin. Devre dışı bırakmak için boş bırakın."
+
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "Virgül içermeyen bir anahtar girin"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
@@ -3250,6 +3265,10 @@ msgstr "IRC Sunucuları:"
 #: src/store/handlers/users.ts
 msgid "is now known as **{newNick}**"
 msgstr "artık **{newNick}** olarak bilinmektedir"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Its saved chat history stays on this device. A network you add again gets it back only if the bouncer gives it the same ID."
+msgstr "Kayıtlı sohbet geçmişi bu cihazda kalır. Yeniden eklediğiniz ağ, geçmişi yalnızca bouncer ona aynı kimliği verirse geri alır."
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "JetBrains Mono"
@@ -4387,6 +4406,10 @@ msgstr "Obby bu dosyayı her açılışta indirir, böylece aynı bağlantıyı 
 msgid "Obby is up to date."
 msgstr "Obby güncel."
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Obby stopped working"
+msgstr "Obby çalışmayı durdurdu"
+
 #: src/components/ui/UpdateSheet.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Obby will close to install the update; open it again afterwards."
@@ -5115,6 +5138,14 @@ msgstr "Rahat - Daha az agresif koruma"
 #: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "Sürüm notları"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload"
+msgstr "Yeniden yükle"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload to continue. Copy the error details to report the problem."
+msgstr "Devam etmek için yeniden yükleyin. Sorunu bildirmek için hata ayrıntılarını kopyalayın."
 
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/pages/ChannelSettingsPage.tsx
@@ -6256,6 +6287,26 @@ msgstr "Bu ekran artık kullanılamıyor. Başka bir ekran seçin."
 msgid "That stylesheet is too large."
 msgstr "Bu stil dosyası çok büyük."
 
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer drops this network and its channel list for all your devices. It may keep the chat history it stored for the network."
+msgstr "Bouncer bu ağı ve kanal listesini tüm cihazlarınız için kaldırır. Ağ için sakladığı sohbet geçmişini tutmaya devam edebilir."
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer has not answered, so the saved chat history stays. Delete the network again if it is still listed."
+msgstr "Bouncer yanıt vermedi, bu yüzden kayıtlı sohbet geçmişi korunuyor. Ağ hâlâ listedeyse yeniden silin."
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer is not connected. Delete the network once it is back."
+msgstr "Bouncer bağlı değil. Bağlantı geri geldiğinde ağı silin."
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer kept the network and answered: {refusal}"
+msgstr "Bouncer ağı korudu ve şu yanıtı verdi: {refusal}"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer kept the network."
+msgstr "Bouncer ağı korudu."
+
 #: src/lib/voiceErrors.ts
 msgid "The call server refused the request. Try again in a moment."
 msgstr "Arama sunucusu isteği reddetti. Biraz sonra yeniden deneyin."
@@ -6365,6 +6416,10 @@ msgstr "Bu tarayıcı ses kaydedemiyor."
 msgid "This browser cannot record video."
 msgstr "Bu tarayıcı video kaydedemiyor."
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "This browser does not let Obby store data, so nothing was saved."
+msgstr "Bu tarayıcı Obby'nin veri depolamasına izin vermiyor, bu yüzden hiçbir şey kaydedilmedi."
+
 #: src/components/search/SearchQueryBar.tsx
 msgid "This chat"
 msgstr "Bu sohbet"
@@ -6438,10 +6493,6 @@ msgstr "Bu pakette henüz emoji yok. Yukarıdan bir tane ekleyin."
 msgid "This release has no Android app to install."
 msgstr "Bu sürümde yüklenecek bir Android uygulaması yok."
 
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "This removes the network from your soju bouncer. To use it again, you'll need to add it back."
-msgstr "Bu, ağı soju bouncer'ınızdan kaldırır. Tekrar kullanmak için yeniden eklemeniz gerekir."
-
 #: src/components/ui/InvitationsPanel.tsx
 msgid "This server doesn't support invite links (the<0>obby.world/invitation</0>capability isn't advertised). You can still chat normally; this panel is for obbyircd-powered networks."
 msgstr "Bu sunucu davet bağlantılarını desteklemiyor (<0>obby.world/invitation</0> yeteneği duyurulmuyor). Yine de normal şekilde sohbet edebilirsiniz; bu panel obbyircd tabanlı ağlar içindir."
@@ -6453,6 +6504,10 @@ msgstr "Bu sunucuda dosya sunucusu yok. Dosya yüklemek için dosya sunucusu ola
 #: src/components/ui/AddServerModal.tsx
 msgid "This server only supports one connection type"
 msgstr "Bu sunucu yalnızca bir bağlantı türünü destekliyor"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "This stylesheet could not be made safe, so it was not saved."
+msgstr "Bu stil dosyası güvenli hale getirilemediği için kaydedilmedi."
 
 #. placeholder {0}: children.length
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
@@ -6744,6 +6799,10 @@ msgstr "Joker karakter için * kullanın. Örnekler: baduser!*@*, *!*@spammer.co
 msgid "Use /{0}"
 msgstr "/{0} kullan"
 
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "Boşluk veya virgül içermeyen bir ad kullanın"
+
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."
 msgstr "PNG, JPEG, WebP veya GIF görsel kullanın."
@@ -6755,6 +6814,10 @@ msgstr "Güvenli bir websocket portu kullanın."
 #: src/components/pages/SettingsPage.tsx
 msgid "Use a server with IRCv3 METADATA to set your avatar, display name, and status."
 msgstr "Avatarınızı, görünen adınızı ve durumunuzu ayarlamak için IRCv3 METADATA destekleyen bir sunucu kullanın."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Use a smaller stylesheet. This one does not fit in this browser's storage."
+msgstr "Daha küçük bir stil dosyası kullanın. Bu dosya, bu tarayıcının depolama alanına sığmıyor."
 
 #: src/components/ui/settings/BackupField.tsx
 msgid "Use at least {PASSWORD_MIN_LENGTH} characters."
@@ -7140,10 +7203,6 @@ msgstr "Yanlış parola ya da dosya kaydedildikten sonra değiştirilmiş."
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Yellow"
 msgstr "Sarı"
-
-#: src/components/ui/BouncerNetworkForm.tsx
-msgid "Yes, delete"
-msgstr "Evet, sil"
 
 #: src/components/search/messageSearchProviders.tsx
 msgid "Yesterday"

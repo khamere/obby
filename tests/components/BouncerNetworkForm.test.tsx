@@ -165,7 +165,7 @@ describe("<BouncerNetworkForm/>", () => {
     expect(screen.getByText("bad host")).toBeInTheDocument();
   });
 
-  test("delete confirmation flow only in edit mode", () => {
+  test("hands the delete to its caller, which asks for confirmation", () => {
     const onDelete = vi.fn();
     render(
       <BouncerNetworkForm
@@ -176,7 +176,6 @@ describe("<BouncerNetworkForm/>", () => {
       />,
     );
     fireEvent.click(screen.getByTestId("bouncer-form-delete"));
-    fireEvent.click(screen.getByTestId("bouncer-form-confirm-delete"));
     expect(onDelete).toHaveBeenCalled();
   });
 });

@@ -1996,10 +1996,14 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
                   isLoadingHistory: isLoading,
                 };
 
-                // If loading just completed and we need to send WHO, do it now
-                if (!isLoading && channel.needsWhoRequest) {
+                // We send the member request owed when a load ends, and leave it for the next connection when the load ended because this one dropped.
+                if (
+                  !isLoading &&
+                  channel.needsWhoRequest &&
+                  server.isConnected
+                ) {
                   // Send WHO request now that CHATHISTORY is done
-                  ircClient.sendRaw(serverId, `WHO ${channelName} %cuhnfaro`);
+                  ircClient.requestMembers(serverId, channelName);
 
                   // Request channel metadata if server supports it
                   if (serverSupportsMetadata(state, serverId)) {

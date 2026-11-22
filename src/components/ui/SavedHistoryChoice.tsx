@@ -9,7 +9,11 @@ export const SavedHistoryChoice: React.FC<{
   serverIds: string[];
   shouldDelete: boolean;
   onChange: (shouldDelete: boolean) => void;
-}> = ({ serverIds, shouldDelete, onChange }) => {
+  isDisabled?: boolean;
+  // Says when the kept history comes back, where adding the network again
+  // is not enough.
+  keptHint?: React.ReactNode;
+}> = ({ serverIds, shouldDelete, onChange, isDisabled, keptHint }) => {
   const [hasHistory, setHasHistory] = useState(false);
   const idsKey = serverIds.join(",");
 
@@ -33,14 +37,17 @@ export const SavedHistoryChoice: React.FC<{
   return (
     <div className="flex flex-col gap-2">
       <p className="text-sm text-discord-text-muted">
-        <Trans>
-          Add this network again to get its saved chat history back.
-        </Trans>
+        {keptHint ?? (
+          <Trans>
+            Add this network again to get its saved chat history back.
+          </Trans>
+        )}
       </p>
       <label className="flex items-center gap-2 text-sm text-discord-text-normal">
         <input
           type="checkbox"
           checked={shouldDelete}
+          disabled={isDisabled}
           onChange={(event) => onChange(event.target.checked)}
           className="accent-discord-primary rounded"
         />

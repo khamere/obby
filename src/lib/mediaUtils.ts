@@ -1,6 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { Message } from "../types/index";
-import { parseLocationShareUrl } from "./geolocation";
+import {
+  isRejectedLocationShareUrl,
+  parseLocationShareUrl,
+} from "./geolocation";
 import {
   isAbsoluteHttpUrl,
   isUrlFromFilehost,
@@ -178,13 +181,16 @@ export function isImageLikeUrl(url: string): boolean {
 
 /** Returns all media entries found in an arbitrary text string, deduplicated by URL.
  *  Trusted-domain URLs (YouTube, Tenor, etc.) get their type pre-set.
- *  All other URLs get type:null so callers can HEAD-probe them. */
+ *  All other URLs get type:null so callers can HEAD-probe them, except a map
+ *  link with a position we refuse to draw, which is left out so nothing
+ *  requests it. */
 export function extractMediaFromText(text: string): MediaEntry[] {
   const content = stripIrcFormatting(text).trim();
 
   // Single-token string that starts with http — check it directly
   if (!/\s/.test(content) && content.startsWith("http")) {
     const clean = content.replace(/[.,!?;:)>\]*]+$/, "");
+    if (isRejectedLocationShareUrl(clean)) return [];
     return [{ url: clean, type: detectTrustedDomainType(clean) }];
   }
 
@@ -193,7 +199,7 @@ export function extractMediaFromText(text: string): MediaEntry[] {
   const entries: MediaEntry[] = [];
   for (const raw of matches) {
     const u = raw.replace(/[.,!?;:)>\]*]+$/, "");
-    if (seen.has(u)) continue;
+    if (seen.has(u) || isRejectedLocationShareUrl(u)) continue;
     seen.add(u);
     entries.push({ url: u, type: detectTrustedDomainType(u) });
   }
