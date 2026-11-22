@@ -473,6 +473,11 @@ describe("local history with a chathistory server", () => {
         ]);
         expect(await w.db.refRowsFor(SERVER, ["m3"])).toHaveLength(1);
         expect(await w.db.gapsFor(SERVER, "#chan")).toEqual([]);
+        const unplaced = (await w.stored()).find((row) => row.msgid === "u1");
+        expect(unplaced?.hasReceiveTime).toBe(true);
+        expect(unplaced?.raw.match(/[@;]time=([^; ]*)/g)).toEqual([
+          `;time=${new Date(unplaced?.time ?? 0).toISOString()}`,
+        ]);
       },
     );
 

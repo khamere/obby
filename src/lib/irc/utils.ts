@@ -27,10 +27,15 @@ export function parseServerTime(
 ): number {
   const match = value ? SERVER_TIME.exec(value) : null;
   if (!match) return Number.NaN;
-  const [year, month, day, hour, minute, second] = match
+  const [year, month, day, hour, minute, sentSecond] = match
     .slice(1, 7)
     .map(Number);
-  const ms = Number((match[7] ?? "").slice(0, 3).padEnd(3, "0"));
+  // Our clock has no leap second, so we read one as the last millisecond of its minute, which keeps it in order and inside that minute.
+  const isLeapSecond = sentSecond === 60;
+  const second = isLeapSecond ? 59 : sentSecond;
+  const ms = isLeapSecond
+    ? 999
+    : Number((match[7] ?? "").slice(0, 3).padEnd(3, "0"));
   const time = Date.UTC(year, month - 1, day, hour, minute, second, ms);
   const date = new Date(time);
   const isOnCalendar =

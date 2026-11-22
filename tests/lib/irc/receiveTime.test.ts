@@ -49,6 +49,28 @@ describe("receive time", () => {
     );
   });
 
+  test("a server-time tag on a leap second counts as the server's time, at the end of its minute", () => {
+    const client = new IRCClient();
+    const onMessage = vi.fn();
+    const onParsed = vi.fn();
+    client.on("CHANMSG", onMessage);
+    client.on("parsedLine", onParsed);
+
+    feed(
+      client,
+      "@time=2012-06-30T23:59:60.419Z :alice!a@h PRIVMSG #lobby :hi",
+    );
+
+    expect(client.hasLineServerTime).toBe(true);
+    expect(onParsed.mock.calls[0][0]).toMatchObject({
+      hasReceiveTime: false,
+      mtags: { time: "2012-06-30T23:59:60.419Z" },
+    });
+    expect(onMessage.mock.calls[0][0].timestamp.toISOString()).toBe(
+      "2012-06-30T23:59:59.999Z",
+    );
+  });
+
   test("a server-time tag that is no date gives way to the receive time", () => {
     vi.useFakeTimers({ now: Date.parse("2026-10-14T10:00:00.000Z") });
     const client = new IRCClient();
