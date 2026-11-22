@@ -329,6 +329,28 @@ describe("an older page the server refuses", () => {
     expect(requests()).toBe(2);
   });
 
+  it("after a refused page, nothing is sent without a reader scroll", () => {
+    scrollToTopOfChat();
+    updateChat({ isLoadingHistory: false, historyRefusedAt: Date.now() });
+
+    vi.advanceTimersByTime(RETRY_WAIT_MS * 2);
+    act(() => {
+      useStore.setState((state) => ({
+        messages: {
+          ...state.messages,
+          [defaultProps.channelKey]: [
+            ...state.messages[defaultProps.channelKey],
+            makeMsg("said-while-waiting"),
+          ],
+        },
+      }));
+    });
+    updateChat({ isLoadingHistory: true });
+    updateChat({ isLoadingHistory: false });
+
+    expect(requests()).toBe(1);
+  });
+
   it("asks again when the reader turns the wheel in a chat too short to scroll", () => {
     const area = scrollToTopOfChat();
     updateChat({ isLoadingHistory: false, historyRefusedAt: Date.now() });
