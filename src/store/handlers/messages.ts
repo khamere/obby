@@ -2004,7 +2004,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
                   server.isConnected
                 ) {
                   // Send WHO request now that CHATHISTORY is done
-                  ircClient.sendRaw(serverId, `WHO ${channelName} %cuhnfaro`);
+                  ircClient.requestMembers(serverId, channelName);
 
                   // Request channel metadata if server supports it
                   if (serverSupportsMetadata(state, serverId)) {

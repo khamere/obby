@@ -302,6 +302,7 @@ export interface EventMap {
     opLevel: string;
   };
   WHO_END: { serverId: string; mask: string };
+  MEMBERS_REQUESTED: { serverId: string; channelName: string };
   RPL_AWAY: {
     serverId: string;
     nick: string;
@@ -1596,8 +1597,14 @@ export class IRCClient implements IRCClientContext {
   // the server keeps no history. Returns whether history was requested.
   loadHistoryOrMembers(serverId: string, channelName: string): boolean {
     if (this.loadLatestHistory(serverId, channelName)) return true;
-    this.sendRaw(serverId, `WHO ${channelName} %cuhnfaro`);
+    this.requestMembers(serverId, channelName);
     return false;
+  }
+
+  // Only the answer to this request lists every member of the channel, so we announce it for the member list to tell that answer from any other WHO reply.
+  requestMembers(serverId: string, channelName: string): void {
+    this.sendRaw(serverId, `WHO ${channelName} %cuhnfaro`);
+    this.triggerEvent("MEMBERS_REQUESTED", { serverId, channelName });
   }
 
   // Servers state their per-request maximum as CHATHISTORY=<n>, where 0 means

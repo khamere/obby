@@ -4,6 +4,7 @@ import type { AppState } from "../../src/store";
 import useStore from "../../src/store";
 import { _resetWhoReplyBatcher } from "../../src/store/whoReplyBatcher";
 import type { Channel, User } from "../../src/types";
+import { installLocalStorageBacking } from "../fixtures/localStorageBacking";
 
 // What the server says after we come back replaces what we remembered from
 // before: who is in the channel, and with which status.
@@ -14,7 +15,25 @@ function user(username: string, status = ""): User {
   return { id: username, username, isOnline: true, status };
 }
 
+type ClientServers = { servers: Map<string, unknown> };
+
 function seed(users: User[], overrides: Partial<Channel> = {}) {
+  seedChannels([
+    {
+      id: "members-chan",
+      name: channelName,
+      isPrivate: false,
+      serverId,
+      unreadCount: 0,
+      isMentioned: false,
+      messages: [],
+      users,
+      ...overrides,
+    },
+  ]);
+}
+
+function seedChannels(channels: Channel[]) {
   useStore.setState({
     servers: [
       {
@@ -22,19 +41,7 @@ function seed(users: User[], overrides: Partial<Channel> = {}) {
         name: "test",
         host: "irc.test",
         port: 6697,
-        channels: [
-          {
-            id: "members-chan",
-            name: channelName,
-            isPrivate: false,
-            serverId,
-            unreadCount: 0,
-            isMentioned: false,
-            messages: [],
-            users,
-            ...overrides,
-          },
-        ],
+        channels,
         privateChats: [],
         isConnected: true,
         connectionState: "connected",
@@ -100,6 +107,10 @@ function whoReply(nick: string, opLevel = "") {
   });
 }
 
+function otherJoin(username: string) {
+  ircClient.triggerEvent("JOIN", { serverId, username, channelName });
+}
+
 function whoEnd() {
   ircClient.triggerEvent("WHO_END", { serverId, mask: channelName });
 }
@@ -155,17 +166,36 @@ describe("member list after coming back to a channel", () => {
     expect(whoLines()).toEqual([`WHO ${channelName} %cuhnfaro`]);
   });
 
-  test("our first join of a channel sends no second member request", () => {
-    seed([], { needsWhoRequest: false });
+  test("our first join on a server with history sends one member request, when the history load ends", () => {
+    installLocalStorageBacking();
+    const clientServers = (ircClient as unknown as ClientServers).servers;
+    clientServers.set(serverId, {
+      id: serverId,
+      channels: [],
+      capabilities: ["draft/chathistory"],
+    });
+    try {
+      seedChannels([]);
 
-    ownJoin();
+      useStore.getState().joinChannel(serverId, channelName);
+      ownJoin();
+      expect(whoLines()).toEqual([]);
 
-    expect(whoLines()).toEqual([]);
+      ircClient.triggerEvent("CHATHISTORY_LOADING", {
+        serverId,
+        channelName,
+        isLoading: false,
+      });
+      expect(whoLines()).toEqual([`WHO ${channelName} %cuhnfaro`]);
+    } finally {
+      clientServers.delete(serverId);
+    }
   });
 
   test("the finished reply removes who left and updates who changed status", () => {
     seed([user("me", "@"), user("bob"), user("Carol", "@")]);
 
+    ownJoin();
     whoReply("me");
     whoReply("BOB", "@");
     whoReply("dave");
@@ -179,6 +209,7 @@ describe("member list after coming back to a channel", () => {
     try {
       seed([user("me"), user("bob"), user("carol")]);
 
+      ownJoin();
       whoReply("me");
       whoReply("bob");
       vi.advanceTimersByTime(100);
@@ -194,6 +225,7 @@ describe("member list after coming back to a channel", () => {
   test("a reply that does not name us removes nobody", () => {
     seed([user("me"), user("bob"), user("carol")]);
 
+    ownJoin();
     whoReply("bob");
     whoEnd();
 
@@ -220,5 +252,190 @@ describe("member list after coming back to a channel", () => {
     whoEnd();
 
     expect(members()).toEqual(["@bob", "me"]);
+  });
+
+  test("someone who joins while the reply is on its way stays in the list", () => {
+    seed([user("me"), user("bob")]);
+
+    ownJoin();
+    otherJoin("erin");
+    whoReply("me");
+    whoReply("bob");
+    otherJoin("dave");
+    whoEnd();
+
+    expect(members()).toEqual(["bob", "dave", "erin", "me"]);
+  });
+
+  test("someone who leaves while the reply is on its way stays out of the list", () => {
+    seed([user("me"), user("bob"), user("carol"), user("dave")]);
+
+    ownJoin();
+    ircClient.triggerEvent("PART", {
+      serverId,
+      username: "bob",
+      channelName,
+    });
+    whoReply("me");
+    whoReply("bob");
+    whoReply("carol");
+    whoReply("dave");
+    ircClient.triggerEvent("QUIT", {
+      serverId,
+      username: "carol",
+      reason: "",
+    });
+    ircClient.triggerEvent("KICK", {
+      serverId,
+      mtags: undefined,
+      username: "me",
+      target: "dave",
+      channelName,
+      reason: "",
+    });
+    whoEnd();
+
+    expect(members()).toEqual(["me"]);
+  });
+
+  test("someone who leaves and joins again while the reply is on its way is listed", () => {
+    seed([user("me"), user("bob")]);
+
+    ownJoin();
+    whoReply("me");
+    ircClient.triggerEvent("PART", {
+      serverId,
+      username: "bob",
+      channelName,
+    });
+    otherJoin("bob");
+    whoEnd();
+
+    expect(members()).toEqual(["bob", "me"]);
+  });
+
+  test("a nick changed while the reply is on its way is listed under the new nick", () => {
+    seed([user("me"), user("bob")]);
+
+    ownJoin();
+    whoReply("me");
+    whoReply("bob");
+    ircClient.triggerEvent("NICK", {
+      serverId,
+      mtags: undefined,
+      oldNick: "bob",
+      newNick: "robert",
+    });
+    ircClient.triggerEvent("NICK", {
+      serverId,
+      mtags: undefined,
+      oldNick: "carol",
+      newNick: "caroline",
+    });
+    whoReply("carol", "@");
+    whoEnd();
+
+    expect(members()).toEqual(["@caroline", "me", "robert"]);
+  });
+
+  test("a reply to a request the user typed removes nobody", () => {
+    seed([user("me", "@"), user("bob"), user("carol")]);
+
+    ircClient.sendRaw(serverId, `WHO ${channelName} o`);
+    whoReply("me", "@");
+    whoEnd();
+
+    expect(members()).toEqual(["@me", "bob", "carol"]);
+  });
+
+  test("a second reply on the same request removes nobody", () => {
+    seed([user("me"), user("bob"), user("carol")]);
+
+    ownJoin();
+    whoReply("me");
+    whoReply("bob");
+    whoReply("carol");
+    whoEnd();
+    whoReply("me");
+    whoEnd();
+
+    expect(members()).toEqual(["bob", "carol", "me"]);
+  });
+
+  test("a reply cut off by a dropped connection leaves nothing for the next one", () => {
+    vi.useFakeTimers();
+    try {
+      seed([user("me"), user("bob")]);
+
+      ownJoin();
+      whoReply("me");
+      whoReply("bob");
+      vi.advanceTimersByTime(100);
+      whoReply("carol");
+      setConnection("disconnected");
+      vi.advanceTimersByTime(2000);
+      expect(members()).toEqual(["bob", "me"]);
+
+      setConnection("connected");
+      ownJoin();
+      whoReply("me");
+      whoEnd();
+
+      expect(members()).toEqual(["me"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("a reply cut off by a dropped connection removes nobody when a typed request ends", () => {
+    seed([user("me"), user("bob")]);
+
+    ownJoin();
+    whoReply("me");
+    setConnection("disconnected");
+    setConnection("connected");
+    whoReply("me");
+    whoEnd();
+
+    expect(members()).toEqual(["bob", "me"]);
+  });
+
+  describe("on a server that keeps no history", () => {
+    beforeEach(() => {
+      installLocalStorageBacking();
+      (ircClient as unknown as ClientServers).servers.set(serverId, {
+        id: serverId,
+        channels: [],
+        capabilities: [],
+      });
+    });
+    afterEach(() => {
+      (ircClient as unknown as ClientServers).servers.delete(serverId);
+    });
+
+    test("each successful join sends one member request, also when the first reply never came", () => {
+      seedChannels([]);
+
+      useStore.getState().joinChannel(serverId, channelName);
+      ownJoin();
+      expect(whoLines()).toEqual([`WHO ${channelName} %cuhnfaro`]);
+      expect(channel().users).toEqual([]);
+
+      setConnection("disconnected");
+      setConnection("connected");
+      useStore.getState().joinChannel(serverId, channelName);
+      ownJoin();
+
+      expect(whoLines()).toHaveLength(2);
+    });
+
+    test("a join that needed the key sends one member request", () => {
+      seed([user("me"), user("bob")], { needsKey: true });
+
+      ownJoin();
+
+      expect(whoLines()).toHaveLength(1);
+      expect(channel().needsKey).toBe(false);
+    });
   });
 });

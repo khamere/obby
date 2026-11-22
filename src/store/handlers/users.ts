@@ -21,6 +21,12 @@ import {
   takeKeyedJoin,
   takePendingJoin,
 } from "../pendingJoins";
+import {
+  isMemberRefreshPending,
+  noteMemberJoined,
+  noteMemberLeft,
+  noteMemberRenamed,
+} from "../whoReplyBatcher";
 import { reportServerReply } from "./serverReplies";
 
 const ERR_BADCHANNELKEY = "475";
@@ -234,8 +240,8 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
             c.name.toLowerCase() === channelName.toLowerCase();
           const existing = server.channels.find(isJoined);
           if (existing) {
-            // Members we hold from an earlier stay may have left or changed status, so we ask who is here now.
-            if (existing.users.length === 0) return {};
+            // Members we hold from an earlier stay may have left or changed status, so we ask who is here now unless a request sent with the join is still open.
+            if (isMemberRefreshPending(serverId, channelName)) return {};
             // A history load in flight asks when it ends, and otherwise we ask right away.
             isAskingMembersNow = !existing.isLoadingHistory;
             return {
@@ -289,10 +295,10 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
         // ircClient I/O OUTSIDE setState: triggerEvent inside setState
         // causes a nested-setState race (see batches.ts:215-218).
         if (isNewChannel) ircClient.loadHistoryOrMembers(serverId, channelName);
-        if (isAskingMembersNow)
-          ircClient.sendRaw(serverId, `WHO ${channelName} %cuhnfaro`);
+        if (isAskingMembersNow) ircClient.requestMembers(serverId, channelName);
         // Fall through to shared message creation below — same JOIN event, same path.
       } else {
+        noteMemberJoined(serverId, channelName, username);
         store.setState((state) => {
           const updatedServers = state.servers.map((server) => {
             if (server.id !== serverId) return server;
@@ -406,6 +412,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
       }
     }
     saveConfirmedNick(store, serverId, newNick);
+    noteMemberRenamed(serverId, oldNick, newNick);
     moveChatMute(serverId, "dm", oldNick, newNick);
     store.setState((state) => {
       const updatedServers = state.servers.map((server) => {
@@ -561,6 +568,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
       }
     }
 
+    noteMemberLeft(serverId, undefined, username);
     // Capture which channels the user was in before the store mutation removes them
     const state = store.getState();
     const server = state.servers.find((s) => s.id === serverId);
@@ -686,6 +694,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
           return;
         }
       }
+      noteMemberLeft(serverId, channelName, username);
       store.setState((state) => {
         const updatedServers = state.servers.map((server) => {
           if (server.id === serverId) {
@@ -772,7 +781,8 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
     "KICK",
     ({ serverId, mtags, username, target, channelName, reason }) => {
       const historical = isHistoryEvent(store.getState(), serverId, mtags);
-      if (!historical)
+      if (!historical) {
+        noteMemberLeft(serverId, channelName, target);
         store.setState((state) => {
           const updatedServers = state.servers.map((server) => {
             const updatedChannels = server.channels.map((channel) => {
@@ -791,6 +801,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
 
           return { servers: updatedServers };
         });
+      }
 
       const state = store.getState();
       if (state.globalSettings.showEvents && state.globalSettings.showKicks) {

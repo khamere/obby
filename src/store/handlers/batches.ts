@@ -16,6 +16,7 @@ import {
 } from "../helpers";
 import { type AppState, rememberMsgIds } from "../index";
 import type { MentionEntry } from "../mentionLog";
+import { noteMemberLeft } from "../whoReplyBatcher";
 import { isServerPageComing } from "./history";
 
 // Chathistory messages are buffered here (outside the store) to avoid one
@@ -170,6 +171,7 @@ function processBatchedNetsplit(
   // Process each quit event to remove users and track affected channels
   quitEvents.forEach((event) => {
     const { username } = event.data;
+    noteMemberLeft(serverId, undefined, username);
 
     // Find which channels this user was in and remove them
     store.setState((state) => {

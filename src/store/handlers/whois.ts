@@ -3,7 +3,12 @@ import ircClient from "../../lib/ircClient";
 import type { User } from "../../types";
 import type { AppState } from "../index";
 import * as storage from "../localStorage";
-import { bufferWhoReply, finishWhoReplies } from "../whoReplyBatcher";
+import {
+  beginMemberRefresh,
+  bufferWhoReply,
+  finishWhoReplies,
+  forgetWhoReplies,
+} from "../whoReplyBatcher";
 
 export function registerWhoisHandlers(store: StoreApi<AppState>): void {
   // WHOIS event handlers
@@ -418,6 +423,15 @@ export function registerWhoisHandlers(store: StoreApi<AppState>): void {
         status: channelStatus,
       });
     },
+  );
+
+  ircClient.on("MEMBERS_REQUESTED", ({ serverId, channelName }) =>
+    beginMemberRefresh(serverId, channelName),
+  );
+
+  // A reply belongs to the connection that asked, so a connection change ends every reply still open.
+  ircClient.on("connectionStateChange", ({ serverId }) =>
+    forgetWhoReplies(serverId),
   );
 
   ircClient.on("WHO_END", ({ serverId, mask }) => {
