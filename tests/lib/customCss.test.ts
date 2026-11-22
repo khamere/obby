@@ -139,7 +139,7 @@ describe("sanitizeCss", () => {
 
   it.each(BYPASS_ATTEMPTS)(
     "blocks a remote address hidden by %s",
-    (_name, css, inert) => {
+    (_name, css, _fetchedBy, inert) => {
       // The test tokeniser has to report something in an attempt as written, or sanitising it proves nothing; whether a browser fetches it is a separate check made in browsers.
       expect(remoteReferences(css).length > 0).toBe(!inert);
       const out = sanitizeCss(css);
@@ -148,6 +148,18 @@ describe("sanitizeCss", () => {
       expect(sanitizeCss(out)).toBe(out);
     },
   );
+
+  it("has the tokeniser report every row that a browser was recorded fetching as written", () => {
+    // whether a row is live in a browser is the recorded observation; here we only hold the tokeniser to it
+    const fetched = BYPASS_ATTEMPTS.filter(
+      ([, , fetchedBy]) => fetchedBy !== "none",
+    );
+    expect(fetched.length).toBeGreaterThan(80);
+    for (const [name, css, , inert] of fetched) {
+      expect(remoteReferences(css), name).not.toEqual([]);
+      expect(inert, name).toBeUndefined();
+    }
+  });
 
   it("reads the url( after <!-- as an address", () => {
     expect(
