@@ -1611,8 +1611,12 @@ const useStore = create<AppState>((set, get) => ({
             ...existingServer,
             ...server,
             id: existingServer.id,
-            // The client's own list of channels knows nothing of the ones we are out of, so we mark them here.
-            channels: withLeftChannels(existingServer.id, server.channels),
+            // We keep our own rows, which hold the members, topics, read markers and left marks that the client's copies never receive.
+            channels: withLeftChannels(
+              existingServer.id,
+              existingServer.channels,
+            ),
+            privateChats: existingServer.privateChats,
           };
           return {
             servers: updatedServers,
