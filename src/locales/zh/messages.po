@@ -3584,6 +3584,7 @@ msgid "Log in"
 msgstr "登录"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Log in again"
 msgstr "重新登录"
 
@@ -5033,6 +5034,7 @@ msgid "Recent searches"
 msgstr "最近搜索"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Reconnect"
 msgstr "重新连接"
 
@@ -6374,6 +6376,14 @@ msgstr "无法完成录制。"
 #: src/lib/voiceErrors.ts
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "服务器拒绝了你的加入。请检查频道模式后重试。"
+
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "The server refused your login. Fix your account name or password to connect"
+msgstr "服务器拒绝了你的登录。请修正账号名或密码后再连接"
 
 #: src/components/ui/UpdateSheet.tsx
 msgid "The update could not start. Try again."

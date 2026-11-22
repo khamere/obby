@@ -148,3 +148,82 @@ describe("a network the bouncer lost upstream", () => {
     );
   });
 });
+
+describe("a network whose login the bouncer refused", () => {
+  const childId = generateDeterministicId(PARENT_ID, "42");
+  const reconnectServer = vi.fn();
+
+  const listNetworks = () => {
+    ircClient.triggerEvent("BATCH_START", {
+      serverId: PARENT_ID,
+      batchId: "b1",
+      type: "soju.im/bouncer-networks",
+    });
+    ircClient.triggerEvent("BOUNCER_NETWORK", {
+      serverId: PARENT_ID,
+      netid: "42",
+      deleted: false,
+      attributes: { name: "Libera", state: "connected" },
+      batchTag: "b1",
+    });
+    ircClient.triggerEvent("BATCH_END", { serverId: PARENT_ID, batchId: "b1" });
+  };
+
+  const seedChild = (child: Partial<AppState["servers"][number]>) =>
+    useStore.setState(
+      (state) =>
+        ({
+          reconnectServer,
+          servers: [
+            ...state.servers,
+            {
+              id: childId,
+              name: "Libera",
+              host: "wss://soju.example",
+              port: 6662,
+              channels: [],
+              privateChats: [],
+              users: [],
+              isConnected: false,
+              connectionState: "disconnected" as const,
+              bouncerNetid: "42",
+              bouncerServerId: PARENT_ID,
+              ...child,
+            },
+          ],
+        }) as unknown as Partial<AppState>,
+    );
+
+  const original = useStore.getState().reconnectServer;
+
+  beforeEach(() => {
+    registerBouncerHandlers(useStore);
+    seedParentBouncerAndStorage();
+    reconnectServer.mockClear();
+    vi.spyOn(ircClient, "connect").mockResolvedValue(undefined as never);
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    (
+      ircClient as unknown as { eventCallbacks: Record<string, unknown[]> }
+    ).eventCallbacks = {};
+    useStore.setState({
+      servers: [],
+      bouncers: {},
+      reconnectServer: original,
+    } as Partial<AppState>);
+  });
+
+  test("logs in again once the bouncer has listed its networks to a new login", () => {
+    seedChild({ loginRefused: true });
+    listNetworks();
+    expect(reconnectServer).toHaveBeenCalledTimes(1);
+    expect(reconnectServer).toHaveBeenCalledWith(childId);
+  });
+
+  test("stays as it is when the connection was lost for another reason", () => {
+    seedChild({});
+    listNetworks();
+    expect(reconnectServer).not.toHaveBeenCalled();
+  });
+});

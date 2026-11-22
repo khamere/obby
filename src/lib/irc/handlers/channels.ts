@@ -1,4 +1,8 @@
-import { parseNamesResponse } from "../../ircUtils";
+import {
+  chantypesOf,
+  isJoinableChannelName,
+  parseNamesResponse,
+} from "../../ircUtils";
 import type { IRCClientContext } from "../IRCClientContext";
 import { getNickFromNuh } from "../utils";
 
@@ -100,6 +104,15 @@ export function handleRename(
   const user = getNickFromNuh(source);
   const oldName = parv[0];
   const newName = parv[1];
+  // A channel always has a name the server could hold, so we skip a rename
+  // that leads to anything else.
+  if (
+    !isJoinableChannelName(
+      newName,
+      chantypesOf(ctx.isupportValues.get(serverId)),
+    )
+  )
+    return;
   const reason = parv.slice(2).join(" "); // trailing already parsed into parv
   ctx.triggerEvent("RENAME", {
     serverId,

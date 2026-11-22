@@ -104,6 +104,7 @@ describe("a muted chat that is created again", () => {
     vi.unstubAllGlobals();
     resetMutesForTests();
     ircClient.nicks.delete(serverId);
+    ircClient.isupportValues.delete(serverId);
     ircClient.servers.delete(serverId);
   });
 
@@ -290,6 +291,57 @@ describe("a muted chat that is created again", () => {
     restartApp();
     expect(silencesFor(server())).toEqual([{ chat: "#lounge", until: null }]);
   });
+
+  it.each([
+    ["no new name", ":bob!u@h RENAME #general"],
+    ["an empty new name", ":bob!u@h RENAME #general :"],
+    ["no parameters", ":bob!u@h RENAME"],
+    ["a new name of only spaces", ":bob!u@h RENAME #general :   "],
+    ["a new name without a channel prefix", ":bob!u@h RENAME #general lounge"],
+    ["a new name with a space in it", ":bob!u@h RENAME #general :#two words"],
+    [
+      "a new name of a type the server lacks",
+      ":bob!u@h RENAME #general &local",
+    ],
+  ])(
+    "leaves the channel and its logged mentions alone on a RENAME with %s",
+    (_case, line) => {
+      useStore.setState((state) => ({
+        servers: state.servers.map((s) => ({
+          ...s,
+          channels: [
+            { id: "c-general", name: "#general", users: [] },
+          ] as unknown as Server["channels"],
+        })),
+        mentionLog: [
+          {
+            serverId,
+            channelId: "c-general",
+            channelName: "#general",
+            messageId: "m1",
+          },
+        ] as unknown as ReturnType<typeof useStore.getState>["mentionLog"],
+      }));
+      muteChat(
+        serverId,
+        { id: "c-general", kind: "channel", name: "#general" },
+        null,
+      );
+
+      feed(":irc.example.org 005 me CHANTYPES=# :are supported by this server");
+
+      const failures = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      feed(line);
+
+      expect(failures).not.toHaveBeenCalled();
+      expect(server().channels[0].name).toBe("#general");
+      expect(useStore.getState().mentionLog[0].channelName).toBe("#general");
+      expect(silencesFor(server())).toEqual([
+        { chat: "#general", until: null },
+      ]);
+    },
+  );
 
   it("notifies again once the recreated chat is unmuted", () => {
     feed(":Mara!u@h PRIVMSG me :hi");

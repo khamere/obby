@@ -18,6 +18,34 @@ export interface MentionEntry {
 
 export const MAX_MENTIONS = 200;
 
+const REQUIRED_TEXT_FIELDS = [
+  "messageId",
+  "serverId",
+  "channelId",
+  "channelName",
+  "sender",
+  "content",
+  "timestamp",
+] as const;
+
+// The saved log is read back as plain JSON, and the views call string methods
+// on these fields, do date arithmetic on the timestamp and count the entries
+// that are not seen, so we only accept an entry they can all work with. An
+// entry also has to name its server and channel, or no view can place it.
+export function isMentionEntry(value: unknown): value is MentionEntry {
+  if (typeof value !== "object" || value === null) return false;
+  const entry = value as Record<string, unknown>;
+  return (
+    REQUIRED_TEXT_FIELDS.every((field) => typeof entry[field] === "string") &&
+    entry.serverId !== "" &&
+    entry.channelId !== "" &&
+    entry.channelName !== "" &&
+    !Number.isNaN(Date.parse(entry.timestamp as string)) &&
+    typeof entry.seen === "boolean" &&
+    (entry.msgid === undefined || typeof entry.msgid === "string")
+  );
+}
+
 export const mentionChannelKey = (
   m: Pick<MentionEntry, "serverId" | "channelId">,
 ) => `${m.serverId}-${m.channelId}`;
