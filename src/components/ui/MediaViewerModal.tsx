@@ -39,7 +39,6 @@ import {
   clampMapZoom,
   loadLeaflet,
   MAP_ATTRIBUTION,
-  MAP_MAX_ZOOM,
   MAP_MIN_ZOOM,
   MAP_PIN_SVG,
   stopTouchOutsideMap,
@@ -60,7 +59,7 @@ import {
   encryptedDescriptor,
   kindMediaType,
 } from "../../lib/messageAttachments";
-import { TILE_URL_TEMPLATE } from "../../lib/osmTiles";
+import { MAX_TILE_ZOOM, TILE_URL_TEMPLATE } from "../../lib/osmTiles";
 import { PDF_OPTIONS } from "../../lib/pdfOptions";
 import { isTauri } from "../../lib/platformUtils";
 import useStore, { getChannelMessages } from "../../store";
@@ -425,11 +424,11 @@ const MapModalViewer: React.FC<{ url: string }> = ({ url }) => {
         center: [latitude, longitude],
         zoom: clampedZoom,
         minZoom: MAP_MIN_ZOOM,
-        maxZoom: MAP_MAX_ZOOM,
+        maxZoom: MAX_TILE_ZOOM,
       });
       L.tileLayer(TILE_URL_TEMPLATE, {
         attribution: MAP_ATTRIBUTION,
-        maxZoom: MAP_MAX_ZOOM,
+        maxZoom: MAX_TILE_ZOOM,
       }).addTo(map);
       L.marker([latitude, longitude], {
         icon: L.divIcon({

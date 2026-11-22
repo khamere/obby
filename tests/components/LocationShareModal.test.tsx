@@ -57,7 +57,10 @@ import { LocationShareModal } from "../../src/components/ui/LocationShareModal";
 import {
   GeolocationPermissionDeniedError,
   getCurrentLocation,
+  parseLocationShareUrl,
 } from "../../src/lib/geolocation";
+import { detectMediaType } from "../../src/lib/mediaUtils";
+import { tilesForPreview } from "../../src/lib/osmTiles";
 
 const mockGetCurrentLocation = vi.mocked(getCurrentLocation);
 
@@ -190,6 +193,47 @@ describe("LocationShareModal", () => {
     expect(onShare).toHaveBeenCalledWith(
       "https://www.openstreetmap.org/?mlat=48.858&mlon=2.294#map=16/48.858/2.294",
     );
+  });
+
+  it("shares a place the preview can draw after a drag across the date line", async () => {
+    mockGetCurrentLocation.mockResolvedValue({
+      latitude: -16.5,
+      longitude: 179,
+    });
+    const onShare = vi.fn();
+    leaflet.instance.getCenter.mockReturnValueOnce({
+      lat: -16.5,
+      lng: 187.438,
+    });
+    render(
+      <LocationShareModal
+        isOpen
+        target="alice"
+        onCancel={vi.fn()}
+        onShare={onShare}
+      />,
+    );
+    await waitForShareEnabled();
+    await dragMapToCentre();
+
+    expect(screen.getByText("-16.50000, -172.56200")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^share$/i }));
+
+    const shared = onShare.mock.calls[0][0] as string;
+    expect(shared).toBe(
+      "https://www.openstreetmap.org/?mlat=-16.5&mlon=-172.562#map=16/-16.5/-172.562",
+    );
+    expect(detectMediaType(shared)).toBe("map");
+    const location = parseLocationShareUrl(shared);
+    expect(location).toEqual({
+      latitude: -16.5,
+      longitude: -172.562,
+      zoom: 16,
+    });
+    expect(
+      tilesForPreview(-16.5, location?.longitude ?? Number.NaN, 16, 320, 180)
+        .length,
+    ).toBeGreaterThan(0);
   });
 
   // Pressing a precision is how someone gets back after wandering off, so it

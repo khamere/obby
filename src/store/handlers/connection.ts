@@ -3,6 +3,7 @@ import type { StoreApi } from "zustand";
 import { forgetAutoAway, forgetExpectedBack } from "../../lib/autoAway";
 import { isLiveChannel } from "../../lib/channelFolders";
 import ircClient from "../../lib/ircClient";
+import { cannotBeChannelName } from "../../lib/ircUtils";
 import type { PrivateChat } from "../../types";
 import {
   generateDeterministicId,
@@ -399,6 +400,17 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
         // Note: savedChannelOrder has IDs, but we need names for joining
         // We'll join in the order from savedServer.channels which should already be ordered
         channelsToJoin = savedServer.channels;
+      }
+
+      // We drop only the saved entries that no server holds as a channel, and leave every other name for the server to answer.
+      const sendableChannels = channelsToJoin.filter(
+        (channelName: unknown) =>
+          typeof channelName === "string" && !cannotBeChannelName(channelName),
+      );
+      if (sendableChannels.length < channelsToJoin.length) {
+        savedServer.channels = sendableChannels;
+        storage.servers.save(savedServers);
+        channelsToJoin = sendableChannels;
       }
 
       if (!isBouncerSession) {

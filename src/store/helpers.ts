@@ -215,12 +215,31 @@ const replaceAt = <T>(list: T[], index: number, item: T): T[] =>
 // A redacted message keeps who removed it as a code, and the row translates it.
 export const REDACTED_BY_TAG = "obby-redacted-by";
 
+const MAX_REACTION_LENGTH = 64;
+
+// A reaction is an emoji or a few short words that another client chose, so we
+// keep only text that reads as one chip: spaces between the words, and no line
+// breaks or control characters.
+export const isReactionValue = (value: string): boolean =>
+  value.length > 0 &&
+  value.length <= MAX_REACTION_LENGTH &&
+  !/^ | $|[\p{Cc}\p{Zl}\p{Zp}]/u.test(value);
+
+// Nicks compare without case, so a reaction stays ours when only the case of
+// our nick changes.
+export const isReactionBy = (
+  reaction: { userId: string },
+  nick: string | undefined,
+): boolean =>
+  nick !== undefined && reaction.userId.toLowerCase() === nick.toLowerCase();
+
 export function withReaction(
   message: Message,
   emoji: string,
   userId: string,
 ): Message | null {
-  return message.reactions.some((r) => r.emoji === emoji && r.userId === userId)
+  return !isReactionValue(emoji) ||
+    message.reactions.some((r) => r.emoji === emoji && isReactionBy(r, userId))
     ? null
     : { ...message, reactions: [...message.reactions, { emoji, userId }] };
 }
@@ -231,7 +250,7 @@ export function withoutReaction(
   userId: string,
 ): Message | null {
   const reactions = message.reactions.filter(
-    (r) => !(r.emoji === emoji && r.userId === userId),
+    (r) => !(r.emoji === emoji && isReactionBy(r, userId)),
   );
   return reactions.length === message.reactions.length
     ? null

@@ -1775,6 +1775,7 @@ msgstr "Hallinnoi ulkoisen median lataamista. Pois / Turvallinen / Luotetut läh
 msgid "Control media display and external content"
 msgstr "Hallinnoi median näyttöä ja ulkoista sisältöä"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 #: src/components/ui/E2EEVerifyModal.tsx
 #: src/components/ui/ExternalLinkWarningModal.tsx
@@ -1811,10 +1812,16 @@ msgstr "Kopioi kanavan nimi"
 msgid "Copy entire JSON"
 msgstr "Kopioi koko JSON"
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Copy error details"
+msgstr "Kopioi virheen tiedot"
+
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 msgid "Copy failed, select to retry"
 msgstr "Kopiointi epäonnistui, valitse uudelleen yrittämiseksi"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/mobile/MessageReaderSheet.tsx
 msgid "Copy failed, tap to retry"
 msgstr "Kopiointi epäonnistui, napauta uudelleen yrittämiseksi"
@@ -2526,6 +2533,10 @@ msgstr "Anna kanavan nimi kanavakohtaisia paketteja varten."
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "Anna kanava, jolle käyttäjät ohjataan, kun he eivät voi liittyä tähän kanavaan. Jätä tyhjäksi poistaaksesi käytöstä."
+
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "Anna avain, jossa ei ole pilkkuja"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
@@ -4387,6 +4398,10 @@ msgstr "Obby lataa tämän tiedoston aina käynnistyessään, joten kaikki samaa
 msgid "Obby is up to date."
 msgstr "Obby on ajan tasalla."
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Obby stopped working"
+msgstr "Obby lakkasi toimimasta"
+
 #: src/components/ui/UpdateSheet.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Obby will close to install the update; open it again afterwards."
@@ -5115,6 +5130,14 @@ msgstr "Löysä – vähemmän aggressiivinen suojaus"
 #: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "Julkaisutiedot"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload"
+msgstr "Lataa uudelleen"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload to continue. Copy the error details to report the problem."
+msgstr "Jatka lataamalla uudelleen. Kopioi virheen tiedot, jos haluat ilmoittaa ongelmasta."
 
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/pages/ChannelSettingsPage.tsx
@@ -6743,6 +6766,10 @@ msgstr "Käytä * jokerimerkkinä. Esimerkkejä: baduser!*@*, *!*@spammer.com, t
 #: src/components/message/BotInvocationChip.tsx
 msgid "Use /{0}"
 msgstr "Käytä /{0}"
+
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "Käytä nimeä, jossa ei ole välilyöntejä eikä pilkkuja"
 
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."
