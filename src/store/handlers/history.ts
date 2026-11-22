@@ -1108,11 +1108,19 @@ export function registerHistoryHandlers(store: StoreApi<AppState>): void {
       ) ?? onlyChatAwaiting(serverId, subcommand);
     const refused =
       context.find((part) => findConversation(store, serverId, part)) ?? target;
+    const request = target
+      ? pendingRequests.get(conversationKey(serverId, target))?.shift()
+      : undefined;
+    // A server can list msgid among its references and still refuse a page asked by one, so we ask that page once by time before we read anything into the refusal.
+    if (
+      target &&
+      request &&
+      request.kind !== "latest" &&
+      request.msgidTime !== undefined &&
+      askAgainByTime(serverId, target, request, request.msgidTime)
+    )
+      return;
     if (refused) settleRefusedOffer(store, serverId, refused, code, subcommand);
-    if (!target) return;
-    const request = pendingRequests
-      .get(conversationKey(serverId, target))
-      ?.shift();
     if (request && request.kind !== "latest") request.fill?.onSettled?.(false);
   });
 

@@ -37,6 +37,8 @@ type World = {
   has: number[];
   // The reference kinds the server pages by, as it states them in MSGREFTYPES.
   refs?: string;
+  // The code the server refuses every request by msgid with, and the words after it.
+  refusesMsgid?: { code: string; context: string };
 };
 
 async function boot(refs?: string, { keepHistory = true } = {}) {
@@ -98,6 +100,17 @@ async function boot(refs?: string, { keepHistory = true } = {}) {
       );
     if (!request) return;
     const [, subcommand, target, kind, value, asked] = request;
+    if (kind === "msgid" && world.refusesMsgid) {
+      const { code, context } = world.refusesMsgid;
+      setTimeout(
+        () =>
+          feed(
+            `:irc.test FAIL CHATHISTORY ${code} ${context} :Cannot page from that message`,
+          ),
+        0,
+      );
+      return;
+    }
     const picked = pick(subcommand, kind, value, Number(asked));
     setTimeout(() => feed(...page(picked, target)), 0);
   };
@@ -317,6 +330,27 @@ describe("history pages that end inside a millisecond", {
       ]);
       expect(w.shown()[0]).toBe("m0");
       expect(new Set(w.shown()).size).toBe(w.shown().length);
+    });
+  });
+
+  describe("a server that lists msgid and refuses a page asked by one", () => {
+    it.each([
+      ["a refusal that would repeat", "INVALID_PARAMS", "BEFORE #chan"],
+      ["a refusal that could pass later", "MESSAGE_ERROR", "BEFORE #chan"],
+      ["a refusal that names no chat", "INVALID_MSGREFTYPE", "BEFORE"],
+    ])("asks that page once by time after %s", async (_case, code, context) => {
+      const w = await boot("msgid,timestamp");
+      w.world.has = range(0, 299);
+      await w.loadLatest();
+      w.world.refusesMsgid = { code, context };
+
+      await w.scrollToTop();
+
+      expect(w.requests("BEFORE").slice(0, 2)).toEqual([
+        `CHATHISTORY BEFORE #chan msgid=m250 ${PAGE}`,
+        `CHATHISTORY BEFORE #chan timestamp=${iso(250)} ${PAGE}`,
+      ]);
+      expect(w.shown()).toContain("m200");
     });
   });
 
