@@ -194,7 +194,16 @@ const ServerIcon: React.FC<ServerIconProps> = ({
 
         <span className="obby-server-name">{displayName}</span>
 
-        {hasAlerts && (
+        {server.loginRefused && (
+          <div
+            className="absolute -top-1 -left-1 z-10 w-3.5 h-3.5 bg-discord-red rounded-full border-2 border-discord-dark-600"
+            role="img"
+            aria-label={t`The server refused your login. Fix your account name or password to connect`}
+            title={t`The server refused your login. Fix your account name or password to connect`}
+          />
+        )}
+
+        {hasAlerts && !server.loginRefused && (
           <div
             className="absolute -top-1 -left-1 w-3.5 h-3.5 bg-discord-red rounded-full border-2 border-discord-dark-600"
             title={t`Open Server Notices to see what went wrong`}

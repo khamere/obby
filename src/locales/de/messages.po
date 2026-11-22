@@ -3584,6 +3584,7 @@ msgid "Log in"
 msgstr "Anmelden"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Log in again"
 msgstr "Erneut anmelden"
 
@@ -5033,6 +5034,7 @@ msgid "Recent searches"
 msgstr "Letzte Suchen"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Reconnect"
 msgstr "Erneut verbinden"
 
@@ -6378,6 +6380,14 @@ msgstr "Die Aufnahme konnte nicht erstellt werden."
 #: src/lib/voiceErrors.ts
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "Der Server hat deinen Beitritt abgelehnt. Prüfe die Kanalmodi und versuche es erneut."
+
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "The server refused your login. Fix your account name or password to connect"
+msgstr "Der Server hat deine Anmeldung abgelehnt. Korrigiere deinen Kontonamen oder dein Passwort, um dich zu verbinden"
 
 #: src/components/ui/UpdateSheet.tsx
 msgid "The update could not start. Try again."

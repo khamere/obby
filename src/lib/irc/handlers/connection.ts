@@ -76,6 +76,7 @@ export function handleRplWelcome(
   const nickname = parv[0];
 
   ctx.nicks.set(serverId, nickname);
+  ctx.noteWelcomed(serverId);
 
   const currentUser = ctx.currentUsers.get(serverId);
   if (currentUser) {
@@ -240,10 +241,8 @@ export function handleCap(
   if (subcommand === "LS") ctx.onCapLs(serverId, caps, isFinal);
   else if (subcommand === "ACK") {
     ctx.onCapAck(serverId, caps);
-  } else if (subcommand === "NAK") {
-    ctx.sendCapEnd(serverId);
-    ctx.capNegotiationComplete.set(serverId, true);
-  } else if (subcommand === "NEW") ctx.onCapNew(serverId, caps);
+  } else if (subcommand === "NAK") ctx.onCapNak(serverId, caps);
+  else if (subcommand === "NEW") ctx.onCapNew(serverId, caps);
   else if (subcommand === "DEL") ctx.onCapDel(serverId, caps);
 }
 
@@ -303,6 +302,7 @@ export function handleSaslRejected(
   source: string,
   parv: string[],
 ): void {
+  ctx.noteLoginRefused(serverId);
   ctx.triggerEvent("saslFailed", { serverId });
   handleSaslFailure(ctx, serverId, source, parv);
 }

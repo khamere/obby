@@ -3584,6 +3584,7 @@ msgid "Log in"
 msgstr "ログイン"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Log in again"
 msgstr "再度ログイン"
 
@@ -5033,6 +5034,7 @@ msgid "Recent searches"
 msgstr "最近の検索"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Reconnect"
 msgstr "再接続"
 
@@ -6378,6 +6380,14 @@ msgstr "録画できませんでした。"
 #: src/lib/voiceErrors.ts
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "サーバーが参加を拒否しました。チャンネルモードを確認して、もう一度お試しください。"
+
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "The server refused your login. Fix your account name or password to connect"
+msgstr "サーバーがログインを拒否しました。接続するにはアカウント名またはパスワードを修正してください"
 
 #: src/components/ui/UpdateSheet.tsx
 msgid "The update could not start. Try again."

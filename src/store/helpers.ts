@@ -1,5 +1,5 @@
 import { v5 as uuidv5 } from "uuid";
-import type { Channel, Message, Server, User } from "../types";
+import type { Channel, Message, Server, ServerConfig, User } from "../types";
 import type { AppState } from "./index";
 import type { HistoryWindow } from "./types";
 
@@ -74,7 +74,7 @@ export function getLoginState(server: Server | undefined): LoginState {
     (server?.isConnected && !server.isRegistered)
   )
     return "connecting";
-  if (!server?.isConnected) return "offline";
+  if (!server?.isConnected) return server?.loginRefused ? "failed" : "offline";
   if (server.saslFailed) return "failed";
   return server.account ? "loggedIn" : "guest";
 }
@@ -105,6 +105,17 @@ export function ensureUrlFormat(host: string, port: number): string {
   }
   // Convert old hostname-only format to URL — always wss://
   return `wss://${host}:${port}`;
+}
+
+// A saved login belongs to one address, so we check that a connection dials the address this config holds.
+export function dialsSavedAddress(
+  target: { host: string; port: number } | undefined,
+  config: Pick<ServerConfig, "host" | "port">,
+): boolean {
+  return (
+    target?.host === ensureUrlFormat(config.host, config.port) &&
+    target.port === config.port
+  );
 }
 
 export const MAX_MESSAGES_PER_CHANNEL = 1500;

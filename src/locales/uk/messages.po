@@ -3584,6 +3584,7 @@ msgid "Log in"
 msgstr "Увійти"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Log in again"
 msgstr "Увійти знову"
 
@@ -5033,6 +5034,7 @@ msgid "Recent searches"
 msgstr "Нещодавні пошуки"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Reconnect"
 msgstr "Перепідключитися"
 
@@ -6378,6 +6380,14 @@ msgstr "Не вдалося зробити запис."
 #: src/lib/voiceErrors.ts
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "Сервер відхилив ваш вхід. Перевірте режими каналу й спробуйте ще раз."
+
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "The server refused your login. Fix your account name or password to connect"
+msgstr "Сервер відхилив вхід. Виправте назву облікового запису або пароль, щоб підключитися"
 
 #: src/components/ui/UpdateSheet.tsx
 msgid "The update could not start. Try again."

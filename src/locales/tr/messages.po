@@ -3584,6 +3584,7 @@ msgid "Log in"
 msgstr "Giriş yap"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Log in again"
 msgstr "Tekrar giriş yap"
 
@@ -5033,6 +5034,7 @@ msgid "Recent searches"
 msgstr "Son aramalar"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Reconnect"
 msgstr "Yeniden bağlan"
 
@@ -6378,6 +6380,14 @@ msgstr "Kayıt yapılamadı."
 #: src/lib/voiceErrors.ts
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "Sunucu katılımınızı reddetti. Kanal modlarını kontrol edip tekrar deneyin."
+
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "The server refused your login. Fix your account name or password to connect"
+msgstr "Sunucu girişini reddetti. Bağlanmak için hesap adını veya şifreni düzelt"
 
 #: src/components/ui/UpdateSheet.tsx
 msgid "The update could not start. Try again."

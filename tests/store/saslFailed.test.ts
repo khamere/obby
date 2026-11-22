@@ -3,6 +3,7 @@ import { IRC_DISPATCH } from "../../src/lib/irc/handlers";
 import ircClient from "../../src/lib/ircClient";
 import type { AppState } from "../../src/store";
 import useStore from "../../src/store";
+import { getLoginState } from "../../src/store/helpers";
 
 const serverId = "srv-sasl";
 const server = () => useStore.getState().servers.find((s) => s.id === serverId);
@@ -42,6 +43,28 @@ describe("SASL rejection", () => {
       connectionState: "disconnected",
     });
     expect(server()?.saslFailed).toBe(false);
+  });
+
+  test("a refused login stays on the server until the next connection attempt", () => {
+    ircClient.triggerEvent("connectionStateChange", {
+      serverId,
+      connectionState: "disconnected",
+    });
+    ircClient.triggerEvent("loginRefused", { serverId });
+    expect(server()?.loginRefused).toBe(true);
+    expect(getLoginState(server())).toBe("failed");
+
+    ircClient.triggerEvent("connectionStateChange", {
+      serverId,
+      connectionState: "disconnected",
+    });
+    expect(server()?.loginRefused).toBe(true);
+
+    ircClient.triggerEvent("connectionStateChange", {
+      serverId,
+      connectionState: "connecting",
+    });
+    expect(server()?.loginRefused).toBe(false);
   });
 
   test("907 (already authenticated) is not a failed sign-in", () => {

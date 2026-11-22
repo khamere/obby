@@ -3584,6 +3584,7 @@ msgid "Log in"
 msgstr "로그인"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Log in again"
 msgstr "다시 로그인"
 
@@ -5033,6 +5034,7 @@ msgid "Recent searches"
 msgstr "최근 검색"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Reconnect"
 msgstr "다시 연결"
 
@@ -6378,6 +6380,14 @@ msgstr "녹화를 할 수 없습니다."
 #: src/lib/voiceErrors.ts
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "서버가 참여를 거부했습니다. 채널 모드를 확인하고 다시 시도하세요."
+
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "The server refused your login. Fix your account name or password to connect"
+msgstr "서버가 로그인을 거부했습니다. 연결하려면 계정 이름 또는 비밀번호를 수정하세요"
 
 #: src/components/ui/UpdateSheet.tsx
 msgid "The update could not start. Try again."

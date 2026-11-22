@@ -151,6 +151,14 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
     }));
   });
 
+  ircClient.on("loginRefused", ({ serverId }) => {
+    store.setState((state) => ({
+      servers: state.servers.map((s) =>
+        s.id === serverId ? { ...s, loginRefused: true } : s,
+      ),
+    }));
+  });
+
   ircClient.on("connectionStateChange", ({ serverId, connectionState }) => {
     // An automatic away belongs to the connection it was sent on.
     forgetAutoAway(serverId);
@@ -207,6 +215,8 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
               : accountBetweenConnections(state.servers, server),
           saslFailed:
             connectionState === "connected" ? server.saslFailed : false,
+          loginRefused:
+            connectionState === "disconnected" ? server.loginRefused : false,
         };
       });
 
