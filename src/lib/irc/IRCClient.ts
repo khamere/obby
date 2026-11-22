@@ -1598,7 +1598,8 @@ export class IRCClient implements IRCClientContext {
     {
       showLoading = true,
       isDiskOnly = false,
-    }: { showLoading?: boolean; isDiskOnly?: boolean } = {},
+      msgid,
+    }: { showLoading?: boolean; isDiskOnly?: boolean; msgid?: string } = {},
   ): boolean {
     const server = this.servers.get(serverId);
     if (!server?.capabilities?.includes("draft/chathistory")) return false;
@@ -1614,7 +1615,7 @@ export class IRCClient implements IRCClientContext {
       });
     this.sendRaw(
       serverId,
-      `CHATHISTORY BEFORE ${channelName} timestamp=${beforeTimestamp} ${this.chathistoryPageSize(serverId, isDiskOnly)}`,
+      `CHATHISTORY BEFORE ${channelName} ${this.historyReference(serverId, beforeTimestamp, msgid)} ${this.chathistoryPageSize(serverId, isDiskOnly)}`,
     );
     return true;
   }
@@ -1624,16 +1625,36 @@ export class IRCClient implements IRCClientContext {
     target: string,
     subcommand: "AFTER" | "AROUND",
     timestamp: string,
-    { isDiskOnly = false }: { isDiskOnly?: boolean } = {},
+    {
+      isDiskOnly = false,
+      msgid,
+    }: { isDiskOnly?: boolean; msgid?: string } = {},
   ): boolean {
     const server = this.servers.get(serverId);
     if (!server?.capabilities?.includes("draft/chathistory")) return false;
     if (server.isBouncerControl) return false;
     this.sendRaw(
       serverId,
-      `CHATHISTORY ${subcommand} ${target} timestamp=${timestamp} ${this.chathistoryPageSize(serverId, isDiskOnly)}`,
+      `CHATHISTORY ${subcommand} ${target} ${this.historyReference(serverId, timestamp, msgid)} ${this.chathistoryPageSize(serverId, isDiskOnly)}`,
     );
     return true;
+  }
+
+  // Servers list the kinds of reference they page history by in MSGREFTYPES.
+  canPageByMsgid(serverId: string): boolean {
+    const kinds = this.isupportValues.get(serverId)?.get("MSGREFTYPES");
+    return !!kinds && kinds.toLowerCase().split(",").includes("msgid");
+  }
+
+  // A time names every line of its millisecond and a msgid names one line, so we page from the msgid wherever the server takes one.
+  private historyReference(
+    serverId: string,
+    timestamp: string,
+    msgid: string | undefined,
+  ): string {
+    return msgid && /^\S+$/.test(msgid) && this.canPageByMsgid(serverId)
+      ? `msgid=${msgid}`
+      : `timestamp=${timestamp}`;
   }
 
   // soju bouncer control sessions have no real channels, so we treat them as cap-less.

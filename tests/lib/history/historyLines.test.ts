@@ -535,7 +535,14 @@ describe("channel events", () => {
           target: "#chan",
           rows: [],
           redacts: [],
-          page: { size: 1, oldest: T1_MS, newest: T1_MS, msgids: ["m2"] },
+          page: {
+            size: 1,
+            oldest: T1_MS,
+            newest: T1_MS,
+            msgids: ["m2"],
+            oldestMsgid: "m2",
+            newestMsgid: "m2",
+          },
         },
       ]);
     },
@@ -1076,6 +1083,52 @@ describe("decideAfterGapFill", () => {
     lost: false,
   };
 
+  describe("when the next page can start from this page's first line", () => {
+    it("keeps the gap open on a page that stops inside the millisecond of its older edge", () => {
+      expect(
+        decideAfterGapFill({
+          gap,
+          page: { size: 2, oldest: 100 },
+          inserted: [true, true],
+          canResumeFromEdge: true,
+        }),
+      ).toEqual({ kind: "shrink", to: 100, lost: false });
+    });
+
+    it("closes once a page inside that millisecond reaches a row we had", () => {
+      expect(
+        decideAfterGapFill({
+          gap: { ...gap, to: 100 },
+          page: { size: 2, oldest: 100 },
+          inserted: [false, true],
+          canResumeFromEdge: true,
+        }),
+      ).toEqual({ kind: "close" });
+    });
+
+    it("closes a gap of one millisecond when the server has nothing before it", () => {
+      expect(
+        decideAfterGapFill({
+          gap: { ...gap, to: 100 },
+          page: { size: 0, oldest: undefined },
+          inserted: [],
+          canResumeFromEdge: false,
+        }),
+      ).toEqual({ kind: "close" });
+    });
+
+    it("closes on a page that starts before the gap", () => {
+      expect(
+        decideAfterGapFill({
+          gap,
+          page: { size: 2, oldest: 99 },
+          inserted: [true, true],
+          canResumeFromEdge: true,
+        }),
+      ).toEqual({ kind: "close" });
+    });
+  });
+
   it("closes when any row overlapped existing rows", () => {
     expect(
       decideAfterGapFill({
@@ -1310,6 +1363,7 @@ describe("page edges", () => {
         oldest: T1_MS,
         newest: T1_MS,
         msgids: ["m1", "m2"],
+        oldestMsgid: "m1",
       });
       expect(action.rows).toEqual([
         expect.not.objectContaining({ hasReceiveTime: true }),
@@ -1336,6 +1390,46 @@ describe("page edges", () => {
     expect(action.rows).toEqual([
       expect.objectContaining({ time: NOW, hasReceiveTime: true }),
     ]);
+  });
+
+  it("names the first and the last line of a page by msgid", () => {
+    const later = new Date(T1_MS + 1).toISOString();
+    const action = pageOf([
+      parse("BATCH +h chathistory #c"),
+      parse(`@batch=h;msgid=m1;time=${T1} :a!u@h JOIN #c`),
+      parse(`@batch=h;msgid=m2;time=${T1} :a!u@h PRIVMSG #c :one`),
+      parse(`@batch=h;msgid=m3;time=${later} :a!u@h PRIVMSG #c :two`),
+      parse(`@batch=h;msgid=m4;time=${later} :a!u@h PRIVMSG #c :three`),
+      parse("BATCH -h"),
+    ]);
+
+    expect(action.page).toMatchObject({ oldestMsgid: "m1", newestMsgid: "m4" });
+  });
+
+  it("names no edge line when the line at that edge has no msgid", () => {
+    const action = pageOf([
+      parse("BATCH +h chathistory #c"),
+      parse(`@batch=h;time=${T1} :a!u@h JOIN #c`),
+      parse(`@batch=h;msgid=m2;time=${T1} :a!u@h PRIVMSG #c :one`),
+      parse(`@batch=h;time=${T1} :a!u@h PART #c`),
+      parse("BATCH -h"),
+    ]);
+
+    expect(action.page).not.toHaveProperty("oldestMsgid");
+    expect(action.page).not.toHaveProperty("newestMsgid");
+  });
+
+  it("names no edge line when the page is out of time order at that edge", () => {
+    const later = new Date(T1_MS + 1).toISOString();
+    const action = pageOf([
+      parse("BATCH +h chathistory #c"),
+      parse(`@batch=h;msgid=m1;time=${later} :a!u@h PRIVMSG #c :one`),
+      parse(`@batch=h;msgid=m2;time=${T1} :a!u@h PRIVMSG #c :two`),
+      parse("BATCH -h"),
+    ]);
+
+    expect(action.page).not.toHaveProperty("oldestMsgid");
+    expect(action.page).not.toHaveProperty("newestMsgid");
   });
 
   it("files a live line we timed ourselves like any other row", () => {
@@ -1380,6 +1474,49 @@ describe("decideAfterForwardFill", () => {
   };
   const decide = (oldest: number, newest: number, inserted: boolean[]) =>
     decideAfterForwardFill({ gap, page: { oldest, newest }, inserted });
+
+  describe("when the next page can start from this page's last line", () => {
+    const resume = (oldest: number, newest: number, inserted: boolean[]) =>
+      decideAfterForwardFill({
+        gap,
+        page: { oldest, newest },
+        inserted,
+        canResumeFromEdge: true,
+      });
+
+    it("keeps the gap open on a page that stops inside the millisecond of its newer edge", () => {
+      expect(resume(310, 900, [true, true])).toEqual({
+        kind: "shrink",
+        from: 900,
+      });
+    });
+
+    it("closes once a page inside that millisecond reaches a row we had", () => {
+      expect(resume(900, 900, [true, false])).toEqual({ kind: "close" });
+    });
+
+    it("closes on a page that runs past the gap", () => {
+      expect(resume(310, 901, [true, true])).toEqual({ kind: "close" });
+    });
+
+    it("moves on from new lines that share the millisecond of the older edge", () => {
+      expect(resume(300, 300, [true, true])).toEqual({
+        kind: "shrink",
+        from: 300,
+      });
+    });
+
+    it("moves on from a page of lines we hold at the older edge, so the next page starts behind them", () => {
+      expect(resume(300, 300, [false, false])).toEqual({
+        kind: "shrink",
+        from: 300,
+      });
+    });
+
+    it("keeps the gap when a page lies wholly before its older edge", () => {
+      expect(resume(120, 299, [false, false])).toEqual({ kind: "keep" });
+    });
+  });
 
   it("moves the older edge up to the page's newest line", () => {
     expect(decide(310, 500, [true, true])).toEqual({

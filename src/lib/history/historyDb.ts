@@ -55,6 +55,10 @@ export interface HistoryGap {
   from: number;
   to: number;
   lost: boolean;
+  // The lines a server page stopped at on each side, which name the edge
+  // exactly where more lines share its millisecond.
+  fromMsgid?: string;
+  toMsgid?: string;
 }
 
 export type NewHistoryRow = Omit<HistoryRow, "id" | "bytes" | SearchColumn>;

@@ -172,7 +172,7 @@ describe("jumpToReply", () => {
       serverId,
       "#dev",
       "2026-10-14T10:02:00.000Z",
-      { showLoading: false },
+      { showLoading: false, msgid: "id-2" },
     );
     expect(useStore.getState().revealMessage).toHaveBeenCalledWith("m0");
     before.mockRestore();
@@ -199,7 +199,10 @@ describe("jumpToReply", () => {
       });
     await jumpToReply(serverId, "ch-dev", "id-0");
     expect(before).toHaveBeenCalledTimes(1);
-    expect(before.mock.calls[0][3]).toEqual({ showLoading: false });
+    expect(before.mock.calls[0][3]).toEqual({
+      showLoading: false,
+      msgid: "id-2",
+    });
     expect(reportJumpFailure).toHaveBeenCalledWith(serverId, "not-found");
     before.mockRestore();
   });
