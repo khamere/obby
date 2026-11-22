@@ -1471,17 +1471,9 @@ export async function loadNewerMessages(
       await loadNewerMessages(store, serverId, target);
     return;
   }
-  if (rows.length < WINDOW_ROWS && !hole) {
-    if (!isSameWindow()) return;
-    joinWindowToPresent(store, conversation.key);
-    if (rows.length) await replayRows(store, serverId, target, rows);
-    if (serverSupportsChathistory(store.getState(), serverId))
-      ircClient.requestChathistoryLatest(serverId, target);
-    return;
-  }
   const newest = rows[rows.length - 1];
   let isShown = false;
-  await replayRows(store, serverId, target, rows, () => {
+  const showInWindow = () => {
     const current = store.getState().historyWindows[conversation.key];
     if (!current || !isSameWindow()) return false;
     store.setState((state) => ({
@@ -1496,7 +1488,26 @@ export async function loadNewerMessages(
     }));
     isShown = true;
     return true;
-  });
+  };
+  if (rows.length < WINDOW_ROWS && !hole) {
+    if (!isSameWindow()) return;
+    // The last saved rows land while the window still stands, so the reader keeps their place when it joins the present.
+    if (newest) {
+      await replayRows(store, serverId, target, rows, showInWindow);
+      const current = store.getState().historyWindows[conversation.key];
+      if (
+        !isShown ||
+        current?.until !== newest.time ||
+        current.jumpId !== window.jumpId
+      )
+        return;
+    }
+    joinWindowToPresent(store, conversation.key);
+    if (serverSupportsChathistory(store.getState(), serverId))
+      ircClient.requestChathistoryLatest(serverId, target);
+    return;
+  }
+  await replayRows(store, serverId, target, rows, showInWindow);
   if (dropOldestInWindow(store, conversation.key))
     await refreshHasMore(store, serverId, target, false);
   if (isShown && hole)

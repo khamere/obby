@@ -47,6 +47,7 @@ export function useMessageJump({
   const heldTopRef = useRef(0);
   const heldHeightRef = useRef(0);
   const heldOffsetRef = useRef<number | null>(null);
+  const hasReachedRowRef = useRef(false);
   const [isHolding, setIsHolding] = useState(false);
   const jumpMessageId = useStore((state) => state.ui.messageJump?.messageId);
 
@@ -62,6 +63,8 @@ export function useMessageJump({
         ? row.offsetTop - (containerRef.current?.scrollTop ?? 0)
         : null;
     heldHeightRef.current = containerRef.current?.clientHeight ?? 0;
+    hasReachedRowRef.current =
+      !row || (!!containerRef.current && isInView(containerRef.current, row));
     wasAtBottomRef.current = false;
     setIsHolding(true);
   };
@@ -122,12 +125,12 @@ export function useMessageJump({
     const container = containerRef.current;
     if (!container || !isHolding) return;
     // A jump to a row near the end lands at the bottom too, so we keep holding while the row is in view.
+    // The scroll toward a row can start at the bottom, so the bottom ends a hold only once its row has been on screen.
     const releaseAtBottom = () => {
-      if (
-        container.clientHeight > 0 &&
-        isScrolledToBottom(container) &&
-        !isInView(container, heldRowRef.current)
-      )
+      if (container.clientHeight === 0) return;
+      if (isInView(container, heldRowRef.current))
+        hasReachedRowRef.current = true;
+      else if (hasReachedRowRef.current && isScrolledToBottom(container))
         releaseJump();
     };
     for (const type of USER_SCROLL_EVENTS)
@@ -143,6 +146,8 @@ export function useMessageJump({
   return {
     isHoldingRef,
     isHoldingRow: () => isHoldingRef.current && heldRowRef.current !== null,
+    isHoldingShownRow: () =>
+      isHoldingRef.current && !!heldRowRef.current?.isConnected,
     isHoldingJump: isHolding,
     holdRow: hold,
     releaseJump,

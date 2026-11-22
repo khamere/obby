@@ -8,6 +8,7 @@ import {
 } from "../../../src/components/layout/ChannelMessageList";
 import ircClient from "../../../src/lib/ircClient";
 import useStore from "../../../src/store";
+import { loadNewerMessages } from "../../../src/store/handlers/history";
 import type { Server } from "../../../src/types";
 
 vi.mock("../../../src/lib/ircClient", () => ({
@@ -22,6 +23,14 @@ vi.mock("../../../src/lib/ircClient", () => ({
     version: "1.0.0",
   },
 }));
+
+vi.mock("../../../src/store/handlers/history", async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import("../../../src/store/handlers/history")
+    >();
+  return { ...actual, loadNewerMessages: vi.fn(actual.loadNewerMessages) };
+});
 
 vi.mock("@tauri-apps/plugin-os", () => ({
   platform: vi.fn().mockResolvedValue("linux"),
@@ -526,6 +535,7 @@ describe("ChannelMessageList history window", () => {
 
   beforeEach(() => {
     vi.mocked(window.HTMLElement.prototype.scrollTo).mockClear();
+    vi.mocked(loadNewerMessages).mockReset();
     useStore.setState({
       messages: { [KEY]: present },
       historyWindows: {},
@@ -617,6 +627,525 @@ describe("ChannelMessageList history window", () => {
 
     expect(scrollTop).toBe(3000 - (before - rowCount()) * ROW_PX);
     rect.mockRestore();
+  });
+
+  const ROW_PX = 50;
+  // Gives the list a height and a scroll position, which jsdom leaves at zero.
+  const layOut = (list: HTMLElement, start: number) => {
+    const view = { scrollTop: start };
+    Object.defineProperty(list, "clientHeight", { value: 600 });
+    Object.defineProperty(list, "scrollHeight", {
+      get: () => list.querySelectorAll("[data-message-id]").length * ROW_PX,
+    });
+    Object.defineProperty(list, "scrollTop", {
+      get: () => view.scrollTop,
+      set: (value: number) => {
+        view.scrollTop = value;
+      },
+    });
+    return view;
+  };
+
+  it("keeps the reading position when scrolling down joins the window to the present", async () => {
+    const ref = createRef<ChannelMessageListHandle>();
+    const { container } = render(<ChannelMessageList {...props} ref={ref} />);
+    showPast();
+    const list = container.firstElementChild as HTMLElement;
+    const view = layOut(list, 2000);
+    const top = firstRow(container);
+    vi.mocked(loadNewerMessages).mockImplementationOnce(async () => {
+      useStore.setState({
+        messages: { [KEY]: [...past, ...present] },
+        historyWindows: {},
+      });
+    });
+
+    fireEvent.wheel(list, { deltaY: 100 });
+    view.scrollTop = 4000;
+    await act(async () => {
+      fireEvent.scroll(list);
+    });
+
+    expect(useStore.getState().historyWindows[KEY]).toBeUndefined();
+    expect(container.querySelector('[data-message-id="now-2"]')).not.toBeNull();
+    expect(firstRow(container)).toBe(top);
+    expect(view.scrollTop).toBe(4000);
+    expect(ref.current?.getScrollState().isAtBottom).toBe(false);
+    expect(useStore.getState().ui.isChatAwayFromPresent).toBe(true);
+  });
+
+  it("starts on the row being read when the present reaches further back than the window", async () => {
+    const earlier = Array.from({ length: 150 }, (_, i) =>
+      makeMsg(`earlier-${i}`, {
+        timestamp: new Date(Date.UTC(2022, 0, 1, 0, i)),
+      }),
+    );
+    const { container } = render(<ChannelMessageList {...props} />);
+    showPast();
+    const list = container.firstElementChild as HTMLElement;
+    const view = layOut(list, 2000);
+    const top = firstRow(container);
+    vi.mocked(loadNewerMessages).mockImplementationOnce(async () => {
+      useStore.setState({
+        messages: { [KEY]: [...earlier, ...past, ...present] },
+        historyWindows: {},
+      });
+    });
+
+    fireEvent.wheel(list, { deltaY: 100 });
+    view.scrollTop = 4000;
+    await act(async () => {
+      fireEvent.scroll(list);
+    });
+
+    expect(useStore.getState().historyWindows[KEY]).toBeUndefined();
+    expect(firstRow(container)).toBe(top);
+    expect(top?.isConnected).toBe(true);
+    expect(container.querySelector('[data-message-id^="earlier-"]')).toBeNull();
+    expect(container.querySelector('[data-message-id="now-2"]')).not.toBeNull();
+    expect(view.scrollTop).toBe(4000);
+    expect(useStore.getState().ui.isChatAwayFromPresent).toBe(true);
+  });
+
+  const DATE_PX = 40;
+  const rowsOf = (list: HTMLElement) => [
+    ...list.querySelectorAll("[data-message-id]"),
+  ];
+  const heightOf = (row: Element) =>
+    ROW_PX +
+    ([...row.children].some((child) => child.classList.contains("mb-2"))
+      ? DATE_PX
+      : 0);
+  // Gives every row a place on screen, a row with a date separator a taller one.
+  const layOutRows = (list: HTMLElement, start: number) => {
+    const view = { scrollTop: start };
+    Object.defineProperty(list, "clientHeight", { value: 600 });
+    Object.defineProperty(list, "scrollHeight", {
+      get: () => rowsOf(list).reduce((sum, row) => sum + heightOf(row), 0),
+    });
+    Object.defineProperty(list, "scrollTop", {
+      get: () => view.scrollTop,
+      set: (value: number) => {
+        view.scrollTop = value;
+      },
+    });
+    const rect = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function (this: HTMLElement) {
+        if (this === list)
+          return { top: 0, bottom: 600, height: 600 } as DOMRect;
+        const all = rowsOf(list);
+        const index = all.indexOf(this);
+        if (index < 0) return { top: -1, bottom: -1, height: 0 } as DOMRect;
+        const top =
+          all.slice(0, index).reduce((sum, row) => sum + heightOf(row), 0) -
+          view.scrollTop;
+        return { top, bottom: top + heightOf(this), height: 0 } as DOMRect;
+      });
+    const topOf = (id: string) =>
+      (
+        list.querySelector(`[data-message-id="${id}"]`) as HTMLElement
+      ).getBoundingClientRect().top;
+    return { view, topOf, restore: () => rect.mockRestore() };
+  };
+  const at = (minute: number) => new Date(2023, 5, 1, 12, minute);
+  const sameDayEarlier = makeMsg("earlier", { timestamp: at(0) });
+  const read = Array.from({ length: 100 }, (_, i) =>
+    makeMsg(`read-${i}`, { timestamp: at(i + 1) }),
+  );
+  const showRead = () =>
+    act(() => {
+      useStore.setState({
+        messages: { [KEY]: read },
+        historyWindows: {
+          [KEY]: { until: read[99].timestamp.getTime(), present, jumpId: 1 },
+        },
+      });
+    });
+  const joinPastTheFirstRow = () =>
+    useStore.setState({
+      messages: { [KEY]: [sameDayEarlier, ...read, ...present] },
+      historyWindows: {},
+    });
+
+  it("keeps the rows on screen where they are when the first row loses its date separator at the join", async () => {
+    const { container } = render(<ChannelMessageList {...props} />);
+    showRead();
+    const list = container.firstElementChild as HTMLElement;
+    const { view, topOf, restore } = layOutRows(list, 0);
+    const hadDate = heightOf(rowsOf(list)[0]) === ROW_PX + DATE_PX;
+    vi.mocked(loadNewerMessages).mockImplementationOnce(async () =>
+      joinPastTheFirstRow(),
+    );
+
+    fireEvent.wheel(list, { deltaY: 100 });
+    view.scrollTop = 4000;
+    const before = topOf("read-90");
+    await act(async () => {
+      fireEvent.scroll(list);
+    });
+    const after = topOf("read-90");
+    const hasDate = heightOf(rowsOf(list)[0]) === ROW_PX + DATE_PX;
+    restore();
+
+    expect(useStore.getState().historyWindows[KEY]).toBeUndefined();
+    expect([hadDate, hasDate]).toEqual([true, false]);
+    expect(before).toBe(DATE_PX + 90 * ROW_PX - 4000);
+    expect(after).toBe(before);
+  });
+
+  it("holds the rows where they are at the join, also when the reader moved on while the page loaded", async () => {
+    const { container } = render(<ChannelMessageList {...props} />);
+    showRead();
+    const list = container.firstElementChild as HTMLElement;
+    const { view, topOf, restore } = layOutRows(list, 0);
+    let answer = () => {};
+    vi.mocked(loadNewerMessages).mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          answer = () => {
+            joinPastTheFirstRow();
+            resolve();
+          };
+        }),
+    );
+    fireEvent.wheel(list, { deltaY: 100 });
+    view.scrollTop = 4000;
+    await act(async () => {
+      fireEvent.scroll(list);
+    });
+
+    view.scrollTop = 4200;
+    const before = topOf("read-90");
+    await act(async () => {
+      answer();
+    });
+    const after = topOf("read-90");
+    restore();
+
+    expect(useStore.getState().historyWindows[KEY]).toBeUndefined();
+    expect(after).toBe(before);
+  });
+
+  it("measures the bottom again once the window has joined the present", async () => {
+    const ref = createRef<ChannelMessageListHandle>();
+    const { container } = render(<ChannelMessageList {...props} ref={ref} />);
+    showPast();
+    const list = container.firstElementChild as HTMLElement;
+    const view = layOut(list, 0);
+    const arrived = Array.from({ length: 40 }, (_, i) => makeMsg(`live-${i}`));
+    vi.mocked(loadNewerMessages).mockImplementationOnce(async () => {
+      useStore.setState({
+        messages: { [KEY]: [...past, ...arrived] },
+        historyWindows: {},
+      });
+    });
+
+    fireEvent.wheel(list, { deltaY: 100 });
+    view.scrollTop = list.scrollHeight - 600;
+    await act(async () => {
+      fireEvent.scroll(list);
+    });
+
+    expect(useStore.getState().historyWindows[KEY]).toBeUndefined();
+    expect(view.scrollTop).toBe(past.length * ROW_PX - 600);
+    expect(ref.current?.getScrollState().isAtBottom).toBe(false);
+    expect(
+      screen.getByRole("button", { name: "Scroll to bottom" }),
+    ).toBeTruthy();
+  });
+
+  const longPresent = Array.from({ length: 60 }, (_, i) => makeMsg(`now-${i}`));
+  const showPastOver = (saved: typeof longPresent) =>
+    act(() => {
+      useStore.setState({
+        messages: { [KEY]: past },
+        historyWindows: {
+          [KEY]: {
+            until: past[100].timestamp.getTime(),
+            present: saved,
+            jumpId: 1,
+          },
+        },
+      });
+      useStore.getState().revealMessage("past-50");
+    });
+
+  it("lands a jump into the present on its row when it leaves a window", () => {
+    useStore.setState({ messages: { [KEY]: longPresent } });
+    const ref = createRef<ChannelMessageListHandle>();
+    const { container } = render(<ChannelMessageList {...props} ref={ref} />);
+    showPastOver(longPresent);
+    const list = container.firstElementChild as HTMLElement;
+    const view = layOut(list, 2000);
+
+    act(() => {
+      useStore.setState({
+        messages: { [KEY]: longPresent },
+        historyWindows: {},
+      });
+      useStore.getState().revealMessage("now-10");
+    });
+
+    expect(
+      container.querySelector('[data-message-id="now-10"]')?.classList,
+    ).toContain("jump-highlight");
+    expect(view.scrollTop).toBe(2000);
+    expect(ref.current?.getScrollState().isAtBottom).toBe(false);
+  });
+
+  it("keeps heading for a jumped-to row when its scroll starts at the bottom", () => {
+    useStore.setState({ messages: { [KEY]: longPresent } });
+    const { container } = render(<ChannelMessageList {...props} />);
+    showPastOver(longPresent);
+    const list = container.firstElementChild as HTMLElement;
+    const view = layOut(list, 2000);
+    act(() => {
+      useStore.setState({
+        messages: { [KEY]: longPresent },
+        historyWindows: {},
+      });
+      useStore.getState().revealMessage("now-10");
+    });
+
+    view.scrollTop = list.scrollHeight - 600;
+    const start = view.scrollTop;
+    act(() => {
+      fireEvent.scroll(list);
+    });
+    act(() => {
+      useStore.setState({
+        messages: { [KEY]: [...longPresent, makeMsg("late")] },
+      });
+    });
+
+    expect(view.scrollTop).toBe(start);
+  });
+
+  it("lands a jump into the present that has to grow the list first", () => {
+    const deepPresent = Array.from({ length: 200 }, (_, i) =>
+      makeMsg(`deep-${i}`),
+    );
+    useStore.setState({ messages: { [KEY]: deepPresent } });
+    const ref = createRef<ChannelMessageListHandle>();
+    const { container } = render(<ChannelMessageList {...props} ref={ref} />);
+    showPastOver(deepPresent);
+    const list = container.firstElementChild as HTMLElement;
+    const view = layOut(list, 2000);
+
+    act(() => {
+      useStore.setState({
+        messages: { [KEY]: deepPresent },
+        historyWindows: {},
+      });
+      useStore.getState().revealMessage("deep-10");
+    });
+
+    expect(
+      container.querySelector('[data-message-id="deep-10"]')?.classList,
+    ).toContain("jump-highlight");
+    expect(view.scrollTop).toBe(2000);
+    expect(ref.current?.getScrollState().isAtBottom).toBe(false);
+  });
+
+  it("lets go of a jumped-to row at the bottom once that row has been on screen", () => {
+    useStore.setState({ messages: { [KEY]: longPresent } });
+    const { container } = render(<ChannelMessageList {...props} />);
+    const list = container.firstElementChild as HTMLElement;
+    const { view, restore } = layOutRows(list, 500);
+    act(() => useStore.getState().revealMessage("now-12"));
+
+    view.scrollTop = list.scrollHeight - 600;
+    act(() => {
+      fireEvent.scroll(list);
+    });
+    act(() => {
+      useStore.setState({
+        messages: { [KEY]: [...longPresent, makeMsg("late")] },
+      });
+    });
+    const end = list.scrollHeight;
+    restore();
+
+    expect(view.scrollTop).toBe(end);
+  });
+
+  it("lets go of a jumped-to row at the bottom once its scroll has brought it on screen", () => {
+    useStore.setState({ messages: { [KEY]: longPresent } });
+    const { container } = render(<ChannelMessageList {...props} />);
+    const list = container.firstElementChild as HTMLElement;
+    const { view, restore } = layOutRows(list, 0);
+    view.scrollTop = list.scrollHeight - 600;
+    act(() => useStore.getState().revealMessage("now-12"));
+    const scroll = (top: number) => {
+      view.scrollTop = top;
+      act(() => {
+        fireEvent.scroll(list);
+      });
+    };
+
+    scroll(list.scrollHeight - 600);
+    scroll(500);
+    scroll(list.scrollHeight - 600);
+    act(() => {
+      useStore.setState({
+        messages: { [KEY]: [...longPresent, makeMsg("late")] },
+      });
+    });
+    const end = list.scrollHeight;
+    restore();
+
+    expect(view.scrollTop).toBe(end);
+  });
+
+  const deep = Array.from({ length: 250 }, (_, i) => makeMsg(`deep-${i}`));
+  it.each([
+    ["a row on screen", "deep-210"],
+    ["a row the list has to grow for", "deep-100"],
+  ])(
+    "goes to the newest message and follows again when the reader sends after a jump to %s",
+    (_, target) => {
+      useStore.setState({ messages: { [KEY]: deep } });
+      const ref = createRef<ChannelMessageListHandle>();
+      const { container } = render(<ChannelMessageList {...props} ref={ref} />);
+      const list = container.firstElementChild as HTMLElement;
+      const view = layOut(list, 0);
+      view.scrollTop = list.scrollHeight - 600;
+      act(() => useStore.getState().revealMessage(target));
+      expect(
+        container.querySelector(`[data-message-id="${target}"]`)?.classList,
+      ).toContain("jump-highlight");
+
+      act(() => ref.current?.scrollToBottom());
+      act(() => {
+        useStore.setState({
+          messages: { [KEY]: [...deep, makeMsg("own", { userId: "tester" })] },
+        });
+      });
+      expect(view.scrollTop).toBe(list.scrollHeight);
+      act(() => {
+        useStore.setState((state) => ({
+          messages: { [KEY]: [...state.messages[KEY], makeMsg("reply")] },
+        }));
+      });
+
+      expect(view.scrollTop).toBe(list.scrollHeight);
+      expect(ref.current?.getScrollState().isAtBottom).toBe(true);
+    },
+  );
+
+  it("goes to the newest message when the present returns under a row held in the window", () => {
+    useStore.setState({ messages: { [KEY]: longPresent } });
+    const { container } = render(<ChannelMessageList {...props} />);
+    showPastOver(longPresent);
+    const list = container.firstElementChild as HTMLElement;
+    const view = layOut(list, 2000);
+
+    act(() => {
+      useStore.setState({
+        messages: { [KEY]: longPresent },
+        historyWindows: {},
+      });
+    });
+
+    expect(view.scrollTop).toBe(list.scrollHeight);
+  });
+
+  it("counts the chat as away from the present throughout a join at the window's end", async () => {
+    const { container } = render(<ChannelMessageList {...props} />);
+    showPast();
+    const list = container.firstElementChild as HTMLElement;
+    const view = layOut(list, 0);
+    view.scrollTop = list.scrollHeight - 600;
+    const arrived = Array.from({ length: 40 }, (_, i) => makeMsg(`live-${i}`));
+    vi.mocked(loadNewerMessages).mockImplementationOnce(async () => {
+      useStore.setState({
+        messages: { [KEY]: [...past, ...arrived] },
+        historyWindows: {},
+      });
+    });
+    const seen: (boolean | undefined)[] = [];
+    const stop = useStore.subscribe((state) =>
+      seen.push(state.ui.isChatAwayFromPresent),
+    );
+
+    fireEvent.wheel(list, { deltaY: 100 });
+    await act(async () => {
+      fireEvent.scroll(list);
+    });
+    stop();
+
+    expect(useStore.getState().historyWindows[KEY]).toBeUndefined();
+    expect(seen).not.toContain(false);
+    expect(useStore.getState().ui.isChatAwayFromPresent).toBe(true);
+  });
+
+  it("goes to the newest message from the button and stays there when the newer page answers late", async () => {
+    const whole = [...past, ...present];
+    useStore.setState({ messages: { [KEY]: whole } });
+    const { container, getByRole } = render(<ChannelMessageList {...props} />);
+    act(() => {
+      useStore.setState({
+        messages: { [KEY]: past },
+        historyWindows: {
+          [KEY]: {
+            until: past[100].timestamp.getTime(),
+            present: whole,
+            jumpId: 1,
+          },
+        },
+      });
+    });
+    const list = container.firstElementChild as HTMLElement;
+    const view = layOut(list, 2000);
+    let answer = () => {};
+    vi.mocked(loadNewerMessages).mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          answer = resolve;
+        }),
+    );
+    view.scrollTop = list.scrollHeight - 600;
+    await act(async () => {
+      fireEvent.scroll(list);
+    });
+    expect(loadNewerMessages).toHaveBeenCalledTimes(1);
+    view.scrollTop = 2000;
+
+    fireEvent.click(getByRole("button", { name: "Scroll to bottom" }));
+    const atBottom = list.scrollHeight;
+    expect(view.scrollTop).toBe(atBottom);
+    await act(async () => {
+      answer();
+    });
+
+    expect(useStore.getState().messages[KEY]).toBe(whole);
+    expect(useStore.getState().historyWindows[KEY]).toBeUndefined();
+    expect(loadNewerMessages).toHaveBeenCalledTimes(1);
+    expect(view.scrollTop).toBe(atBottom);
+  });
+
+  it("goes to the newest message from the button when the present starts on the window's first row", () => {
+    useStore.setState({ messages: { [KEY]: [...past, ...present] } });
+    const { container, getByRole } = render(<ChannelMessageList {...props} />);
+    act(() => {
+      useStore.setState((state) => ({
+        messages: { [KEY]: past },
+        historyWindows: {
+          [KEY]: {
+            until: past[100].timestamp.getTime(),
+            present: state.messages[KEY],
+            jumpId: 1,
+          },
+        },
+      }));
+    });
+    const list = container.firstElementChild as HTMLElement;
+    const view = layOut(list, 2000);
+
+    fireEvent.click(getByRole("button", { name: "Scroll to bottom" }));
+
+    expect(view.scrollTop).toBe(list.scrollHeight);
   });
 
   it("shows a toast when the message has no row to scroll to", () => {

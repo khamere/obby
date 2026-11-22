@@ -254,6 +254,15 @@ export const ChannelMessageList = forwardRef<
     const windowJumpId = useStore(
       (state) => state.historyWindows[channelKey]?.jumpId,
     );
+    // Leaving a window for the present shows this very list, while a window
+    // that joins the present builds a new one around the rows on screen.
+    const windowPresent = useStore(
+      (state) => state.historyWindows[channelKey]?.present,
+    );
+    const windowPresentRef = useRef(windowPresent);
+    if (windowPresent) windowPresentRef.current = windowPresent;
+    const shownFirstIdRef = useRef<string | null>(null);
+    const isLoadingNewerRef = useRef(false);
 
     useEffect(() => {
       if (historyTarget) showSavedHistory(useStore, serverId, historyTarget);
@@ -307,7 +316,9 @@ export const ChannelMessageList = forwardRef<
     }, [isActive]);
 
     useImperativeHandle(ref, () => ({
+      // Sending a message or leaving a reply goes to the present, so it ends a hold on a jumped-to row.
       scrollToBottom: () => {
+        releaseJump();
         wasAtBottomRef.current = true;
         scrollToBottom();
       },
@@ -362,6 +373,7 @@ export const ChannelMessageList = forwardRef<
     const {
       isHoldingRef,
       isHoldingRow,
+      isHoldingShownRow,
       isHoldingJump,
       holdRow,
       releaseJump,
@@ -378,6 +390,21 @@ export const ChannelMessageList = forwardRef<
       wasAtBottomRef,
     });
 
+    // The present can reach further back than the window, so we start the
+    // joined list on the row that was first on screen and add rows only below.
+    const joinKeptIndex =
+      wasDetachedRef.current &&
+      !isDetached &&
+      channelMessages !== windowPresentRef.current &&
+      (isLoadingNewerRef.current || isHoldingRef.current)
+        ? channelMessages.findIndex((m) => m.id === shownFirstIdRef.current)
+        : -1;
+    const hasKeptRowsAtJoin = joinKeptIndex >= 0;
+    // A reader who pages down into the present reads on from the rows on screen.
+    const isReadingOnAtJoin = hasKeptRowsAtJoin && isLoadingNewerRef.current;
+    // The DOM still shows the window during this render, so we note where the rows on screen sit.
+    if (isReadingOnAtJoin && messagesContainerRef.current)
+      captureViewAnchor(messagesContainerRef.current);
     // We grow the window during render: grown one commit later, slice(-N)
     // would drop the top rows for a commit and remount them all.
     if (
@@ -404,7 +431,9 @@ export const ChannelMessageList = forwardRef<
         const top = rowTop(anchorId);
         if (top !== null) droppedRowsAnchorRef.current = { id: anchorId, top };
       }
-      if (
+      if (hasKeptRowsAtJoin)
+        setVisibleMessageCount(channelMessages.length - joinKeptIndex);
+      else if (
         isSameList &&
         previous.length > 0 &&
         delta > 0 &&
@@ -549,8 +578,9 @@ export const ChannelMessageList = forwardRef<
       (opening.step === "placing" || opening.step === "loading") &&
       unreadAfter != null;
 
+    // The rows that join below are unread until the scroll position is measured again.
     const isAwayFromPresent =
-      isScrolledUp || isDetached || isPositioningOnUnread;
+      isScrolledUp || isDetached || isPositioningOnUnread || isReadingOnAtJoin;
     // Messages that land while the user watches the bottom are read as they
     // arrive, so they never start a new line. We also clear the line when the
     // user sends a message, since sending means they have read the chat.
@@ -776,6 +806,8 @@ export const ChannelMessageList = forwardRef<
       wasLoadingHistoryRef.current = isLoadingHistory;
     }, [isLoadingHistory]);
 
+    const [isLoadingNewer, setIsLoadingNewer] = useState(false);
+
     const resetWindowTracking = () => {
       prevFilteredLengthRef.current = channelMessages.length;
       prevFirstMsgIdRef.current = channelMessages[0]?.id ?? null;
@@ -794,15 +826,28 @@ export const ChannelMessageList = forwardRef<
       const wasDetached = wasDetachedRef.current;
       wasDetachedRef.current = isDetached;
       if (isDetached || !wasDetached) return;
-      const hasJoinedPresent =
-        channelMessages[0]?.id === prevFirstMsgIdRef.current;
       resetWindowTracking();
-      if (hasJoinedPresent && isHoldingRef.current) return;
+      // A jump on its way to a row, or holding one of the rows shown, owns the scroll position.
+      if (useStore.getState().ui.messageJump || isHoldingShownRow()) return;
+      if (isReadingOnAtJoin) {
+        const container = messagesContainerRef.current;
+        if (!container) return;
+        // The joined list can change the height of the rows above the reader, so we put the rows on screen back in place.
+        droppedRowsAnchorRef.current = null;
+        keepViewAnchor(container);
+        resizeObserverPrevSHRef.current = container.scrollHeight;
+        container.dispatchEvent(new Event("scroll"));
+        return;
+      }
       releaseJump();
       setVisibleMessageCount(DEFAULT_VISIBLE_MESSAGE_COUNT);
       wasAtBottomRef.current = true;
       scrollToBottom();
     }, [isDetached]);
+
+    useLayoutEffect(() => {
+      shownFirstIdRef.current = displayedMessages[0]?.id ?? null;
+    }, [displayedMessages]);
 
     useLayoutEffect(() => {
       const newLength = channelMessages.length;
@@ -943,9 +988,6 @@ export const ChannelMessageList = forwardRef<
         cancelAnimationFrame(frame);
       };
     }, []);
-
-    const [isLoadingNewer, setIsLoadingNewer] = useState(false);
-    const isLoadingNewerRef = useRef(false);
 
     const loadOlder = (): boolean => {
       if (!isActive || isLoadingHistory || isFetchingMoreRef.current)
