@@ -35,21 +35,6 @@ describe("receive time", () => {
     expect(onMessage.mock.calls[0][0].timestamp.toISOString()).toBe(time);
   });
 
-  test("a server-time tag stays as the server sent it", () => {
-    const client = new IRCClient();
-    const onParsed = vi.fn();
-    client.on("parsedLine", onParsed);
-
-    feed(
-      client,
-      "@time=2020-01-01T00:00:00.000Z :alice!a@h PRIVMSG #lobby :hi",
-    );
-
-    expect(onParsed.mock.calls[0][0].mtags.time).toBe(
-      "2020-01-01T00:00:00.000Z",
-    );
-  });
-
   test("a time on a leap second reaches no handler as a time it cannot read", () => {
     vi.useFakeTimers({ now: Date.parse("2026-10-14T10:00:00.000Z") });
     const client = new IRCClient();

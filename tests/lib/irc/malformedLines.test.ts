@@ -49,6 +49,26 @@ describe("malformed server lines", () => {
     expect(onParsed).toHaveBeenCalledTimes(1);
   });
 
+  test("a line whose recording throws leaves the rest of the frame to be handled", () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    const client = new IRCClient();
+    const texts: string[] = [];
+    client.on("CHANMSG", ({ message }) => texts.push(message));
+    client.on("parsedLine", ({ parv }) => {
+      if (parv[1] === "first") throw new Error("recorder failed");
+    });
+
+    feed(
+      client,
+      ":alice!a@h PRIVMSG #lobby :first\r\n:alice!a@h PRIVMSG #lobby :second\r\n",
+    );
+
+    expect(texts).toEqual(["first", "second"]);
+    expect(consoleError).toHaveBeenCalledTimes(1);
+  });
+
   test("a JOIN without a channel is skipped and the next line is handled", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const client = new IRCClient();
