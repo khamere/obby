@@ -6,6 +6,10 @@ function Throws(): React.ReactNode {
   throw new RangeError("Invalid time value");
 }
 
+function ThrowsValue({ make }: { make: () => unknown }): React.ReactNode {
+  throw make();
+}
+
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
@@ -36,6 +40,63 @@ describe("AppErrorBoundary", () => {
     expect(screen.getByRole("button", { name: "Reload" })).toBeTruthy();
     expect(screen.getByTestId("app-error-details").textContent).toContain(
       "RangeError: Invalid time value",
+    );
+  });
+
+  test.each([
+    ["an object that cannot be turned into text", () => Object.create(null)],
+    [
+      "an error whose stack is no text",
+      () => Object.assign(new Error("odd stack"), { stack: { frames: 3 } }),
+    ],
+    [
+      "an error whose stack throws when read",
+      () =>
+        Object.defineProperty(new Error("no stack"), "stack", {
+          get() {
+            throw new Error("stack failed");
+          },
+        }),
+    ],
+    [
+      "an object whose text throws when read",
+      () => ({
+        toString() {
+          throw new Error("text failed");
+        },
+      }),
+    ],
+    ["nothing", () => undefined],
+  ])("a render that throws %s still shows Reload", (_case, thrown) => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const reload = vi.fn();
+    vi.stubGlobal("location", { ...window.location, reload });
+
+    render(
+      <AppErrorBoundary>
+        <ThrowsValue make={thrown} />
+      </AppErrorBoundary>,
+    );
+
+    expect(screen.getByRole("alert")).toBeTruthy();
+    expect(screen.getByTestId("app-error-details")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Reload" }));
+    expect(reload).toHaveBeenCalledTimes(1);
+  });
+
+  test("an error whose stack is no text still shows its message", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    render(
+      <AppErrorBoundary>
+        <ThrowsValue
+          make={() => Object.assign(new Error("odd stack"), { stack: 42 })}
+        />
+      </AppErrorBoundary>,
+    );
+
+    expect(screen.getByTestId("app-error-details").textContent).toContain(
+      "Error: odd stack",
     );
   });
 

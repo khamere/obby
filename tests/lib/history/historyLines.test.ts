@@ -77,7 +77,7 @@ describe("normalizeLine", () => {
       "@batch=b1;label=l1;msgid=a\\sb;+x=a\\:b\\\\c;time=" +
       T1 +
       " :n!u@h PRIVMSG #c :hi";
-    expect(normalizeLine(line, NOW)).toBe(
+    expect(normalizeLine(line, T1_MS)).toBe(
       `@msgid=a\\sb;+x=a\\:b\\\\c;time=${T1} :n!u@h PRIVMSG #c :hi`,
     );
   });
@@ -101,7 +101,7 @@ describe("normalizeLine", () => {
   });
 
   it("keeps an existing time", () => {
-    expect(normalizeLine(`@time=${T1} :n PRIVMSG #c :hi`, NOW)).toBe(
+    expect(normalizeLine(`@time=${T1} :n PRIVMSG #c :hi`, T1_MS)).toBe(
       `@time=${T1} :n PRIVMSG #c :hi`,
     );
   });
@@ -119,6 +119,12 @@ describe("normalizeLine", () => {
     expect(normalizeLine("@time;msgid=m :n PRIVMSG #c :hi", NOW)).toBe(
       `@msgid=m;time=${NOW_ISO} :n PRIVMSG #c :hi`,
     );
+  });
+
+  it("leaves one time, the one the row is filed under, when a line carries two", () => {
+    expect(
+      normalizeLine(`@time=${T1};msgid=m;time=nonsense :n PRIVMSG #c :hi`, NOW),
+    ).toBe(`@msgid=m;time=${NOW_ISO} :n PRIVMSG #c :hi`);
   });
 
   it("does not treat tags that merely start with batch or label as dropped", () => {
@@ -172,10 +178,11 @@ describe("buildReplayLines", () => {
     const lines = buildReplayLines(
       "#c",
       [
-        { raw: "@msgid=a;time=t :n PRIVMSG #c :one" },
+        { time: T1_MS, raw: `@msgid=a;time=${T1} :n PRIVMSG #c :one` },
         {
+          time: T1_MS,
           raw: [
-            "@msgid=b;time=t :n BATCH +ml draft/multiline #c",
+            `@msgid=b;time=${T1} :n BATCH +ml draft/multiline #c`,
             "@batch=ml :n PRIVMSG #c :x",
             "@batch=ml;draft/multiline-concat :n PRIVMSG #c :y",
             ":n BATCH -ml",
@@ -186,8 +193,8 @@ describe("buildReplayLines", () => {
     );
     expect(lines).toEqual([
       "BATCH +obby-local-2 chathistory #c",
-      "@batch=obby-local-2;obby-local=1;msgid=a;time=t :n PRIVMSG #c :one",
-      "@batch=obby-local-2;obby-local=1;msgid=b;time=t :n BATCH +ml draft/multiline #c",
+      `@batch=obby-local-2;obby-local=1;msgid=a;time=${T1} :n PRIVMSG #c :one`,
+      `@batch=obby-local-2;obby-local=1;msgid=b;time=${T1} :n BATCH +ml draft/multiline #c`,
       "@batch=ml :n PRIVMSG #c :x",
       "@batch=ml;draft/multiline-concat :n PRIVMSG #c :y",
       ":n BATCH -ml",
@@ -198,10 +205,26 @@ describe("buildReplayLines", () => {
   it("produces first lines that isLocalReplay recognises", () => {
     const [, first] = buildReplayLines(
       "#c",
-      [{ raw: "@time=t PING" }],
+      [{ time: T1_MS, raw: `@time=${T1} PING` }],
       "obby-local-3",
     );
     expect(isLocalReplay(parse(first).mtags)).toBe(true);
+  });
+
+  it.each([
+    ["a time that is no date", "@msgid=a;time=9999-99-99T99:99:99.999Z"],
+    ["no time", "@msgid=a"],
+    ["two times", `@time=${T1};msgid=a;time=nonsense`],
+    ["another time than the row", `@msgid=a;time=${T1}`],
+  ])("gives a saved line with %s the time of its row", (_case, tags) => {
+    const [, first] = buildReplayLines(
+      "#c",
+      [{ time: NOW, raw: `${tags} :n PRIVMSG #c :one` }],
+      "obby-local-4",
+    );
+    expect(first).toBe(
+      `@batch=obby-local-4;obby-local=1;msgid=a;time=${NOW_ISO} :n PRIVMSG #c :one`,
+    );
   });
 });
 
@@ -687,6 +710,7 @@ describe("local replay batches", () => {
       "#c",
       [
         {
+          time: T1_MS,
           raw: [
             `@msgid=M1;time=${T1} :a!u@h BATCH +ml draft/multiline #c`,
             "@batch=ml :a!u@h PRIVMSG #c :one",
@@ -707,7 +731,7 @@ describe("local replay batches", () => {
     const { feedAll } = setup();
     const lines = buildReplayLines(
       "#c",
-      [{ raw: `@msgid=m1;time=${T1} :a!u@h PRIVMSG #c :hi` }],
+      [{ time: T1_MS, raw: `@msgid=m1;time=${T1} :a!u@h PRIVMSG #c :hi` }],
       `${LOCAL_BATCH_PREFIX}1`,
     );
     expect(feedAll(lines)).toEqual([]);
@@ -717,7 +741,7 @@ describe("local replay batches", () => {
     const { feedAll } = setup();
     const lines = buildReplayLines(
       "#c",
-      [{ raw: `@msgid=m1;time=${T1} :a!u@h PRIVMSG #c :hi` }],
+      [{ time: T1_MS, raw: `@msgid=m1;time=${T1} :a!u@h PRIVMSG #c :hi` }],
       `${LOCAL_BATCH_PREFIX}1`,
     );
     const actions = feedAll(lines);
@@ -1213,15 +1237,21 @@ describe("own lines", () => {
     const lines = buildReplayLines(
       "alice",
       [
-        { raw: "@msgid=m1;time=t;obby-own=1 :oldnick!u@h PRIVMSG alice :mine" },
-        { raw: "@msgid=m2;time=t :alice!u@h PRIVMSG oldnick :theirs" },
+        {
+          time: T1_MS,
+          raw: `@msgid=m1;time=${T1};obby-own=1 :oldnick!u@h PRIVMSG alice :mine`,
+        },
+        {
+          time: T1_MS,
+          raw: `@msgid=m2;time=${T1} :alice!u@h PRIVMSG oldnick :theirs`,
+        },
       ],
       "obby-local-1",
       "newnick!newnick@local",
     );
     expect(lines.slice(1, 3)).toEqual([
-      "@batch=obby-local-1;obby-local=1;msgid=m1;time=t;obby-own=1 :newnick!newnick@local PRIVMSG alice :mine",
-      "@batch=obby-local-1;obby-local=1;msgid=m2;time=t :alice!u@h PRIVMSG oldnick :theirs",
+      `@batch=obby-local-1;obby-local=1;msgid=m1;time=${T1};obby-own=1 :newnick!newnick@local PRIVMSG alice :mine`,
+      `@batch=obby-local-1;obby-local=1;msgid=m2;time=${T1} :alice!u@h PRIVMSG oldnick :theirs`,
     ]);
   });
 });
@@ -1242,6 +1272,79 @@ describe("page size", () => {
     expect(action.page).toMatchObject({ size: 50, oldest: T1_MS });
     expect(action.page.newest).toBe(T1_MS + 49_000);
     expect(action.page.msgids).toHaveLength(50);
+  });
+});
+
+describe("page edges", () => {
+  const stamped = (line: string): ParsedLine => {
+    const parsed = parse(line);
+    return {
+      ...parsed,
+      mtags: { ...parsed.mtags, time: NOW_ISO },
+      hasReceiveTime: true,
+    };
+  };
+  const pageOf = (lines: ParsedLine[]) => {
+    const { recorder } = setup({ hasChathistory: () => true });
+    const [action] = lines.flatMap((line) => recorder.feed(line));
+    if (action.type !== "history-batch")
+      throw new Error("expected history-batch");
+    return action;
+  };
+
+  it.each([
+    ["a time that is no date", "@batch=h;msgid=m2;time=nonsense"],
+    ["no time", "@batch=h;msgid=m2"],
+  ])(
+    "leaves a line with %s out of the edges and keeps it in the page",
+    (_case, tags) => {
+      const action = pageOf([
+        parse("BATCH +h chathistory #c"),
+        parse(`@batch=h;msgid=m1;time=${T1} :a!u@h PRIVMSG #c :old`),
+        stamped(`${tags} :a!u@h PRIVMSG #c :when`),
+        parse("BATCH -h"),
+      ]);
+
+      expect(action.page).toEqual({
+        size: 2,
+        oldest: T1_MS,
+        newest: T1_MS,
+        msgids: ["m1", "m2"],
+      });
+      expect(action.rows).toEqual([
+        expect.not.objectContaining({ hasReceiveTime: true }),
+        expect.objectContaining({
+          msgid: "m2",
+          time: NOW,
+          hasReceiveTime: true,
+          raw: `@msgid=m2;time=${NOW_ISO} :a!u@h PRIVMSG #c :when`,
+        }),
+      ]);
+    },
+  );
+
+  it("leaves a multiline message we timed ourselves out of the edges", () => {
+    const action = pageOf([
+      parse("BATCH +h chathistory #c"),
+      stamped("@batch=h;msgid=m1 :a!u@h BATCH +ml draft/multiline #c"),
+      parse("@batch=ml :a!u@h PRIVMSG #c :one"),
+      parse(":a!u@h BATCH -ml"),
+      parse("BATCH -h"),
+    ]);
+
+    expect(action.page).toMatchObject({ oldest: undefined, newest: undefined });
+    expect(action.rows).toEqual([
+      expect.objectContaining({ time: NOW, hasReceiveTime: true }),
+    ]);
+  });
+
+  it("files a live line we timed ourselves like any other row", () => {
+    const { recorder } = setup();
+    const rows = onlyRows(
+      recorder.feed(stamped("@msgid=m1 :a!u@h PRIVMSG #c :now")),
+    );
+
+    expect(rows[0]).not.toHaveProperty("hasReceiveTime");
   });
 });
 

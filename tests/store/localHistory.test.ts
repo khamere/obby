@@ -421,6 +421,79 @@ describe("local history with a chathistory server", () => {
       expect(await w.db.refRowsFor(SERVER, ["m3"])).toEqual([]);
     });
 
+    const UNRELATED = ["m1", "m2", "m3", "m4", "m5"];
+    const seedUnrelated = async () => {
+      w.feed(
+        ...UNRELATED.map((msgid, index) =>
+          privmsg(msgid, index + 1, `saved ${msgid}`),
+        ),
+        reactionTag("r1", 6, "+draft/react", "👍", "m3"),
+      );
+      await vi.waitFor(async () => expect(await w.stored()).toHaveLength(5));
+    };
+    const olderPageWith = async (unplacedLine: string) => {
+      w.ircClient.sendRaw(
+        SERVER,
+        `CHATHISTORY BEFORE #chan timestamp=${at(-50)} 50`,
+      );
+      w.feed(
+        ...inBatch("h1", "#chan", [privmsg("o1", -100, "old"), unplacedLine]),
+      );
+      await vi.waitFor(async () =>
+        expect((await w.stored()).map((row) => row.msgid)).toContain("u1"),
+      );
+      await w.drain();
+    };
+
+    it.each([
+      [
+        "a time that is no date",
+        "@msgid=u1;time=9999-99-99T99:99:99.999Z :alice!u@h PRIVMSG #chan :when",
+      ],
+      ["no time", "@msgid=u1 :alice!u@h PRIVMSG #chan :when"],
+    ])(
+      "keeps the saved messages after an older page that holds a line with %s",
+      async (_case, unplacedLine) => {
+        await seedUnrelated();
+
+        await olderPageWith(unplacedLine);
+
+        expect((await w.stored()).map((row) => row.msgid)).toEqual([
+          "o1",
+          ...UNRELATED,
+          "u1",
+        ]);
+        expect(await w.db.refRowsFor(SERVER, ["m3"])).toHaveLength(1);
+        expect(await w.db.gapsFor(SERVER, "#chan")).toEqual([]);
+      },
+    );
+
+    it("keeps a line saved at the time we received it when a later page spans that time", async () => {
+      await olderPageWith("@msgid=u1 :alice!u@h PRIVMSG #chan :when");
+      const now = Date.now();
+      const around = (msgid: string, offsetMs: number) =>
+        `@msgid=${msgid};time=${new Date(now + offsetMs).toISOString()} :alice!u@h PRIVMSG #chan :${msgid}`;
+
+      w.ircClient.sendRaw(SERVER, "CHATHISTORY LATEST #chan * 50");
+      w.feed(
+        ...inBatch("h2", "#chan", [
+          around("n1", -60_000),
+          around("n2", 60_000),
+        ]),
+      );
+      await vi.waitFor(async () =>
+        expect((await w.stored()).map((row) => row.msgid)).toContain("n2"),
+      );
+      await w.drain();
+
+      expect((await w.stored()).map((row) => row.msgid)).toEqual([
+        "o1",
+        "n1",
+        "u1",
+        "n2",
+      ]);
+    });
+
     it("finishes saving a page while the trim it started is still running", async () => {
       const trim = vi
         .spyOn(w.db, "pruneToLimit")

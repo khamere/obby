@@ -70,6 +70,76 @@ describe("receive time", () => {
     );
   });
 
+  test("a line says whether its time is the server's or ours", () => {
+    const client = new IRCClient();
+    const onParsed = vi.fn();
+    client.on("parsedLine", onParsed);
+
+    feed(client, "@time=2020-01-01T00:00:00.000Z :alice!a@h PRIVMSG #lobby :1");
+    feed(client, "@time=9999-99-99T99:99:99.999Z :alice!a@h PRIVMSG #lobby :2");
+    feed(client, ":alice!a@h PRIVMSG #lobby :3");
+
+    expect(
+      onParsed.mock.calls.map(([parsed]) => parsed.hasReceiveTime),
+    ).toEqual([false, true, true]);
+  });
+
+  test("a row saved with a server-time tag that is no date replays at the time of its row on every replay", () => {
+    vi.useFakeTimers({ now: Date.parse("2026-10-14T10:00:00.000Z") });
+    const client = new IRCClient();
+    const onMessage = vi.fn();
+    client.on("CHANMSG", onMessage);
+    const legacyRow = {
+      time: Date.parse("2026-09-01T08:30:00.000Z"),
+      raw: "@time=9999-99-99T99:99:99.999Z;msgid=m1 :alice!a@h PRIVMSG #lobby :hi",
+    };
+
+    for (const batchId of ["obby-local-1", "obby-local-2"]) {
+      vi.advanceTimersByTime(60_000);
+      for (const line of buildReplayLines("#lobby", [legacyRow], batchId))
+        feed(client, line);
+    }
+
+    expect(
+      onMessage.mock.calls.map(([message]) => message.timestamp.toISOString()),
+    ).toEqual(["2026-09-01T08:30:00.000Z", "2026-09-01T08:30:00.000Z"]);
+  });
+
+  test("a line with two server-time tags shows and replays at one time", () => {
+    vi.useFakeTimers({ now: Date.parse("2026-10-14T10:00:00.000Z") });
+    const recorder = new HistoryRecorder("srv", {
+      ownNick: () => "me",
+      isOpenConversation: () => true,
+      hasChathistory: () => false,
+      chantypes: () => "#",
+      isEncryptedPm: () => false,
+      now: () => Date.now(),
+    });
+    const client = new IRCClient();
+    const saved: { raw: string; time: number }[] = [];
+    const onMessage = vi.fn();
+    client.on("CHANMSG", onMessage);
+    client.on("parsedLine", (parsed) => {
+      for (const action of recorder.feed(parsed))
+        if (action.type === "rows") saved.push(...action.rows);
+    });
+
+    feed(
+      client,
+      "@time=2020-01-01T00:00:00.000Z;msgid=m1;time=nonsense :alice!a@h PRIVMSG #lobby :hi",
+    );
+    vi.advanceTimersByTime(60_000);
+    for (const line of buildReplayLines("#lobby", saved, "obby-local-1"))
+      feed(client, line);
+
+    expect(saved.map((row) => new Date(row.time).toISOString())).toEqual([
+      "2026-10-14T10:00:00.000Z",
+    ]);
+    expect(
+      onMessage.mock.calls.map(([message]) => message.timestamp.toISOString()),
+    ).toEqual(["2026-10-14T10:00:00.000Z", "2026-10-14T10:00:00.000Z"]);
+  });
+
   test("a saved line whose server-time tag is no date replays with the time it arrived", () => {
     vi.useFakeTimers({ now: Date.parse("2026-10-14T10:00:00.000Z") });
     const recorder = new HistoryRecorder("srv", {
@@ -81,7 +151,7 @@ describe("receive time", () => {
       now: () => Date.now(),
     });
     const client = new IRCClient();
-    const saved: { raw: string }[] = [];
+    const saved: { raw: string; time: number }[] = [];
     const replayed = vi.fn();
     client.on("parsedLine", (parsed) => {
       if (parsed.command === "PRIVMSG") replayed(parsed.mtags?.time);

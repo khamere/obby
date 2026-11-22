@@ -144,6 +144,9 @@ export function handlePart(
   });
 }
 
+// Whitespace and the characters that split a mask or a list of targets are in no server's nicks.
+const isNick = (name: string) => !/[\s,*?!@]/.test(name);
+
 export function handleKick(
   ctx: IRCClientContext,
   serverId: string,
@@ -154,8 +157,8 @@ export function handleKick(
   const username = getNickFromNuh(source);
   const channelName = parv[0];
   const target = parv[1];
-  // A kick that names no channel or nobody removes no one.
-  if (!channelName || !target) return;
+  // A kick that names no channel or nobody removes no one, and a reason standing where the nick belongs names nobody.
+  if (!channelName || !target || !isNick(target)) return;
   parv[0] = "";
   parv[1] = "";
   const reasonText = parv.join(" ").trim();

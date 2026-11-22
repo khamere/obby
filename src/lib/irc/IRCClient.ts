@@ -657,6 +657,8 @@ export interface ParsedLine {
   source: string;
   parv: string[];
   mtags: Record<string, string> | undefined;
+  // The time tag holds the time we received the line at, since the server sent none we could read.
+  hasReceiveTime?: boolean;
 }
 
 type EventKey = keyof EventMap;
@@ -2320,6 +2322,7 @@ export class IRCClient implements IRCClientContext {
           source,
           parv,
           mtags,
+          hasReceiveTime: !hasServerTime,
         });
       } catch (error) {
         console.error(`Failed to record ${command} line:`, error);

@@ -71,6 +71,32 @@ describe("malformed server lines", () => {
     expect(onKick).not.toHaveBeenCalled();
   });
 
+  test("a KICK whose reason stands where the nick belongs is dropped", () => {
+    const client = new IRCClient();
+    const onKick = vi.fn();
+    client.on("KICK", onKick);
+
+    feed(client, ":op!o@h KICK #lobby :too loud in here\r\n");
+    feed(client, ":op!o@h KICK #lobby :bob!b@h\r\n");
+    feed(client, ":op!o@h KICK #lobby :bob,carol\r\n");
+
+    expect(onKick).not.toHaveBeenCalled();
+  });
+
+  test("a KICK of a nick with unusual characters is passed on", () => {
+    const client = new IRCClient();
+    const onKick = vi.fn();
+    client.on("KICK", onKick);
+
+    feed(client, ":op!o@h KICK #lobby :[bob]`^{x}|\\-_/bridge\r\n");
+    feed(client, ":op!o@h KICK #lobby Ünï_çødé :bye\r\n");
+
+    expect(onKick.mock.calls.map(([kick]) => kick.target)).toEqual([
+      "[bob]`^{x}|\\-_/bridge",
+      "Ünï_çødé",
+    ]);
+  });
+
   test("a KICK with a target and a reason is passed on", () => {
     const client = new IRCClient();
     const onKick = vi.fn();

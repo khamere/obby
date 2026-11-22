@@ -6,12 +6,24 @@ import { Button } from "../lib/modal/components/Button";
 
 type CopyStatus = "idle" | "copied" | "failed";
 
-function describeError(error: unknown, componentStack?: string | null) {
-  const summary = String(error);
-  const stack = error instanceof Error ? (error.stack ?? "") : "";
+// A thrown value can be anything, and one that cannot be turned into text throws again when we try.
+function textOf(read: () => unknown): string {
+  try {
+    const value = read();
+    return typeof value === "string" ? value : "";
+  } catch {
+    return "";
+  }
+}
+
+function describeError(error: unknown, componentStack?: unknown) {
+  const summary =
+    textOf(() => String(error)) ||
+    textOf(() => Object.prototype.toString.call(error));
+  const stack = textOf(() => (error as { stack?: unknown } | null)?.stack);
   // Some engines start the stack with the summary line and others leave it out.
   const trace = stack.includes(summary) ? stack : `${summary}\n${stack}`;
-  return `${trace.trim()}${componentStack ?? ""}`;
+  return `${trace.trim()}${textOf(() => componentStack)}`;
 }
 
 const AppCrashScreen: React.FC<{ details: string }> = ({ details }) => {
@@ -81,12 +93,12 @@ const AppCrashScreen: React.FC<{ details: string }> = ({ details }) => {
 // We reload only when asked, since an error that comes back on every start would otherwise reload forever.
 export class AppErrorBoundary extends Component<
   { children: ReactNode },
-  { details: string | null }
+  { hasFailed: boolean; details: string }
 > {
-  state: { details: string | null } = { details: null };
+  state = { hasFailed: false, details: "" };
 
   static getDerivedStateFromError(error: unknown) {
-    return { details: describeError(error) };
+    return { hasFailed: true, details: describeError(error) };
   }
 
   componentDidCatch(error: unknown, info: { componentStack?: string | null }) {
@@ -94,10 +106,10 @@ export class AppErrorBoundary extends Component<
   }
 
   render() {
-    return this.state.details === null ? (
-      this.props.children
-    ) : (
+    return this.state.hasFailed ? (
       <AppCrashScreen details={this.state.details} />
+    ) : (
+      this.props.children
     );
   }
 }
