@@ -1,42 +1,56 @@
-const NAMED_ENTITIES: Record<string, string> = {
-  lt: "<",
-  gt: ">",
-  amp: "&",
-  quot: '"',
-  apos: "'",
-  nbsp: "\u00a0",
-  middot: "\u00b7",
-  bull: "\u2022",
-  ndash: "\u2013",
-  mdash: "\u2014",
-  hellip: "\u2026",
-  lsquo: "\u2018",
-  rsquo: "\u2019",
-  ldquo: "\u201c",
-  rdquo: "\u201d",
-  laquo: "\u00ab",
-  raquo: "\u00bb",
-  copy: "\u00a9",
-  reg: "\u00ae",
-  trade: "\u2122",
-  times: "\u00d7",
-  deg: "\u00b0",
-  euro: "\u20ac",
-  pound: "\u00a3",
-};
+// A map has no inherited names, so "&constructor;" finds nothing in it.
+const NAMED_ENTITIES = new Map<string, string>(
+  Object.entries({
+    lt: "<",
+    gt: ">",
+    amp: "&",
+    quot: '"',
+    apos: "'",
+    nbsp: "\u00a0",
+    middot: "\u00b7",
+    bull: "\u2022",
+    ndash: "\u2013",
+    mdash: "\u2014",
+    hellip: "\u2026",
+    lsquo: "\u2018",
+    rsquo: "\u2019",
+    ldquo: "\u201c",
+    rdquo: "\u201d",
+    laquo: "\u00ab",
+    raquo: "\u00bb",
+    copy: "\u00a9",
+    reg: "\u00ae",
+    trade: "\u2122",
+    times: "\u00d7",
+    deg: "\u00b0",
+    euro: "\u20ac",
+    pound: "\u00a3",
+  }),
+);
 
 // We decode in one pass so "&amp;quot;" stays the literal text "&quot;".
 export function decodeHtmlEntities(text: string): string {
   return text.replace(
     /&(?:#(\d+)|#x([0-9a-f]+)|([a-z]+));/gi,
     (entity, decimal?: string, hex?: string, name?: string) => {
-      if (name) return NAMED_ENTITIES[name.toLowerCase()] ?? entity;
+      if (name) {
+        const key = name.toLowerCase();
+        return NAMED_ENTITIES.get(key) ?? entity;
+      }
       const codePoint = decimal
         ? Number.parseInt(decimal, 10)
         : Number.parseInt(hex ?? "", 16);
       return codePoint <= 0x10ffff ? String.fromCodePoint(codePoint) : entity;
     },
   );
+}
+
+// We let the browser's own parser decode, so every reference reads as it
+// does in a page, and we escape "<" first so the parser only ever sees text.
+export function decodeCharacterReferences(text: string): string {
+  const holder = document.createElement("textarea");
+  holder.innerHTML = text.replace(/</g, "&lt;");
+  return holder.value;
 }
 
 const ESCAPES: Record<string, string> = {

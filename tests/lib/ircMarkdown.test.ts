@@ -194,7 +194,8 @@ describe("markdown XSS safety", () => {
   it("strips attribute injection from code fence language tag", () => {
     const out = html(renderMarkdown('```js" onload="alert(1)\ncode\n```'));
     expect(out).not.toMatch(/onload=/);
-    expect(out).toContain("language-js");
+    expect(out).not.toContain("language-");
+    expect(out).toContain('<div class="code-block-header">js"<button');
   });
 
   it("copy buttons survive DOMPurify sanitization", () => {
