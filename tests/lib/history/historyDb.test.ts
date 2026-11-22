@@ -127,6 +127,26 @@ describe("refRowsFor", () => {
   });
 });
 
+describe("hasRowForEach", () => {
+  beforeEach(async () => {
+    await db.appendRows([
+      row({ key: "a", msgid: "a" }),
+      row({ key: "b", msgid: "b" }),
+      row({ key: "c", msgid: "c", target: "#other" }),
+    ]);
+  });
+
+  it("is true when every message has a row under one of its msgids", async () => {
+    expect(await db.hasRowForEach("s1", "#a", [["a"], ["x", "b"]])).toBe(true);
+    expect(await db.hasRowForEach("s1", "#a", [])).toBe(true);
+  });
+
+  it("is false when a message has no row in this chat", async () => {
+    expect(await db.hasRowForEach("s1", "#a", [["a"], ["c"]])).toBe(false);
+    expect(await db.hasRowForEach("s1", "#a", [["a"], []])).toBe(false);
+  });
+});
+
 describe("deleteMessage", () => {
   it("removes the message and its reactions and lowers bytes", async () => {
     await db.appendRows([

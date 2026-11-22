@@ -670,9 +670,14 @@ describe("IRCClient", () => {
         ]);
       });
 
-      // A relayed line to #a carries 381 bytes at most by our count, and the
-      // server decides about a link past that, which we send as it is.
+      // A relayed line to #a carries 381 bytes at most by our count.
+      const lineBytes = 381;
       const longLink = `https://files.example/${"a".repeat(373)}.png`;
+      const utf8 = new TextEncoder();
+      const payload = (line: string) => line.slice(line.indexOf(" :") + 2);
+      const payloadBytes = (line: string) => utf8.encode(payload(line)).length;
+      const privmsgs = (sent: string[]) =>
+        sent.filter((line) => line.includes("PRIVMSG #a :"));
 
       test("sends a caption and its link as the one line they fit", () => {
         const sent = sentBy(() =>
@@ -682,15 +687,31 @@ describe("IRCClient", () => {
         expect(sent).toEqual(["PRIVMSG #a :photo https://files.example/a.png"]);
       });
 
-      test("keeps a long link whole on a server without batches", () => {
+      test("keeps a link that fits a line whole on a server without batches", () => {
+        const link = `https://files.example/${"a".repeat(340)}.png`;
+
+        const sent = sentBy(() =>
+          client.sendText(server.id, "#a", `a caption for the photo ${link}`),
+        );
+
+        expect(sent).toEqual([
+          "PRIVMSG #a :a caption for the photo",
+          `PRIVMSG #a :${link}`,
+        ]);
+      });
+
+      test("cuts a link wider than a line on a server without batches", () => {
         const sent = sentBy(() =>
           client.sendText(server.id, "#a", `photo ${longLink}`),
         );
 
-        expect(sent).toEqual(["PRIVMSG #a :photo", `PRIVMSG #a :${longLink}`]);
+        expect(sent[0]).toBe("PRIVMSG #a :photo");
+        expect(sent.slice(1).map(payload).join("")).toBe(longLink);
+        for (const line of sent)
+          expect(payloadBytes(line)).toBeLessThanOrEqual(lineBytes);
       });
 
-      test("keeps a long link whole inside a batch", () => {
+      test("joins a link wider than a line back together inside a batch", () => {
         server.capabilities = ["draft/multiline"];
 
         const sent = sentBy(() =>
@@ -698,11 +719,114 @@ describe("IRCClient", () => {
         );
 
         const batch = /BATCH \+(\S+) /.exec(sent[0])?.[1];
-        expect(sent.slice(1, -1)).toEqual([
-          `@batch=${batch} PRIVMSG #a :see`,
-          `@batch=${batch} PRIVMSG #a :photo `,
-          `@batch=${batch};draft/multiline-concat PRIVMSG #a :${longLink}`,
-        ]);
+        const inner = sent.slice(1, -1);
+        expect(inner[0]).toBe(`@batch=${batch} PRIVMSG #a :see`);
+        expect(inner[1]).toBe(`@batch=${batch} PRIVMSG #a :photo `);
+        for (const line of inner.slice(2))
+          expect(
+            line.startsWith(`@batch=${batch};draft/multiline-concat `),
+          ).toBe(true);
+        expect(inner.slice(1).map(payload).join("")).toContain(longLink);
+        expect(inner.slice(1).map(payload).join("")).toBe(`photo ${longLink}`);
+        for (const line of inner)
+          expect(payloadBytes(line)).toBeLessThanOrEqual(lineBytes);
+      });
+
+      describe("on a server whose batch holds fewer bytes than a line", () => {
+        const cyrillic = "д".repeat(200);
+
+        beforeEach(() => {
+          server.capabilities = ["draft/multiline"];
+          server.capabilityValues = {
+            "draft/multiline": "max-bytes=256,max-lines=10",
+          };
+        });
+
+        test("sends a line no batch can hold as separate messages", () => {
+          const sent = sentBy(() =>
+            client.sendMultiline(server.id, "#a", [cyrillic], "@+reply=m1 "),
+          );
+
+          expect(sent.some((line) => line.includes("BATCH"))).toBe(false);
+          expect(sent.length).toBeGreaterThan(1);
+          expect(sent.map(payload).join("")).toBe(cyrillic);
+          for (const line of sent) {
+            expect(line.startsWith("@+reply=m1 PRIVMSG #a :")).toBe(true);
+            expect(payloadBytes(line)).toBeLessThanOrEqual(lineBytes);
+          }
+        });
+
+        test("keeps the lines around it in their batches and in order", () => {
+          const sent = sentBy(() =>
+            client.sendText(
+              server.id,
+              "#a",
+              `before\n${cyrillic}\nafter\nlast`,
+            ),
+          );
+
+          expect(
+            privmsgs(sent).map(payload).join("\n").replace(/д\nд/g, "дд"),
+          ).toBe(`before\n${cyrillic}\nafter\nlast`);
+          expect(sent[0]).toMatch(/^BATCH \+\S+ draft\/multiline #a$/);
+          expect(sent[1]).toMatch(/^@batch=\S+ PRIVMSG #a :before$/);
+          expect(sent[2]).toMatch(/^BATCH -/);
+          expect(sent[3].startsWith("PRIVMSG #a :д")).toBe(true);
+          expect(sent.at(-3)).toMatch(/^@batch=\S+ PRIVMSG #a :after$/);
+          expect(sent.at(-2)).toMatch(/^@batch=\S+ PRIVMSG #a :last$/);
+        });
+
+        test("cuts a link wider than a line in a line no batch can hold", () => {
+          const sent = sentBy(() =>
+            client.sendText(server.id, "#a", `see\nphoto ${longLink} done`),
+          );
+
+          const plain = sent.filter((line) => line.startsWith("PRIVMSG #a :"));
+          expect(plain[0]).toBe("PRIVMSG #a :photo");
+          expect(plain.slice(1).map(payload).join("").replace(/ /g, "")).toBe(
+            `${longLink}done`,
+          );
+          for (const line of plain)
+            expect(payloadBytes(line)).toBeLessThanOrEqual(lineBytes);
+        });
+
+        test("puts no more bytes in any batch than the server allows", () => {
+          const lines = Array.from({ length: 8 }, (_, i) =>
+            `${i} ${"слово ".repeat(15)}`.trim(),
+          );
+
+          const sent = sentBy(() =>
+            client.sendMultiline(server.id, "#a", lines),
+          );
+
+          let batchBytes = 0;
+          for (const line of sent) {
+            if (line.startsWith("BATCH +")) batchBytes = 0;
+            else if (line.startsWith("@batch=")) {
+              // The server counts the break before every line of a batch but its first and its concat parts.
+              const opensLine = !line.includes(";draft/multiline-concat ");
+              batchBytes += opensLine && batchBytes > 0 ? 1 : 0;
+              batchBytes += payloadBytes(line);
+              expect(batchBytes).toBeLessThanOrEqual(256);
+            }
+          }
+          expect(privmsgs(sent).map(payload)).toEqual(lines);
+        });
+      });
+
+      test("sends a line with more parts than a batch has lines as separate messages", () => {
+        server.capabilities = ["draft/multiline"];
+        server.capabilityValues = { "draft/multiline": "max-lines=2" };
+        const text = "слово ".repeat(200).trim();
+
+        const sent = sentBy(() =>
+          client.sendMultiline(server.id, "#a", [text]),
+        );
+
+        expect(sent.some((line) => line.includes("BATCH"))).toBe(false);
+        expect(sent.map(payload).join(" ")).toBe(text);
+        for (const line of sent)
+          expect(payloadBytes(line)).toBeLessThanOrEqual(lineBytes);
       });
 
       test("keeps a single line as one tagged message", () => {

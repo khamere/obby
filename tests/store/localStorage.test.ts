@@ -154,25 +154,85 @@ describe("servers.load", () => {
 });
 
 describe("mentionLog.load", () => {
+  const entry = {
+    messageId: "m1",
+    msgid: "abc",
+    serverId: "s1",
+    channelId: "c1",
+    channelName: "#dev",
+    sender: "bob",
+    content: "me: hi",
+    timestamp: "2026-01-01T00:00:00.000Z",
+    seen: false,
+  };
+
+  function mockStored(value: unknown): void {
+    vi.mocked(window.localStorage.getItem).mockReturnValue(
+      JSON.stringify(value),
+    );
+  }
+
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  test("keeps well-formed entries, with or without a msgid", () => {
+    const { msgid: _msgid, ...withoutMsgid } = entry;
+    mockStored([entry, withoutMsgid]);
+    expect(mentionLog.load()).toEqual([entry, withoutMsgid]);
+  });
+
+  test.each([
+    "messageId",
+    "serverId",
+    "channelId",
+    "channelName",
+    "sender",
+    "content",
+    "timestamp",
+  ] as const)("drops an entry saved without its %s", (field) => {
+    const { [field]: _dropped, ...broken } = entry;
+    mockStored([broken, entry]);
+    expect(mentionLog.load()).toEqual([entry]);
+  });
+
+  test("drops entries that are not mention records", () => {
+    mockStored([null, "text", 7, [], { ...entry, channelName: 5 }, entry]);
+    expect(mentionLog.load()).toEqual([entry]);
+  });
+
+  test.each([
+    ["an empty timestamp", { timestamp: "" }],
+    ["a timestamp that is not a date", { timestamp: "yesterday" }],
+    ["a seen flag saved as text", { seen: "false" }],
+    ["no seen flag", { seen: undefined }],
+    ["a msgid that is not text", { msgid: 7 }],
+    ["a null msgid", { msgid: null }],
+    ["an empty channel name", { channelName: "" }],
+    ["an empty server id", { serverId: "" }],
+    ["an empty channel id", { channelId: "" }],
+  ])("drops an entry saved with %s", (_case, change) => {
+    mockStored([{ ...entry, ...change }, entry]);
+    expect(mentionLog.load()).toEqual([entry]);
+  });
+
+  test("returns an empty log when the stored value is not a list", () => {
+    mockStored({ entry });
+    expect(mentionLog.load()).toEqual([]);
+  });
+
   test("puts a log saved in arrival order into the order the lines were said", () => {
-    const entry = (msgid: string, timestamp: string) => ({
+    const at = (msgid: string, timestamp: string) => ({
+      ...entry,
       messageId: msgid,
       msgid,
-      serverId: "s1",
-      channelId: "c1",
-      channelName: "#one",
-      sender: "bob",
-      content: "me",
       timestamp,
-      seen: false,
     });
-    vi.mocked(window.localStorage.getItem).mockReturnValue(
-      JSON.stringify([
-        entry("late", "2026-01-01T12:10:00.000Z"),
-        entry("early", "2026-01-01T12:00:00.000Z"),
-        entry("middle", "2026-01-01T12:05:00.000Z"),
-      ]),
-    );
+    mockStored([
+      at("late", "2026-01-01T12:10:00.000Z"),
+      at("early", "2026-01-01T12:00:00.000Z"),
+      at("middle", "2026-01-01T12:05:00.000Z"),
+    ]);
     expect(mentionLog.load().map((m) => m.msgid)).toEqual([
       "early",
       "middle",

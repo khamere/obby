@@ -26,18 +26,19 @@ import {
   parseMessageTags,
 } from "../ircUtils";
 import {
-  calculateProtocolOverhead,
   createBatchId,
-  splitLongMessage,
+  type LineSplitter,
+  maxMessageBytes,
+  splitToBytes,
 } from "../messageProtocol";
 import { createSocket, type ISocket } from "../socket";
 import { IRC_DISPATCH } from "./handlers";
 import type { IRCClientContext } from "./IRCClientContext";
 import {
   chunkForMultiline,
+  fitsOneBatch,
   type MultilineLimits,
   parseMultilineLimits,
-  splitAtSpaces,
 } from "./multiline";
 import { nextMemberRequestNumber, parseServerTime } from "./utils";
 
@@ -61,6 +62,8 @@ const PING_INTERVAL_MS = 30_000;
 const PONG_TIMEOUT_MS = 10_000;
 const WAKE_PONG_TIMEOUT_MS = 5_000;
 const DEAD_SOCKET_CLOSE_WAIT_MS = 2_000;
+// The server echoes a CAP REQ in its answer behind its own name and our nick, so we keep the request well under the 512-byte line.
+const MAX_CAP_REQ_LINE = 400;
 
 // One message of a `soju.im/search` answer.
 export interface SearchResult {
@@ -83,6 +86,7 @@ export interface EventMap {
     connectionState: ConnectionState;
   };
   saslFailed: BaseIRCEvent;
+  loginRefused: BaseIRCEvent;
   NICK: EventWithTags & {
     oldNick: string;
     newNick: string;
@@ -971,6 +975,12 @@ export class IRCClient implements IRCClientContext {
       }
       this.closeReplacedSocket(server.id);
       this.sockets.set(server.id, socket);
+      // We negotiate capabilities afresh on every connection, from that connection's own CAP LS.
+      this.capLsAccumulated.delete(server.id);
+      this.pendingCapReqs.delete(server.id);
+      this.saslMechanisms.delete(server.id);
+      server.capabilities = [];
+      server.capabilityValues = undefined;
       // Network selection belongs to the session, not just its first socket.
       const bouncerNetid = this.bouncerBindings.get(server.id);
       if (bouncerNetid) this.pendingBouncerBind.set(server.id, bouncerNetid);
@@ -1022,6 +1032,8 @@ export class IRCClient implements IRCClientContext {
 
       socket.onopen = () => {
         //registerAllProtocolHandlers(this);
+        this.welcomed.delete(server.id);
+        this.loginRefused.delete(server.id);
 
         this.triggerEvent("rawLine", {
           serverId: server.id,
@@ -1064,7 +1076,11 @@ export class IRCClient implements IRCClientContext {
             connectionState: "disconnected",
           });
           this.pendingConnections.delete(connectionKey);
-          if (!wasReconnecting) {
+          if (!this.welcomed.has(server.id)) this.turnedAway.add(server.id);
+          if (this.loginRefused.has(server.id)) {
+            this.reconnectionAttempts.delete(server.id);
+            this.triggerEvent("loginRefused", { serverId: server.id });
+          } else if (!wasReconnecting) {
             this.startReconnection(
               server.id,
               name,
@@ -1136,9 +1152,8 @@ export class IRCClient implements IRCClientContext {
     this.pendingConnections.set(connectionKey, connectionPromise);
 
     // Clean up the pending connection when it resolves or rejects
-    connectionPromise.finally(() => {
-      this.pendingConnections.delete(connectionKey);
-    });
+    const forgetPending = () => this.pendingConnections.delete(connectionKey);
+    connectionPromise.then(forgetPending, forgetPending);
 
     return connectionPromise;
   }
@@ -1169,6 +1184,11 @@ export class IRCClient implements IRCClientContext {
       socket.close();
     }
     this.registered.delete(serverId);
+    this.welcomed.delete(serverId);
+    this.loginRefused.delete(serverId);
+    this.turnedAway.delete(serverId);
+    // A closed server stays closed until its owner connects it again, so a wake finds nothing to redial.
+    this.serverConnectParams.delete(serverId);
     this.pendingMonitor.delete(serverId);
     this.tagmsgRefused.delete(serverId);
     const server = this.servers.get(serverId);
@@ -1315,9 +1335,6 @@ export class IRCClient implements IRCClientContext {
         saslPassword,
         serverId,
       );
-      console.log(`Reconnection successful for server ${serverId}`);
-      // Success - reset reconnection attempts
-      this.reconnectionAttempts.delete(serverId);
       this.reconnectionTimeouts.delete(serverId);
     } catch (error) {
       console.log(`Reconnection failed for server ${serverId}:`, error);
@@ -1346,6 +1363,37 @@ export class IRCClient implements IRCClientContext {
 
   noteTagmsgRefused(serverId: string): void {
     this.tagmsgRefused.add(serverId);
+  }
+
+  // A server can open the socket and still turn us away, so only its welcome restarts the retry delay.
+  private welcomed = new Set<string>();
+  // A retry would send a refused login again, so we wait for the user once such a connection closes.
+  private loginRefused = new Set<string>();
+  // A server that took our connection and closed it before its welcome is owed the full retry wait.
+  private turnedAway = new Set<string>();
+
+  noteWelcomed(serverId: string): void {
+    this.welcomed.add(serverId);
+    this.loginRefused.delete(serverId);
+    this.turnedAway.delete(serverId);
+    this.reconnectionAttempts.delete(serverId);
+  }
+
+  noteLoginRefused(serverId: string): void {
+    if (!this.welcomed.has(serverId)) this.loginRefused.add(serverId);
+  }
+
+  // A login we hold but could not present on this connection may still pass on the next one.
+  noteAccountRequired(serverId: string): void {
+    if (!this.saslEnabled.get(serverId)) this.noteLoginRefused(serverId);
+  }
+
+  // Saved credentials belong to one address, so callers compare it with the one this connection dials.
+  getConnectTarget(
+    serverId: string,
+  ): { host: string; port: number } | undefined {
+    const params = this.serverConnectParams.get(serverId);
+    return params && { host: params.host, port: params.port };
   }
 
   // When we last sent a PRIVMSG to each target, so a refusal that carries no
@@ -1475,6 +1523,7 @@ export class IRCClient implements IRCClientContext {
     serverId: string,
     typedName: string,
     key?: string,
+    { isReturning = false }: { isReturning?: boolean } = {},
   ): Channel | undefined {
     const channelName = this.withChannelPrefix(serverId, typedName);
     if (!isJoinableChannelName(channelName, this.chantypes(serverId)))
@@ -1518,7 +1567,8 @@ export class IRCClient implements IRCClientContext {
       };
       server.channels.push(channel);
 
-      if (!this.loadHistoryOrMembers(serverId, channelName))
+      // Our JOIN coming back loads the history and members of a channel we return to, so we send only the JOIN for it.
+      if (isReturning || !this.loadHistoryOrMembers(serverId, channelName))
         channel.needsWhoRequest = false;
 
       return channel;
@@ -1649,7 +1699,7 @@ export class IRCClient implements IRCClientContext {
   }
 
   // We prefix a bare name with the server's first channel type, so `/join foo` reaches a channel the server allows.
-  private withChannelPrefix(serverId: string, name: string): string {
+  withChannelPrefix(serverId: string, name: string): string {
     if (this.isChannel(serverId, name)) return name;
     return `${this.chantypes(serverId)[0]}${name}`;
   }
@@ -1673,26 +1723,12 @@ export class IRCClient implements IRCClientContext {
     const channel = server.channels.find((c) => c.id === channelId);
     if (!channel) throw new Error(`Channel ${channelId} not found`);
 
-    // Phantom-channel guard: if our local cache shows zero members
-    // for a non-private channel, the ircd doesn't actually have us
-    // in this channel (either the channel was destroyed when the
-    // last person left, or the ircd was restarted and we haven't
-    // re-JOINed). Send JOIN first so the PRIVMSG that follows lands
-    // somewhere instead of returning 401 No such nick/channel.
-    if (
-      !channel.isPrivate &&
-      (channel.users?.length ?? 0) === 0 &&
-      this.isCapNegotiationComplete(serverId)
-    ) {
-      this.sendRaw(serverId, `JOIN ${channel.name}`);
-    }
-
     // Check if server supports multiline and message has newlines
     // Note: We'll check server capabilities from the store later via helper function
     const lines = content.split("\n");
 
     if (lines.length > 1 && this.hasCapability(serverId, "draft/multiline")) {
-      this.sendMultilineMessage(serverId, channel.name, lines);
+      this.sendMultiline(serverId, channel.name, lines);
     } else if (lines.length > 1) {
       // Server didn't negotiate draft/multiline — degrade to separate PRIVMSGs
       for (const line of lines) {
@@ -1735,19 +1771,6 @@ export class IRCClient implements IRCClientContext {
     this.sendRaw(serverId, `WHOIS ${nickname}`);
   }
 
-  sendMultilineMessage(
-    serverId: string,
-    target: string,
-    lines: string[],
-  ): void {
-    this.sendMultiline(
-      serverId,
-      target,
-      // preserveBoundarySpace, or concat rejoins "AAA BBB CCC" as "AAA BBBCCC".
-      lines.map((line) => splitLongMessage(line, target, true)),
-    );
-  }
-
   // One command is one line, so we send text with line breaks as a multiline
   // batch, or line by line where the server has none.
   sendText(
@@ -1758,70 +1781,84 @@ export class IRCClient implements IRCClientContext {
   ): void {
     const replyTo = options.replyTo ? escapeTagValue(options.replyTo) : "";
     const tags = replyTo ? `@+reply=${replyTo};+draft/reply=${replyTo} ` : "";
-    const maxBytes = 512 - calculateProtocolOverhead(target);
     const lines = text.split(/\r?\n/);
     if (lines.length > 1 && this.hasCapability(serverId, "draft/multiline")) {
-      this.sendMultiline(
-        serverId,
-        target,
-        lines.map((line) => splitAtSpaces(line, maxBytes, true)),
-        tags,
-      );
+      this.sendMultiline(serverId, target, lines, tags);
       return;
     }
     const separate = options.joinLines
       ? [lines.filter(Boolean).join(" ")]
       : lines;
     for (const line of separate)
-      for (const part of splitAtSpaces(line, maxBytes, false))
-        if (part) this.sendRaw(serverId, `${tags}PRIVMSG ${target} :${part}`);
+      this.sendSeparately(serverId, target, line, tags, splitToBytes);
   }
 
+  // A server refuses a whole batch that is past its limits and delivers none
+  // of it, so a line no batch can hold goes out as messages of its own, between
+  // the batches of the lines around it.
   sendMultiline(
     serverId: string,
     target: string,
-    lines: readonly (readonly string[])[],
+    lines: readonly string[],
     openTags = "",
+    split: LineSplitter = splitToBytes,
   ): void {
-    for (const batch of chunkForMultiline(
-      lines,
-      this.multilineLimits(serverId),
-    )) {
-      const batchId = createBatchId();
-      this.sendRaw(
-        serverId,
-        `${openTags}BATCH +${batchId} draft/multiline ${target}`,
-      );
-      for (const parts of batch) {
-        parts.forEach((part, index) => {
-          const concat = index > 0 ? ";draft/multiline-concat" : "";
-          this.sendRaw(
-            serverId,
-            `@batch=${batchId}${concat} PRIVMSG ${target} :${part}`,
-          );
-        });
+    const limits = this.multilineLimits(serverId);
+    const lineBytes = maxMessageBytes(target);
+    let batchable: string[][] = [];
+    const sendBatches = () => {
+      for (const batch of chunkForMultiline(batchable, limits))
+        this.sendBatch(serverId, target, batch, openTags);
+      batchable = [];
+    };
+
+    for (const line of lines) {
+      const parts = split(line, lineBytes, true);
+      if (fitsOneBatch(parts, limits)) {
+        batchable.push(parts);
+        continue;
       }
-      this.sendRaw(serverId, `BATCH -${batchId}`);
+      sendBatches();
+      this.sendSeparately(serverId, target, line, openTags, split);
     }
+    sendBatches();
+  }
+
+  private sendSeparately(
+    serverId: string,
+    target: string,
+    line: string,
+    tags: string,
+    split: LineSplitter,
+  ): void {
+    for (const part of split(line, maxMessageBytes(target), false))
+      if (part) this.sendRaw(serverId, `${tags}PRIVMSG ${target} :${part}`);
+  }
+
+  private sendBatch(
+    serverId: string,
+    target: string,
+    lines: readonly (readonly string[])[],
+    openTags: string,
+  ): void {
+    const batchId = createBatchId();
+    this.sendRaw(
+      serverId,
+      `${openTags}BATCH +${batchId} draft/multiline ${target}`,
+    );
+    for (const parts of lines) {
+      parts.forEach((part, index) => {
+        const concat = index > 0 ? ";draft/multiline-concat" : "";
+        this.sendRaw(
+          serverId,
+          `@batch=${batchId}${concat} PRIVMSG ${target} :${part}`,
+        );
+      });
+    }
+    this.sendRaw(serverId, `BATCH -${batchId}`);
   }
 
   sendTyping(serverId: string, target: string, isActive: boolean): void {
-    // Same phantom-channel guard as sendMessage: if we're typing into
-    // a channel whose local cache is empty (ircd doesn't actually
-    // have us in it), JOIN first so the typing TAGMSG lands instead
-    // of getting bounced with 401.
-    const server = this.servers.get(serverId);
-    if (server && this.isChannel(serverId, target)) {
-      const ch = server.channels.find((c) => c.name === target);
-      if (
-        ch &&
-        !ch.isPrivate &&
-        (ch.users?.length ?? 0) === 0 &&
-        this.isCapNegotiationComplete(serverId)
-      ) {
-        this.sendRaw(serverId, `JOIN ${target}`);
-      }
-    }
     const typingState = isActive ? "active" : "done";
     this.sendRaw(serverId, `@+typing=${typingState} TAGMSG ${target}`);
   }
@@ -2533,8 +2570,10 @@ export class IRCClient implements IRCClientContext {
         for (const cap of capsToRequest) {
           const capLength = cap.length + (currentBatch.length > 0 ? 1 : 0); // +1 for space if not first
 
-          if (currentLength + capLength > 500 && currentBatch.length > 0) {
-            // Leave some margin
+          if (
+            currentLength + capLength > MAX_CAP_REQ_LINE &&
+            currentBatch.length > 0
+          ) {
             // Send current batch
             const reqMessage = `CAP REQ :${currentBatch.join(" ")}`;
             this.sendRaw(serverId, reqMessage);
@@ -2552,11 +2591,12 @@ export class IRCClient implements IRCClientContext {
           this.sendRaw(serverId, reqMessage);
         }
 
-        this.pendingCapReqs.set(serverId, new Set(capsToRequest));
+        const pending = new Set(capsToRequest);
+        this.pendingCapReqs.set(serverId, pending);
 
         // Set a timeout to send CAP END if server doesn't respond
         setTimeout(() => {
-          if (this.pendingCapReqs.has(serverId)) {
+          if (this.pendingCapReqs.get(serverId) === pending) {
             this.pendingCapReqs.delete(serverId);
 
             // Check if SASL is in progress before timing out
@@ -2582,13 +2622,6 @@ export class IRCClient implements IRCClientContext {
             }
           }
         }, 5000); // 5 second timeout
-
-        if (
-          capsToRequest.includes("draft/extended-isupport") ||
-          capsToRequest.includes("draft/extended-isupport-0.2")
-        ) {
-          this.sendRaw(serverId, "ISUPPORT");
-        }
       } else if (!this.capNegotiationComplete.get(serverId)) {
         // No capabilities to request, end CAP negotiation immediately
         console.log(
@@ -2611,14 +2644,8 @@ export class IRCClient implements IRCClientContext {
     const offered = cliCaps.split(" ").filter(Boolean).map(splitCapToken);
     if (offered.length === 0) return;
 
-    let accumulated = this.capLsAccumulated.get(serverId);
-    if (!accumulated) {
-      accumulated = new Set();
-      this.capLsAccumulated.set(serverId, accumulated);
-    }
     const server = this.servers.get(serverId);
     for (const { cap, value } of offered) {
-      accumulated.add(cap);
       if (value && server) {
         server.capabilityValues = {
           ...(server.capabilityValues ?? {}),
@@ -2679,15 +2706,23 @@ export class IRCClient implements IRCClientContext {
   }
 
   onCapAck(serverId: string, cliCaps: string): void {
-    // Trigger the original event for compatibility
-    this.triggerEvent("CAP ACK", { serverId, cliCaps });
-
     // Values are tracked separately (capabilityValues); every consumer of
     // `capabilities` matches on the bare name, so store names only.
     const ackedNames = cliCaps
       .split(" ")
       .filter(Boolean)
       .map((cap) => cap.split("=", 1)[0]);
+
+    // A server accepts ISUPPORT only once it has enabled the capability, so we send it after the acknowledgement.
+    if (
+      !this.capNegotiationComplete.get(serverId) &&
+      ackedNames.some((cap) => cap.startsWith("draft/extended-isupport"))
+    ) {
+      this.sendRaw(serverId, "ISUPPORT");
+    }
+
+    // Trigger the original event for compatibility
+    this.triggerEvent("CAP ACK", { serverId, cliCaps });
 
     const server = this.servers.get(serverId);
     if (server) {
@@ -2701,17 +2736,39 @@ export class IRCClient implements IRCClientContext {
       }
     }
 
+    this.settleCapReqs(serverId, ackedNames);
+  }
+
+  // A server refuses a whole CAP REQ line over a single cap, so we ask again in halves until that cap stands alone.
+  onCapNak(serverId: string, cliCaps: string): void {
     const pending = this.pendingCapReqs.get(serverId);
     if (!pending) return;
-    for (const cap of ackedNames) {
+    // We retry only what this connection still waits for, whatever else the refusal names.
+    const refused = [
+      ...new Set(cliCaps.split(" ").map((cap) => cap.split("=", 1)[0])),
+    ].filter((cap) => pending.has(cap));
+    if (refused.length > 1) {
+      const half = Math.ceil(refused.length / 2);
+      this.sendRaw(serverId, `CAP REQ :${refused.slice(0, half).join(" ")}`);
+      this.sendRaw(serverId, `CAP REQ :${refused.slice(half).join(" ")}`);
+      return;
+    }
+    this.settleCapReqs(serverId, refused);
+  }
+
+  private settleCapReqs(serverId: string, answered: string[]): void {
+    const pending = this.pendingCapReqs.get(serverId);
+    if (!pending) return;
+    for (const cap of answered) {
       pending.delete(cap);
     }
-    // Caps the server never ACKs (or NAKs) leave the set non-empty; the CAP LS
+    // Caps the server never answers leave the set non-empty; the CAP LS
     // timeout is the backstop that finalises negotiation in that case.
     if (pending.size > 0) return;
 
     this.pendingCapReqs.delete(serverId);
 
+    const server = this.servers.get(serverId);
     const saslEnabled = this.saslEnabled.get(serverId) ?? false;
     const saslAcknowledged = server?.capabilities?.includes("sasl") ?? false;
 
@@ -2800,6 +2857,7 @@ export class IRCClient implements IRCClientContext {
   }
 
   wakeReconnect(serverId: string): void {
+    if (this.loginRefused.has(serverId)) return;
     const now = Date.now();
     const last = this.lastWakeReconnect.get(serverId) ?? 0;
     if (now - last < 5000) return;
@@ -2812,6 +2870,8 @@ export class IRCClient implements IRCClientContext {
     if (!params) return;
 
     if (server.connectionState === "reconnecting") {
+      // A wake means the network may be back, which changes nothing for a server that reached us and closed before its welcome.
+      if (this.turnedAway.has(serverId)) return;
       // Already reconnecting but may be stuck in a long backoff (e.g. after many
       // failed attempts while sleeping). Cancel the pending timeout and retry now.
       const existingTimeout = this.reconnectionTimeouts.get(serverId);

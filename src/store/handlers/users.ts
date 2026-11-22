@@ -4,7 +4,9 @@ import type { StoreApi } from "zustand";
 import { releaseAutoAway } from "../../lib/autoAway";
 import { voiceDisplayName } from "../../lib/channelMentions";
 import ircClient from "../../lib/ircClient";
+import { saveLeftReason } from "../../lib/leftChannels";
 import { moveChatMute } from "../../lib/mutes";
+import { releaseVoiceClient } from "../../lib/voice";
 import type { Channel, Message, User } from "../../types";
 import {
   generateDeterministicId,
@@ -69,6 +71,52 @@ function setNeedsKey(
     };
   });
   return isChanged;
+}
+
+// The server stops telling us who is in a channel once we are out of it, so we drop the member list with our membership.
+function setLeftReason(
+  store: StoreApi<AppState>,
+  serverId: string,
+  channelName: string,
+  leftReason: Channel["leftReason"],
+): boolean {
+  const isTarget = (name: string) =>
+    name.toLowerCase() === channelName.toLowerCase();
+  let isChanged = false;
+  let shownName = channelName;
+  store.setState((state) => {
+    const server = state.servers.find((s) => s.id === serverId);
+    const channel = server?.channels.find((c) => isTarget(c.name));
+    if (!channel || channel.leftReason === leftReason) return {};
+    isChanged = true;
+    shownName = channel.name;
+    return {
+      servers: state.servers.map((s) =>
+        s.id !== serverId
+          ? s
+          : {
+              ...s,
+              channels: s.channels.map((c) =>
+                isTarget(c.name)
+                  ? {
+                      ...c,
+                      leftReason,
+                      ...(leftReason && { users: [], isLoadingHistory: false }),
+                    }
+                  : c,
+              ),
+            },
+      ),
+    };
+  });
+  if (isChanged || !leftReason) saveLeftReason(serverId, shownName, leftReason);
+  // A call runs on our membership of its channel, so it ends when the membership does.
+  if (isChanged && leftReason) releaseVoiceClient(serverId, shownName);
+  return isChanged;
+}
+
+function isOwnNick(serverId: string, nick: string): boolean {
+  return ircClient.getNick(serverId)?.toLowerCase() === nick.toLowerCase();
 }
 
 // We save only a nick the user asked for, so a nick the server assigns us never sticks.
@@ -215,15 +263,16 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
         }
       }
 
-      const ourNick = ircClient.getNick(serverId);
-      const isOurJoin = username === ourNick;
+      const isOurJoin = isOwnNick(serverId, username);
 
       if (isOurJoin) {
         takePendingJoin(serverId, channelName);
         takeKeyedJoin(serverId, channelName);
         setAutomaticJoin(serverId, channelName, false);
         // The history and member requests sent with the refused join failed, so we send them again now that we are in.
-        if (setNeedsKey(store, serverId, channelName, false))
+        const hadNeededKey = setNeedsKey(store, serverId, channelName, false);
+        const hadLeft = setLeftReason(store, serverId, channelName, undefined);
+        if (hadNeededKey || hadLeft)
           ircClient.loadHistoryOrMembers(serverId, channelName);
         // Server-initiated JOIN (Unreal persistence, sajoin, perform list,
         // perform-on-connect): joinChannel() never ran, so the CHATHISTORY
@@ -725,6 +774,8 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
 
         return { servers: updatedServers };
       });
+      if (isOwnNick(serverId, username))
+        setLeftReason(store, serverId, channelName, "parted");
 
       const state = store.getState();
       if (
@@ -794,6 +845,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
         noteMemberLeft(serverId, channelName, target);
         store.setState((state) => {
           const updatedServers = state.servers.map((server) => {
+            if (server.id !== serverId) return server;
             const updatedChannels = server.channels.map((channel) => {
               if (channel.name.toLowerCase() === channelName.toLowerCase()) {
                 return {
@@ -811,6 +863,8 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
           return { servers: updatedServers };
         });
       }
+      if (!historical && isOwnNick(serverId, target))
+        setLeftReason(store, serverId, channelName, "kicked");
 
       const state = store.getState();
       if (state.globalSettings.showEvents && state.globalSettings.showKicks) {

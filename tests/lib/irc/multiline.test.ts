@@ -1,8 +1,8 @@
 import { describe, expect, test } from "vitest";
 import {
   chunkForMultiline,
+  fitsOneBatch,
   parseMultilineLimits,
-  splitAtSpaces,
   UNLIMITED_MULTILINE,
 } from "../../../src/lib/irc/multiline";
 
@@ -47,26 +47,6 @@ describe("chunkForMultiline", () => {
     expect(batches[1][0]).toEqual(["a", "b", "c"]);
   });
 
-  test("a line longer than a whole batch is split rather than dropped", () => {
-    const batches = chunkForMultiline([["a", "b", "c", "d", "e"]], {
-      maxLines: 2,
-      maxBytes: Number.POSITIVE_INFINITY,
-    });
-    expect(batches.flat()).toEqual([["a", "b"], ["c", "d"], ["e"]]);
-  });
-
-  test("a line past the byte ceiling is split, not sent over budget", () => {
-    const parts = Array.from({ length: 6 }, () => "z".repeat(50));
-    const batches = chunkForMultiline([parts], {
-      maxLines: 15,
-      maxBytes: 120,
-    });
-    const bytes = batches.map((b) =>
-      b.flat().reduce((n, p) => n + p.length, 0),
-    );
-    expect(Math.max(...bytes)).toBeLessThanOrEqual(120);
-  });
-
   test("the byte ceiling closes a batch too", () => {
     const batches = chunkForMultiline([["x".repeat(60)], ["y".repeat(60)]], {
       maxLines: 15,
@@ -100,34 +80,13 @@ describe("chunkForMultiline", () => {
   });
 });
 
-describe("splitAtSpaces", () => {
-  const link = `https://files.example/${"a".repeat(60)}.png`;
+describe("fitsOneBatch", () => {
+  const limits = { maxLines: 2, maxBytes: 10 };
 
-  test("a line that fits is one part", () => {
-    expect(splitAtSpaces(`photo ${link}`, 100, false)).toEqual([
-      `photo ${link}`,
-    ]);
-  });
-
-  test("a link wider than a line stays whole on a line of its own", () => {
-    expect(splitAtSpaces(`photo ${link} done`, 40, false)).toEqual([
-      "photo",
-      link,
-      "done",
-    ]);
-  });
-
-  test("the parts of a concat join back into the exact line", () => {
-    const line = ` two  spaces ${link}  and a tail `;
-    const parts = splitAtSpaces(line, 20, true);
-
-    expect(parts.length).toBeGreaterThan(2);
-    expect(parts).toContain(`${link}  `);
-    expect(parts.join("")).toBe(line);
-  });
-
-  test("the budget is counted in bytes", () => {
-    expect(splitAtSpaces("ééééé ééééé", 12, false)).toEqual(["ééééé", "ééééé"]);
-    expect(splitAtSpaces("aaaaa aaaaa", 12, false)).toEqual(["aaaaa aaaaa"]);
+  test("counts a line's parts as lines and their bytes together", () => {
+    expect(fitsOneBatch(["ééé", "éé"], limits)).toBe(true);
+    expect(fitsOneBatch(["ééé", "ééé"], limits)).toBe(false);
+    expect(fitsOneBatch(["a", "b", "c"], limits)).toBe(false);
+    expect(fitsOneBatch(["a".repeat(600)], UNLIMITED_MULTILINE)).toBe(true);
   });
 });

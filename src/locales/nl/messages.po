@@ -3584,6 +3584,7 @@ msgid "Log in"
 msgstr "Inloggen"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Log in again"
 msgstr "Opnieuw inloggen"
 
@@ -5033,6 +5034,7 @@ msgid "Recent searches"
 msgstr "Recente zoekopdrachten"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Reconnect"
 msgstr "Opnieuw verbinden"
 
@@ -5123,6 +5125,10 @@ msgstr "Alleen geregistreerde gebruikers (+R)"
 #: src/components/ui/WorkflowStepRow.tsx
 msgid "Reject"
 msgstr "Weigeren"
+
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "Rejoin"
+msgstr "Opnieuw deelnemen"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
@@ -6375,6 +6381,14 @@ msgstr "De opname kon niet worden gemaakt."
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "De server heeft je deelname geweigerd. Controleer de kanaalmodi en probeer het opnieuw."
 
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "The server refused your login. Fix your account name or password to connect"
+msgstr "De server heeft je login geweigerd. Herstel je accountnaam of wachtwoord om te verbinden"
+
 #: src/components/ui/UpdateSheet.tsx
 msgid "The update could not start. Try again."
 msgstr "De update kon niet starten. Probeer het opnieuw."
@@ -7227,6 +7241,11 @@ msgstr "Je bent een IRC Operator"
 msgid "You are no longer in this channel"
 msgstr "Je bent niet meer in dit kanaal"
 
+#: src/components/layout/ChannelRow.tsx
+#: src/components/layout/ChannelRow.tsx
+msgid "You are not in this channel"
+msgstr "Je zit niet in dit kanaal"
+
 #: src/components/ui/UpdateSheet.tsx
 msgid "You can close this and keep chatting."
 msgstr "Je kunt dit sluiten en gewoon doorchatten."
@@ -7251,9 +7270,17 @@ msgstr "Je hebt nog geen uitnodigingslinks aangemaakt. Gebruik het formulier hie
 msgid "You invited {target} to join {channel}"
 msgstr "Je hebt {target} uitgenodigd om deel te nemen aan {channel}"
 
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "You left this channel."
+msgstr "Je hebt dit kanaal verlaten."
+
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "You verified this contact."
 msgstr "Je hebt dit contact geverifieerd."
+
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "You were kicked from this channel."
+msgstr "Je bent uit dit kanaal gezet."
 
 #. placeholder {0}: parent.name
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx

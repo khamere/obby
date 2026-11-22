@@ -3,6 +3,8 @@
 // `FAIL BATCH MULTILINE_MAX_LINES`, and the message reaches nobody), so a long
 // paste is split across batches before it goes out.
 
+import { byteLength } from "../messageProtocol";
+
 export interface MultilineLimits {
   maxLines: number;
   maxBytes: number;
@@ -12,12 +14,6 @@ export const UNLIMITED_MULTILINE: MultilineLimits = {
   maxLines: Number.POSITIVE_INFINITY,
   maxBytes: Number.POSITIVE_INFINITY,
 };
-
-const encoder = new TextEncoder();
-
-function byteLength(text: string): number {
-  return encoder.encode(text).length;
-}
 
 // The cap value looks like `max-bytes=5250,max-lines=15`.
 export function parseMultilineLimits(
@@ -35,33 +31,19 @@ export function parseMultilineLimits(
   return limits;
 }
 
-// A link cut in two opens nothing, so we break a line only at its spaces and
-// leave the server to rule on a word wider than a line. With `keepSpaces` the
-// parts join back into the exact line, as the receiver of a concat does.
-export function splitAtSpaces(
-  line: string,
-  maxBytes: number,
-  keepSpaces: boolean,
-): string[] {
-  if (byteLength(line) <= maxBytes) return [line];
-  const sent = (part: string) => (keepSpaces ? part : part.trimEnd());
-  const parts: string[] = [];
-  let part = "";
-  for (const word of line.match(/[^ ]* */g) ?? []) {
-    if (part && byteLength(sent(part + word)) > maxBytes) {
-      parts.push(sent(part));
-      part = "";
-    }
-    part += word;
-  }
-  if (part) parts.push(sent(part));
-  return parts.filter(Boolean);
+// A batch holds a line whole or not at all: its parts count as lines of the
+// batch and their bytes add up against the byte ceiling.
+export function fitsOneBatch(
+  parts: readonly string[],
+  limits: MultilineLimits,
+): boolean {
+  return (
+    parts.length <= limits.maxLines &&
+    parts.reduce((n, part) => n + byteLength(part), 0) <= limits.maxBytes
+  );
 }
 
-// `lines` holds one entry per logical line, already split into the parts that
-// fit a single PRIVMSG. A logical line's parts stay in one batch: the receiver
-// concatenates them, so a batch break between them lands mid-word. The server
-// counts the line break between two logical lines as a byte of the batch.
+// We keep the parts of a line in one batch, where the receiver joins them, and count the break between two lines as a byte.
 export function chunkForMultiline(
   lines: readonly (readonly string[])[],
   limits: MultilineLimits,
@@ -80,48 +62,18 @@ export function chunkForMultiline(
   };
 
   for (const line of lines) {
-    for (const part of splitToFit(line, limits)) {
-      const parts = part.length;
-      const bytes = part.reduce((n, p) => n + byteLength(p), 0);
-      if (
-        batch.length > 0 &&
-        (lineCount + parts > limits.maxLines ||
-          byteCount + 1 + bytes > limits.maxBytes)
-      ) {
-        flush();
-      }
-      byteCount += bytes + (batch.length > 0 ? 1 : 0);
-      batch.push([...part]);
-      lineCount += parts;
+    const bytes = line.reduce((n, part) => n + byteLength(part), 0);
+    if (
+      batch.length > 0 &&
+      (lineCount + line.length > limits.maxLines ||
+        byteCount + 1 + bytes > limits.maxBytes)
+    ) {
+      flush();
     }
+    byteCount += bytes + (batch.length > 0 ? 1 : 0);
+    batch.push([...line]);
+    lineCount += line.length;
   }
   flush();
   return batches;
-}
-
-// A line whose own parts fill more than one batch is broken across batches: two
-// messages beat one the server refuses.
-function splitToFit(
-  line: readonly string[],
-  limits: MultilineLimits,
-): (readonly string[])[] {
-  const out: (readonly string[])[] = [];
-  let piece: string[] = [];
-  let bytes = 0;
-  for (const part of line) {
-    const partBytes = byteLength(part);
-    if (
-      piece.length > 0 &&
-      (piece.length + 1 > limits.maxLines ||
-        bytes + partBytes > limits.maxBytes)
-    ) {
-      out.push(piece);
-      piece = [];
-      bytes = 0;
-    }
-    piece.push(part);
-    bytes += partBytes;
-  }
-  if (piece.length > 0) out.push(piece);
-  return out;
 }

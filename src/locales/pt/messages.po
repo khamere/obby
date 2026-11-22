@@ -3584,6 +3584,7 @@ msgid "Log in"
 msgstr "Entrar"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Log in again"
 msgstr "Entrar novamente"
 
@@ -5033,6 +5034,7 @@ msgid "Recent searches"
 msgstr "Pesquisas recentes"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Reconnect"
 msgstr "Reconectar"
 
@@ -5123,6 +5125,10 @@ msgstr "Somente usuários registrados (+R)"
 #: src/components/ui/WorkflowStepRow.tsx
 msgid "Reject"
 msgstr "Rejeitar"
+
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "Rejoin"
+msgstr "Entrar novamente"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
@@ -6375,6 +6381,14 @@ msgstr "Não foi possível fazer a gravação."
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "O servidor recusou sua entrada. Verifique os modos do canal e tente novamente."
 
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "The server refused your login. Fix your account name or password to connect"
+msgstr "O servidor recusou seu login. Corrija o nome da conta ou a senha para conectar"
+
 #: src/components/ui/UpdateSheet.tsx
 msgid "The update could not start. Try again."
 msgstr "Não foi possível iniciar a atualização. Tente novamente."
@@ -7227,6 +7241,11 @@ msgstr "Você é um IRC Operator"
 msgid "You are no longer in this channel"
 msgstr "Você não está mais neste canal"
 
+#: src/components/layout/ChannelRow.tsx
+#: src/components/layout/ChannelRow.tsx
+msgid "You are not in this channel"
+msgstr "Você não está neste canal"
+
 #: src/components/ui/UpdateSheet.tsx
 msgid "You can close this and keep chatting."
 msgstr "Pode fechar isto e continuar a conversar."
@@ -7251,9 +7270,17 @@ msgstr "Você ainda não criou nenhum link de convite. Use o formulário acima p
 msgid "You invited {target} to join {channel}"
 msgstr "Você convidou {target} para entrar em {channel}"
 
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "You left this channel."
+msgstr "Você saiu deste canal."
+
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "You verified this contact."
 msgstr "Você verificou este contato."
+
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "You were kicked from this channel."
+msgstr "Você foi expulso deste canal."
 
 #. placeholder {0}: parent.name
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx

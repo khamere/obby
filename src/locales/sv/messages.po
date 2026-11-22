@@ -3584,6 +3584,7 @@ msgid "Log in"
 msgstr "Logga in"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Log in again"
 msgstr "Logga in igen"
 
@@ -5033,6 +5034,7 @@ msgid "Recent searches"
 msgstr "Senaste sökningar"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Reconnect"
 msgstr "Återanslut"
 
@@ -5123,6 +5125,10 @@ msgstr "Endast registrerade användare (+R)"
 #: src/components/ui/WorkflowStepRow.tsx
 msgid "Reject"
 msgstr "Avvisa"
+
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "Rejoin"
+msgstr "Gå med igen"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
@@ -6375,6 +6381,14 @@ msgstr "Inspelningen kunde inte göras."
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "Servern nekade dig att gå med. Kontrollera kanalens lägen och försök igen."
 
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "The server refused your login. Fix your account name or password to connect"
+msgstr "Servern nekade din inloggning. Åtgärda ditt kontonamn eller lösenord för att ansluta"
+
 #: src/components/ui/UpdateSheet.tsx
 msgid "The update could not start. Try again."
 msgstr "Uppdateringen kunde inte starta. Försök igen."
@@ -7227,6 +7241,11 @@ msgstr "Du är en IRC-operatör"
 msgid "You are no longer in this channel"
 msgstr "Du är inte längre i den här kanalen"
 
+#: src/components/layout/ChannelRow.tsx
+#: src/components/layout/ChannelRow.tsx
+msgid "You are not in this channel"
+msgstr "Du är inte med i den här kanalen"
+
 #: src/components/ui/UpdateSheet.tsx
 msgid "You can close this and keep chatting."
 msgstr "Du kan stänga det här och fortsätta chatta."
@@ -7251,9 +7270,17 @@ msgstr "Du har inte skapat några inbjudningslänkar än. Använd formuläret ov
 msgid "You invited {target} to join {channel}"
 msgstr "Du bjöd in {target} att gå med i {channel}"
 
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "You left this channel."
+msgstr "Du lämnade den här kanalen."
+
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "You verified this contact."
 msgstr "Du har verifierat den här kontakten."
+
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "You were kicked from this channel."
+msgstr "Du sparkades ut från den här kanalen."
 
 #. placeholder {0}: parent.name
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx

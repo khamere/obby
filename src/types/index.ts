@@ -96,6 +96,8 @@ export interface Server {
   connectionState?: ConnectionState;
   // The server refused our SASL credentials on this connection.
   saslFailed?: boolean;
+  // The server refused our login and closed the connection, so we wait for the user to fix it.
+  loginRefused?: boolean;
   isAway?: boolean; // Whether we are marked as away on this server
   // The message of the day from the latest connection.
   motd?: string[];
@@ -285,6 +287,8 @@ export interface ServerConfig {
   bouncerServerId?: string;
   bouncerNetid?: string;
   isBouncerControl?: boolean;
+  // Channels we still show but are out of, so no connection joins them until the user does.
+  leftChannels?: Record<string, "kicked" | "parted">;
 }
 
 export interface ServerOAuthConfig {
@@ -350,6 +354,7 @@ export interface Channel {
   // the user's connected sessions).  null = no marker on file yet.
   readMarker?: string | null;
   needsKey?: boolean;
+  leftReason?: "kicked" | "parted";
 }
 
 export interface PrivateChat {

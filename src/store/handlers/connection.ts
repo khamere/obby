@@ -13,10 +13,25 @@ import {
   setServerSelection,
 } from "../helpers";
 import type { AppState } from "../index";
+import { withLeftChannels } from "../leftChannelRows";
 import * as storage from "../localStorage";
 import { forgetJoins } from "../pendingJoins";
 import { findConversation } from "./history";
 import { reportServerReply } from "./serverReplies";
+
+// A page load starts with no channels and a new connection can bring rows that look joined, so we show every channel we are out of as left.
+function restoreLeftChannels(
+  store: StoreApi<AppState>,
+  serverId: string,
+): void {
+  store.setState((state) => ({
+    servers: state.servers.map((s) =>
+      s.id === serverId
+        ? { ...s, channels: withLeftChannels(serverId, s.channels) }
+        : s,
+    ),
+  }));
+}
 
 // Track which servers have had their ready handler run to prevent duplicate processing
 export const readyProcessedServers = new Set<string>();
@@ -136,6 +151,14 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
     }));
   });
 
+  ircClient.on("loginRefused", ({ serverId }) => {
+    store.setState((state) => ({
+      servers: state.servers.map((s) =>
+        s.id === serverId ? { ...s, loginRefused: true } : s,
+      ),
+    }));
+  });
+
   ircClient.on("connectionStateChange", ({ serverId, connectionState }) => {
     // An automatic away belongs to the connection it was sent on.
     forgetAutoAway(serverId);
@@ -192,6 +215,8 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
               : accountBetweenConnections(state.servers, server),
           saslFailed:
             connectionState === "connected" ? server.saslFailed : false,
+          loginRefused:
+            connectionState === "disconnected" ? server.loginRefused : false,
         };
       });
 
@@ -427,6 +452,8 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
         channelsToJoin = sendableChannels;
       }
 
+      restoreLeftChannels(store, serverId);
+
       if (!isBouncerSession) {
         for (const channelName of channelsToJoin) {
           if (channelName) {
@@ -447,7 +474,7 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
         if (!reconnectedServer) return;
         if (reconnectedServer.isBouncerControl) return;
         for (const ch of reconnectedServer.channels) {
-          if (!ch.chathistoryRequested && !ch.needsKey)
+          if (!ch.chathistoryRequested && !ch.needsKey && !ch.leftReason)
             ircClient.loadLatestHistory(serverId, ch.name);
         }
       }, 50);

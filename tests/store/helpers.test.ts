@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  dialsSavedAddress,
   resolveUserMetadata,
   withoutReaction,
   withReaction,
@@ -144,5 +145,30 @@ describe("a reaction made before a nick changed case", () => {
 
   it("leaves another nick's reaction alone", () => {
     expect(withoutReaction(message, "👍", "alicia")).toBeNull();
+  });
+});
+
+describe("a connection dialling the address a login is saved for", () => {
+  const saved = { host: "wss://bouncer.example/socket", port: 443 };
+
+  it("matches the same address and port", () => {
+    expect(dialsSavedAddress({ ...saved }, saved)).toBe(true);
+  });
+
+  it("reads a bare host with its port as a secure websocket address", () => {
+    expect(
+      dialsSavedAddress(
+        { host: "wss://bouncer.example:6697", port: 6697 },
+        { host: "bouncer.example", port: 6697 },
+      ),
+    ).toBe(true);
+  });
+
+  it("tells another host, another port and no connection apart", () => {
+    expect(
+      dialsSavedAddress({ host: "wss://old.example/socket", port: 443 }, saved),
+    ).toBe(false);
+    expect(dialsSavedAddress({ ...saved, port: 8443 }, saved)).toBe(false);
+    expect(dialsSavedAddress(undefined, saved)).toBe(false);
   });
 });

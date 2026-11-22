@@ -36,6 +36,17 @@ function autoBindConnectedNetworks(
   }
 }
 
+// The bouncer lists its networks only to a control connection it logged in, so a refused network tries the login that just passed.
+function retryRefusedNetworks(
+  store: StoreApi<AppState>,
+  bouncerServerId: string,
+) {
+  const state = store.getState();
+  for (const server of state.servers)
+    if (server.bouncerServerId === bouncerServerId && server.loginRefused)
+      void state.reconnectServer(server.id);
+}
+
 // Helper that lazily creates a BouncerState entry for a serverId.
 // We can't always know in advance which servers will turn out to be
 // bouncers, so we treat the first BOUNCER-* event from a serverId as
@@ -396,5 +407,6 @@ export function registerBouncerHandlers(store: StoreApi<AppState>): void {
       }),
     }));
     autoBindConnectedNetworks(store, serverId);
+    retryRefusedNetworks(store, serverId);
   });
 }

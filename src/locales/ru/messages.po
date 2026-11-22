@@ -3584,6 +3584,7 @@ msgid "Log in"
 msgstr "Войти"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Log in again"
 msgstr "Войти снова"
 
@@ -5033,6 +5034,7 @@ msgid "Recent searches"
 msgstr "Недавние поиски"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Reconnect"
 msgstr "Переподключиться"
 
@@ -5123,6 +5125,10 @@ msgstr "Только зарегистрированные пользовател
 #: src/components/ui/WorkflowStepRow.tsx
 msgid "Reject"
 msgstr "Отклонить"
+
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "Rejoin"
+msgstr "Войти снова"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
@@ -6375,6 +6381,14 @@ msgstr "Не удалось сделать запись."
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "Сервер отклонил ваш вход. Проверьте режимы канала и попробуйте снова."
 
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "The server refused your login. Fix your account name or password to connect"
+msgstr "Сервер отклонил вход. Исправьте имя учётной записи или пароль, чтобы подключиться"
+
 #: src/components/ui/UpdateSheet.tsx
 msgid "The update could not start. Try again."
 msgstr "Не удалось начать обновление. Повторите попытку."
@@ -7227,6 +7241,11 @@ msgstr "Вы являетесь IRC-оператором"
 msgid "You are no longer in this channel"
 msgstr "Вы больше не в этом канале"
 
+#: src/components/layout/ChannelRow.tsx
+#: src/components/layout/ChannelRow.tsx
+msgid "You are not in this channel"
+msgstr "Вы не на этом канале"
+
 #: src/components/ui/UpdateSheet.tsx
 msgid "You can close this and keep chatting."
 msgstr "Можно закрыть это окно и продолжать общаться."
@@ -7251,9 +7270,17 @@ msgstr "Вы ещё не создали ни одной пригласитель
 msgid "You invited {target} to join {channel}"
 msgstr "Вы пригласили {target} присоединиться к {channel}"
 
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "You left this channel."
+msgstr "Вы покинули этот канал."
+
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "You verified this contact."
 msgstr "Вы подтвердили этот контакт."
+
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "You were kicked from this channel."
+msgstr "Вас выгнали из этого канала."
 
 #. placeholder {0}: parent.name
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx

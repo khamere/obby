@@ -3584,6 +3584,7 @@ msgid "Log in"
 msgstr "ログイン"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Log in again"
 msgstr "再度ログイン"
 
@@ -5033,6 +5034,7 @@ msgid "Recent searches"
 msgstr "最近の検索"
 
 #: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 msgid "Reconnect"
 msgstr "再接続"
 
@@ -5123,6 +5125,10 @@ msgstr "登録済みユーザーのみ (+R)"
 #: src/components/ui/WorkflowStepRow.tsx
 msgid "Reject"
 msgstr "拒否"
+
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "Rejoin"
+msgstr "再参加"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
@@ -6375,6 +6381,14 @@ msgstr "録画できませんでした。"
 msgid "The server refused your join. Check the channel modes and try again."
 msgstr "サーバーが参加を拒否しました。チャンネルモードを確認して、もう一度お試しください。"
 
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ServerList.tsx
+#: src/components/layout/ServerList.tsx
+msgid "The server refused your login. Fix your account name or password to connect"
+msgstr "サーバーがログインを拒否しました。接続するにはアカウント名またはパスワードを修正してください"
+
 #: src/components/ui/UpdateSheet.tsx
 msgid "The update could not start. Try again."
 msgstr "アップデートを開始できませんでした。もう一度お試しください。"
@@ -7227,6 +7241,11 @@ msgstr "あなたはIRC Operatorです"
 msgid "You are no longer in this channel"
 msgstr "このチャンネルには参加していません"
 
+#: src/components/layout/ChannelRow.tsx
+#: src/components/layout/ChannelRow.tsx
+msgid "You are not in this channel"
+msgstr "このチャンネルに参加していません"
+
 #: src/components/ui/UpdateSheet.tsx
 msgid "You can close this and keep chatting."
 msgstr "これを閉じてチャットを続けられます。"
@@ -7251,9 +7270,17 @@ msgstr "まだ招待リンクを作成していません。上のフォームか
 msgid "You invited {target} to join {channel}"
 msgstr "{target} を {channel} に招待しました"
 
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "You left this channel."
+msgstr "このチャンネルから退出しました。"
+
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "You verified this contact."
 msgstr "この連絡先を確認しました。"
+
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "You were kicked from this channel."
+msgstr "このチャンネルからキックされました。"
 
 #. placeholder {0}: parent.name
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx

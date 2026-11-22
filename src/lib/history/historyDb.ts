@@ -474,6 +474,34 @@ export function rowByMsgid(
   );
 }
 
+// Whether each message has a saved row under one of its msgids. We stop at
+// the first one that has none.
+export function hasRowForEach(
+  server: string,
+  target: string,
+  messages: string[][],
+): Promise<boolean> {
+  return enqueue(false, (db) =>
+    inTx(db, [ROWS], "readonly", async (tx) => {
+      const index = tx.objectStore(ROWS).index("msgid");
+      for (const msgids of messages) {
+        let isSaved = false;
+        for (const msgid of msgids) {
+          const count = await awaitRequest<number>(
+            index.count(IDBKeyRange.only([server, target, msgid])),
+          );
+          if (count > 0) {
+            isSaved = true;
+            break;
+          }
+        }
+        if (!isSaved) return false;
+      }
+      return true;
+    }),
+  );
+}
+
 export function refRowsFor(
   server: string,
   msgids: string[],
