@@ -57,20 +57,27 @@ describe("ChannelKeyModal", () => {
 
   it.each([
     ["two words", "JOIN #vault :two words"],
-    [" hunter2\u00a0 ", "JOIN #vault : hunter2\u00a0 "],
+    [" hunter2\u00a0 ", "JOIN #vault hunter2\u00a0"],
+    ["secret ", "JOIN #vault secret"],
+    ["  two words ", "JOIN #vault :two words"],
     [":secret", "JOIN #vault ::secret"],
-  ])("sends the key %j as typed and closes", (key, line) => {
-    const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
-    render(<ChannelKeyModal />);
+  ])(
+    "sends the key %j without the spaces around it and closes",
+    (key, line) => {
+      const sendRaw = vi
+        .spyOn(ircClient, "sendRaw")
+        .mockImplementation(() => {});
+      render(<ChannelKeyModal />);
 
-    fireEvent.change(screen.getByLabelText("Channel key"), {
-      target: { value: key },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Join" }));
+      fireEvent.change(screen.getByLabelText("Channel key"), {
+        target: { value: key },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Join" }));
 
-    expect(sendRaw).toHaveBeenCalledWith(SERVER, line);
-    expect(useStore.getState().channelKeyPrompt).toBeNull();
-  });
+      expect(sendRaw).toHaveBeenCalledWith(SERVER, line);
+      expect(useStore.getState().channelKeyPrompt).toBeNull();
+    },
+  );
 
   it("keeps the prompt open for a key with a comma and sends nothing", () => {
     const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});

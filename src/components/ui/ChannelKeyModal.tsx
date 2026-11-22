@@ -11,6 +11,8 @@ import {
 } from "../../lib/modal/components";
 import useStore from "../../store";
 
+const trimSpaces = (value: string) => value.replace(/^ +| +$/g, "");
+
 export const ChannelKeyModal: React.FC = () => {
   const { t } = useLingui();
   const prompt = useStore((s) => s.channelKeyPrompt);
@@ -31,13 +33,14 @@ export const ChannelKeyModal: React.FC = () => {
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!key) return;
-    // Servers compare a key character by character, so we send it as typed.
-    if (!isJoinableChannelKey(key)) {
+    // A pasted key often carries a space at either end. Servers compare every other character exactly, so we send those as typed.
+    const typedKey = trimSpaces(key);
+    if (!typedKey) return;
+    if (!isJoinableChannelKey(typedKey)) {
       setIsUnusableKey(true);
       return;
     }
-    joinChannel(serverId, channelName, key);
+    joinChannel(serverId, channelName, typedKey);
     closeChannelKeyPrompt();
   };
 
@@ -66,7 +69,7 @@ export const ChannelKeyModal: React.FC = () => {
           />
         </ModalBody>
         <ModalFooter>
-          <Button type="submit" variant="primary" disabled={!key}>
+          <Button type="submit" variant="primary" disabled={!trimSpaces(key)}>
             <Trans>Join</Trans>
           </Button>
         </ModalFooter>
