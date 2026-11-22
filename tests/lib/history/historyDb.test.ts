@@ -536,6 +536,79 @@ describe("deleteServerHistory", () => {
   });
 });
 
+describe("moveChannelHistory", () => {
+  const line = (target: string, text: string) =>
+    `@msgid=${text};time=2026-01-01T12:00:00.000Z :al!u@h PRIVMSG ${target} :${text} in #Old`;
+
+  it("files a channel's rows and gaps under its new name", async () => {
+    const multiline = [
+      "@msgid=m;time=2026-01-01T12:00:02.000Z :al!u@h BATCH +b1 draft/multiline #Old",
+      "@batch=b1 :al!u@h PRIVMSG #Old :one",
+      "@batch=b1 :al!u@h PRIVMSG #old :two",
+      "BATCH -b1",
+    ].join("\r\n");
+    await db.appendRows([
+      row({ target: "#old", key: "a", time: 1, raw: line("#Old", "a") }),
+      row({ target: "#old", key: "m", time: 2, raw: multiline }),
+      row({
+        target: "#old",
+        key: "r",
+        time: 3,
+        ref: "a",
+        raw: "@msgid=r;+draft/react=x;+draft/reply=a :al!u@h TAGMSG #old",
+      }),
+      row({ target: "#older", key: "o", raw: line("#older", "o") }),
+      row({ server: "s2", target: "#old", key: "x", raw: line("#old", "x") }),
+    ]);
+    await db.addGap({
+      server: "s1",
+      target: "#old",
+      from: 1,
+      to: 2,
+      lost: false,
+    });
+    const before = await db.usageBytes();
+
+    await db.moveChannelHistory("s1", "#OLD", "#Newer");
+
+    expect(await db.newestEventRows("s1", "#old", 10)).toEqual([]);
+    const moved = await db.newestEventRows("s1", "#newer", 10);
+    expect(moved.map((r) => r.raw)).toEqual([
+      line("#Newer", "a"),
+      multiline.replaceAll(/#old/gi, "#Newer"),
+    ]);
+    expect((await db.refRowsFor("s1", ["a"])).map((r) => r.raw)).toEqual([
+      "@msgid=r;+draft/react=x;+draft/reply=a :al!u@h TAGMSG #Newer",
+    ]);
+    expect(await db.gapsFor("s1", "#old")).toEqual([]);
+    expect(await db.gapsFor("s1", "#newer")).toHaveLength(1);
+    expect(await db.newestEventRows("s1", "#older", 10)).toHaveLength(1);
+    expect(await db.newestEventRows("s2", "#old", 10)).toHaveLength(1);
+    expect(await db.usageBytes()).toBe(before + 2 * 5);
+  });
+
+  it("drops a row the new name already holds", async () => {
+    await db.appendRows([
+      row({ target: "#old", key: "a", time: 1 }),
+      row({ target: "#old", key: "b", time: 2 }),
+      row({ target: "#new", key: "a", time: 1 }),
+    ]);
+
+    await db.moveChannelHistory("s1", "#old", "#new");
+
+    const rows = await db.newestEventRows("s1", "#new", 10);
+    expect(rows.map((r) => r.key)).toEqual(["a", "b"]);
+    expect(await db.usageBytes()).toBe(2 * ROW_BYTES);
+  });
+
+  it("leaves the rows alone when only the letter case changes", async () => {
+    await db.appendRows([row({ target: "#old", raw: line("#old", "a") })]);
+    await db.moveChannelHistory("s1", "#old", "#OLD");
+    const [kept] = await db.newestEventRows("s1", "#old", 10);
+    expect(kept.raw).toBe(line("#old", "a"));
+  });
+});
+
 describe("clearHistory", () => {
   it("empties everything and resets usage", async () => {
     await db.appendRows([row()]);

@@ -74,6 +74,22 @@ export function addMention(
   return [...log.slice(0, at), entry, ...log.slice(at)].slice(-MAX_MENTIONS);
 }
 
+// A channel's id follows the name it had when we joined, so the mentions logged under its name move to the row it has now.
+export function withChannelId(
+  log: MentionEntry[],
+  serverId: string,
+  channelName: string,
+  channelId: string,
+): MentionEntry[] {
+  const isElsewhere = (m: MentionEntry) =>
+    m.serverId === serverId &&
+    m.channelId !== channelId &&
+    m.channelName.toLowerCase() === channelName.toLowerCase();
+  return log.some(isElsewhere)
+    ? log.map((m) => (isElsewhere(m) ? { ...m, channelId } : m))
+    : log;
+}
+
 export function markMentionsSeen(
   log: MentionEntry[],
   match: (m: MentionEntry) => boolean,

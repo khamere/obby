@@ -783,7 +783,15 @@ export function adoptParkedHistory(
         .sort((a, b) => b.value.at - a.value.at)[0];
       if (!parked) return false;
       const from = parked.name.slice(PARKED_PREFIX.length);
-      await addBytes(tx, -(await moveRows(tx, from, server)));
+      await addBytes(
+        tx,
+        -(await moveRows(
+          tx,
+          tx.objectStore(ROWS).index("server"),
+          IDBKeyRange.only(from),
+          (row) => ({ ...row, server }),
+        )),
+      );
       await walk(
         tx.objectStore(GAPS).index("conv"),
         wholeServer(from),
@@ -799,27 +807,30 @@ export function adoptParkedHistory(
   );
 }
 
-// Moves every row of one server to another and returns the bytes of the
-// duplicates we dropped on the way. Search terms point at row ids, so only
-// the dropped rows touch them.
+// Moves the rows in a range to where `moved` puts them and returns the bytes
+// that freed, mostly from the duplicates we dropped on the way. Search terms
+// point at row ids, so only the dropped rows touch them.
 function moveRows(
   tx: IDBTransaction,
-  from: string,
-  to: string,
+  source: IDBIndex,
+  range: IDBKeyRange,
+  moved: (row: HistoryRow) => HistoryRow,
 ): Promise<number> {
-  const rows = tx.objectStore(ROWS);
-  const dedupe = rows.index("dedupe");
+  const dedupe = tx.objectStore(ROWS).index("dedupe");
   let freed = 0;
   return new Promise((resolve, reject) => {
-    const request = rows.index("server").openCursor(IDBKeyRange.only(from));
+    const request = source.openCursor(range);
     request.onsuccess = () => {
       const cursor = request.result;
       if (!cursor) return resolve(freed);
       const row = cursor.value as HistoryRow;
-      const clash = dedupe.getKey([to, row.target, row.key]);
+      const next = moved(row);
+      const clash = dedupe.getKey([next.server, next.target, next.key]);
       clash.onsuccess = () => {
-        if (clash.result === undefined) cursor.update({ ...row, server: to });
-        else {
+        if (clash.result === undefined) {
+          freed += row.bytes - next.bytes;
+          cursor.update(next);
+        } else {
           freed += row.bytes;
           unindexRow(tx, row);
           cursor.delete();
@@ -830,6 +841,68 @@ function moveRows(
     };
     request.onerror = () => reject(request.error);
   });
+}
+
+// A replay files each saved line under the channel the line names, so the
+// lines of a renamed channel take the new name along with their row.
+function withTarget(raw: string, from: string, to: string): string {
+  return raw
+    .split("\r\n")
+    .map((line) => {
+      const words = line.split(" ");
+      let at = 0;
+      if (words[at]?.startsWith("@")) at++;
+      if (words[at]?.startsWith(":")) at++;
+      at += words[at] === "BATCH" ? 3 : 1;
+      if (words[at]?.toLowerCase() !== from) return line;
+      words[at] = to;
+      return words.join(" ");
+    })
+    .join("\r\n");
+}
+
+/** Files what we saved of a channel under the name the server gave it since. */
+export function moveChannelHistory(
+  server: string,
+  oldName: string,
+  newName: string,
+): Promise<void> {
+  const from = oldName.toLowerCase();
+  const to = newName.toLowerCase();
+  if (from === to) return Promise.resolve();
+  return enqueue(undefined, (db) =>
+    inTx(db, [ROWS, GAPS, META, TERMS], "readwrite", async (tx) => {
+      const freed = await moveRows(
+        tx,
+        tx.objectStore(ROWS).index("conv"),
+        convRange(
+          server,
+          from,
+          Number.NEGATIVE_INFINITY,
+          Number.POSITIVE_INFINITY,
+        ),
+        (row) => {
+          const raw = withTarget(row.raw, from, newName);
+          return {
+            ...row,
+            target: to,
+            raw,
+            bytes: row.bytes + raw.length - row.raw.length,
+          };
+        },
+      );
+      await addBytes(tx, -freed);
+      await walk(
+        tx.objectStore(GAPS).index("conv"),
+        IDBKeyRange.only([server, from]),
+        "next",
+        (cursor) => {
+          cursor.update({ ...(cursor.value as HistoryGap), target: to });
+          return true;
+        },
+      );
+    }),
+  );
 }
 
 export function clearHistory(): Promise<void> {
