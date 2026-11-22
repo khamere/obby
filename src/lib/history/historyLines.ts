@@ -63,13 +63,19 @@ export type HistoryAction =
 // Everything a server page held, stored or not, so page fullness and gap
 // edges count the joins and parts we leave off disk. The edges come from the
 // server's own times only, since a line we had to time ourselves says nothing
-// about the stretch of history the page covers.
+// about the stretch of history the page covers. The msgids of its first and
+// last line name the exact line each edge stops at, which a time cannot when
+// more lines share that millisecond.
 export interface HistoryPage {
   size: number;
   oldest: number | undefined;
   newest: number | undefined;
   msgids: string[];
+  oldestMsgid?: string;
+  newestMsgid?: string;
 }
+
+type PageEdge = { time: number; msgid: string | undefined };
 
 interface OpenBatch {
   type: string;
@@ -85,6 +91,8 @@ interface OpenBatch {
   oldest: number | undefined;
   newest: number | undefined;
   msgids: string[];
+  first?: PageEdge;
+  last?: PageEdge;
 }
 
 const nickOf = (source: string) => source.split("!")[0];
@@ -253,12 +261,7 @@ export class HistoryRecorder {
               target: target.toLowerCase(),
               rows: batch.rows,
               redacts: batch.redacts,
-              page: {
-                size: batch.size,
-                oldest: batch.oldest,
-                newest: batch.newest,
-                msgids: batch.msgids,
-              },
+              page: pageOf(batch),
             },
           ]
         : [];
@@ -419,9 +422,26 @@ function countPageItem(
   batch.size += 1;
   if (mtags?.msgid) batch.msgids.push(mtags.msgid);
   const time = hasReceiveTime ? Number.NaN : parseServerTime(mtags?.time);
+  batch.last = { time, msgid: mtags?.msgid };
+  batch.first ??= batch.last;
   if (Number.isNaN(time)) return;
   if (batch.oldest === undefined || time < batch.oldest) batch.oldest = time;
   if (batch.newest === undefined || time > batch.newest) batch.newest = time;
+}
+
+// An edge line names its edge only when it carries the page's edge time.
+function pageOf(batch: OpenBatch): HistoryPage {
+  const { size, oldest, newest, msgids, first, last } = batch;
+  const oldestMsgid = first?.time === oldest ? first?.msgid : undefined;
+  const newestMsgid = last?.time === newest ? last?.msgid : undefined;
+  return {
+    size,
+    oldest,
+    newest,
+    msgids,
+    ...(oldestMsgid ? { oldestMsgid } : {}),
+    ...(newestMsgid ? { newestMsgid } : {}),
+  };
 }
 
 function isMultiline(type: string) {
@@ -492,19 +512,31 @@ export function decideAfterLatest(input: {
 
 // After a page fetched forward into a gap from its older edge: it closes once
 // the page reaches rows we already had, otherwise its older edge moves up.
+// A page that stops inside the millisecond of the gap's newer edge can leave
+// lines of that millisecond behind, so the gap stays open when the next page
+// can start from the line this one ended on (`canResumeFromEdge`).
 export function decideAfterForwardFill(input: {
   gap: HistoryGap;
   page: Pick<HistoryPage, "oldest" | "newest">;
   inserted: boolean[];
+  canResumeFromEdge?: boolean;
 }): { kind: "close" } | { kind: "keep" } | { kind: "shrink"; from: number } {
-  const { gap, page, inserted } = input;
-  if (page.newest === undefined || page.newest >= gap.to)
+  const { gap, page, inserted, canResumeFromEdge } = input;
+  const hasDuplicate = inserted.some((wasNew) => !wasNew);
+  if (page.newest === undefined || page.newest > gap.to)
+    return { kind: "close" };
+  if (page.newest === gap.to && (!canResumeFromEdge || hasDuplicate))
     return { kind: "close" };
   // A page asked from an edge the gap has moved past starts with rows we hold, which says nothing about the far side.
-  const startsBeforeGap = page.oldest !== undefined && page.oldest <= gap.from;
-  if (startsBeforeGap && page.newest <= gap.from) return { kind: "keep" };
-  if (!startsBeforeGap && inserted.some((wasNew) => !wasNew))
-    return { kind: "close" };
+  const startsBeforeGap =
+    page.oldest !== undefined &&
+    (page.oldest < gap.from ||
+      (page.oldest === gap.from &&
+        (!canResumeFromEdge || inserted[0] === false)));
+  const canMoveWithinEdge = canResumeFromEdge && page.newest === gap.from;
+  if (startsBeforeGap && page.newest <= gap.from && !canMoveWithinEdge)
+    return { kind: "keep" };
+  if (!startsBeforeGap && hasDuplicate) return { kind: "close" };
   return { kind: "shrink", from: page.newest };
 }
 
@@ -516,15 +548,22 @@ type GapFillDecision =
 // rows we already had, and it is lost once the server returns nothing older.
 // Servers may return fewer messages than asked (a multiline message can count
 // as several), so we treat only an empty page as the end of their history.
+// A page that stops inside the millisecond of the gap's older edge can leave
+// lines of that millisecond behind, so the gap stays open when the next page
+// can start from the line this one began with (`canResumeFromEdge`).
 export function decideAfterGapFill(input: {
   gap: HistoryGap;
   page: Pick<HistoryPage, "size" | "oldest">;
   inserted: boolean[];
+  canResumeFromEdge?: boolean;
 }): GapFillDecision {
-  const { gap, page, inserted } = input;
+  const { gap, page, inserted, canResumeFromEdge } = input;
   if (inserted.some((wasNew) => !wasNew)) return { kind: "close" };
   if (page.oldest === undefined)
-    return { kind: "shrink", to: gap.to, lost: true };
-  if (page.oldest <= gap.from) return { kind: "close" };
+    return gap.to <= gap.from
+      ? { kind: "close" }
+      : { kind: "shrink", to: gap.to, lost: true };
+  if (page.oldest < gap.from) return { kind: "close" };
+  if (page.oldest === gap.from && !canResumeFromEdge) return { kind: "close" };
   return { kind: "shrink", to: page.oldest, lost: false };
 }

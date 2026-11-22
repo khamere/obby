@@ -99,8 +99,10 @@ export function handleRename(
   serverId: string,
   source: string,
   parv: string[],
-  _mtags: Record<string, string> | undefined,
+  mtags: Record<string, string> | undefined,
 ): void {
+  // A rename inside a batch is one the server plays back from the past, and the channel already carries the name it has now.
+  if (mtags?.batch) return;
   const user = getNickFromNuh(source);
   const oldName = parv[0];
   const newName = parv[1];

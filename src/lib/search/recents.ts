@@ -47,6 +47,26 @@ export const getRecentPlaces = (): RecentPlace[] =>
 export const recordPlace = (place: RecentPlace): void =>
   pushRecent(PLACES_KEY, place, MAX_PLACES);
 
+// A renamed channel keeps its entry, so the list never offers a name the server no longer has.
+export function renameRecentPlace(
+  serverId: string,
+  oldName: string,
+  newName: string,
+): void {
+  const places = getRecentPlaces();
+  const isRenamed = (place: RecentPlace) =>
+    place.serverId === serverId &&
+    place.kind === "channel" &&
+    place.name.toLowerCase() === oldName.toLowerCase();
+  if (!places.some(isRenamed)) return;
+  writeList(
+    PLACES_KEY,
+    places.map((place) =>
+      isRenamed(place) ? { ...place, name: newName } : place,
+    ),
+  );
+}
+
 export const clearRecentSearches = (): void => writeList(SEARCHES_KEY, []);
 
 export function clearRecents(): void {

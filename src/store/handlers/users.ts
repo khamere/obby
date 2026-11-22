@@ -18,12 +18,14 @@ import {
 } from "../helpers";
 import type { AppState } from "../index";
 import * as storage from "../localStorage";
+import { withChannelId } from "../mentionLog";
 import {
   isAutomaticJoin,
   setAutomaticJoin,
   takeKeyedJoin,
   takePendingJoin,
 } from "../pendingJoins";
+import { carrySavedChannelName, withRenamedChannel } from "../renamedChannel";
 import {
   isMemberRefreshPending,
   noteMemberJoined,
@@ -341,6 +343,21 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
               };
             }),
           };
+        });
+        store.setState((state) => {
+          const joined = state.servers
+            .find((s) => s.id === serverId)
+            ?.channels.find(
+              (c) => c.name.toLowerCase() === channelName.toLowerCase(),
+            );
+          if (!joined) return {};
+          const mentionLog = withChannelId(
+            state.mentionLog,
+            serverId,
+            joined.name,
+            joined.id,
+          );
+          return mentionLog === state.mentionLog ? {} : { mentionLog };
         });
         // ircClient I/O OUTSIDE setState: triggerEvent inside setState
         // causes a nested-setState race (see batches.ts:215-218).
@@ -1133,13 +1150,22 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
   );
 
   ircClient.on("RENAME", ({ serverId, oldName, newName, reason, user }) => {
+    const isOld = (name: string) =>
+      name.toLowerCase() === oldName.toLowerCase();
+    const isNew = (name: string) =>
+      name.toLowerCase() === newName.toLowerCase();
+    const rows =
+      store.getState().servers.find((s) => s.id === serverId)?.channels ?? [];
+    const renamed = rows.find((c) => isOld(c.name));
+    // A server renames a channel only for its members and never onto a channel that exists, so we follow a rename only for a channel we are in and never onto another one we are in.
+    if (!renamed || renamed.leftReason) return;
+    if (rows.some((c) => c.id !== renamed.id && isNew(c.name) && !c.leftReason))
+      return;
     store.setState((state) => {
       const server = state.servers.find((s) => s.id === serverId);
       if (!server) return {};
 
-      const channel = server.channels.find(
-        (c) => c.name.toLowerCase() === oldName.toLowerCase(),
-      );
+      const channel = server.channels.find((c) => c.id === renamed.id);
       if (!channel) return {};
 
       const renameMessage: Message = {
@@ -1157,17 +1183,37 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
 
       const channelKey = `${serverId}-${channel.id}`;
       const currentMessages = state.messages[channelKey] || [];
+      const order = state.channelOrder[serverId];
+      const selection = state.ui.perServerSelections[serverId];
       return {
         servers: state.servers.map((s) =>
           s.id === serverId
             ? {
                 ...s,
-                channels: s.channels.map((c) =>
-                  c.id === channel.id ? { ...c, name: newName } : c,
-                ),
+                // A row we had left under the new name is the same channel on the server, so the renamed row replaces it.
+                channels: s.channels
+                  .filter((c) => c.id === channel.id || !isNew(c.name))
+                  .map((c) =>
+                    c.id === channel.id ? { ...c, name: newName } : c,
+                  ),
               }
             : s,
         ),
+        ...(order && {
+          channelOrder: {
+            ...state.channelOrder,
+            [serverId]: withRenamedChannel(order, oldName, newName),
+          },
+        }),
+        ...(selection?.selectedChannelId === channel.id && {
+          ui: {
+            ...state.ui,
+            perServerSelections: {
+              ...state.ui.perServerSelections,
+              [serverId]: { ...selection, selectedChannelName: newName },
+            },
+          },
+        }),
         // Logged mentions are matched to a mute by channel name, so they
         // take the new name along with the channel.
         mentionLog: state.mentionLog.map((m) =>
@@ -1181,9 +1227,16 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
         },
       };
     });
-    // The channel keeps its id and its mute is kept by name, so the mute
-    // moves once the channel carries the new name.
-    moveChatMute(serverId, "channel", oldName, newName);
+    ircClient.renameKnownChannel(serverId, oldName, newName);
+    const { channelOrder, servers } = store.getState();
+    if (channelOrder[serverId]) storage.channelOrder.save(channelOrder);
+    // The channel keeps its id and everything we save for it is kept by name, so the saved state moves once the channel carries the new name.
+    carrySavedChannelName(
+      serverId,
+      servers.find((s) => s.id === serverId)?.host ?? "",
+      oldName,
+      newName,
+    );
   });
 
   ircClient.on("SETNAME", ({ serverId, user, realname, ident, host }) => {

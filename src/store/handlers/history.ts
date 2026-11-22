@@ -58,7 +58,7 @@ import type {
   SearchQuery,
   SearchScope,
 } from "../../lib/search/searchTypes";
-import type { Message, Server } from "../../types";
+import type { Channel, Message, Server } from "../../types";
 import {
   compareMessageOrder,
   MAX_MESSAGES_PER_CHANNEL,
@@ -86,9 +86,14 @@ type GapFill = {
   onSettled?: (isSaved: boolean, page?: HistoryPage) => void;
 };
 
+// `msgidTime` is the time of the line a request named by its msgid.
 type PendingRequest =
-  | { kind: "latest"; newestStoredTime: Promise<number | undefined> }
-  | { kind: "before" | "after" | "around"; fill?: GapFill };
+  | { kind: "latest"; newestStored: Promise<HistoryRow | undefined> }
+  | {
+      kind: "before" | "after" | "around";
+      fill?: GapFill;
+      msgidTime?: number;
+    };
 
 const recorders = new Map<string, HistoryRecorder>();
 const pendingRequests = new Map<string, PendingRequest[]>();
@@ -104,6 +109,7 @@ const MAX_HIDDEN_PAGES_IN_A_ROW = 10;
 // The gap a BEFORE request is about to fill. We attach it when the line
 // actually leaves, so a request the socket dropped never claims a reply.
 let nextGapFill: GapFill | undefined;
+let nextMsgidTime: number | undefined;
 
 // Two requests for the same gap ask for the same page, and the second reply,
 // all duplicates, would close the gap, so we keep one request per gap.
@@ -125,18 +131,112 @@ function requestPageBefore(
   before: number,
   fill: GapFill | undefined,
   showLoading = true,
+  msgid?: string,
 ): boolean {
   if (fill?.gap && isGapBeingFilled(serverId, target, fill.gap.id))
     return false;
   nextGapFill = fill;
+  nextMsgidTime = msgid === undefined ? undefined : before;
   const isSent = ircClient.requestChathistoryBefore(
     serverId,
     target,
     new Date(before).toISOString(),
-    { showLoading, isDiskOnly: fill?.isDiskOnly },
+    { showLoading, isDiskOnly: fill?.isDiskOnly, msgid },
   );
   nextGapFill = undefined;
+  nextMsgidTime = undefined;
   return isSent;
+}
+
+function requestPageAfter(
+  serverId: string,
+  target: string,
+  subcommand: "AFTER" | "AROUND",
+  time: number,
+  fill: GapFill | undefined,
+  msgid?: string,
+): boolean {
+  nextGapFill = fill;
+  nextMsgidTime = msgid === undefined ? undefined : time;
+  const isSent = ircClient.requestChathistoryAt(
+    serverId,
+    target,
+    subcommand,
+    new Date(time).toISOString(),
+    { isDiskOnly: subcommand === "AFTER", msgid },
+  );
+  nextGapFill = undefined;
+  nextMsgidTime = undefined;
+  return isSent;
+}
+
+// A server answers a msgid it no longer holds with an empty page, the same
+// answer as the end of its history, so we ask that page again by time.
+function askAgainByTime(
+  serverId: string,
+  target: string,
+  request: Exclude<PendingRequest, { kind: "latest" }>,
+  time: number,
+): boolean {
+  return request.kind === "before"
+    ? requestPageBefore(serverId, target, time, request.fill, false)
+    : requestPageAfter(serverId, target, "AFTER", time, request.fill);
+}
+
+// The msgid a gap carries for one of its edges, on a server that pages by
+// msgid and only while the edge still sits at the time we ask from.
+function gapEdgeMsgid(
+  gap: HistoryGap | undefined,
+  edge: "from" | "to",
+  time: number,
+): string | undefined {
+  if (!gap || gap[edge] !== time || !ircClient.canPageByMsgid(gap.server))
+    return undefined;
+  return edge === "from" ? gap.fromMsgid : gap.toMsgid;
+}
+
+// A gap narrowed to one millisecond still misses lines of it, and gaps are
+// read by their times, so we fetch the rest at once, from the line the last
+// page stopped at, before anything else reads the gap.
+function askForRestOfMillisecond(
+  serverId: string,
+  target: string,
+  gap: HistoryGap,
+  edge: "from" | "to",
+  fill: GapFill,
+): boolean {
+  const msgid = gapEdgeMsgid(gap, edge, gap[edge]);
+  if (gap.from < gap.to || gap.lost || !msgid) return false;
+  return edge === "to"
+    ? requestPageBefore(serverId, target, gap.to, fill, false, msgid)
+    : requestPageAfter(serverId, target, "AFTER", gap.from, fill, msgid);
+}
+
+function shownOldestMsgid(
+  store: StoreApi<AppState>,
+  serverId: string,
+  target: string,
+  time: number,
+): string | undefined {
+  const conversation = findConversation(store, serverId, target);
+  const oldest =
+    conversation && store.getState().messages[conversation.key]?.[0];
+  return oldest && messageTime(oldest) === time ? oldest.msgid : undefined;
+}
+
+// The line an older page starts from when no gap names it: a line we hold at
+// that time, saved or on screen. A page asked from a line that is not the
+// first of its millisecond repeats lines we hold, and those are dropped.
+async function heldMsgidAt(
+  store: StoreApi<AppState>,
+  serverId: string,
+  target: string,
+  time: number,
+): Promise<string | undefined> {
+  if (!ircClient.canPageByMsgid(serverId)) return undefined;
+  const [row] = await eventRowsAfter(serverId, target.toLowerCase(), time, 1);
+  if (row?.time === time && row.msgid) return row.msgid;
+  return shownOldestMsgid(store, serverId, target, time);
 }
 
 const shownConversations = new Set<string>();
@@ -361,6 +461,7 @@ async function addIslandGaps(
       from: older.time,
       to: page.oldest,
       lost: false,
+      ...(page.oldestMsgid ? { toMsgid: page.oldestMsgid } : {}),
     });
   const [newer] = await eventRowsAfter(server, target, page.newest + 1, 1);
   if (newer && inserted[inserted.length - 1])
@@ -370,6 +471,7 @@ async function addIslandGaps(
       from: page.newest,
       to: newer.time,
       lost: false,
+      ...(page.newestMsgid ? { fromMsgid: page.newestMsgid } : {}),
     });
 }
 
@@ -385,7 +487,18 @@ async function saveHistoryPage(
   const request = pendingRequests
     .get(conversationKey(serverId, target))
     ?.shift();
+  if (
+    request &&
+    request.kind !== "latest" &&
+    request.msgidTime !== undefined &&
+    page.size === 0
+  ) {
+    if (!askAgainByTime(serverId, target, request, request.msgidTime))
+      request.fill?.onSettled?.(false);
+    return;
+  }
   const inserted = rows.length ? await saveRows(store, rows) : [];
+  const canPageByMsgid = ircClient.canPageByMsgid(serverId);
   if (page.size > 0) {
     if (page.msgids.length === 0) historyWithoutMsgids.add(key);
     else historyWithoutMsgids.delete(key);
@@ -400,13 +513,22 @@ async function saveHistoryPage(
       page.msgids,
     );
   if (request?.kind === "latest") {
+    const newestStored = await request.newestStored;
     const decision = decideAfterLatest({
-      newestStoredTime: await request.newestStoredTime,
+      newestStoredTime: newestStored?.time,
       page,
     });
     if (decision.kind === "add") {
       const { from, to } = decision;
-      await addGap({ server: key, target, from, to, lost: false });
+      await addGap({
+        server: key,
+        target,
+        from,
+        to,
+        lost: false,
+        ...(newestStored?.msgid ? { fromMsgid: newestStored.msgid } : {}),
+        ...(page.oldestMsgid ? { toMsgid: page.oldestMsgid } : {}),
+      });
       const [gap] = (await gapsFor(key, target)).filter(
         (g) => g.from === from && g.to === to,
       );
@@ -420,10 +542,24 @@ async function saveHistoryPage(
       (gap) => gap.id === request.fill?.gap?.id,
     );
     const decision =
-      filled && decideAfterForwardFill({ gap: filled, page, inserted });
+      filled &&
+      decideAfterForwardFill({
+        gap: filled,
+        page,
+        inserted,
+        canResumeFromEdge: canPageByMsgid && !!page.newestMsgid,
+      });
     if (filled && decision?.kind === "close") await deleteGap(filled.id);
-    else if (filled && decision?.kind === "shrink")
-      await updateGap({ ...filled, from: decision.from });
+    else if (filled && decision?.kind === "shrink") {
+      const gap = {
+        ...filled,
+        from: decision.from,
+        fromMsgid: page.newestMsgid,
+      };
+      await updateGap(gap);
+      if (askForRestOfMillisecond(serverId, target, gap, "from", request.fill))
+        return;
+    }
     request.fill.onSettled?.(true);
   } else if (request?.kind === "before" && request.fill) {
     const { pagesLeft } = request.fill;
@@ -432,12 +568,25 @@ async function saveHistoryPage(
       (gap) => gap.id === request.fill?.gap?.id,
     );
     const decision =
-      filled && decideAfterGapFill({ gap: filled, page, inserted });
+      filled &&
+      decideAfterGapFill({
+        gap: filled,
+        page,
+        inserted,
+        canResumeFromEdge: canPageByMsgid && !!page.oldestMsgid,
+      });
     if (filled && decision?.kind === "close") {
       await deleteGap(filled.id);
     } else if (filled && decision?.kind === "shrink") {
-      const gap = { ...filled, to: decision.to, lost: decision.lost };
+      const gap = {
+        ...filled,
+        to: decision.to,
+        lost: decision.lost,
+        toMsgid: page.size > 0 ? page.oldestMsgid : filled.toMsgid,
+      };
       await updateGap(gap);
+      if (askForRestOfMillisecond(serverId, target, gap, "to", request.fill))
+        return;
       if (pagesLeft !== undefined)
         settleGap(store, serverId, target, gap, pagesLeft);
     }
@@ -462,7 +611,14 @@ async function saveHistoryPage(
       isHidden &&
       hidden <= MAX_HIDDEN_PAGES_IN_A_ROW &&
       page.oldest !== undefined &&
-      requestPageBefore(serverId, target, page.oldest, undefined, false)
+      requestPageBefore(
+        serverId,
+        target,
+        page.oldest,
+        undefined,
+        false,
+        page.oldestMsgid,
+      )
     )
       return;
   }
@@ -477,6 +633,7 @@ async function refreshHasMore(
   serverId: string,
   target: string,
   serverMayHaveMore: boolean,
+  canServerFillGaps = true,
 ) {
   const conversation = findConversation(store, serverId, target);
   if (!conversation) return;
@@ -486,9 +643,23 @@ async function refreshHasMore(
   const hasMore =
     serverMayHaveMore ||
     (await olderDiskRows(store, serverId, target, 1)).length > 0 ||
-    (await gapsServerCanFill(store, serverId, target)).some(
-      isOlderThanOldestShown,
-    );
+    (canServerFillGaps &&
+      (await gapsServerCanFill(store, serverId, target)).some(
+        isOlderThanOldestShown,
+      ));
+  updateChat(store, serverId, conversation.channelId, {
+    hasMoreHistory: hasMore,
+  });
+}
+
+type HistoryOffer = Pick<Channel, "hasMoreHistory" | "historyRefusedAt">;
+
+function updateChat(
+  store: StoreApi<AppState>,
+  serverId: string,
+  chatId: string,
+  update: HistoryOffer,
+) {
   store.setState((state) => ({
     servers: state.servers.map((server) =>
       server.id !== serverId
@@ -496,18 +667,68 @@ async function refreshHasMore(
         : {
             ...server,
             channels: server.channels.map((c) =>
-              c.id === conversation.channelId
-                ? { ...c, hasMoreHistory: hasMore }
-                : c,
+              c.id === chatId ? { ...c, ...update } : c,
             ),
             privateChats: server.privateChats?.map((pc) =>
-              pc.id === conversation.channelId
-                ? { ...pc, hasMoreHistory: hasMore }
-                : pc,
+              pc.id === chatId ? { ...pc, ...update } : pc,
             ),
           },
     ),
   }));
+}
+
+// A request refused with one of these fails the same way when sent again. Any
+// other refusal, like a storage error or a rate limit, can pass on a later try.
+const FINAL_REFUSALS = new Set([
+  "INVALID_TARGET",
+  "INVALID_PARAMS",
+  "INVALID_MSGREFTYPE",
+  "NEED_MORE_PARAMS",
+  "UNKNOWN_COMMAND",
+]);
+
+// Some servers name only the subcommand in a refusal, so we take it for the
+// one chat that waits for a reply to that subcommand.
+function onlyChatAwaiting(
+  serverId: string,
+  subcommand: string | undefined,
+): string | undefined {
+  const kind = subcommand?.toLowerCase();
+  const waiting = [...pendingRequests]
+    .filter(
+      ([key, queue]) =>
+        key.startsWith(`${serverId}\n`) && queue[0]?.kind === kind,
+    )
+    .map(([key]) => key.slice(serverId.length + 1));
+  return waiting.length === 1 ? waiting[0] : undefined;
+}
+
+// A final refusal ends the offer of older history, apart from pages we can
+// still read from disk. After any other refusal the offer stands as it was,
+// and a refused older page is marked so the list can ask for it again.
+function settleRefusedOffer(
+  store: StoreApi<AppState>,
+  serverId: string,
+  target: string,
+  code: string,
+  subcommand: string | undefined,
+) {
+  const conversation = findConversation(store, serverId, target);
+  if (!conversation) return;
+  setLoading(serverId, target, false);
+  if (FINAL_REFUSALS.has(code)) {
+    void refreshHasMore(store, serverId, target, false, false);
+    return;
+  }
+  const server = store.getState().servers.find((s) => s.id === serverId);
+  const chat =
+    server?.channels.find((c) => c.id === conversation.channelId) ??
+    server?.privateChats?.find((pc) => pc.id === conversation.channelId);
+  if (subcommand?.toUpperCase() === "BEFORE")
+    updateChat(store, serverId, conversation.channelId, {
+      historyRefusedAt: Date.now(),
+    });
+  void refreshHasMore(store, serverId, target, chat?.hasMoreHistory === true);
 }
 
 async function gapsServerCanFill(
@@ -682,6 +903,7 @@ function settleGap(
     gap.to,
     { gap, pagesLeft: pagesLeft - 1 },
     false,
+    gapEdgeMsgid(gap, "to", gap.to),
   );
 }
 
@@ -804,15 +1026,20 @@ function trackOutgoing(
     const target = request[2].toLowerCase();
     const queue = pendingRequests.get(conversationKey(serverId, target)) ?? [];
     const kind = request[1].toLowerCase() as "before" | "after" | "around";
+    const isByMsgid = /^CHATHISTORY \S+ \S+ msgid=/.test(line);
     queue.push(
       request[1] === "LATEST"
         ? {
             kind: "latest",
-            newestStoredTime: newestEventRows(serverId, target, 1).then(
-              ([row]) => row?.time,
+            newestStored: newestEventRows(serverId, target, 1).then(
+              ([row]) => row,
             ),
           }
-        : { kind, fill: nextGapFill },
+        : {
+            kind,
+            fill: nextGapFill,
+            ...(isByMsgid ? { msgidTime: nextMsgidTime } : {}),
+          },
     );
     pendingRequests.set(conversationKey(serverId, target), queue);
     return;
@@ -872,19 +1099,28 @@ export function registerHistoryHandlers(store: StoreApi<AppState>): void {
 
   // A refused CHATHISTORY opens no batch, so we drop its request here or the
   // next reply would be matched to it.
-  ircClient.on("FAIL", ({ serverId, command, context }) => {
+  ircClient.on("FAIL", ({ serverId, command, code, context }) => {
     if (command !== "CHATHISTORY") return;
-    const refused = context.find((part) =>
-      findConversation(store, serverId, part),
-    );
-    if (refused) void refreshHasMore(store, serverId, refused, false);
-    const target = context.find(
-      (part) => pendingRequests.get(conversationKey(serverId, part))?.length,
-    );
-    if (!target) return;
-    const request = pendingRequests
-      .get(conversationKey(serverId, target))
-      ?.shift();
+    const [subcommand] = context;
+    const target =
+      context.find(
+        (part) => pendingRequests.get(conversationKey(serverId, part))?.length,
+      ) ?? onlyChatAwaiting(serverId, subcommand);
+    const refused =
+      context.find((part) => findConversation(store, serverId, part)) ?? target;
+    const request = target
+      ? pendingRequests.get(conversationKey(serverId, target))?.shift()
+      : undefined;
+    // A server can list msgid among its references and still refuse a page asked by one, so we ask that page once by time before we read anything into the refusal.
+    if (
+      target &&
+      request &&
+      request.kind !== "latest" &&
+      request.msgidTime !== undefined &&
+      askAgainByTime(serverId, target, request, request.msgidTime)
+    )
+      return;
+    if (refused) settleRefusedOffer(store, serverId, refused, code, subcommand);
     if (request && request.kind !== "latest") request.fill?.onSettled?.(false);
   });
 
@@ -939,7 +1175,8 @@ function fetchGapPage(gap: HistoryGap): Promise<boolean> {
       window.clearTimeout(timer);
       resolve(isSaved);
     };
-    if (!requestPageBefore(gap.server, gap.target, gap.to, fill, false))
+    const msgid = gapEdgeMsgid(gap, "to", gap.to);
+    if (!requestPageBefore(gap.server, gap.target, gap.to, fill, false, msgid))
       fill.onSettled(false);
   });
 }
@@ -961,16 +1198,10 @@ function fetchPageToDisk(
       window.clearTimeout(timer);
       resolve(isSaved);
     };
-    nextGapFill = fill;
-    const isSent = ircClient.requestChathistoryAt(
-      serverId,
-      target,
-      subcommand,
-      new Date(time).toISOString(),
-      { isDiskOnly: subcommand === "AFTER" },
-    );
-    nextGapFill = undefined;
-    if (!isSent) fill.onSettled(false);
+    const msgid =
+      subcommand === "AFTER" ? gapEdgeMsgid(gap, "from", time) : undefined;
+    if (!requestPageAfter(serverId, target, subcommand, time, fill, msgid))
+      fill.onSettled(false);
   });
 }
 
@@ -1292,6 +1523,7 @@ export async function loadOlderMessages(
       serverId,
       target,
       new Date(oldestTime).toISOString(),
+      { msgid: shownOldestMsgid(store, serverId, target, oldestTime) },
     );
     return true;
   }
@@ -1313,6 +1545,9 @@ export async function loadOlderMessages(
       return false;
     }
     if (plan.kind === "server") {
+      const msgid = plan.gap
+        ? gapEdgeMsgid(plan.gap, "to", plan.before)
+        : await heldMsgidAt(store, serverId, target, plan.before);
       const isSent = requestPageBefore(
         serverId,
         target,
@@ -1321,6 +1556,8 @@ export async function loadOlderMessages(
           !historyWithoutMsgids.has(serverId)
           ? diskFirstFill(store, serverId, target, before, plan.gap)
           : plan.gap && { gap: plan.gap },
+        true,
+        msgid,
       );
       if (!isSent) setLoading(serverId, target, false);
       return isSent;

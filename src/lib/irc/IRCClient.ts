@@ -728,6 +728,7 @@ export class IRCClient implements IRCClientContext {
   rateLimitedServers: Map<string, number> = new Map(); // Track rate-limited servers (serverId -> timestamp)
   private pingTimers: Map<string, NodeJS.Timeout> = new Map(); // Track ping timers per server
   pongTimeouts: Map<string, NodeJS.Timeout> = new Map(); // Track pong timeouts per server
+  private pongWaitMs: Map<string, number> = new Map();
   private serverConnectParams: Map<
     string,
     {
@@ -1131,6 +1132,7 @@ export class IRCClient implements IRCClientContext {
           (id) => this.sockets.get(id) === socket,
         );
         if (serverId) {
+          this.restartPongWait(serverId, socket);
           const data =
             typeof event.data === "string"
               ? event.data
@@ -1458,6 +1460,12 @@ export class IRCClient implements IRCClientContext {
     // A check already waiting for its PONG keeps its earlier deadline.
     if (this.pongTimeouts.has(serverId)) return;
     this.sendRaw(serverId, `PING :${Date.now()}`);
+    this.pongWaitMs.set(serverId, timeoutMs);
+    this.awaitPong(serverId, socket, timeoutMs);
+  }
+
+  private awaitPong(serverId: string, socket: ISocket, timeoutMs: number) {
+    clearTimeout(this.pongTimeouts.get(serverId));
     this.pongTimeouts.set(
       serverId,
       setTimeout(() => {
@@ -1466,6 +1474,13 @@ export class IRCClient implements IRCClientContext {
         this.dropDeadSocket(serverId, socket);
       }, timeoutMs),
     );
+  }
+
+  // A busy server answers our PING after the lines it has queued, so every line we receive starts the wait for the PONG over.
+  private restartPongWait(serverId: string, socket: ISocket): void {
+    const timeoutMs = this.pongWaitMs.get(serverId);
+    if (timeoutMs === undefined || !this.pongTimeouts.has(serverId)) return;
+    this.awaitPong(serverId, socket, timeoutMs);
   }
 
   // We silence the old socket before closing it, so a reconnect never leaves a second live session under one server.
@@ -1583,7 +1598,8 @@ export class IRCClient implements IRCClientContext {
     {
       showLoading = true,
       isDiskOnly = false,
-    }: { showLoading?: boolean; isDiskOnly?: boolean } = {},
+      msgid,
+    }: { showLoading?: boolean; isDiskOnly?: boolean; msgid?: string } = {},
   ): boolean {
     const server = this.servers.get(serverId);
     if (!server?.capabilities?.includes("draft/chathistory")) return false;
@@ -1599,7 +1615,7 @@ export class IRCClient implements IRCClientContext {
       });
     this.sendRaw(
       serverId,
-      `CHATHISTORY BEFORE ${channelName} timestamp=${beforeTimestamp} ${this.chathistoryPageSize(serverId, isDiskOnly)}`,
+      `CHATHISTORY BEFORE ${channelName} ${this.historyReference(serverId, beforeTimestamp, msgid)} ${this.chathistoryPageSize(serverId, isDiskOnly)}`,
     );
     return true;
   }
@@ -1609,16 +1625,36 @@ export class IRCClient implements IRCClientContext {
     target: string,
     subcommand: "AFTER" | "AROUND",
     timestamp: string,
-    { isDiskOnly = false }: { isDiskOnly?: boolean } = {},
+    {
+      isDiskOnly = false,
+      msgid,
+    }: { isDiskOnly?: boolean; msgid?: string } = {},
   ): boolean {
     const server = this.servers.get(serverId);
     if (!server?.capabilities?.includes("draft/chathistory")) return false;
     if (server.isBouncerControl) return false;
     this.sendRaw(
       serverId,
-      `CHATHISTORY ${subcommand} ${target} timestamp=${timestamp} ${this.chathistoryPageSize(serverId, isDiskOnly)}`,
+      `CHATHISTORY ${subcommand} ${target} ${this.historyReference(serverId, timestamp, msgid)} ${this.chathistoryPageSize(serverId, isDiskOnly)}`,
     );
     return true;
+  }
+
+  // Servers list the kinds of reference they page history by in MSGREFTYPES.
+  canPageByMsgid(serverId: string): boolean {
+    const kinds = this.isupportValues.get(serverId)?.get("MSGREFTYPES");
+    return !!kinds && kinds.toLowerCase().split(",").includes("msgid");
+  }
+
+  // A time names every line of its millisecond and a msgid names one line, so we page from the msgid wherever the server takes one.
+  private historyReference(
+    serverId: string,
+    timestamp: string,
+    msgid: string | undefined,
+  ): string {
+    return msgid && /^\S+$/.test(msgid) && this.canPageByMsgid(serverId)
+      ? `msgid=${msgid}`
+      : `timestamp=${timestamp}`;
   }
 
   // soju bouncer control sessions have no real channels, so we treat them as cap-less.
@@ -1715,6 +1751,20 @@ export class IRCClient implements IRCClientContext {
       server.channels = server.channels.filter(
         (c) => c.name.toLowerCase() !== channelName.toLowerCase(),
       );
+  }
+
+  // We send messages and rejoin after a reconnect by the names we hold here, so a renamed channel takes its new name and replaces any entry already under it.
+  renameKnownChannel(serverId: string, oldName: string, newName: string): void {
+    const server = this.servers.get(serverId);
+    if (!server) return;
+    const isOld = (name: string) =>
+      name.toLowerCase() === oldName.toLowerCase();
+    const isNew = (name: string) =>
+      name.toLowerCase() === newName.toLowerCase();
+    if (!server.channels.some((c) => isOld(c.name))) return;
+    server.channels = server.channels
+      .filter((c) => isOld(c.name) || !isNew(c.name))
+      .map((c) => (isOld(c.name) ? { ...c, name: newName } : c));
   }
 
   sendMessage(serverId: string, channelId: string, content: string): void {

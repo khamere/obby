@@ -142,7 +142,7 @@ export async function jumpToReply(
         serverId,
         target,
         new Date(oldestTime).toISOString(),
-        { showLoading: false },
+        { showLoading: false, msgid: oldest?.msgid },
       );
     });
     if (!coming) break;
