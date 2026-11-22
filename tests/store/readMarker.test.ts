@@ -433,8 +433,10 @@ describe("read markers", () => {
     expect(channel().unreadCount).toBe(0);
 
     ircClient.triggerEvent("LOGGED_IN", { serverId: SERVER, account: "me" });
-    expect(markreadGet).toHaveBeenCalledWith(SERVER, "#chan");
-    expect(markreadGet).toHaveBeenCalledWith(SERVER, "bob");
+    expect([...markreadGet.mock.calls].sort()).toEqual([
+      [SERVER, "#chan"],
+      [SERVER, "bob"],
+    ]);
   });
 
   it("leaves the marker alone while the app is hidden", async () => {
