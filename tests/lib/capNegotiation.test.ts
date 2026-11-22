@@ -140,6 +140,17 @@ describe("capability negotiation", () => {
     });
   });
 
+  describe("a reconnect", () => {
+    test("sends nothing when the old connection's wait ends before the new capability list arrives", async () => {
+      const first = await connect();
+      first.receive(":irc.example CAP * LS :batch server-time");
+
+      const second = await reconnect(first);
+      await vi.advanceTimersByTimeAsync(2500);
+      expect(second.sent).toEqual(["CAP LS 302"]);
+    });
+  });
+
   describe("a login with SASL, then a reconnect", () => {
     async function loggedIn(): Promise<MockWebSocket> {
       const first = await connect(true);
@@ -322,7 +333,7 @@ describe("capability negotiation", () => {
       ]);
     });
 
-    test("leaves sasl out of a retry once the wait for an answer has ended negotiation", async () => {
+    test("is left alone when it arrives after the wait for an answer has ended negotiation", async () => {
       const socket = await connect(true);
       socket.receive(":irc.example CAP * LS :sasl=PLAIN batch server-time");
       await vi.advanceTimersByTimeAsync(5001);
@@ -330,12 +341,34 @@ describe("capability negotiation", () => {
 
       const before = socket.sent.length;
       socket.receive(":irc.example CAP * NAK :sasl batch server-time");
-      expect(socket.sent.slice(before)).toEqual([
+      expect(socket.sent.slice(before)).toEqual([]);
+    });
+
+    test("is retried without the names we did not ask for", async () => {
+      const socket = await connect();
+      socket.receive(
+        ":irc.example CAP * LS :batch server-time",
+        ":irc.example CAP * NAK :batch server-time unasked/cap serv",
+      );
+      expect(socket.requests()).toEqual([
+        "CAP REQ :batch server-time",
         "CAP REQ :batch",
         "CAP REQ :server-time",
       ]);
-      socket.receive(":irc.example CAP * NAK :sasl batch");
-      expect(socket.sent.slice(before + 2)).toEqual(["CAP REQ :batch"]);
+    });
+
+    test("settles when the refusal of a single cap names more than that cap", async () => {
+      const socket = await connect();
+      socket.receive(
+        ":irc.example CAP * LS :batch",
+        ":irc.example CAP * NAK :batch server-time",
+      );
+      expect(socket.requests()).toEqual(["CAP REQ :batch"]);
+      expect(socket.sent.slice(socket.sent.indexOf("CAP END"))).toEqual([
+        "CAP END",
+        "NICK alice",
+        "USER alice 0 * :alice",
+      ]);
     });
 
     test("holds ISUPPORT back until the capability for it is enabled", async () => {
@@ -356,6 +389,22 @@ describe("capability negotiation", () => {
         "NICK alice",
         "USER alice 0 * :alice",
       ]);
+    });
+
+    test("leaves ISUPPORT unsent for a capability enabled after registration", async () => {
+      const socket = await connect();
+      socket.receive(
+        ":irc.example CAP * LS :batch",
+        ":irc.example CAP alice ACK :batch",
+        ":irc.example 001 alice :Welcome",
+        ":irc.example CAP alice NEW :draft/extended-isupport",
+        ":irc.example CAP alice ACK :draft/extended-isupport",
+      );
+      expect(socket.requests()).toEqual([
+        "CAP REQ :batch",
+        "CAP REQ :draft/extended-isupport",
+      ]);
+      expect(socket.sent).not.toContain("ISUPPORT");
     });
 
     test("sends nothing more when it comes after registration", async () => {

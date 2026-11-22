@@ -2684,8 +2684,7 @@ export class IRCClient implements IRCClientContext {
       .filter(Boolean)
       .map((cap) => cap.split("=", 1)[0]);
 
-    // A server knows ISUPPORT as a command only once the capability is
-    // enabled, and may drop a connection that sends it earlier.
+    // A server accepts ISUPPORT only once it has enabled the capability, so we send it after the acknowledgement.
     if (
       !this.capNegotiationComplete.get(serverId) &&
       ackedNames.some((cap) => cap.startsWith("draft/extended-isupport"))
@@ -2711,24 +2710,18 @@ export class IRCClient implements IRCClientContext {
     this.settleCapReqs(serverId, ackedNames);
   }
 
-  // A server refuses a whole CAP REQ line when it rejects any cap on it, so
-  // we ask again in halves until the refused cap stands alone and the rest
-  // are enabled.
+  // A server refuses a whole CAP REQ line over a single cap, so we ask again in halves until that cap stands alone.
   onCapNak(serverId: string, cliCaps: string): void {
-    const refused = cliCaps
-      .split(" ")
-      .filter(Boolean)
-      .map((cap) => cap.split("=", 1)[0]);
+    const pending = this.pendingCapReqs.get(serverId);
+    if (!pending) return;
+    // We retry only what this connection still waits for, whatever else the refusal names.
+    const refused = [
+      ...new Set(cliCaps.split(" ").map((cap) => cap.split("=", 1)[0])),
+    ].filter((cap) => pending.has(cap));
     if (refused.length > 1) {
-      // SASL belongs to registration, so we ask for it again only while we are still negotiating.
-      const retry = this.capNegotiationComplete.get(serverId)
-        ? refused.filter((cap) => cap !== "sasl")
-        : refused;
-      const half = Math.ceil(retry.length / 2);
-      for (const part of [retry.slice(0, half), retry.slice(half)]) {
-        if (part.length > 0)
-          this.sendRaw(serverId, `CAP REQ :${part.join(" ")}`);
-      }
+      const half = Math.ceil(refused.length / 2);
+      this.sendRaw(serverId, `CAP REQ :${refused.slice(0, half).join(" ")}`);
+      this.sendRaw(serverId, `CAP REQ :${refused.slice(half).join(" ")}`);
       return;
     }
     this.settleCapReqs(serverId, refused);
