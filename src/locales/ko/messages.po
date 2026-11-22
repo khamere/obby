@@ -6388,6 +6388,10 @@ msgstr "이 브라우저에서는 음성을 녹음할 수 없습니다."
 msgid "This browser cannot record video."
 msgstr "이 브라우저에서는 동영상을 녹화할 수 없습니다."
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "This browser does not let Obby store data, so nothing was saved."
+msgstr "이 브라우저에서는 Obby가 데이터를 저장할 수 없어 아무것도 저장하지 않았습니다."
+
 #: src/components/search/SearchQueryBar.tsx
 msgid "This chat"
 msgstr "이 채팅"

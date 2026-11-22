@@ -6388,6 +6388,10 @@ msgstr "Este navegador não consegue gravar áudio."
 msgid "This browser cannot record video."
 msgstr "Este navegador não consegue gravar vídeo."
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "This browser does not let Obby store data, so nothing was saved."
+msgstr "Este navegador não permite que o Obby guarde dados, por isso nada foi guardado."
+
 #: src/components/search/SearchQueryBar.tsx
 msgid "This chat"
 msgstr "Esta conversa"

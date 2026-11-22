@@ -1,5 +1,6 @@
 // Stylesheets that try to get an address past the sanitiser. A row marked
-// "inert" already holds no address a browser would fetch as written.
+// "inert" holds nothing the test tokeniser reports as written; what a browser
+// really fetches is a separate matter, checked in browsers.
 export type BypassAttempt = [name: string, css: string, inert?: "inert"];
 
 export const BYPASS_ATTEMPTS: BypassAttempt[] = [

@@ -6388,6 +6388,10 @@ msgstr "Bu tarayıcı ses kaydedemiyor."
 msgid "This browser cannot record video."
 msgstr "Bu tarayıcı video kaydedemiyor."
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "This browser does not let Obby store data, so nothing was saved."
+msgstr "Bu tarayıcı Obby'nin veri depolamasına izin vermiyor, bu yüzden hiçbir şey kaydedilmedi."
+
 #: src/components/search/SearchQueryBar.tsx
 msgid "This chat"
 msgstr "Bu sohbet"

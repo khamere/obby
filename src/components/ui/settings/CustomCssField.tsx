@@ -17,9 +17,14 @@ const buttonClass =
   "rounded px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed";
 
 function saveErrorText(error: unknown): string {
-  return error instanceof Error && error.message === "refused"
-    ? t`This stylesheet could not be made safe, so it was not saved.`
-    : t`Use a smaller stylesheet. This one does not fit in this browser's storage.`;
+  const code = error instanceof Error ? error.message : "";
+  if (code === "refused") {
+    return t`This stylesheet could not be made safe, so it was not saved.`;
+  }
+  if (code === "not-stored") {
+    return t`Use a smaller stylesheet. This one does not fit in this browser's storage.`;
+  }
+  return t`This browser does not let Obby store data, so nothing was saved.`;
 }
 
 /**

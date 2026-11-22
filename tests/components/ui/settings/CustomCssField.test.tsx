@@ -15,6 +15,8 @@ const props = { value: null, onChange: () => {} } as unknown as Parameters<
 const SAVED = "Your CSS was saved.";
 const NO_ROOM =
   "Use a smaller stylesheet. This one does not fit in this browser's storage.";
+const NO_STORAGE =
+  "This browser does not let Obby store data, so nothing was saved.";
 const REFUSED = "This stylesheet could not be made safe, so it was not saved.";
 
 function saveOwn(text: string) {
@@ -62,6 +64,17 @@ describe("CustomCssField", () => {
     expect(screen.queryByText(SAVED)).toBeNull();
     expect(editor.value).toBe(".a{color:red}");
     expect(getCustomCssState().own).toBe("");
+  });
+
+  it("names storage that is closed to us instead of asking for a smaller stylesheet", () => {
+    vi.mocked(localStorage.setItem).mockImplementation(() => {
+      throw new DOMException("denied", "SecurityError");
+    });
+    const editor = saveOwn(".a{color:red}");
+    expect(screen.getByText(NO_STORAGE)).toBeTruthy();
+    expect(screen.queryByText(NO_ROOM)).toBeNull();
+    expect(screen.queryByText(SAVED)).toBeNull();
+    expect(editor.value).toBe(".a{color:red}");
   });
 
   it("keeps the text and says so when the stylesheet was refused as a whole", () => {

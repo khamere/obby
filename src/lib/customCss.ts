@@ -601,10 +601,12 @@ function sanitizeOrThrow(input: string): string {
 
 const IGNORED_BETWEEN_RULES = /^(?:[ \n\t]+|\/\*[\s\S]*\*\/|<!--|-->)$/;
 
-// The user's own CSS is a stylesheet of its own, so we repeat the namespace prefixes the linked one declares and selectors such as svg|path keep matching.
-export function namespacePrefixRules(css: string): string {
+// The start of a stylesheet, where layer statements may come first and namespaces may follow them.
+function readPrelude(css: string): { prefixes: string[]; layersEnd: number } {
   const scanner = new CssScanner(css);
-  const rules: string[] = [];
+  const prefixes: string[] = [];
+  let layersEnd = 0;
+  let sawNamespace = false;
   const read = () => {
     const at = scanner.pos;
     const token = scanner.next();
@@ -615,28 +617,58 @@ export function namespacePrefixRules(css: string): string {
     while (IGNORED_BETWEEN_RULES.test(part.raw)) part = read();
     return part;
   };
+  // an address is a string, or an inline url() that we kept as written
+  const readAddress = (part: ReturnType<typeof read>) => {
+    if (part.token.closed || part.token.safe) return part.raw;
+    if (part.token.kind !== "function" || part.token.name !== undefined) {
+      return undefined;
+    }
+    const end = readPastSpace();
+    return end.token.raw === ")" ? `${part.raw})` : undefined;
+  };
   for (;;) {
     const rule = readPastSpace();
     if (rule.token.kind !== "at") break;
     if (rule.token.name === "namespace") {
       const first = readPastSpace();
       const named = first.token.kind === "ident";
-      const address = named ? readPastSpace() : first;
-      if (!address.token.closed) break;
+      const address = readAddress(named ? readPastSpace() : first);
+      if (address === undefined) break;
       if (readPastSpace().token.kind !== "semicolon") break;
+      sawNamespace = true;
       // a default namespace would change which elements the user's own selectors match
-      if (named) {
-        rules.push(`@namespace ${first.raw}${SEPARATOR}${address.raw};`);
-      }
-    } else if (rule.token.name === "charset" || rule.token.name === "layer") {
+      if (named)
+        prefixes.push(`@namespace ${first.raw}${SEPARATOR}${address};`);
+    } else if (
+      // the browser ignores a namespace that comes after a layer statement which itself follows a namespace
+      !sawNamespace &&
+      (rule.token.name === "charset" || rule.token.name === "layer")
+    ) {
       scanner.skipAtRule();
       // a rule with a block ends the part of a stylesheet where namespaces may be declared
       if (css.charAt(scanner.pos - 1) !== ";") break;
+      layersEnd = scanner.pos;
     } else {
       break;
     }
   }
-  return rules.join("\n");
+  return { prefixes, layersEnd };
+}
+
+// The user's own CSS is a stylesheet of its own, so we repeat the namespace prefixes the linked one declares and selectors such as svg|path keep matching.
+export function namespacePrefixRules(css: string): string {
+  return readPrelude(css).prefixes.join("\n");
+}
+
+/** The user's own CSS with the linked stylesheet's namespace prefixes, placed where the browser accepts them and the user's own ones still come last. */
+export function withLinkedPrefixes(own: string, linkCss: string): string {
+  if (!own.trim()) return own;
+  const prefixes = namespacePrefixRules(linkCss);
+  if (!prefixes) return own;
+  const at = readPrelude(own).layersEnd;
+  return at === 0
+    ? `${prefixes}\n${own}`
+    : `${own.slice(0, at)}\n${prefixes}\n${own.slice(at)}`;
 }
 
 export function isValidCssLink(link: string): boolean {
@@ -666,13 +698,21 @@ function storageGet(key: string): string {
   }
 }
 
-function storageSet(key: string, value: string): boolean {
+// Returns "" when the value is stored, and otherwise whether storage is full or closed to us.
+function storageSet(
+  key: string,
+  value: string,
+): "" | "not-stored" | "no-storage" {
   try {
     if (value) localStorage.setItem(key, value);
     else localStorage.removeItem(key);
-    return true;
-  } catch {
-    return false;
+    return "";
+  } catch (error) {
+    const full =
+      error instanceof DOMException &&
+      (error.name === "QuotaExceededError" ||
+        error.name === "NS_ERROR_DOM_QUOTA_REACHED");
+    return full ? "not-stored" : "no-storage";
   }
 }
 
@@ -699,8 +739,7 @@ function update(patch: Partial<CustomCssState>): void {
   // Each source gets a <style> element of its own, so a block the linked
   // file leaves open ends with that file and the user's own CSS still applies.
   applyToDocument(LINK_STYLE_ID, state.linkCss);
-  const prefixes = state.own.trim() ? namespacePrefixRules(state.linkCss) : "";
-  applyToDocument(STYLE_ID, prefixes ? `${prefixes}\n${state.own}` : state.own);
+  applyToDocument(STYLE_ID, withLinkedPrefixes(state.own, state.linkCss));
   for (const l of listeners) l();
 }
 
@@ -753,9 +792,11 @@ export function loadCustomCss(): void {
 /** Saves (or, with "", removes) the user's own pasted/uploaded CSS. */
 export function saveOwnCss(input: string): void {
   if (input.length > MAX_CSS_CHARS) throw new Error("too-large");
-  const own = sanitizeOrThrow(input);
+  // a blank stylesheet is a removal, which has to work when storage is full
+  const own = input.trim() ? sanitizeOrThrow(input) : "";
   // CSS we cannot keep would be gone at the next start, so we apply it only once it is stored
-  if (!storageSet(OWN_KEY, own)) throw new Error("not-stored");
+  const failure = storageSet(OWN_KEY, own);
+  if (failure) throw new Error(failure);
   update({ own });
 }
 
@@ -766,7 +807,8 @@ export function saveOwnCss(input: string): void {
 export async function setCssLink(input: string): Promise<void> {
   const link = input.trim();
   if (link && !isValidCssLink(link)) throw new Error("bad-link");
-  if (!storageSet(LINK_KEY, link)) throw new Error("not-stored");
+  const failure = storageSet(LINK_KEY, link);
+  if (failure) throw new Error(failure);
   storageSet(LINK_CACHE_KEY, "");
   refreshSeq++;
   update({ link, linkCss: "", linkStatus: link ? "loading" : "none" });

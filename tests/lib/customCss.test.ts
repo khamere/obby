@@ -140,7 +140,7 @@ describe("sanitizeCss", () => {
   it.each(BYPASS_ATTEMPTS)(
     "blocks a remote address hidden by %s",
     (_name, css, inert) => {
-      // an attempt has to be live as written, or sanitising it proves nothing
+      // The test tokeniser has to report something in an attempt as written, or sanitising it proves nothing; whether a browser fetches it is a separate check made in browsers.
       expect(remoteReferences(css).length > 0).toBe(!inert);
       const out = sanitizeCss(css);
       expect(remoteReferences(out)).toEqual([]);
@@ -426,6 +426,7 @@ describe("own and linked stylesheets", () => {
   function styleText() {
     return document.getElementById("obby-custom-css")?.textContent ?? null;
   }
+  const full = () => new DOMException("full", "QuotaExceededError");
   function linkStyleText() {
     return document.getElementById("obby-custom-css-link")?.textContent ?? null;
   }
@@ -587,7 +588,7 @@ describe("own and linked stylesheets", () => {
 
   it("reports a link that cannot be stored, and still applies one whose copy cannot", async () => {
     vi.mocked(localStorage.setItem).mockImplementation((k, v) => {
-      if (k === "obby.customCss.linkCache") throw new Error("full");
+      if (k === "obby.customCss.linkCache") throw full();
       backing.set(k, v);
     });
     await setCssLink(LINK);
@@ -595,11 +596,65 @@ describe("own and linked stylesheets", () => {
     expect(linkStyleText()).toBe(".linked { color: blue; }");
     await setCssLink("");
     vi.mocked(localStorage.setItem).mockImplementation(() => {
-      throw new Error("full");
+      throw full();
     });
     await expect(setCssLink(LINK)).rejects.toThrow("not-stored");
     expect(getCustomCssState()).toMatchObject({ link: "", linkStatus: "none" });
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("tells storage that is closed to us from storage that is full", async () => {
+    vi.mocked(localStorage.setItem).mockImplementation(() => {
+      throw new DOMException("denied", "SecurityError");
+    });
+    expect(() => saveOwnCss(".a{}")).toThrow("no-storage");
+    await expect(setCssLink(LINK)).rejects.toThrow("no-storage");
+    expect(styleText()).toBeNull();
+  });
+
+  it("removes own CSS for a blank stylesheet although storage is full", () => {
+    saveOwnCss(".kept{}");
+    vi.mocked(localStorage.setItem).mockImplementation(() => {
+      throw full();
+    });
+    saveOwnCss(" \n ");
+    expect(styleText()).toBeNull();
+    expect(getCustomCssState().own).toBe("");
+    expect(backing.has("obby.customCss")).toBe(false);
+  });
+
+  it("repeats prefixes behind a default namespace and one written as an inline url()", () => {
+    expect(
+      namespacePrefixRules(
+        '@namespace url(data:,x); @namespace svg "http://www.w3.org/2000/svg"; @namespace d url(data:,d); @namespace e url( "data:,e" ) ;',
+      ),
+    ).toBe(
+      '@namespace svg/**/"http://www.w3.org/2000/svg";\n@namespace d/**/url(data:,d);\n@namespace e/**/url( "data:,e");',
+    );
+    expect(
+      namespacePrefixRules(
+        '@namespace e url("data:,e" x); @namespace svg "s";',
+      ),
+    ).toBe("");
+  });
+
+  it("repeats no namespace the browser ignores behind a later layer statement", () => {
+    expect(
+      namespacePrefixRules(
+        '@layer base; @namespace svg "http://www.w3.org/2000/svg"; @layer theme; @namespace svg "urn:other"; @namespace m "urn:m";',
+      ),
+    ).toBe('@namespace svg/**/"http://www.w3.org/2000/svg";');
+  });
+
+  it("puts repeated prefixes behind the layer statements own CSS starts with", async () => {
+    remote.body = '@namespace svg "http://www.w3.org/2000/svg"; .q{color:red}';
+    await setCssLink(LINK);
+    saveOwnCss(
+      '/* mine */ @layer theme; @namespace svg "urn:mine"; svg|a{color:red}',
+    );
+    expect(styleText()).toBe(
+      '/* mine */ @layer theme;\n@namespace svg/**/"http://www.w3.org/2000/svg";\n @namespace svg "urn:mine"; svg|a{color:red}',
+    );
   });
 
   it("reports a stylesheet that was refused as a whole instead of saving nothing", async () => {
