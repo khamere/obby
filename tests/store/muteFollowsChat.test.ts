@@ -104,6 +104,7 @@ describe("a muted chat that is created again", () => {
     vi.unstubAllGlobals();
     resetMutesForTests();
     ircClient.nicks.delete(serverId);
+    ircClient.isupportValues.delete(serverId);
     ircClient.servers.delete(serverId);
   });
 
@@ -295,6 +296,13 @@ describe("a muted chat that is created again", () => {
     ["no new name", ":bob!u@h RENAME #general"],
     ["an empty new name", ":bob!u@h RENAME #general :"],
     ["no parameters", ":bob!u@h RENAME"],
+    ["a new name of only spaces", ":bob!u@h RENAME #general :   "],
+    ["a new name without a channel prefix", ":bob!u@h RENAME #general lounge"],
+    ["a new name with a space in it", ":bob!u@h RENAME #general :#two words"],
+    [
+      "a new name of a type the server lacks",
+      ":bob!u@h RENAME #general &local",
+    ],
   ])(
     "leaves the channel and its logged mentions alone on a RENAME with %s",
     (_case, line) => {
@@ -319,6 +327,8 @@ describe("a muted chat that is created again", () => {
         { id: "c-general", kind: "channel", name: "#general" },
         null,
       );
+
+      feed(":irc.example.org 005 me CHANTYPES=# :are supported by this server");
 
       expect(() => feed(line)).not.toThrow();
 

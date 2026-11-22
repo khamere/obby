@@ -201,6 +201,18 @@ describe("mentionLog.load", () => {
     expect(mentionLog.load()).toEqual([entry]);
   });
 
+  test.each([
+    ["an empty timestamp", { timestamp: "" }],
+    ["a timestamp that is not a date", { timestamp: "yesterday" }],
+    ["a seen flag saved as text", { seen: "false" }],
+    ["no seen flag", { seen: undefined }],
+    ["a msgid that is not text", { msgid: 7 }],
+    ["a null msgid", { msgid: null }],
+  ])("drops an entry saved with %s", (_case, change) => {
+    mockStored([{ ...entry, ...change }, entry]);
+    expect(mentionLog.load()).toEqual([entry]);
+  });
+
   test("returns an empty log when the stored value is not a list", () => {
     mockStored({ entry });
     expect(mentionLog.load()).toEqual([]);

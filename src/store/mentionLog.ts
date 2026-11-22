@@ -29,12 +29,16 @@ const REQUIRED_TEXT_FIELDS = [
 ] as const;
 
 // The saved log is read back as plain JSON, and the views call string methods
-// on these fields, so we only accept an entry that has all of them as text.
+// on these fields, do date arithmetic on the timestamp and count the entries
+// that are not seen, so we only accept an entry they can all work with.
 export function isMentionEntry(value: unknown): value is MentionEntry {
   if (typeof value !== "object" || value === null) return false;
   const entry = value as Record<string, unknown>;
-  return REQUIRED_TEXT_FIELDS.every(
-    (field) => typeof entry[field] === "string",
+  return (
+    REQUIRED_TEXT_FIELDS.every((field) => typeof entry[field] === "string") &&
+    !Number.isNaN(Date.parse(entry.timestamp as string)) &&
+    typeof entry.seen === "boolean" &&
+    (entry.msgid === undefined || typeof entry.msgid === "string")
   );
 }
 
