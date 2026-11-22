@@ -1677,6 +1677,32 @@ export class IRCClient implements IRCClientContext {
     );
   }
 
+  // One command is one line, so we send text with line breaks as a multiline
+  // batch, or line by line where the server has none.
+  sendText(
+    serverId: string,
+    target: string,
+    text: string,
+    options: { replyTo?: string; joinLines?: boolean } = {},
+  ): void {
+    const replyTo = options.replyTo ? escapeTagValue(options.replyTo) : "";
+    const tags = replyTo ? `@+reply=${replyTo};+draft/reply=${replyTo} ` : "";
+    const lines = text.split(/\r?\n/);
+    if (lines.length > 1 && this.hasCapability(serverId, "draft/multiline")) {
+      this.sendMultiline(
+        serverId,
+        target,
+        lines.map((line) => splitLongMessage(line, target, true)),
+        tags,
+      );
+      return;
+    }
+    const separate = options.joinLines ? [lines.join(" ")] : lines;
+    for (const line of separate.filter(Boolean))
+      for (const part of splitLongMessage(line, target))
+        this.sendRaw(serverId, `${tags}PRIVMSG ${target} :${part}`);
+  }
+
   sendMultiline(
     serverId: string,
     target: string,

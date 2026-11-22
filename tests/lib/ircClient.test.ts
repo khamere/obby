@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { IRCClient } from "../../src/lib/ircClient";
+import { parseMessageTags } from "../../src/lib/ircUtils";
 import type { Server } from "../../src/types";
 
 // Mock WebSocket class
@@ -611,6 +612,73 @@ describe("IRCClient", () => {
       expect(mockSocket.sentMessages.at(-1)).toBe(
         "@+channel-context=#a\\:b;+draft/channel-context=#a\\:b PRIVMSG bob :hi",
       );
+    });
+
+    describe("a message with line breaks and a reply", () => {
+      const text = "see this\nand that https://files.example/a.png";
+      const replyTags = (line: string) =>
+        parseMessageTags(line.slice(0, line.indexOf(" ")));
+      const sentBy = (send: () => void) => {
+        const before = mockSocket.sentMessages.length;
+        send();
+        return mockSocket.sentMessages.slice(before);
+      };
+
+      test("goes out as one batch that carries every line", () => {
+        server.capabilities = ["draft/multiline"];
+
+        const sent = sentBy(() =>
+          client.sendText(server.id, "#a", text, { replyTo: "id;1 x" }),
+        );
+
+        expect(sent).toHaveLength(4);
+        const batch = /BATCH \+(\S+) draft\/multiline #a$/.exec(sent[0])?.[1];
+        expect(replyTags(sent[0])).toEqual({
+          "+reply": "id;1 x",
+          "+draft/reply": "id;1 x",
+        });
+        expect(sent.slice(1)).toEqual([
+          `@batch=${batch} PRIVMSG #a :see this`,
+          `@batch=${batch} PRIVMSG #a :and that https://files.example/a.png`,
+          `BATCH -${batch}`,
+        ]);
+      });
+
+      test("goes out line by line on a server without batches", () => {
+        const sent = sentBy(() =>
+          client.sendText(server.id, "#a", text, { replyTo: "id;1 x" }),
+        );
+
+        expect(sent.map((line) => line.slice(line.indexOf(" ") + 1))).toEqual([
+          "PRIVMSG #a :see this",
+          "PRIVMSG #a :and that https://files.example/a.png",
+        ]);
+        for (const line of sent)
+          expect(replyTags(line)).toEqual({
+            "+reply": "id;1 x",
+            "+draft/reply": "id;1 x",
+          });
+      });
+
+      test("goes out as one line when the lines are joined", () => {
+        const sent = sentBy(() =>
+          client.sendText(server.id, "#a", text, { joinLines: true }),
+        );
+
+        expect(sent).toEqual([
+          "PRIVMSG #a :see this and that https://files.example/a.png",
+        ]);
+      });
+
+      test("keeps a single line as one tagged message", () => {
+        const sent = sentBy(() =>
+          client.sendText(server.id, "#a", "hello", { replyTo: "abc" }),
+        );
+
+        expect(sent).toEqual([
+          "@+reply=abc;+draft/reply=abc PRIVMSG #a :hello",
+        ]);
+      });
     });
 
     test("should send LIST command", () => {

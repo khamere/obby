@@ -33,6 +33,7 @@ const ReactionButton: React.FC<{
 
   return (
     <HoverTooltip
+      className="max-w-full"
       content={
         <div className="text-center">
           <div className="mb-1 text-2xl">{emoji}</div>
@@ -47,7 +48,7 @@ const ReactionButton: React.FC<{
     >
       <button
         type="button"
-        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-sm transition-all cursor-pointer ${
+        className={`inline-flex min-w-0 items-center gap-1 px-2 py-0.5 rounded-full text-sm transition-all cursor-pointer ${
           reactionData.currentUserReacted
             ? "bg-blue-500/20 text-blue-300 hover:bg-blue-500/30"
             : "bg-discord-dark-300 text-discord-text-muted hover:bg-discord-dark-200"
@@ -59,7 +60,9 @@ const ReactionButton: React.FC<{
             : t`Add reaction ${emoji}`
         }
       >
-        <span>{emoji}</span>
+        <span className="min-w-0 overflow-hidden text-ellipsis whitespace-pre">
+          {emoji}
+        </span>
         <span className="text-xs font-medium tabular-nums">
           {reactionData.count}
         </span>

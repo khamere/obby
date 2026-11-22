@@ -90,17 +90,27 @@ describe("resolveUserMetadata", () => {
 describe("withReaction", () => {
   const message = { reactions: [] } as unknown as Message;
 
-  it.each(["👍", "👨‍👩‍👧‍👦", "🏴󠁧󠁢󠁥󠁮󠁧󠁿", ":custom_emoji:", "+1", "constructor"])(
-    "keeps %s",
-    (value) => {
-      expect(withReaction(message, value, "alice")?.reactions).toEqual([
-        { emoji: value, userId: "alice" },
-      ]);
-    },
-  );
+  it.each([
+    "👍",
+    "👨‍👩‍👧‍👦",
+    "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+    ":custom_emoji:",
+    "+1",
+    "constructor",
+    "well done",
+    "two  spaces",
+    "x PRIVMSG #chan :text",
+  ])("keeps %s", (value) => {
+    expect(withReaction(message, value, "alice")?.reactions).toEqual([
+      { emoji: value, userId: "alice" },
+    ]);
+  });
 
   it.each([
-    ["a space", "x PRIVMSG #chan :text"],
+    ["a leading space", " x"],
+    ["a trailing space", "x "],
+    ["only spaces", "  "],
+    ["a line separator", "x\u2028y"],
     ["a line break", "x\r\nQUIT"],
     ["a tab", "x\ty"],
     ["a control character", "x\u0000y"],

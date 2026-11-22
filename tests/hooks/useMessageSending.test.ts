@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useMessageSending } from "../../src/hooks/useMessageSending";
 import { base64DecodeUtf8 } from "../../src/lib/base64";
 import ircClient from "../../src/lib/ircClient";
+import { parseMessageTags } from "../../src/lib/ircUtils";
 import useStore from "../../src/store";
 import type { Channel, PrivateChat, Server, User } from "../../src/types";
 
@@ -142,6 +143,82 @@ describe("our own line on a server that echoes it", () => {
     withCaps("echo-message");
     runCommand("hello", me);
     expect(ownLines()).toEqual([]);
+  });
+});
+
+// A message id is the server's own text, so it can hold the characters that
+// end a tag value.
+describe("a reply to a message whose id needs escaping", () => {
+  const msgid = "id;1 x\\y";
+  const replyTags = (line: string) =>
+    parseMessageTags(line.slice(0, line.indexOf(" ")));
+  const expectReplyTo = (line: string) =>
+    expect(replyTags(line)).toMatchObject({
+      "+reply": msgid,
+      "+draft/reply": msgid,
+    });
+
+  function reply(text: string, caps: string[] = []) {
+    useStore.setState({
+      servers: [{ ...server, capabilities: caps }],
+      messages: {},
+    });
+    vi.spyOn(ircClient, "hasCapability").mockImplementation((_, cap) =>
+      caps.includes(cap),
+    );
+    const lines: string[] = [];
+    vi.spyOn(ircClient, "sendRaw").mockImplementation((_, line) => {
+      lines.push(line);
+    });
+    const { result } = renderHook(() =>
+      useMessageSending({
+        selectedServerId: "s1",
+        ...inLobby,
+        currentUser: me,
+        selectedColor: null,
+        selectedFormatting: [],
+        localReplyTo: { msgid } as never,
+      }),
+    );
+    result.current.sendMessage(text);
+    return lines;
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    useStore.setState({ servers: [server], messages: {} });
+  });
+
+  it("names it on a single line", () => {
+    const lines = reply("hello");
+
+    expect(lines).toHaveLength(1);
+    expectReplyTo(lines[0]);
+    expect(lines[0].endsWith(" PRIVMSG #lobby :hello")).toBe(true);
+  });
+
+  it("names it on an action", () => {
+    const lines = reply("/me waves");
+
+    expect(lines).toHaveLength(1);
+    expectReplyTo(lines[0]);
+    expect(lines[0].endsWith(" PRIVMSG #lobby :\u0001ACTION waves\u0001")).toBe(
+      true,
+    );
+  });
+
+  it("names it on the batch of a multiline message", () => {
+    const lines = reply("one\ntwo", ["draft/multiline", "batch"]);
+
+    expect(lines[0]).toMatch(/ BATCH \+\S+ draft\/multiline #lobby$/);
+    expectReplyTo(lines[0]);
+  });
+
+  it("names it on each line when the server has no batches", () => {
+    const lines = reply("one\ntwo");
+
+    expect(lines.length).toBeGreaterThan(0);
+    for (const line of lines) expectReplyTo(line);
   });
 });
 

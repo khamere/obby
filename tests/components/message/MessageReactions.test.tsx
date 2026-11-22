@@ -32,4 +32,20 @@ describe("MessageReactions", () => {
     ).toBe("👍1");
     expect("count" in Object).toBe(false);
   });
+
+  it("renders a reaction of several words as one chip", () => {
+    render(
+      <MessageReactions
+        reactions={[{ emoji: "well done", userId: "alice" }]}
+        currentUserUsername="bob"
+        onReactionClick={vi.fn()}
+      />,
+    );
+
+    const chip = screen.getByRole("button", {
+      name: "Add reaction well done",
+    });
+    expect(chip.textContent).toBe("well done1");
+    expect(chip.firstElementChild?.className).toContain("whitespace-pre");
+  });
 });
