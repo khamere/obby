@@ -14,9 +14,22 @@ import type {
   WhoisSession,
 } from "../../types";
 import { APP_VERSION } from "../appVersion";
+import { encodeBouncerAttrs } from "../bouncerAttrs";
 import { parseIrcUrl } from "../ircUrlParser";
-import { chantypesOf, isChannelTarget, parseMessageTags } from "../ircUtils";
-import { createBatchId, splitLongMessage } from "../messageProtocol";
+import {
+  chantypesOf,
+  escapeTagValue,
+  isChannelTarget,
+  isJoinableChannelKey,
+  isJoinableChannelName,
+  joinKeyArgument,
+  parseMessageTags,
+} from "../ircUtils";
+import {
+  calculateProtocolOverhead,
+  createBatchId,
+  splitLongMessage,
+} from "../messageProtocol";
 import { createSocket, type ISocket } from "../socket";
 import { IRC_DISPATCH } from "./handlers";
 import type { IRCClientContext } from "./IRCClientContext";
@@ -24,7 +37,9 @@ import {
   chunkForMultiline,
   type MultilineLimits,
   parseMultilineLimits,
+  splitAtSpaces,
 } from "./multiline";
+import { nextMemberRequestNumber, parseServerTime } from "./utils";
 
 // Namespace UUID for generating deterministic channel/chat IDs
 const CHANNEL_NAMESPACE = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
@@ -46,6 +61,18 @@ const PING_INTERVAL_MS = 30_000;
 const PONG_TIMEOUT_MS = 10_000;
 const WAKE_PONG_TIMEOUT_MS = 5_000;
 const DEAD_SOCKET_CLOSE_WAIT_MS = 2_000;
+
+// One message of a `soju.im/search` answer.
+export interface SearchResult {
+  command: "PRIVMSG" | "NOTICE";
+  // An old line is placed by the server's time alone, never by ours.
+  hasServerTime: boolean;
+  sender: string;
+  target: string;
+  message: string;
+  mtags: Record<string, string> | undefined;
+  timestamp: Date;
+}
 
 export interface EventMap {
   ready: BaseIRCEvent & { serverName: string; nickname: string };
@@ -273,8 +300,15 @@ export interface EventMap {
     realname: string;
     isAway: boolean;
     opLevel: string;
+    token?: string;
   };
-  WHO_END: { serverId: string; mask: string };
+  WHO_END: { serverId: string; mask: string; isAborted?: boolean };
+  MEMBERS_REQUESTED: {
+    serverId: string;
+    channelName: string;
+    token: string;
+    line: string;
+  };
   RPL_AWAY: {
     serverId: string;
     nick: string;
@@ -410,6 +444,9 @@ export interface EventMap {
     target?: string;
     message: string;
   };
+  // soju.im/search: the messages of one answered SEARCH, in server order.
+  SEARCH_RESULTS: BaseIRCEvent & { results: SearchResult[]; label?: string };
+  SEARCH_FAIL: EventWithTags & { code: string; message: string };
   // draft/chathistory: one `CHATHISTORY TARGETS <target> <timestamp>`
   // reply line, i.e. a conversation that had activity in the window
   // we asked about.
@@ -641,6 +678,8 @@ export interface ParsedLine {
   source: string;
   parv: string[];
   mtags: Record<string, string> | undefined;
+  // The time tag holds the time we received the line at, since the server sent none we could read.
+  hasReceiveTime?: boolean;
 }
 
 type EventKey = keyof EventMap;
@@ -657,6 +696,7 @@ function splitCapToken(token: string): { cap: string; value?: string } {
 
 export class IRCClient implements IRCClientContext {
   private sockets: Map<string, ISocket> = new Map();
+  private memberRequestNumbers = new WeakMap<ISocket, number>();
   servers: Map<string, Server> = new Map();
   nicks: Map<string, string> = new Map();
   myIdents: Map<string, string> = new Map(); // Our own ident per server, populated by draft/whoami SETNAME burst and CHGHOST
@@ -706,6 +746,7 @@ export class IRCClient implements IRCClientContext {
         parameters?: string[];
         messages: string[];
         concatFlags?: boolean[];
+        searchResults?: SearchResult[];
         sender?: string;
         messageIds?: string[];
         timestamps?: Date[];
@@ -734,6 +775,10 @@ export class IRCClient implements IRCClientContext {
    *  append form.  See IRCClientContext for the contract. */
   isupportValues: Map<string, Map<string, string>> = new Map();
   private diskOnlyBatches = new Set<string>();
+  // Whether the line being handled came with the server's own time.
+  hasLineServerTime = true;
+  // The labels of the searches we sent and still expect an answer to.
+  private pendingSearches = new Map<string, Set<string>>();
   motdLines: Map<string, string[]> = new Map();
 
   private ourCaps: string[] = [
@@ -802,6 +847,7 @@ export class IRCClient implements IRCClientContext {
     "obby.world/invitation",
     "draft/webpush",
     "soju.im/webpush",
+    "soju.im/search",
     // Note: unrealircd.org/link-security is informational only, don't request it
   ];
 
@@ -1317,7 +1363,10 @@ export class IRCClient implements IRCClientContext {
     return Date.now() - at <= IRCClient.RECENT_SEND_MS;
   }
 
-  sendRaw(serverId: string, command: string): void {
+  sendRaw(serverId: string, text: string): void {
+    // The server reads every line of a frame as a command of its own, so we
+    // send only the first line of whatever a caller hands us.
+    const command = text.split(/[\r\n\0]/, 1)[0];
     if (this.tagmsgRefused.has(serverId) && /^(?:@\S+ )?TAGMSG /i.test(command))
       return;
     const privmsg = /^(?:@\S+ )?PRIVMSG (\S+) /i.exec(command);
@@ -1420,14 +1469,21 @@ export class IRCClient implements IRCClientContext {
     return rateLimitPatterns.some((pattern) => pattern.test(message));
   }
 
+  // Names and keys reach us from links, saved lists and other people's
+  // messages, so we send a JOIN only when it carries one channel and one key.
   joinChannel(
     serverId: string,
     typedName: string,
     key?: string,
     { isReturning = false }: { isReturning?: boolean } = {},
-  ): Channel {
+  ): Channel | undefined {
     const channelName = this.withChannelPrefix(serverId, typedName);
-    const joinLine = key ? `JOIN ${channelName} ${key}` : `JOIN ${channelName}`;
+    if (!isJoinableChannelName(channelName, this.chantypes(serverId)))
+      return undefined;
+    if (key && !isJoinableChannelKey(key)) return undefined;
+    const joinLine = key
+      ? `JOIN ${channelName} ${joinKeyArgument(key)}`
+      : `JOIN ${channelName}`;
     const server = this.servers.get(serverId);
     if (server) {
       const existing = server.channels.find((c) => c.name === channelName);
@@ -1550,8 +1606,27 @@ export class IRCClient implements IRCClientContext {
   // the server keeps no history. Returns whether history was requested.
   loadHistoryOrMembers(serverId: string, channelName: string): boolean {
     if (this.loadLatestHistory(serverId, channelName)) return true;
-    this.sendRaw(serverId, `WHO ${channelName} %cuhnfaro`);
+    this.requestMembers(serverId, channelName);
     return false;
+  }
+
+  // The server repeats the number we send in every row of its answer, so the member list can tell the answer to this request from any other WHO reply.
+  requestMembers(serverId: string, channelName: string): void {
+    const socket = this.sockets.get(serverId);
+    const number = nextMemberRequestNumber(
+      socket && this.memberRequestNumbers.get(socket),
+    );
+    if (socket) this.memberRequestNumbers.set(socket, number);
+    const token = String(number);
+    const line = `WHO ${channelName} %tcuhnfaro,${token}`;
+    // We announce the request ahead of the line, so the line is known as ours when it goes out.
+    this.triggerEvent("MEMBERS_REQUESTED", {
+      serverId,
+      channelName,
+      token,
+      line,
+    });
+    this.sendRaw(serverId, line);
   }
 
   // Servers state their per-request maximum as CHATHISTORY=<n>, where 0 means
@@ -1623,9 +1698,10 @@ export class IRCClient implements IRCClientContext {
     content: string,
   ): void {
     // Send a whisper with both the ratified and draft channel-context tags for backwards compat
+    const context = escapeTagValue(channelName);
     this.sendRaw(
       serverId,
-      `@+channel-context=${channelName};+draft/channel-context=${channelName} PRIVMSG ${targetUser} :${content}`,
+      `@+channel-context=${context};+draft/channel-context=${context} PRIVMSG ${targetUser} :${content}`,
     );
   }
 
@@ -1658,6 +1734,35 @@ export class IRCClient implements IRCClientContext {
       // preserveBoundarySpace, or concat rejoins "AAA BBB CCC" as "AAA BBBCCC".
       lines.map((line) => splitLongMessage(line, target, true)),
     );
+  }
+
+  // One command is one line, so we send text with line breaks as a multiline
+  // batch, or line by line where the server has none.
+  sendText(
+    serverId: string,
+    target: string,
+    text: string,
+    options: { replyTo?: string; joinLines?: boolean } = {},
+  ): void {
+    const replyTo = options.replyTo ? escapeTagValue(options.replyTo) : "";
+    const tags = replyTo ? `@+reply=${replyTo};+draft/reply=${replyTo} ` : "";
+    const maxBytes = 512 - calculateProtocolOverhead(target);
+    const lines = text.split(/\r?\n/);
+    if (lines.length > 1 && this.hasCapability(serverId, "draft/multiline")) {
+      this.sendMultiline(
+        serverId,
+        target,
+        lines.map((line) => splitAtSpaces(line, maxBytes, true)),
+        tags,
+      );
+      return;
+    }
+    const separate = options.joinLines
+      ? [lines.filter(Boolean).join(" ")]
+      : lines;
+    for (const line of separate)
+      for (const part of splitAtSpaces(line, maxBytes, false))
+        if (part) this.sendRaw(serverId, `${tags}PRIVMSG ${target} :${part}`);
   }
 
   sendMultiline(
@@ -2036,6 +2141,36 @@ export class IRCClient implements IRCClientContext {
     this.sendRaw(serverId, `MARKREAD ${target} timestamp=${timestamp}`);
   }
 
+  // soju.im/search: the server answers with one `soju.im/search` batch, which
+  // carries no reference to the question, so callers ask one at a time.
+  // The answer names its question only through the label.
+  search(
+    serverId: string,
+    attributes: Record<string, string>,
+    label: string,
+  ): boolean {
+    if (!this.hasCapability(serverId, "soju.im/search")) return false;
+    const pending = this.pendingSearches.get(serverId) ?? new Set<string>();
+    pending.add(label);
+    this.pendingSearches.set(serverId, pending);
+    this.sendRaw(
+      serverId,
+      `@label=${label} SEARCH ${encodeBouncerAttrs(attributes)}`,
+    );
+    return true;
+  }
+
+  // An answer is ours when it carries the label of a search we sent, however
+  // late it comes. Any other answers a search the user typed, and reaches
+  // the chat like other lines.
+  claimSearchAnswer(serverId: string, label: string | undefined): boolean {
+    return !!label && !!this.pendingSearches.get(serverId)?.delete(label);
+  }
+
+  forgetSearches(serverId: string): void {
+    this.pendingSearches.delete(serverId);
+  }
+
   // Explicit /motd: the reply (including ERR_NOMOTD) is shown to the user.
   // Servers we asked for the MOTD, so a "no MOTD" reply is shown only as an
   // answer: bouncers like soju send one on every connect.
@@ -2182,9 +2317,17 @@ export class IRCClient implements IRCClientContext {
           lineAfterTags = line.substring(spaceIndex + 1);
         }
       }
-      // Servers without server-time leave the time to us, so we stamp one
-      // receive time that the chat and the saved history both read.
-      if (!mtags?.time) mtags = { ...mtags, time: new Date().toISOString() };
+      // Servers without server-time, or with one that is no date, leave the
+      // time to us, so we stamp one receive time that the chat and the saved
+      // history both read. A server's time goes on in the one form every
+      // reader of the tag takes the same way, whatever fraction it came with.
+      const serverTime = parseServerTime(mtags?.time);
+      const hasServerTime = !Number.isNaN(serverTime);
+      this.hasLineServerTime = hasServerTime;
+      mtags = {
+        ...mtags,
+        time: new Date(hasServerTime ? serverTime : Date.now()).toISOString(),
+      };
 
       // Parse IRC message properly handling colon-prefixed trailing parameter
       const spaceIndex = lineAfterTags.indexOf(" :");
@@ -2224,27 +2367,49 @@ export class IRCClient implements IRCClientContext {
         parv.push(trailing);
       }
 
-      const handler = IRC_DISPATCH[command];
-      if (mtags?.batch && this.isDiskOnlyBatch(serverId, mtags.batch)) {
-        if (command === "BATCH") this.trackNestedDiskOnlyBatch(serverId, parv);
-      } else if (handler) {
-        handler(this, serverId, source, parv, mtags, trailing);
-      } else if (/^\d{3}$/.test(command) && !mtags?.batch) {
-        // parv[0] is our own nick; the rest is what the server has to say.
-        this.triggerEvent("SERVER_REPLY", {
-          serverId,
-          source,
-          numeric: command,
-          text: parv.slice(1).join(" "),
-        });
+      // One frame can carry many lines, so a line we fail on is logged and
+      // the lines after it are still handled.
+      try {
+        this.dispatchLine(serverId, command, source, parv, mtags, trailing);
+      } catch (error) {
+        console.error(`Failed to handle ${command} line:`, error);
       }
-      this.triggerEvent("parsedLine", {
+      try {
+        this.triggerEvent("parsedLine", {
+          serverId,
+          line,
+          command,
+          source,
+          parv,
+          mtags,
+          hasReceiveTime: !hasServerTime,
+        });
+      } catch (error) {
+        console.error(`Failed to record ${command} line:`, error);
+      }
+    }
+  }
+
+  private dispatchLine(
+    serverId: string,
+    command: string,
+    source: string,
+    parv: string[],
+    mtags: Record<string, string>,
+    trailing: string,
+  ): void {
+    const handler = IRC_DISPATCH[command];
+    if (mtags.batch && this.isDiskOnlyBatch(serverId, mtags.batch)) {
+      if (command === "BATCH") this.trackNestedDiskOnlyBatch(serverId, parv);
+    } else if (handler) {
+      handler(this, serverId, source, parv, mtags, trailing);
+    } else if (/^\d{3}$/.test(command) && !mtags.batch) {
+      // parv[0] is our own nick; the rest is what the server has to say.
+      this.triggerEvent("SERVER_REPLY", {
         serverId,
-        line,
-        command,
         source,
-        parv,
-        mtags,
+        numeric: command,
+        text: parv.slice(1).join(" "),
       });
     }
   }

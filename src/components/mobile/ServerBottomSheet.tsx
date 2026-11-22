@@ -1,6 +1,6 @@
 import { Trans } from "@lingui/react/macro";
 import type React from "react";
-import { FaPencilAlt, FaSignOutAlt } from "react-icons/fa";
+import { FaPencilAlt, FaSignOutAlt, FaTrash } from "react-icons/fa";
 import BottomSheet from "./BottomSheet";
 
 interface ServerBottomSheetProps {
@@ -9,6 +9,8 @@ interface ServerBottomSheetProps {
   serverName: string;
   onEdit: () => void;
   onDisconnect: () => void;
+  // Leaving a bouncer network deletes it on the bouncer, and the row says so.
+  isBouncerNetwork?: boolean;
 }
 
 const ServerBottomSheet: React.FC<ServerBottomSheetProps> = ({
@@ -17,6 +19,7 @@ const ServerBottomSheet: React.FC<ServerBottomSheetProps> = ({
   serverName,
   onEdit,
   onDisconnect,
+  isBouncerNetwork,
 }) => {
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose}>
@@ -48,10 +51,14 @@ const ServerBottomSheet: React.FC<ServerBottomSheetProps> = ({
           }}
         >
           <span className="text-lg">
-            <FaSignOutAlt />
+            {isBouncerNetwork ? <FaTrash /> : <FaSignOutAlt />}
           </span>
           <span>
-            <Trans>Disconnect</Trans>
+            {isBouncerNetwork ? (
+              <Trans>Delete network</Trans>
+            ) : (
+              <Trans>Disconnect</Trans>
+            )}
           </span>
         </button>
       </div>

@@ -1165,7 +1165,6 @@ msgstr "Impossibile rimuovere l'ultima credenziale 2FA"
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkForm.tsx
-#: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/E2EERequestBanner.tsx
 #: src/components/ui/FloodSettingsModal.tsx
 #: src/components/ui/InviteUserModal.tsx
@@ -1775,6 +1774,7 @@ msgstr "Controlla quanti media esterni vengono caricati. Disattivato / Sicuro / 
 msgid "Control media display and external content"
 msgstr "Controlla la visualizzazione dei media e dei contenuti esterni"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 #: src/components/ui/E2EEVerifyModal.tsx
 #: src/components/ui/ExternalLinkWarningModal.tsx
@@ -1811,10 +1811,16 @@ msgstr "Copia nome canale"
 msgid "Copy entire JSON"
 msgstr "Copia JSON completo"
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Copy error details"
+msgstr "Copia dettagli dell'errore"
+
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 msgid "Copy failed, select to retry"
 msgstr "Copia non riuscita, seleziona per riprovare"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/mobile/MessageReaderSheet.tsx
 msgid "Copy failed, tap to retry"
 msgstr "Copia non riuscita, tocca per riprovare"
@@ -2076,6 +2082,11 @@ msgstr "Ritarda gli ingressi (+D)"
 msgid "Delete"
 msgstr "Elimina"
 
+#. placeholder {0}: network.name
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Delete <0>{0}</0> from your bouncer?"
+msgstr "Eliminare <0>{0}</0> dal tuo bouncer?"
+
 #: src/components/layout/BotPane.tsx
 msgid "Delete bot"
 msgstr "Elimina bot"
@@ -2103,9 +2114,20 @@ msgstr "Elimina anche la sua cronologia chat salvata"
 msgid "Delete message"
 msgstr "Elimina messaggio"
 
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/NetworkMenu.tsx
+#: src/components/layout/ServerList.tsx
+#: src/components/mobile/ServerBottomSheet.tsx
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkForm.tsx
+#: src/components/ui/BouncerNetworksPanel.tsx
+#: src/components/ui/BouncerNetworksPanel.tsx
 msgid "Delete network"
 msgstr "Elimina rete"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Delete network?"
+msgstr "Eliminare la rete?"
 
 #: src/components/pages/EmojiPacksPage.tsx
 #: src/components/pages/EmojiPacksPage.tsx
@@ -2124,13 +2146,13 @@ msgstr "Elimina questo invito"
 msgid "Delete this message? This cannot be undone."
 msgstr "Eliminare questo messaggio? Questa azione non può essere annullata."
 
-#: src/components/ui/BouncerNetworkForm.tsx
-msgid "Delete this network?"
-msgstr "Eliminare questa rete?"
-
 #: src/components/layout/BotPane.tsx
 msgid "deleted"
 msgstr "eliminato"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Deleting…"
+msgstr "Eliminazione…"
 
 #: src/components/voice/ParticipantTile.tsx
 #: src/components/voice/ParticipantTile.tsx
@@ -2197,16 +2219,9 @@ msgstr "Elimina"
 #: src/components/layout/ServerList.tsx
 #: src/components/mobile/ServerBottomSheet.tsx
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-#: src/components/ui/BouncerNetworksPanel.tsx
 #: src/components/ui/RemoveServerConfirmModal.tsx
 msgid "Disconnect"
 msgstr "Disconnetti"
-
-#. placeholder {0}: network.name
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "Disconnect <0>{0}</0>?"
-msgstr "Disconnettere <0>{0}</0>?"
 
 #: src/components/ui/RemoveServerConfirmModal.tsx
 msgid "Disconnect from {name}?"
@@ -2215,10 +2230,6 @@ msgstr "Disconnettersi da {name}?"
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
 msgid "Disconnect from soju bouncer?"
 msgstr "Disconnettersi dal bouncer soju?"
-
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "Disconnect network?"
-msgstr "Disconnettere la rete?"
 
 #: src/components/layout/ChannelList.tsx
 msgid "Discover"
@@ -2526,6 +2537,10 @@ msgstr "Inserisci un nome di canale per i pacchetti limitati al canale."
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "Inserisci un canale a cui inviare gli utenti che non possono entrare in questo. Lascia vuoto per disattivare."
+
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "Inserisci una chiave senza virgole"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
@@ -3250,6 +3265,10 @@ msgstr "Server IRC:"
 #: src/store/handlers/users.ts
 msgid "is now known as **{newNick}**"
 msgstr "ora è conosciuto come **{newNick}**"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Its saved chat history stays on this device. A network you add again gets it back only if the bouncer gives it the same ID."
+msgstr "La cronologia delle chat salvata resta su questo dispositivo. Una rete aggiunta di nuovo la recupera solo se il bouncer le assegna lo stesso ID."
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "JetBrains Mono"
@@ -4387,6 +4406,10 @@ msgstr "Obby scarica questo file a ogni avvio, così chiunque usi lo stesso link
 msgid "Obby is up to date."
 msgstr "Obby è aggiornato."
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Obby stopped working"
+msgstr "Obby ha smesso di funzionare"
+
 #: src/components/ui/UpdateSheet.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Obby will close to install the update; open it again afterwards."
@@ -5119,6 +5142,14 @@ msgstr "Rilassato – Protezione meno aggressiva"
 #: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "Note di rilascio"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload"
+msgstr "Ricarica"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload to continue. Copy the error details to report the problem."
+msgstr "Ricarica per continuare. Copia i dettagli dell'errore per segnalare il problema."
 
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/pages/ChannelSettingsPage.tsx
@@ -6260,6 +6291,26 @@ msgstr "Questa schermata non è più disponibile. Scegli un'altra schermata."
 msgid "That stylesheet is too large."
 msgstr "Questo foglio di stile è troppo grande."
 
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer drops this network and its channel list for all your devices. It may keep the chat history it stored for the network."
+msgstr "Il bouncer rimuove questa rete e il suo elenco dei canali per tutti i tuoi dispositivi. Potrebbe conservare la cronologia delle chat che ha salvato per la rete."
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer has not answered, so the saved chat history stays. Delete the network again if it is still listed."
+msgstr "Il bouncer non ha risposto, quindi la cronologia delle chat salvata resta. Elimina di nuovo la rete se è ancora in elenco."
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer is not connected. Delete the network once it is back."
+msgstr "Il bouncer non è connesso. Elimina la rete quando sarà di nuovo disponibile."
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer kept the network and answered: {refusal}"
+msgstr "Il bouncer ha mantenuto la rete e ha risposto: {refusal}"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer kept the network."
+msgstr "Il bouncer ha mantenuto la rete."
+
 #: src/lib/voiceErrors.ts
 msgid "The call server refused the request. Try again in a moment."
 msgstr "Il server delle chiamate ha rifiutato la richiesta. Riprova tra un momento."
@@ -6369,6 +6420,10 @@ msgstr "Questo browser non può registrare audio."
 msgid "This browser cannot record video."
 msgstr "Questo browser non può registrare video."
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "This browser does not let Obby store data, so nothing was saved."
+msgstr "Questo browser non consente a Obby di salvare dati, quindi non è stato salvato nulla."
+
 #: src/components/search/SearchQueryBar.tsx
 msgid "This chat"
 msgstr "Questa chat"
@@ -6442,10 +6497,6 @@ msgstr "Questo pacchetto non ha ancora emoji. Aggiungine una qui sopra."
 msgid "This release has no Android app to install."
 msgstr "Questa versione non contiene un'app Android da installare."
 
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "This removes the network from your soju bouncer. To use it again, you'll need to add it back."
-msgstr "Questo rimuove la rete dal tuo bouncer soju. Per usarla di nuovo, dovrai aggiungerla nuovamente."
-
 #: src/components/ui/InvitationsPanel.tsx
 msgid "This server doesn't support invite links (the<0>obby.world/invitation</0>capability isn't advertised). You can still chat normally; this panel is for obbyircd-powered networks."
 msgstr "Questo server non supporta i link di invito (la capability<0>obby.world/invitation</0>non è annunciata). Puoi comunque chattare normalmente; questo pannello è per le reti basate su obbyircd."
@@ -6457,6 +6508,10 @@ msgstr "Questo server non ha un host dei file. Connettiti a un server con un hos
 #: src/components/ui/AddServerModal.tsx
 msgid "This server only supports one connection type"
 msgstr "Questo server supporta solo un tipo di connessione"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "This stylesheet could not be made safe, so it was not saved."
+msgstr "Non è stato possibile rendere sicuro questo foglio di stile, quindi non è stato salvato."
 
 #. placeholder {0}: children.length
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
@@ -6748,6 +6803,10 @@ msgstr "Usa * come wildcard. Esempi: baduser!*@*, *!*@spammer.com, troll*!*@*"
 msgid "Use /{0}"
 msgstr "Usa /{0}"
 
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "Usa un nome senza spazi né virgole"
+
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."
 msgstr "Usa un'immagine PNG, JPEG, WebP o GIF."
@@ -6759,6 +6818,10 @@ msgstr "Usa una porta websocket sicura."
 #: src/components/pages/SettingsPage.tsx
 msgid "Use a server with IRCv3 METADATA to set your avatar, display name, and status."
 msgstr "Usa un server con IRCv3 METADATA per impostare avatar, nome visualizzato e stato."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Use a smaller stylesheet. This one does not fit in this browser's storage."
+msgstr "Usa un foglio di stile più piccolo. Questo non entra nello spazio di archiviazione di questo browser."
 
 #: src/components/ui/settings/BackupField.tsx
 msgid "Use at least {PASSWORD_MIN_LENGTH} characters."
@@ -7144,10 +7207,6 @@ msgstr "Password errata, oppure il file è stato modificato dopo il salvataggio.
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Yellow"
 msgstr "Giallo"
-
-#: src/components/ui/BouncerNetworkForm.tsx
-msgid "Yes, delete"
-msgstr "Sì, elimina"
 
 #: src/components/search/messageSearchProviders.tsx
 msgid "Yesterday"

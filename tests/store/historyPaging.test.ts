@@ -357,27 +357,66 @@ describe("history paging steps", { timeout: 2 * WRITE_TIMEOUT_MS }, () => {
     ]);
   });
 
-  it.each([0, 1, 2, 3, 5, 8, 12, 20])(
-    "asks past the gap's current edge when a page lands %i ms into a step",
-    async (DELAY) => {
+  describe("a page that lands while a step runs", () => {
+    // The page a step waits for can land between any two of its reads of saved
+    // history, so we hold the step before one read until the page is saved.
+    async function pageAcross(landingRead?: number) {
       const w = await boot(1000);
       await w.wake(500, 120);
       await w.jumpTo(10);
       await w.pageNewer();
       expect(w.requests("AFTER")).toHaveLength(1);
-
-      const step = w.pageNewer();
-      await new Promise((resolve) => setTimeout(resolve, DELAY));
-      w.feed(...w.page(range(120, 319)));
-      await step;
+      // The step may send the next request itself, so the server answers before it starts.
       w.script.has = range(0, 549);
+
+      const { gapsFor, eventRowsAfter } = w.db;
+      let hasLanded = false;
+      const land = async () => {
+        hasLanded = true;
+        w.feed(...w.page(range(120, 319)));
+        await vi.waitFor(
+          async () =>
+            expect(await gapsFor(SERVER, "#chan")).toMatchObject([
+              { from: timeOf(319) },
+            ]),
+          { timeout: WRITE_TIMEOUT_MS },
+        );
+      };
+      let reads = 0;
+      const beforeRead = async () => {
+        reads += 1;
+        if (!hasLanded && reads === landingRead) await land();
+      };
+      vi.spyOn(w.db, "gapsFor").mockImplementation(async (...args) => {
+        await beforeRead();
+        return gapsFor(...args);
+      });
+      vi.spyOn(w.db, "eventRowsAfter").mockImplementation(async (...args) => {
+        await beforeRead();
+        return eventRowsAfter(...args);
+      });
+
+      await w.pageNewer();
+      expect(hasLanded).toBe(landingRead !== undefined);
+      if (!hasLanded) await land();
       const seen = await w.pageToPresent();
 
       expect(seen).toEqual(ids(0, 549));
-      const edges = w.requests("AFTER").map((raw) => raw.split(" ")[3]);
-      expect(new Set(edges).size).toBe(edges.length);
-    },
-  );
+      expect(w.requests("AFTER")).toEqual([
+        `CHATHISTORY AFTER #chan timestamp=${iso(119)} 200`,
+        `CHATHISTORY AFTER #chan timestamp=${iso(319)} 200`,
+      ]);
+      expect(await gapsFor(SERVER, "#chan")).toEqual([]);
+    }
+
+    it.each([1, 2, 3, 4])(
+      "asks past the gap's current edge when the page lands before read %i of the step",
+      (landingRead) => pageAcross(landingRead),
+    );
+
+    it("asks past the gap's current edge when the page lands after the step", () =>
+      pageAcross());
+  });
 
   it("fetches ahead again only when less than one step of saved rows is left", async () => {
     const w = await boot(1000);

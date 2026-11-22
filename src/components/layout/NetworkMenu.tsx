@@ -7,6 +7,7 @@ import {
   FaList,
   FaPowerOff,
   FaTerminal,
+  FaTrash,
 } from "react-icons/fa";
 import useStore from "../../store";
 import Menu from "../ui/Menu";
@@ -36,6 +37,10 @@ export const NetworkMenu: React.FC<NetworkMenuProps> = ({
   onReorder,
 }) => {
   const store = useStore.getState();
+  // A bound network has no connection of its own to drop: the bouncer holds
+  // it, and the only way out of the list is to delete it there.
+  const isBouncerNetwork = !!store.servers.find((s) => s.id === serverId)
+    ?.bouncerNetid;
   return (
     <Menu
       isOpen={!!anchor}
@@ -81,8 +86,8 @@ export const NetworkMenu: React.FC<NetworkMenuProps> = ({
         },
         {
           id: "disconnect",
-          label: t`Disconnect`,
-          icon: <FaPowerOff />,
+          label: isBouncerNetwork ? t`Delete network` : t`Disconnect`,
+          icon: isBouncerNetwork ? <FaTrash /> : <FaPowerOff />,
           show: true,
           danger: true,
           onClick: () => store.requestDeleteServer(serverId),

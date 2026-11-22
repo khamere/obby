@@ -1165,7 +1165,6 @@ msgstr "无法删除你的最后一个 2FA 凭据"
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkForm.tsx
-#: src/components/ui/BouncerNetworkForm.tsx
 #: src/components/ui/E2EERequestBanner.tsx
 #: src/components/ui/FloodSettingsModal.tsx
 #: src/components/ui/InviteUserModal.tsx
@@ -1775,6 +1774,7 @@ msgstr "控制加载的外部媒体量。关闭 / 安全 / 可信来源 / 所有
 msgid "Control media display and external content"
 msgstr "控制媒体显示和外部内容"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 #: src/components/ui/E2EEVerifyModal.tsx
 #: src/components/ui/ExternalLinkWarningModal.tsx
@@ -1811,10 +1811,16 @@ msgstr "复制频道名称"
 msgid "Copy entire JSON"
 msgstr "复制完整 JSON"
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Copy error details"
+msgstr "复制错误详情"
+
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 msgid "Copy failed, select to retry"
 msgstr "复制失败，选择重试"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/mobile/MessageReaderSheet.tsx
 msgid "Copy failed, tap to retry"
 msgstr "复制失败，点击重试"
@@ -2076,6 +2082,11 @@ msgstr "延迟加入 (+D)"
 msgid "Delete"
 msgstr "删除"
 
+#. placeholder {0}: network.name
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Delete <0>{0}</0> from your bouncer?"
+msgstr "要从您的 bouncer 删除 <0>{0}</0> 吗？"
+
 #: src/components/layout/BotPane.tsx
 msgid "Delete bot"
 msgstr "删除机器人"
@@ -2103,9 +2114,20 @@ msgstr "同时删除其已保存的聊天历史"
 msgid "Delete message"
 msgstr "删除消息"
 
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/NetworkMenu.tsx
+#: src/components/layout/ServerList.tsx
+#: src/components/mobile/ServerBottomSheet.tsx
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
 #: src/components/ui/BouncerNetworkForm.tsx
+#: src/components/ui/BouncerNetworksPanel.tsx
+#: src/components/ui/BouncerNetworksPanel.tsx
 msgid "Delete network"
 msgstr "删除网络"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Delete network?"
+msgstr "删除网络？"
 
 #: src/components/pages/EmojiPacksPage.tsx
 #: src/components/pages/EmojiPacksPage.tsx
@@ -2124,13 +2146,13 @@ msgstr "删除此邀请"
 msgid "Delete this message? This cannot be undone."
 msgstr "删除此消息？此操作无法撤销。"
 
-#: src/components/ui/BouncerNetworkForm.tsx
-msgid "Delete this network?"
-msgstr "删除此网络？"
-
 #: src/components/layout/BotPane.tsx
 msgid "deleted"
 msgstr "已删除"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Deleting…"
+msgstr "正在删除…"
 
 #: src/components/voice/ParticipantTile.tsx
 #: src/components/voice/ParticipantTile.tsx
@@ -2197,16 +2219,9 @@ msgstr "丢弃"
 #: src/components/layout/ServerList.tsx
 #: src/components/mobile/ServerBottomSheet.tsx
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-#: src/components/ui/BouncerNetworksPanel.tsx
 #: src/components/ui/RemoveServerConfirmModal.tsx
 msgid "Disconnect"
 msgstr "断开连接"
-
-#. placeholder {0}: network.name
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "Disconnect <0>{0}</0>?"
-msgstr "断开 <0>{0}</0> 的连接？"
 
 #: src/components/ui/RemoveServerConfirmModal.tsx
 msgid "Disconnect from {name}?"
@@ -2215,10 +2230,6 @@ msgstr "断开与 {name} 的连接？"
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
 msgid "Disconnect from soju bouncer?"
 msgstr "断开与 soju bouncer 的连接？"
-
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "Disconnect network?"
-msgstr "断开网络连接？"
 
 #: src/components/layout/ChannelList.tsx
 msgid "Discover"
@@ -2526,6 +2537,10 @@ msgstr "请为频道范围的表情包输入频道名称。"
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a channel to send users to when they cannot join this one. Leave empty to disable."
 msgstr "输入一个频道，当用户无法加入此频道时将其转到该频道。留空则停用。"
+
+#: src/components/ui/ChannelKeyModal.tsx
+msgid "Enter a key without commas"
+msgstr "请输入不含逗号的密钥"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a name with any spaces, emoji, or symbols. IRC commands still use the real name ({channelName})."
@@ -3250,6 +3265,10 @@ msgstr "IRC 服务器："
 #: src/store/handlers/users.ts
 msgid "is now known as **{newNick}**"
 msgstr "现在称为 **{newNick}**"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Its saved chat history stays on this device. A network you add again gets it back only if the bouncer gives it the same ID."
+msgstr "已保存的聊天记录会保留在此设备上。重新添加的网络只有在 bouncer 分配了相同 ID 时才能取回这些记录。"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "JetBrains Mono"
@@ -4387,6 +4406,10 @@ msgstr "Obby 每次启动都会下载此文件，因此使用同一链接的每�
 msgid "Obby is up to date."
 msgstr "Obby 已是最新版本。"
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Obby stopped working"
+msgstr "Obby 已停止工作"
+
 #: src/components/ui/UpdateSheet.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Obby will close to install the update; open it again afterwards."
@@ -5119,6 +5142,14 @@ msgstr "宽松 – 较弱的保护"
 #: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "更新说明"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload"
+msgstr "重新加载"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload to continue. Copy the error details to report the problem."
+msgstr "重新加载以继续。复制错误详情以报告此问题。"
 
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/pages/ChannelSettingsPage.tsx
@@ -6260,6 +6291,26 @@ msgstr "该屏幕已不可用。请选择其他屏幕。"
 msgid "That stylesheet is too large."
 msgstr "该样式表过大。"
 
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer drops this network and its channel list for all your devices. It may keep the chat history it stored for the network."
+msgstr "bouncer 会为您的所有设备移除此网络及其频道列表。它为该网络保存的聊天记录可能仍会保留。"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer has not answered, so the saved chat history stays. Delete the network again if it is still listed."
+msgstr "bouncer 没有应答，因此已保存的聊天记录会保留。如果该网络仍在列表中，请再次删除。"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer is not connected. Delete the network once it is back."
+msgstr "bouncer 未连接。请在它恢复连接后再删除网络。"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer kept the network and answered: {refusal}"
+msgstr "bouncer 保留了该网络，并回复：{refusal}"
+
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "The bouncer kept the network."
+msgstr "bouncer 保留了该网络。"
+
 #: src/lib/voiceErrors.ts
 msgid "The call server refused the request. Try again in a moment."
 msgstr "通话服务器拒绝了请求。请稍后重试。"
@@ -6369,6 +6420,10 @@ msgstr "此浏览器无法录音。"
 msgid "This browser cannot record video."
 msgstr "此浏览器无法录像。"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "This browser does not let Obby store data, so nothing was saved."
+msgstr "此浏览器不允许 Obby 存储数据，因此未保存任何内容。"
+
 #: src/components/search/SearchQueryBar.tsx
 msgid "This chat"
 msgstr "此聊天"
@@ -6442,10 +6497,6 @@ msgstr "此表情包还没有表情。请在上方添加。"
 msgid "This release has no Android app to install."
 msgstr "此发布版本没有可安装的 Android 应用。"
 
-#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
-msgid "This removes the network from your soju bouncer. To use it again, you'll need to add it back."
-msgstr "这将从您的 soju bouncer 中移除该网络。若要再次使用，您需要重新添加它。"
-
 #: src/components/ui/InvitationsPanel.tsx
 msgid "This server doesn't support invite links (the<0>obby.world/invitation</0>capability isn't advertised). You can still chat normally; this panel is for obbyircd-powered networks."
 msgstr "此服务器不支持邀请链接（未声明 <0>obby.world/invitation</0> 能力）。您仍可正常聊天；此面板适用于由 obbyircd 提供支持的网络。"
@@ -6457,6 +6508,10 @@ msgstr "此服务器没有文件主机。请连接到有文件主机的服务器
 #: src/components/ui/AddServerModal.tsx
 msgid "This server only supports one connection type"
 msgstr "此服务器仅支持一种连接类型"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "This stylesheet could not be made safe, so it was not saved."
+msgstr "无法确保此样式表安全，因此未保存。"
 
 #. placeholder {0}: children.length
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
@@ -6748,6 +6803,10 @@ msgstr "用 * 作通配符。示例：baduser!*@*, *!*@spammer.com, troll*!*@*"
 msgid "Use /{0}"
 msgstr "使用 /{0}"
 
+#: src/components/layout/AddChannelRow.tsx
+msgid "Use a name without spaces or commas"
+msgstr "请使用不含空格或逗号的名称"
+
 #: src/components/ui/settings/ChatBackgroundField.tsx
 msgid "Use a PNG, JPEG, WebP or GIF image."
 msgstr "请使用 PNG、JPEG、WebP 或 GIF 图片。"
@@ -6759,6 +6818,10 @@ msgstr "使用安全的 WebSocket 端口。"
 #: src/components/pages/SettingsPage.tsx
 msgid "Use a server with IRCv3 METADATA to set your avatar, display name, and status."
 msgstr "使用支持 IRCv3 METADATA 的服务器设置头像、显示名称和状态。"
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Use a smaller stylesheet. This one does not fit in this browser's storage."
+msgstr "请使用较小的样式表。此样式表超出了此浏览器的存储空间。"
 
 #: src/components/ui/settings/BackupField.tsx
 msgid "Use at least {PASSWORD_MIN_LENGTH} characters."
@@ -7144,10 +7207,6 @@ msgstr "密码错误，或文件在保存后被改动。"
 #: src/components/ui/settings/ThemeEditorField.tsx
 msgid "Yellow"
 msgstr "黄色"
-
-#: src/components/ui/BouncerNetworkForm.tsx
-msgid "Yes, delete"
-msgstr "是的，删除"
 
 #: src/components/search/messageSearchProviders.tsx
 msgid "Yesterday"

@@ -11,6 +11,7 @@ import {
   getCurrentSelection,
   isHistoryEvent,
   resolveUserMetadata,
+  serverSupportsMetadata,
   setUserAway,
 } from "../helpers";
 import type { AppState } from "../index";
@@ -21,6 +22,12 @@ import {
   takeKeyedJoin,
   takePendingJoin,
 } from "../pendingJoins";
+import {
+  isMemberRefreshPending,
+  noteMemberJoined,
+  noteMemberLeft,
+  noteMemberRenamed,
+} from "../whoReplyBatcher";
 import { reportServerReply } from "./serverReplies";
 
 const ERR_BADCHANNELKEY = "475";
@@ -259,15 +266,8 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
         // The history and member requests sent with the refused join failed, so we send them again now that we are in.
         const hadNeededKey = setNeedsKey(store, serverId, channelName, false);
         const hadLeft = setLeftReason(store, serverId, channelName, undefined);
-        if (hadNeededKey || hadLeft) {
-          const isLoadingHistory = ircClient.loadHistoryOrMembers(
-            serverId,
-            channelName,
-          );
-          // A history load only ends in a member request on a first join, so we ask for the members of a channel we come back to.
-          if (hadLeft && isLoadingHistory)
-            ircClient.sendRaw(serverId, `WHO ${channelName} %cuhnfaro`);
-        }
+        if (hadNeededKey || hadLeft)
+          ircClient.loadHistoryOrMembers(serverId, channelName);
         // Server-initiated JOIN (Unreal persistence, sajoin, perform list,
         // perform-on-connect): joinChannel() never ran, so the CHATHISTORY
         // + WHO chain that normally lives inside it was never kicked off.
@@ -275,14 +275,34 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
         // so the nicklist actually populates. Don't add ourselves to the
         // member list — NAMES populates it with proper modes.
         let isNewChannel = false;
+        let isAskingMembersNow = false;
         store.setState((state) => {
           const server = state.servers.find((s) => s.id === serverId);
           if (!server) return {};
 
-          const exists = server.channels.some(
-            (c) => c.name.toLowerCase() === channelName.toLowerCase(),
-          );
-          if (exists) return {};
+          const isJoined = (c: Channel) =>
+            c.name.toLowerCase() === channelName.toLowerCase();
+          const existing = server.channels.find(isJoined);
+          if (existing) {
+            // Members we hold from an earlier stay may have left or changed status, so we ask who is here now unless a request sent with the join is still open.
+            if (isMemberRefreshPending(serverId, channelName)) return {};
+            // A history load in flight asks when it ends, and otherwise we ask right away.
+            isAskingMembersNow = !existing.isLoadingHistory;
+            return {
+              servers: state.servers.map((s) =>
+                s.id !== serverId
+                  ? s
+                  : {
+                      ...s,
+                      channels: s.channels.map((c) =>
+                        isJoined(c)
+                          ? { ...c, needsWhoRequest: !isAskingMembersNow }
+                          : c,
+                      ),
+                    },
+              ),
+            };
+          }
 
           // soju bouncer control session has no real chathistory.
           const hasChathistory =
@@ -319,8 +339,18 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
         // ircClient I/O OUTSIDE setState: triggerEvent inside setState
         // causes a nested-setState race (see batches.ts:215-218).
         if (isNewChannel) ircClient.loadHistoryOrMembers(serverId, channelName);
+        if (isAskingMembersNow) {
+          ircClient.requestMembers(serverId, channelName);
+          // The channel's own picture and name may have changed while we were away, so we ask for them with its members.
+          if (serverSupportsMetadata(store.getState(), serverId))
+            ircClient.metadataGet(serverId, channelName, [
+              "avatar",
+              "display-name",
+            ]);
+        }
         // Fall through to shared message creation below — same JOIN event, same path.
       } else {
+        noteMemberJoined(serverId, channelName, username);
         store.setState((state) => {
           const updatedServers = state.servers.map((server) => {
             if (server.id !== serverId) return server;
@@ -434,6 +464,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
       }
     }
     saveConfirmedNick(store, serverId, newNick);
+    noteMemberRenamed(serverId, oldNick, newNick);
     moveChatMute(serverId, "dm", oldNick, newNick);
     store.setState((state) => {
       const updatedServers = state.servers.map((server) => {
@@ -589,6 +620,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
       }
     }
 
+    noteMemberLeft(serverId, undefined, username);
     // Capture which channels the user was in before the store mutation removes them
     const state = store.getState();
     const server = state.servers.find((s) => s.id === serverId);
@@ -714,6 +746,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
           return;
         }
       }
+      noteMemberLeft(serverId, channelName, username);
       store.setState((state) => {
         const updatedServers = state.servers.map((server) => {
           if (server.id === serverId) {
@@ -802,7 +835,8 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
     "KICK",
     ({ serverId, mtags, username, target, channelName, reason }) => {
       const historical = isHistoryEvent(store.getState(), serverId, mtags);
-      if (!historical)
+      if (!historical) {
+        noteMemberLeft(serverId, channelName, target);
         store.setState((state) => {
           const updatedServers = state.servers.map((server) => {
             const updatedChannels = server.channels.map((channel) => {
@@ -821,6 +855,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
 
           return { servers: updatedServers };
         });
+      }
       if (!historical && isOwnNick(serverId, target))
         setLeftReason(store, serverId, channelName, "kicked");
 
