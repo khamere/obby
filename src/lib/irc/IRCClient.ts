@@ -728,6 +728,7 @@ export class IRCClient implements IRCClientContext {
   rateLimitedServers: Map<string, number> = new Map(); // Track rate-limited servers (serverId -> timestamp)
   private pingTimers: Map<string, NodeJS.Timeout> = new Map(); // Track ping timers per server
   pongTimeouts: Map<string, NodeJS.Timeout> = new Map(); // Track pong timeouts per server
+  private pongWaitMs: Map<string, number> = new Map();
   private serverConnectParams: Map<
     string,
     {
@@ -1131,6 +1132,7 @@ export class IRCClient implements IRCClientContext {
           (id) => this.sockets.get(id) === socket,
         );
         if (serverId) {
+          this.restartPongWait(serverId, socket);
           const data =
             typeof event.data === "string"
               ? event.data
@@ -1458,6 +1460,12 @@ export class IRCClient implements IRCClientContext {
     // A check already waiting for its PONG keeps its earlier deadline.
     if (this.pongTimeouts.has(serverId)) return;
     this.sendRaw(serverId, `PING :${Date.now()}`);
+    this.pongWaitMs.set(serverId, timeoutMs);
+    this.awaitPong(serverId, socket, timeoutMs);
+  }
+
+  private awaitPong(serverId: string, socket: ISocket, timeoutMs: number) {
+    clearTimeout(this.pongTimeouts.get(serverId));
     this.pongTimeouts.set(
       serverId,
       setTimeout(() => {
@@ -1466,6 +1474,13 @@ export class IRCClient implements IRCClientContext {
         this.dropDeadSocket(serverId, socket);
       }, timeoutMs),
     );
+  }
+
+  // A busy server answers our PING after the lines it has queued, so every line we receive starts the wait for the PONG over.
+  private restartPongWait(serverId: string, socket: ISocket): void {
+    const timeoutMs = this.pongWaitMs.get(serverId);
+    if (timeoutMs === undefined || !this.pongTimeouts.has(serverId)) return;
+    this.awaitPong(serverId, socket, timeoutMs);
   }
 
   // We silence the old socket before closing it, so a reconnect never leaves a second live session under one server.
