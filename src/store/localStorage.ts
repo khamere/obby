@@ -1,6 +1,6 @@
 import { isLiveChannel } from "../lib/channelFolders";
 import type { ServerConfig } from "../types";
-import type { MentionEntry } from "./mentionLog";
+import { isMentionEntry, type MentionEntry } from "./mentionLog";
 import type {
   ChannelFoldersMap,
   ChannelOrderMap,
@@ -32,9 +32,11 @@ export const mentionLog = {
       if (!Array.isArray(data)) return [];
       // New mentions are inserted by time, which needs the saved ones in
       // that order too.
-      return (data as MentionEntry[]).sort((a, b) =>
-        a.timestamp < b.timestamp ? -1 : a.timestamp > b.timestamp ? 1 : 0,
-      );
+      return data
+        .filter(isMentionEntry)
+        .sort((a, b) =>
+          a.timestamp < b.timestamp ? -1 : a.timestamp > b.timestamp ? 1 : 0,
+        );
     } catch {
       return [];
     }
