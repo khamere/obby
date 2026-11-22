@@ -753,6 +753,12 @@ export class IRCClient implements IRCClientContext {
   private diskOnlyBatches = new Set<string>();
   // Whether the line being handled came with the server's own time.
   hasLineServerTime = true;
+  // Searches we sent and still expect an answer to, by label where the
+  // server returns labels.
+  private pendingSearches = new Map<
+    string,
+    { labels: Set<string>; unlabelled: number }
+  >();
   motdLines: Map<string, string[]> = new Map();
 
   private ourCaps: string[] = [
@@ -2090,9 +2096,33 @@ export class IRCClient implements IRCClientContext {
     label?: string,
   ): boolean {
     if (!this.hasCapability(serverId, "soju.im/search")) return false;
+    const pending = this.pendingSearches.get(serverId) ?? {
+      labels: new Set<string>(),
+      unlabelled: 0,
+    };
+    if (label) pending.labels.add(label);
+    else pending.unlabelled += 1;
+    this.pendingSearches.set(serverId, pending);
     const tags = label ? `@label=${label} ` : "";
     this.sendRaw(serverId, `${tags}SEARCH ${encodeBouncerAttrs(attributes)}`);
     return true;
+  }
+
+  // An answer is ours when it carries the label of a search we sent, or,
+  // where the server returns no labels, while one of ours is out, however
+  // late it comes. Any other answers a search the user typed, and reaches
+  // the chat like other lines.
+  claimSearchAnswer(serverId: string, label: string | undefined): boolean {
+    const pending = this.pendingSearches.get(serverId);
+    if (!pending) return false;
+    if (label) return pending.labels.delete(label);
+    if (pending.unlabelled === 0) return false;
+    pending.unlabelled -= 1;
+    return true;
+  }
+
+  forgetSearches(serverId: string): void {
+    this.pendingSearches.delete(serverId);
   }
 
   // Explicit /motd: the reply (including ERR_NOMOTD) is shown to the user.

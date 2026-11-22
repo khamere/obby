@@ -235,7 +235,7 @@ describe("mention catch-up by server search", () => {
       hold(500);
       historyLoaded();
       // The bound is a line's own server time, whatever our clock says.
-      expect(searches()).toEqual([search(`after=${at(100)};`)]);
+      expect(searches()).toEqual([search(`after=${at(100 - overlap)};`)]);
       historyLoaded();
       expect(searches()).toHaveLength(1);
     });
@@ -250,7 +250,36 @@ describe("mention catch-up by server search", () => {
     it("searches at once on a server without history", () => {
       hasHistory = false;
       feed(`:server MARKREAD #two timestamp=${READ_AT}`);
-      expect(searches()).toEqual([search(`after=${at(100)};`)]);
+      expect(searches()).toEqual([search(`after=${at(100 - overlap)};`)]);
+    });
+
+    it("acts on a marker that comes after the channel's history", () => {
+      hold(500);
+      historyLoaded();
+      expect(searches()).toEqual([]);
+      feed(`:server MARKREAD #two timestamp=${READ_AT}`);
+      expect(searches()).toEqual([search(`after=${at(100 - overlap)};`)]);
+    });
+
+    it("looks again when a later history page brings the new lines", () => {
+      feed(`:server MARKREAD #two timestamp=${READ_AT}`);
+      // A page of older lines ends first and says nothing new.
+      historyLoaded();
+      expect(searches()).toEqual([]);
+      hold(500);
+      historyLoaded();
+      expect(searches()).toHaveLength(1);
+    });
+
+    it("counts history lines the chat leaves out as new activity", () => {
+      feed(
+        `:server MARKREAD #two timestamp=${READ_AT}`,
+        ":server BATCH +h chathistory #two",
+        `@batch=h;msgid=n1;time=${at(700)} :announcer!u@h NOTICE #two :a notice, not a chat line`,
+        ":server BATCH -h",
+      );
+      historyLoaded();
+      expect(searches()).toEqual([search(`after=${at(100 - overlap)};`)]);
     });
   });
 
@@ -279,7 +308,7 @@ describe("mention catch-up by server search", () => {
     useStore.setState((state) => ({
       globalSettings: {
         ...state.globalSettings,
-        customMentions: ["release day", "ME", "[]"],
+        customMentions: ["release day", "ME"],
       },
     }));
     feed(
@@ -380,23 +409,37 @@ describe("mention catch-up by server search", () => {
     expect(searches()).toHaveLength(MAX_PAGES_PER_TERM + 1);
   });
 
-  it("ends a side whose page does not move", () => {
+  it("steps past an instant that holds more lines than a page", () => {
     feed(`:server MARKREAD #two timestamp=${READ_AT}`);
     const sameInstant = (id: string) =>
       answer(
         id,
         ...Array.from({ length: SEARCH_PAGE_SIZE }, (_, i) =>
-          hit(`i${i}`, 5, `me ${i}`),
+          hit(`i${i}`, 5, `some of them ${i}`),
         ),
       );
     feed(...sameInstant("s"));
     expect(searches()[1]).toBe(
       search(`after=${READ_AT};before=${at(5 + overlap)};`),
     );
-    // The same page again as the answer to each pending side: nothing moved.
+    // The same full page again: the overlap did not get past the instant,
+    // so the bound goes exactly on it, once.
     feed(...sameInstant("t"));
-    expect(searches()[2]).toBe(search(`after=${at(5 - overlap)};`));
+    expect(searches()[2]).toBe(search(`after=${READ_AT};before=${at(5)};`));
+    feed(...emptyAnswer("e"));
+    expect(searches()[3]).toBe(search(`after=${at(5 - overlap)};`));
     feed(...sameInstant("u"));
+    expect(searches()[4]).toBe(search(`after=${at(5)};`));
+    feed(...answer("v", hit("beyond", 9)));
+    expect(log().map((m) => m.msgid)).toEqual(["beyond"]);
+  });
+
+  it("ends a side that brings nothing past its edge", () => {
+    feed(`:server MARKREAD #two timestamp=${READ_AT}`);
+    feed(...answer("s", hit("a", 50)));
+    // Each side answers with the edge line alone.
+    feed(...answer("t", hit("a", 50)));
+    feed(...answer("u", hit("a", 50)));
     expect(searches()).toHaveLength(3);
   });
 
@@ -452,6 +495,53 @@ describe("mention catch-up by server search", () => {
       ),
     );
     expect(new Set(log().map((m) => m.messageId)).size).toBe(2);
+  });
+
+  it("takes a refusal of a word the server cannot search for as an answer", () => {
+    hasHistory = true;
+    hold(100);
+    useStore.setState((state) => ({
+      globalSettings: { ...state.globalSettings, customMentions: ["[]"] },
+    }));
+    feed(`:server MARKREAD #two timestamp=${READ_AT}`, ...emptyAnswer("s"));
+    expect(searches()[1]).toBe(
+      `SEARCH in=#two;after=${READ_AT};text=[];limit=${SEARCH_PAGE_SIZE}`,
+    );
+    feed(":server FAIL SEARCH INTERNAL_ERROR :The search could not be run");
+    reconnect();
+    // The channel counts as searched, so the next connection waits for its history.
+    feed(`:server MARKREAD #two timestamp=${READ_AT}`);
+    expect(searches()).toHaveLength(2);
+  });
+
+  it("covers the inbox with the newest matches once a word has used up its pages", () => {
+    feed(`:server MARKREAD #two timestamp=${READ_AT}`);
+    // An oldest-first server: three full pages of mentions from the old end.
+    for (let page = 0; page < MAX_PAGES_PER_TERM; page++) {
+      feed(...fullPage(`o${page}`, 100 + page * 100));
+      if (page < MAX_PAGES_PER_TERM - 1) feed(...emptyAnswer(`b${page}`));
+    }
+    expect(searches().at(-1)).toBe(search(""));
+    feed(...fullPage("w", 9000));
+    expect(searches().at(-1)).toBe(search(`before=${at(9000 + overlap)};`));
+    const asked = searches().length;
+    feed(...fullPage("x", 8900));
+    expect(searches()).toHaveLength(asked);
+    expect(log().at(-1)?.msgid).toBe("w99");
+    expect(log()[0].msgid).toBe("x0");
+  });
+
+  it("records a channel as searched when a spent word leaves a page unasked", () => {
+    hasHistory = true;
+    hold(100);
+    feed(`:server MARKREAD #two timestamp=${READ_AT}`);
+    for (let page = 0; page < MAX_PAGES_PER_TERM; page++)
+      feed(...fullPage(`n${page}`, 5000 - page * 200));
+    feed(...emptyAnswer("sweep"));
+    reconnect();
+    sent = [];
+    feed(`:server MARKREAD #two timestamp=${READ_AT}`);
+    expect(searches()).toEqual([]);
   });
 
   it("moves on when the server refuses", () => {
@@ -636,14 +726,15 @@ describe("mention catch-up by server search", () => {
       expect(labelled()).toHaveLength(1);
       const label = labelOf(labelled()[0]);
       expect(label).toBeTruthy();
-      // A search typed by hand answers without our label and is left alone.
+      // A search typed by hand answers without our label: its lines reach the
+      // chat as they always did, and our question stays open.
       feed(
         ...answer(
           "m",
-          `msgid=x;time=${at(5)} :bob!u@h PRIVMSG #one :me: from a manual search`,
+          `msgid=x;time=${at(5)} :bob!u@h PRIVMSG #one :from a manual search`,
         ),
       );
-      expect(log()).toEqual([]);
+      expect(messages().map((m) => m.msgid)).toEqual(["x"]);
       expect(labelled()).toHaveLength(1);
       feed(
         `@label=${label} :server BATCH +o labeled-response`,
@@ -698,10 +789,10 @@ describe("mention catch-up by server search", () => {
   });
 
   it("builds the search terms from the nick and the highlight words a server can look for", () => {
-    expect(searchTerms("Me", [" me ", "", "word", "[]", "c++"])).toEqual([
+    expect(searchTerms("Me", [" me ", "", "word", "[]"])).toEqual([
       "Me",
       "word",
-      "c++",
+      "[]",
     ]);
   });
 });

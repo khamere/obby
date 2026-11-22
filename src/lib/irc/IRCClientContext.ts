@@ -56,6 +56,7 @@ export interface IRCClientContext {
   // The server answered TAGMSG with "Unknown command"; no more go out.
   noteTagmsgRefused(serverId: string): void;
   hasLineServerTime: boolean;
+  claimSearchAnswer(serverId: string, label: string | undefined): boolean;
   activeBatches: Map<
     string,
     Map<

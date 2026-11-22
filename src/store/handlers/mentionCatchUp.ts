@@ -47,8 +47,12 @@ interface Question {
   term: string;
   // What the pages of one word in one channel have used up between them.
   budget: { requests: number; pagesWithMentions: number; isSwept: boolean };
+  // A bound set exactly on the edge, after a full page that did not move.
+  isStrictAfter?: boolean;
+  isStrictBefore?: boolean;
   // The newest matches, asked once a word has used up its pages.
   isSweep?: boolean;
+  isLastSweepPage?: boolean;
   label?: string;
 }
 
@@ -62,6 +66,12 @@ interface ServerQueue {
   refused: Set<string>;
   // Channels searched before, waiting for their history to say what is new.
   awaitingHistory: Map<string, { channelName: string; readAt: string }>;
+  // Channels whose history this connection has already loaded.
+  historyLoaded: Set<string>;
+  // The newest line of each channel's history replies as the server sent
+  // them, which includes lines the chat leaves out.
+  newestInHistory: Map<string, number>;
+  historyBatches: Map<string, string>;
   timeoutsInARow: number;
   isStopped: boolean;
 }
@@ -82,6 +92,9 @@ function queueFor(serverId: string): ServerQueue {
       reported: new Set(),
       refused: new Set(),
       awaitingHistory: new Map(),
+      historyLoaded: new Set(),
+      newestInHistory: new Map(),
+      historyBatches: new Map(),
       timeoutsInARow: 0,
       isStopped: false,
     };
@@ -93,18 +106,19 @@ function queueFor(serverId: string): ServerQueue {
 function dropQueue(serverId: string): void {
   clearTimeout(queues.get(serverId)?.timer);
   queues.delete(serverId);
+  ircClient.forgetSearches(serverId);
 }
 
-// A word without a letter or digit is nothing a server's word search can
-// look for.
-const isSearchable = (term: string) => /[\p{L}\p{N}]/u.test(term);
+// A server that searches by words refuses a word without a letter or digit,
+// while one that searches by substring finds it.
+const isWordSearchable = (term: string) => /[\p{L}\p{N}]/u.test(term);
 
 export function searchTerms(nick: string, customMentions: string[]): string[] {
   const terms = new Map<string, string>();
   for (const term of [nick, ...customMentions]) {
     const trimmed = term.trim();
     const key = trimmed.toLowerCase();
-    if (isSearchable(trimmed) && !terms.has(key)) terms.set(key, trimmed);
+    if (trimmed && !terms.has(key)) terms.set(key, trimmed);
   }
   return [...terms.values()];
 }
@@ -194,7 +208,7 @@ function finish(
   const key = channelName.toLowerCase();
   if (!isAnswered) queue.refused.add(key);
   const isLastQuestion = !queue.waiting.some(
-    (q) => q.channelName === channelName,
+    (q) => q.channelName === channelName && (q.isSweep || !isSpent(q.budget)),
   );
   if (isLastQuestion && !queue.refused.has(key)) {
     // The search saw every line the server held by now, and the newest line
@@ -302,6 +316,13 @@ export function pagesAfter(
       after: shifted(newest, -EDGE_OVERLAP_MS),
       afterEdge: newest,
     });
+  if (pages.length > 0 || results.length < SEARCH_PAGE_SIZE) return pages;
+  // A full page that did not move may be one instant holding more lines than
+  // a page, with other lines hidden behind it, so we step past that instant.
+  if (question.afterEdge === newest && !question.isStrictAfter)
+    pages.push({ ...next, after: newest, isStrictAfter: true });
+  if (question.beforeEdge === oldest && !question.isStrictBefore)
+    pages.push({ ...next, before: oldest, isStrictBefore: true });
   return pages;
 }
 
@@ -309,12 +330,26 @@ export function pagesAfter(
 // reaching the newest ones, which are the ones the inbox keeps.
 function sweepAfter(question: Question, results: SearchResult[]): Question[] {
   const { budget } = question;
-  if (results.length === 0 || budget.isSwept || !isSpent(budget)) return [];
-  budget.isSwept = true;
+  if (results.length === 0) return [];
   const { label: _label, after: _after, before: _before, ...rest } = question;
-  return [
-    { ...rest, afterEdge: undefined, beforeEdge: undefined, isSweep: true },
-  ];
+  const sweep = { ...rest, afterEdge: undefined, beforeEdge: undefined };
+  // The inbox holds two pages, so a full first page is followed by the one
+  // before it.
+  if (question.isSweep) {
+    if (question.isLastSweepPage || results.length < SEARCH_PAGE_SIZE)
+      return [];
+    const oldest = Math.min(...results.map((r) => r.timestamp.getTime()));
+    return [
+      {
+        ...sweep,
+        before: new Date(oldest + EDGE_OVERLAP_MS).toISOString(),
+        isLastSweepPage: true,
+      },
+    ];
+  }
+  if (budget.isSwept || !isSpent(budget)) return [];
+  budget.isSwept = true;
+  return [{ ...sweep, isSweep: true }];
 }
 
 const isPlaced = (result: SearchResult) =>
@@ -353,8 +388,6 @@ function enqueue(
   askNext(store, serverId);
 }
 
-const laterOf = (a: string, b: string) => (a > b ? a : b);
-
 export function registerMentionCatchUpHandlers(
   store: StoreApi<AppState>,
 ): void {
@@ -377,32 +410,80 @@ export function registerMentionCatchUpHandlers(
     }
     // A channel searched before needs asking again only when its history
     // brings lines newer than that search saw.
-    if (ircClient.hasCapability(serverId, "draft/chathistory")) {
+    const hasHistory = ircClient.hasCapability(serverId, "draft/chathistory");
+    // A later history page may still bring what this one did not.
+    if (hasHistory)
       queue.awaitingHistory.set(key, {
         channelName: target,
         readAt: timestamp,
       });
+    if (!hasHistory || queue.historyLoaded.has(key))
+      searchWhatIsNew(serverId, target, timestamp, hasHistory);
+  });
+
+  // Whether a channel has anything the earlier search did not see is told by
+  // its history, where the server has one.
+  const searchWhatIsNew = (
+    serverId: string,
+    channelName: string,
+    readAt: string,
+    hasHistory: boolean,
+  ) => {
+    const searched = searchedUpTo.get(channelKey(serverId, channelName));
+    if (searched === undefined) return;
+    const queue = queueFor(serverId);
+    const key = channelName.toLowerCase();
+    if (hasHistory) {
+      const loaded = newestLoaded(store.getState(), serverId, channelName);
+      const sent = queue.newestInHistory.get(key);
+      if (Math.max(loaded ?? 0, sent ?? 0) <= searched) return;
+    }
+    queue.awaitingHistory.delete(key);
+    const edge = new Date(searched).toISOString();
+    if (readAt >= edge) enqueue(store, serverId, channelName, readAt, readAt);
+    // The line the earlier search ended on may share its instant with one
+    // that came later, so we start a little before it.
+    else
+      enqueue(
+        store,
+        serverId,
+        channelName,
+        readAt,
+        shifted(edge, -EDGE_OVERLAP_MS),
+      );
+  };
+
+  ircClient.on("parsedLine", ({ serverId, command, parv, mtags }) => {
+    const queue = queues.get(serverId);
+    if (!queue) return;
+    if (command === "BATCH") {
+      const ref = parv[0] ?? "";
+      if (ref.startsWith("-")) queue.historyBatches.delete(ref.slice(1));
+      else if (parv[1] === "chathistory" && parv[2])
+        queue.historyBatches.set(ref.slice(1), parv[2].toLowerCase());
       return;
     }
-    const from = laterOf(new Date(searched).toISOString(), timestamp);
-    enqueue(store, serverId, target, timestamp, from);
+    const channel = mtags?.batch
+      ? queue.historyBatches.get(mtags.batch)
+      : undefined;
+    const time = Date.parse(mtags?.time ?? "");
+    if (!channel || Number.isNaN(time)) return;
+    if (time > (queue.newestInHistory.get(channel) ?? 0))
+      queue.newestInHistory.set(channel, time);
   });
 
   ircClient.on(
     "CHATHISTORY_LOADING",
     ({ serverId, channelName, isLoading }) => {
       if (isLoading) return;
-      const queue = queues.get(serverId);
+      if (!ircClient.hasCapability(serverId, "soju.im/search")) return;
+      const queue = queueFor(serverId);
       const key = channelName.toLowerCase();
-      const waiting = queue?.awaitingHistory.get(key);
-      if (!queue || !waiting) return;
-      queue.awaitingHistory.delete(key);
-      const searched = searchedUpTo.get(channelKey(serverId, channelName));
-      if (searched === undefined) return;
-      const newest = newestLoaded(store.getState(), serverId, channelName);
-      if (newest !== undefined && newest <= searched) return;
-      const from = laterOf(new Date(searched).toISOString(), waiting.readAt);
-      enqueue(store, serverId, waiting.channelName, waiting.readAt, from);
+      // The marker and the history come in either order.
+      queue.historyLoaded.add(key);
+      const waiting = queue.awaitingHistory.get(key);
+      if (!waiting) return;
+      searchWhatIsNew(serverId, waiting.channelName, waiting.readAt, true);
     },
   );
 
@@ -434,7 +515,8 @@ export function registerMentionCatchUpHandlers(
     const queue = queues.get(serverId);
     if (!queue?.asked || !answersAsked(queue.asked, mtags?.label)) return;
     queue.timeoutsInARow = 0;
-    finish(store, serverId, false);
+    // A word the server cannot search for has nothing to be found by it.
+    finish(store, serverId, !isWordSearchable(queue.asked.term));
   });
 
   ircClient.on("connectionStateChange", ({ serverId, connectionState }) => {

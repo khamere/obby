@@ -49,6 +49,19 @@ export function handleCannotSendToChan(
 
 const SEARCH_BATCH = "soju.im/search";
 
+// The label sits on the search batch itself or on the batch that wraps it.
+function searchLabel(
+  ctx: IRCClientContext,
+  serverId: string,
+  mtags: Record<string, string> | undefined,
+): string | undefined {
+  if (mtags?.label) return mtags.label;
+  const outer = mtags?.batch;
+  return outer
+    ? ctx.activeBatches.get(serverId)?.get(outer)?.batchTags?.label
+    : undefined;
+}
+
 // A search answer repeats old messages, so we hand them to whoever asked and
 // keep them out of the chat.
 function takeSearchResult(
@@ -60,8 +73,8 @@ function takeSearchResult(
   const batch = batchId
     ? ctx.activeBatches.get(serverId)?.get(batchId)
     : undefined;
-  if (batch?.type !== SEARCH_BATCH) return false;
-  batch.searchResults?.push(result);
+  if (batch?.type !== SEARCH_BATCH || !batch.searchResults) return false;
+  batch.searchResults.push(result);
   return true;
 }
 
@@ -252,7 +265,10 @@ export function handleBatch(
       parameters,
       sender,
       messages: [],
-      ...(batchType === SEARCH_BATCH ? { searchResults: [] } : {}),
+      ...(batchType === SEARCH_BATCH &&
+      ctx.claimSearchAnswer(serverId, searchLabel(ctx, serverId, mtags))
+        ? { searchResults: [] }
+        : {}),
       timestamps: [],
       concatFlags: [],
       messageIds: [],
@@ -407,18 +423,12 @@ export function handleBatch(
 
     serverBatches?.delete(batchId);
 
-    if (batch?.type === SEARCH_BATCH) {
-      // The label sits on the batch itself or on the batch that wraps it.
-      const outer = batch.batchTags?.batch;
-      const label =
-        batch.batchTags?.label ??
-        (outer ? serverBatches?.get(outer)?.batchTags?.label : undefined);
+    if (batch?.type === SEARCH_BATCH && batch.searchResults)
       ctx.triggerEvent("SEARCH_RESULTS", {
         serverId,
-        results: batch.searchResults ?? [],
-        label,
+        results: batch.searchResults,
+        label: searchLabel(ctx, serverId, batch.batchTags),
       });
-    }
 
     ctx.triggerEvent("BATCH_END", {
       serverId,
