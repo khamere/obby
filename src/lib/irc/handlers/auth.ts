@@ -62,6 +62,11 @@ export function handleFail(
   // draft/persistence FAIL projection
   else if (command === "PERSISTENCE")
     ctx.triggerEvent("PERSISTENCE_FAIL", { serverId, mtags, code, message });
+  else if (
+    command === "SEARCH" &&
+    ctx.claimSearchAnswer(serverId, mtags?.label)
+  )
+    ctx.triggerEvent("SEARCH_FAIL", { serverId, mtags, code, message });
   // draft/read-marker FAIL projection.  The MARKREAD FAIL form has
   // an optional <target> in parv[2]; the message is whatever's left.
   else if (command === "MARKREAD") {

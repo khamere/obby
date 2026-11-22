@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, MemoryRouter } from "react-router-dom";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import App from "../src/App";
 import ircClient from "../src/lib/ircClient";
@@ -25,6 +25,18 @@ vi.mock("../src/lib/ircClient", () => ({
     capAck: vi.fn(),
   },
 }));
+
+const routeFailure = vi.hoisted(() => ({ error: null as Error | null }));
+
+vi.mock("../src/components/PrivacyPolicy", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../src/components/PrivacyPolicy")>();
+  const PrivacyPolicy = () => {
+    if (routeFailure.error) throw routeFailure.error;
+    return <actual.default />;
+  };
+  return { default: PrivacyPolicy };
+});
 
 // Mock the store
 let storeVersion = 0;
@@ -171,6 +183,33 @@ describe("App", () => {
       expect(mockStoreState.joinChannel).toHaveBeenCalledWith(
         "srv-1",
         "#weather",
+      );
+    });
+  });
+
+  describe("Render errors", () => {
+    afterEach(() => {
+      routeFailure.error = null;
+      vi.restoreAllMocks();
+    });
+
+    it("shows the recovery screen when a page fails to draw", () => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      routeFailure.error = new RangeError("Invalid time value");
+
+      render(
+        <MemoryRouter initialEntries={["/privacy"]}>
+          <App />
+        </MemoryRouter>,
+      );
+
+      expect(screen.getByRole("alert")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Reload" })).toBeTruthy();
+      expect(
+        screen.getByRole("button", { name: "Copy error details" }),
+      ).toBeTruthy();
+      expect(screen.getByTestId("app-error-details").textContent).toContain(
+        "RangeError: Invalid time value",
       );
     });
   });

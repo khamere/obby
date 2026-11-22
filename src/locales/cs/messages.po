@@ -1775,6 +1775,7 @@ msgstr "Kontrolujte načítání externích médií. Vypnuto / Bezpečné / Dův
 msgid "Control media display and external content"
 msgstr "Ovládat zobrazení médií a externího obsahu"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 #: src/components/ui/E2EEVerifyModal.tsx
 #: src/components/ui/ExternalLinkWarningModal.tsx
@@ -1811,10 +1812,16 @@ msgstr "Kopírovat název kanálu"
 msgid "Copy entire JSON"
 msgstr "Kopírovat celý JSON"
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Copy error details"
+msgstr "Kopírovat podrobnosti o chybě"
+
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 msgid "Copy failed, select to retry"
 msgstr "Kopírování selhalo, vyberte k novému pokusu"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/mobile/MessageReaderSheet.tsx
 msgid "Copy failed, tap to retry"
 msgstr "Kopírování selhalo, klepněte k novému pokusu"
@@ -4391,6 +4398,10 @@ msgstr "Obby tento soubor stáhne při každém spuštění, takže každý se s
 msgid "Obby is up to date."
 msgstr "Obby je aktuální."
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Obby stopped working"
+msgstr "Obby přestalo fungovat"
+
 #: src/components/ui/UpdateSheet.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Obby will close to install the update; open it again afterwards."
@@ -5119,6 +5130,14 @@ msgstr "Uvolněný - méně agresivní ochrana"
 #: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "Poznámky k vydání"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload"
+msgstr "Načíst znovu"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload to continue. Copy the error details to report the problem."
+msgstr "Pokračujte znovunačtením. Chcete-li problém nahlásit, zkopírujte podrobnosti o chybě."
 
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/pages/ChannelSettingsPage.tsx

@@ -5,7 +5,11 @@ import { ChannelLink } from "../components/message/ChannelLink";
 /* eslint-disable no-control-regex */
 import type { Server, User } from "../types";
 import { findChannelMentions } from "./channelMentions";
-import { decodeHtmlEntities, escapeHtml } from "./htmlEntities";
+import {
+  decodeCharacterReferences,
+  decodeHtmlEntities,
+  escapeHtml,
+} from "./htmlEntities";
 import { isTauri } from "./platformUtils";
 import { userFilehostOrigin } from "./userFilehost";
 
@@ -225,6 +229,20 @@ function unescapeTagValue(s: string): string {
     }
   }
   return out;
+}
+
+const TAG_VALUE_ESCAPES: Record<string, string> = {
+  ";": "\\:",
+  " ": "\\s",
+  "\\": "\\\\",
+  "\r": "\\r",
+  "\n": "\\n",
+};
+
+// A tag value ends at the first space or semicolon, so we escape every value
+// we put into an outgoing line to keep the rest of it out of the command.
+export function escapeTagValue(value: string): string {
+  return value.replace(/[; \\\r\n]/g, (c) => TAG_VALUE_ESCAPES[c]);
 }
 
 export function parseMessageTags(tags: string): Record<string, string> {
@@ -559,6 +577,58 @@ export function makeLinkLabels(url: string, label: string): LinkLabels {
 const labelFor = (labels: LinkLabels | undefined, url: string) =>
   labels?.get(linkLabelKey(url));
 
+const MAX_FENCE_WORD = 32;
+const FENCE_LANGUAGE = /^[\w+#.-]+$/;
+
+// The word after a code fence is free text from the sender, so we let it name
+// a class or a highlighter only when all of it reads as a language name.
+const fenceLanguageName = (word: string | undefined): string | undefined =>
+  word && word.length <= MAX_FENCE_WORD && FENCE_LANGUAGE.test(word)
+    ? word
+    : undefined;
+
+// Any other fence word is shown as the text a page would read from it, so we
+// decode it first, cut it to the length of a language name and escape it last.
+const fenceWordLabel = (word: string): string => {
+  const chars = [...decodeCharacterReferences(word)];
+  const shown =
+    chars.length > MAX_FENCE_WORD
+      ? `${chars.slice(0, MAX_FENCE_WORD).join("")}…`
+      : chars.join("");
+  return escapeHtml(shown);
+};
+
+const IMAGE_STYLE = "max-height: 150px;";
+const IRC_COLOUR = "(?:#[0-9A-Fa-f]{6}|inherit)";
+const LINE_COLOUR_STYLE = new RegExp(
+  `^color:${IRC_COLOUR}(?:;background-color:${IRC_COLOUR})?$`,
+);
+
+// A style attribute can cover the whole window or load a remote resource, so
+// we keep one only when its whole value is an IRC line colour or the image
+// height limit.
+const dropForeignStyle = (
+  _node: Element,
+  data: { attrName: string; attrValue: string; keepAttr: boolean },
+) => {
+  if (data.attrName !== "style") return;
+  if (data.attrValue === IMAGE_STYLE) return;
+  if (LINE_COLOUR_STYLE.test(data.attrValue)) return;
+  data.keepAttr = false;
+};
+
+export function sanitizeMarkdownHtml(html: string): string {
+  DOMPurify.addHook("uponSanitizeAttribute", dropForeignStyle);
+  try {
+    return DOMPurify.sanitize(html, {
+      ADD_ATTR: ["data-code-id", "viewBox", "stroke-width", "rx", "ry"],
+      ADD_TAGS: ["button"],
+    });
+  } finally {
+    DOMPurify.removeHook("uponSanitizeAttribute", dropForeignStyle);
+  }
+}
+
 export function renderMarkdown(
   text: string,
   showExternalContent = true,
@@ -603,7 +673,7 @@ export function renderMarkdown(
     // Allow the image to render normally, but make it clickable
     const titleAttr = title ? ` title="${title.replace(/"/g, "&quot;")}"` : "";
     const altAttr = ` alt="${(text || "").replace(/"/g, "&quot;")}"`;
-    const imageHtml = `<img src="${sanitizedHref}"${altAttr}${titleAttr} class="max-w-full h-auto rounded-lg cursor-pointer" style="max-height: 150px;" />`;
+    const imageHtml = `<img src="${sanitizedHref}"${altAttr}${titleAttr} class="max-w-full h-auto rounded-lg cursor-pointer" style="${IMAGE_STYLE}" />`;
 
     // Add special class for external links that need security warnings
     const isExternalLink =
@@ -692,12 +762,16 @@ export function renderMarkdown(
     // hljs escapes what it highlights, so every other path must escape too or
     // a fenced "<img src>" would load a remote image and leak the reader's IP.
     let highlightedCode = escapeHtml(decodedText);
-    let language = lang;
+    const fenceWord = lang?.match(/^\S+/)?.[0];
+    const fenceLanguage = fenceLanguageName(fenceWord);
+    let language = fenceLanguage;
 
     if (hljsModule) {
-      if (lang && hljsModule.getLanguage(lang)) {
+      if (fenceLanguage && hljsModule.getLanguage(fenceLanguage)) {
         try {
-          const result = hljsModule.highlight(decodedText, { language: lang });
+          const result = hljsModule.highlight(decodedText, {
+            language: fenceLanguage,
+          });
           highlightedCode = result.value;
           language = result.language;
         } catch (err) {
@@ -709,7 +783,7 @@ export function renderMarkdown(
             highlightedCode = escapeHtml(decodedText);
           }
         }
-      } else if (!lang) {
+      } else if (!fenceWord) {
         try {
           const result = hljsModule.highlightAuto(decodedText);
           highlightedCode = result.value;
@@ -720,8 +794,14 @@ export function renderMarkdown(
       }
     }
 
-    const languageClass = language ? ` class="language-${language}"` : "";
-    return `<pre><code${languageClass}>${highlightedCode}</code></pre>`;
+    const languageClass = language
+      ? ` class="language-${escapeHtml(language)}"`
+      : "";
+    const wordLabel =
+      !language && fenceWord
+        ? ` data-fence-label="${fenceWordLabel(fenceWord)}"`
+        : "";
+    return `<pre><code${languageClass}${wordLabel}>${highlightedCode}</code></pre>`;
   };
 
   // Temporarily replace blockquote markers to preserve them during HTML escaping
@@ -767,19 +847,19 @@ export function renderMarkdown(
       // Extract language from class attribute (e.g., class="language-javascript")
       const languageMatch = attrs.match(/class="[^"]*language-([^"\s]+)/);
       const language = languageMatch ? languageMatch[1] : "text";
-      const displayLanguage = language === "text" ? "plain text" : language;
+      const wordLabel = attrs.match(/ data-fence-label="([^"]*)"/);
+      const displayLanguage =
+        wordLabel?.[1] ?? (language === "text" ? "plain text" : language);
+      const codeAttrs = wordLabel ? attrs.replace(wordLabel[0], "") : attrs;
 
-      return `<div class="code-block-container"><div class="code-block-header">${displayLanguage}<button class="copy-button" data-code-id="${codeId}" title="Copy to clipboard"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></div><pre><code id="${codeId}"${attrs}>${content}</code></pre></div>`;
+      return `<div class="code-block-container"><div class="code-block-header">${displayLanguage}<button class="copy-button" data-code-id="${codeId}" title="Copy to clipboard"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></div><pre><code id="${codeId}"${codeAttrs}>${content}</code></pre></div>`;
     },
   );
 
   // Apply IRC colors to prose (after code blocks are wrapped, so we can skip them)
   processedHtml = applyIrcColorsToHtml(processedHtml, lineColors);
 
-  const safeHtml = DOMPurify.sanitize(processedHtml, {
-    ADD_ATTR: ["style", "data-code-id", "viewBox", "stroke-width", "rx", "ry"],
-    ADD_TAGS: ["button"],
-  });
+  const safeHtml = sanitizeMarkdownHtml(processedHtml);
 
   return (
     <div

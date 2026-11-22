@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { servers, settings, uiSelections } from "../../src/store/localStorage";
+import {
+  mentionLog,
+  servers,
+  settings,
+  uiSelections,
+} from "../../src/store/localStorage";
 
 describe("settings.load migration", () => {
   beforeEach(() => {
@@ -145,5 +150,33 @@ describe("servers.load", () => {
     );
 
     expect(servers.load()[0].channels).toEqual(["#lobby", "#two"]);
+  });
+});
+
+describe("mentionLog.load", () => {
+  test("puts a log saved in arrival order into the order the lines were said", () => {
+    const entry = (msgid: string, timestamp: string) => ({
+      messageId: msgid,
+      msgid,
+      serverId: "s1",
+      channelId: "c1",
+      channelName: "#one",
+      sender: "bob",
+      content: "me",
+      timestamp,
+      seen: false,
+    });
+    vi.mocked(window.localStorage.getItem).mockReturnValue(
+      JSON.stringify([
+        entry("late", "2026-01-01T12:10:00.000Z"),
+        entry("early", "2026-01-01T12:00:00.000Z"),
+        entry("middle", "2026-01-01T12:05:00.000Z"),
+      ]),
+    );
+    expect(mentionLog.load().map((m) => m.msgid)).toEqual([
+      "early",
+      "middle",
+      "late",
+    ]);
   });
 });

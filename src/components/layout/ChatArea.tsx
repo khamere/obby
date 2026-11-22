@@ -101,6 +101,7 @@ import {
   routeOutgoingPM,
 } from "../../store/handlers/e2eeOutbound";
 import { queryUncachedBotsInChannel } from "../../store/handlers/pushbot";
+import { isReactionBy } from "../../store/helpers";
 import type { Channel, Message as MessageType, User } from "../../types";
 import { COMMAND_DETAIL_ID, CommandArgHint } from "../chat/CommandArgHint";
 import { CommandArgPill, CommandChip } from "../chat/CommandChip";
@@ -1048,7 +1049,7 @@ export const ChatArea: React.FC<{
       const live =
         (state.messages[key] ?? []).find((m) => m.id === msg.id) ?? msg;
       return live.reactions
-        .filter((r) => r.userId === currentUser?.username)
+        .filter((r) => isReactionBy(r, currentUser?.username))
         .map((r) => r.emoji);
     }),
   );
@@ -1566,13 +1567,10 @@ export const ChatArea: React.FC<{
           line,
         ) !== "none";
       if (!encrypted) {
-        const replyTags = replyTo?.msgid
-          ? `@+reply=${replyTo.msgid};+draft/reply=${replyTo.msgid} `
-          : "";
-        ircClient.sendRaw(
-          selectedServerId,
-          `${replyTags}PRIVMSG ${target} :${line}`,
-        );
+        ircClient.sendText(selectedServerId, target, line, {
+          replyTo: replyTo?.msgid,
+          joinLines: globalSettings.autoFallbackToSingleLine,
+        });
         if (selectedPrivateChat && currentUser) {
           showOwnPrivateMessage(
             selectedServerId,

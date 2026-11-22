@@ -10,7 +10,7 @@ import { botPriority } from "../lib/botPriority";
 import { slapAction } from "../lib/clientCommands";
 import { coerceOptionValue } from "../lib/commandInvocation";
 import ircClient from "../lib/ircClient";
-import { parseJoinCommand } from "../lib/ircUtils";
+import { escapeTagValue, parseJoinCommand } from "../lib/ircUtils";
 import {
   makeLabel,
   shouldUseLabeledResponse,
@@ -402,7 +402,7 @@ export function useMessageSending({
           }
           ircClient.sendRaw(
             selectedServerId,
-            `${localReplyTo?.msgid ? `@+reply=${localReplyTo.msgid};+draft/reply=${localReplyTo.msgid} ` : ""}PRIVMSG ${target} :\u0001ACTION ${actionMessage}\u0001`,
+            `${localReplyTo?.msgid ? `@+reply=${escapeTagValue(localReplyTo.msgid)};+draft/reply=${escapeTagValue(localReplyTo.msgid)} ` : ""}PRIVMSG ${target} :\u0001ACTION ${actionMessage}\u0001`,
           );
         }
         if (selectedPrivateChat && currentUser) {
@@ -501,7 +501,7 @@ export function useMessageSending({
       }
 
       const replyPrefix = localReplyTo?.msgid
-        ? `@+reply=${localReplyTo.msgid};+draft/reply=${localReplyTo.msgid} `
+        ? `@+reply=${escapeTagValue(localReplyTo.msgid)};+draft/reply=${escapeTagValue(localReplyTo.msgid)} `
         : "";
 
       // preserveBoundarySpace=true so concat reconstructs the original
@@ -567,7 +567,7 @@ export function useMessageSending({
       }
 
       const messagePrefix = localReplyTo?.msgid
-        ? `@+reply=${localReplyTo.msgid};+draft/reply=${localReplyTo.msgid} `
+        ? `@+reply=${escapeTagValue(localReplyTo.msgid)};+draft/reply=${escapeTagValue(localReplyTo.msgid)} `
         : "";
 
       if (globalSettings.autoFallbackToSingleLine) {
@@ -666,7 +666,7 @@ export function useMessageSending({
       }
 
       const replyPrefix = localReplyTo?.msgid
-        ? `@+reply=${localReplyTo.msgid};+draft/reply=${localReplyTo.msgid} `
+        ? `@+reply=${escapeTagValue(localReplyTo.msgid)};+draft/reply=${escapeTagValue(localReplyTo.msgid)} `
         : "";
       const tagPrefix = withLabel(replyPrefix, label);
 
