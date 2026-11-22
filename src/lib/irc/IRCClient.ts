@@ -61,6 +61,8 @@ const PING_INTERVAL_MS = 30_000;
 const PONG_TIMEOUT_MS = 10_000;
 const WAKE_PONG_TIMEOUT_MS = 5_000;
 const DEAD_SOCKET_CLOSE_WAIT_MS = 2_000;
+// The server echoes a CAP REQ in its answer behind its own name and our nick, so we keep the request well under the 512-byte line.
+const MAX_CAP_REQ_LINE = 400;
 
 // One message of a `soju.im/search` answer.
 export interface SearchResult {
@@ -974,6 +976,9 @@ export class IRCClient implements IRCClientContext {
       // We negotiate capabilities afresh on every connection, from that connection's own CAP LS.
       this.capLsAccumulated.delete(server.id);
       this.pendingCapReqs.delete(server.id);
+      this.saslMechanisms.delete(server.id);
+      server.capabilities = [];
+      server.capabilityValues = undefined;
       // Network selection belongs to the session, not just its first socket.
       const bouncerNetid = this.bouncerBindings.get(server.id);
       if (bouncerNetid) this.pendingBouncerBind.set(server.id, bouncerNetid);
@@ -2536,8 +2541,10 @@ export class IRCClient implements IRCClientContext {
         for (const cap of capsToRequest) {
           const capLength = cap.length + (currentBatch.length > 0 ? 1 : 0); // +1 for space if not first
 
-          if (currentLength + capLength > 500 && currentBatch.length > 0) {
-            // Leave some margin
+          if (
+            currentLength + capLength > MAX_CAP_REQ_LINE &&
+            currentBatch.length > 0
+          ) {
             // Send current batch
             const reqMessage = `CAP REQ :${currentBatch.join(" ")}`;
             this.sendRaw(serverId, reqMessage);
@@ -2713,9 +2720,15 @@ export class IRCClient implements IRCClientContext {
       .filter(Boolean)
       .map((cap) => cap.split("=", 1)[0]);
     if (refused.length > 1) {
-      const half = Math.ceil(refused.length / 2);
-      this.sendRaw(serverId, `CAP REQ :${refused.slice(0, half).join(" ")}`);
-      this.sendRaw(serverId, `CAP REQ :${refused.slice(half).join(" ")}`);
+      // SASL belongs to registration, so we ask for it again only while we are still negotiating.
+      const retry = this.capNegotiationComplete.get(serverId)
+        ? refused.filter((cap) => cap !== "sasl")
+        : refused;
+      const half = Math.ceil(retry.length / 2);
+      for (const part of [retry.slice(0, half), retry.slice(half)]) {
+        if (part.length > 0)
+          this.sendRaw(serverId, `CAP REQ :${part.join(" ")}`);
+      }
       return;
     }
     this.settleCapReqs(serverId, refused);
