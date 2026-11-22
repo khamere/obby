@@ -8,6 +8,7 @@ import {
   sanitizeCss,
   saveOwnCss,
   setCssLink,
+  setSecondReadingForTests,
 } from "../../src/lib/customCss";
 import { networkHost } from "../../src/lib/networkHost";
 import type { Server } from "../../src/types";
@@ -82,11 +83,51 @@ describe("sanitizeCss", () => {
     );
     expect(remoteReferences(out)).toEqual([]);
     expect(out).toBe(
-      '.a { background: invalid-url-fn("https://evil.example/a.png"); }\n' +
+      ".a { background: image(none); }\n" +
         '.b { background-image: invalid-url-fn("https://evil.example/b.png"); }\n' +
-        '.c { background: invalid-url-fn("https://evil.example/c.png" 1x); }\n' +
-        '.d { background: invalid-url-fn("https://evil.example/d.png"); }\n' +
+        ".c { background: -webkit-image-set(none 1x); }\n" +
+        ".d { background: \\69 mage(none); }\n" +
         '.e { background: invalid-url-fn("https://evil.example/e.png"); }',
+    );
+  });
+
+  it("keeps image-set() and image() that hold no string", () => {
+    const css =
+      ".a{background:image-set(url(data:image/png;base64,AAAA) 1x,url('data:image/png;base64,BBBB') 2x type('image/png'))}" +
+      " .b{background:-webkit-image-set(linear-gradient(red,blue) 1x,repeating-radial-gradient(var(--a),#fff 2px) 2x)}" +
+      " .c{background:image(conic-gradient(red,blue))}";
+    expect(sanitizeCss(css)).toBe(css);
+  });
+
+  it("refuses a string, and what could turn into one, straight inside image-set()", () => {
+    expect(
+      sanitizeCss(
+        '.a{background:image-set("a.png" 1x,var(--x) 2x,("b.png") 3x,linear-gradient("c",red) 4x,url(https://evil.example/a) 5x)}',
+      ),
+    ).toBe(
+      '.a{background:image-set(none 1x,invalid-url-fn(--x) 2x,(none) 3x,linear-gradient("c",red) 4x,none 5x)}',
+    );
+    expect(
+      sanitizeCss('.a{background:image-set("a"b 1x)} .b{content:"c"}'),
+    ).toBe('.a{background:image-set(none b 1x)} .b{content:"c"}');
+  });
+
+  it("keeps the address of a namespace as a string", () => {
+    expect(
+      sanitizeCss(
+        "@namespace svg url(http://www.w3.org/2000/svg);@namespace url( 'http://www.w3.org/1999/xhtml' ) ;@namespace m url(\"urn:m\");",
+      ),
+    ).toBe(
+      '@namespace svg "http://www.w3.org/2000/svg";@namespace \'http://www.w3.org/1999/xhtml\' ;@namespace m "urn:m";',
+    );
+    // an address we cannot write as a plain string, or one outside the rule, is refused as everywhere else
+    expect(
+      sanitizeCss(
+        '@namespace a url(ur\\6e:a);@namespace b url("urn:b" x);.a{@namespace c url(urn:c);x:url(urn:d)}',
+      ),
+    ).toBe("@namespace a none;@namespace b none;.a{@namespace c none;x:none}");
+    expect(sanitizeCss("@namespace a url(urn:a); url(urn:e) x{}")).toBe(
+      '@namespace a "urn:a"; none x{}',
     );
   });
 
@@ -129,7 +170,7 @@ describe("sanitizeCss", () => {
         '@function --theme-src(){result:url(https://evil.example/a)} .a{background:--theme-image(url("https://evil.example/b") image-set("https://evil.example/c" 1x))}',
       ),
     ).toBe(
-      '@function --theme-src(){result:none} .a{background:--theme-image(none invalid-url-fn("https://evil.example/c" 1x))}',
+      "@function --theme-src(){result:none} .a{background:--theme-image(none image-set(none 1x))}",
     );
   });
 
@@ -290,12 +331,50 @@ describe("sanitizeCss", () => {
     expect(sanitizeCss(deep)).toBe("/**/");
   });
 
-  it("neutralises legacy script hooks and can't close <style>", () => {
-    const out = sanitizeCss(
-      ".a { width: expression(alert(1)) }</style><script>x</script>",
+  it("reads escapes the way the browser does", () => {
+    // a tab ends a hex escape, A-F are hex digits, and a backslash before a line break escapes nothing
+    expect(sanitizeCss(".a{background:\\75\trl(https://evil.example/a)}")).toBe(
+      ".a{background:none}",
     );
-    expect(out).not.toMatch(/expression\s*\(/);
-    expect(out).not.toMatch(/<\/style/i);
+    expect(sanitizeCss(".a{background:ur\\6C(https://evil.example/a)}")).toBe(
+      ".a{background:none}",
+    );
+    expect(sanitizeCss(".a{background:\\\nurl(https://evil.example/a)}")).toBe(
+      ".a{background:\\\nnone}",
+    );
+    const split = ".a{background:ur\\\nl(https://docs.example/a)}";
+    expect(sanitizeCss(split)).toBe(split);
+    expect(remoteReferences(split)).toEqual([]);
+  });
+
+  it("removes an @import inside a block up to the end of that block", () => {
+    expect(sanitizeCss(".a{@import x} .b{color:red}")).toBe(
+      ".a{/**/} .b{color:red}",
+    );
+  });
+
+  it("applies nothing when the second reading still finds something to refuse", () => {
+    // no known stylesheet fails the second reading, so a stand-in makes it fail here
+    setSecondReadingForTests(() => 1);
+    expect(sanitizeCss(".a{background:url(https://evil.example/a)}")).toBe("");
+    // text the first reading left as it was has been judged already
+    expect(sanitizeCss(".a{color:red}")).toBe(".a{color:red}");
+    setSecondReadingForTests();
+    expect(sanitizeCss(".a{background:url(https://evil.example/a)}")).toBe(
+      ".a{background:none}",
+    );
+  });
+
+  it("cannot close the <style> element", () => {
+    expect(sanitizeCss(".a{}</style><script>x</script></STYLE>")).toBe(
+      ".a{}<\\/style><script>x</script><\\/style>",
+    );
+  });
+
+  it("leaves names that only old browsers gave a meaning", () => {
+    const css =
+      ".behavior:hover,behavior{color:red;behavior:x;-moz-binding:y;width:expression(1)}";
+    expect(sanitizeCss(css)).toBe(css);
   });
 });
 
@@ -440,6 +519,7 @@ describe("own and linked stylesheets", () => {
       '.a{} @namespace svg "http://www.w3.org/2000/svg";',
       '@layer a{} @namespace svg "http://www.w3.org/2000/svg";',
       '@media screen{} @namespace svg "http://www.w3.org/2000/svg";',
+      '@namespace svg "x\n;',
     ]) {
       expect(namespacePrefixRules(sanitizeCss(css)), css).toBe("");
     }
@@ -448,6 +528,87 @@ describe("own and linked stylesheets", () => {
         '@layer a, b; <!-- @namespace svg "http://www.w3.org/2000/svg"; -->',
       ),
     ).toBe('@namespace svg/**/"http://www.w3.org/2000/svg";');
+  });
+
+  it("repeats a namespace prefix the linked file declares with url()", async () => {
+    remote.body =
+      "@namespace svg url(http://www.w3.org/2000/svg); .q{color:red}";
+    await setCssLink(LINK);
+    saveOwnCss("svg|path{fill:red}");
+    expect(linkStyleText()).toBe(
+      '@namespace svg "http://www.w3.org/2000/svg"; .q{color:red}',
+    );
+    expect(styleText()).toBe(
+      '@namespace svg/**/"http://www.w3.org/2000/svg";\nsvg|path{fill:red}',
+    );
+  });
+
+  it("sanitises again what an earlier version stored", () => {
+    backing.set(
+      "obby.customCss",
+      ".a{background:url(https://evil.example/own)}",
+    );
+    backing.set("obby.customCss.link", LINK);
+    backing.set(
+      "obby.customCss.linkCache",
+      '.b{background:url(https://evil.example/cache)} @import "https://evil.example/c.css";',
+    );
+    loadCustomCss();
+    expect(styleText()).toBe(".a{background:none}");
+    expect(linkStyleText()).toBe(".b{background:none} /**/");
+  });
+
+  it("stores no link cache when no link is set", () => {
+    backing.set("obby.customCss.linkCache", ".b{color:red}");
+    loadCustomCss();
+    expect(linkStyleText()).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("reports own CSS that cannot be stored and applies none of it", () => {
+    saveOwnCss(".kept{}");
+    vi.mocked(localStorage.setItem).mockImplementation(() => {
+      throw new DOMException("full", "QuotaExceededError");
+    });
+    expect(() => saveOwnCss(".lost{}")).toThrow("not-stored");
+    expect(styleText()).toBe(".kept{}");
+    expect(getCustomCssState().own).toBe(".kept{}");
+    expect(backing.get("obby.customCss")).toBe(".kept{}");
+  });
+
+  it("reports a link that cannot be stored, and still applies one whose copy cannot", async () => {
+    vi.mocked(localStorage.setItem).mockImplementation((k, v) => {
+      if (k === "obby.customCss.linkCache") throw new Error("full");
+      backing.set(k, v);
+    });
+    await setCssLink(LINK);
+    expect(getCustomCssState().linkStatus).toBe("ok");
+    expect(linkStyleText()).toBe(".linked { color: blue; }");
+    await setCssLink("");
+    vi.mocked(localStorage.setItem).mockImplementation(() => {
+      throw new Error("full");
+    });
+    await expect(setCssLink(LINK)).rejects.toThrow("not-stored");
+    expect(getCustomCssState()).toMatchObject({ link: "", linkStatus: "none" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports a stylesheet that was refused as a whole instead of saving nothing", async () => {
+    saveOwnCss(".kept{}");
+    setSecondReadingForTests(() => 1);
+    expect(() =>
+      saveOwnCss(".a{background:url(https://evil.example/a)}"),
+    ).toThrow("refused");
+    expect(styleText()).toBe(".kept{}");
+    expect(backing.get("obby.customCss")).toBe(".kept{}");
+    remote.body = ".a{background:url(https://evil.example/a)}";
+    await setCssLink(LINK);
+    expect(getCustomCssState().linkStatus).toBe("error");
+    expect(linkStyleText()).toBeNull();
+    expect(backing.has("obby.customCss.linkCache")).toBe(false);
+    // removing own CSS leaves nothing, which is no refusal
+    saveOwnCss("  ");
+    expect(styleText()).toBeNull();
   });
 
   it("keeps the cached copy when the host is down", async () => {

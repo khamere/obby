@@ -76,9 +76,13 @@ const SINGLE_QUOTED_RUN = /[^'\\\n]+/y;
 // everything an unquoted address may hold as written: no space, quote, bracket, backslash or control character
 const UNQUOTED_URL_RUN = /[!#-&*-[\]-~\u0080-\uffff]+/y;
 const NUMBER = /(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][+-]?\d+)?/y;
-const COLON_NEXT = /[ \n\t]*:/y;
 // The functions that read a bare string as an address are image() and image-set() (CSS Images 4) and src() (CSS Values 5).
 const STRING_URL_FUNCTION = /^(?:-[a-z]+-)?(?:image-set|image|src)$/;
+const IMAGE_LIST_FUNCTION = /^(?:-[a-z]+-)?(?:image-set|image)$/;
+const STRING_ONLY_FUNCTION = /^(?:-[a-z]+-)?src$/;
+const IMAGE_ARGUMENT_FUNCTION =
+  /^(?:type|invalid-url-fn|(?:-[a-z]+-)?(?:repeating-)?(?:linear|radial|conic)-gradient)$/;
+const REFUSED_FUNCTION = "invalid-url-fn(";
 const IMPORT_RULE = /^import($|[\u0080-\uffff])/;
 // An empty comment keeps the text on both sides apart, where a space could be swallowed by a hex escape before it.
 const SEPARATOR = "/**/";
@@ -131,6 +135,9 @@ class CssScanner {
   private tailAt = -1;
   private tailName = "";
   private danglingEscape = false;
+  // the text of the address in the url( we read last, when it is well formed
+  private addressFrom = -1;
+  private addressTo = -1;
 
   constructor(css: string) {
     this.css = css;
@@ -241,9 +248,20 @@ class CssScanner {
     }
   }
 
-  followedByColon(): boolean {
-    COLON_NEXT.lastIndex = this.pos;
-    return COLON_NEXT.test(this.css);
+  /** The refused address we just read as a plain string, which names it and fetches nothing. */
+  refusedAddressAsString(token: CssToken): string | undefined {
+    if (this.addressFrom === -1) return undefined;
+    const css = this.css;
+    const raw = css.slice(this.addressFrom, this.addressTo);
+    if (!token.open) return raw.includes("\\") ? undefined : `"${raw}"`;
+    const after = this.pos;
+    this.skipWhitespace();
+    if (css.charAt(this.pos) === ")") {
+      this.pos++;
+      return raw;
+    }
+    this.pos = after;
+    return undefined;
   }
 
   /** Whether a word we write here would grow into a longer name or a function. */
@@ -420,14 +438,18 @@ class CssScanner {
     this.skipWhitespace();
     const from = this.pos;
     const first = css.charAt(from);
+    this.addressFrom = -1;
     if (first === '"' || first === "'") {
-      return this.skipString() && this.startsWithData(from + 1)
-        ? KEPT_QUOTED_URL
-        : REFUSED_OPEN_URL;
+      if (!this.skipString()) return REFUSED_OPEN_URL;
+      this.addressFrom = from;
+      this.addressTo = this.pos;
+      return this.startsWithData(from + 1) ? KEPT_QUOTED_URL : REFUSED_OPEN_URL;
     }
+    let contentEnd = from;
     for (;;) {
       UNQUOTED_URL_RUN.lastIndex = this.pos;
       if (UNQUOTED_URL_RUN.test(css)) this.pos = UNQUOTED_URL_RUN.lastIndex;
+      contentEnd = this.pos;
       const c = css.charAt(this.pos);
       if (c === "") return REFUSED_URL;
       if (isWhitespace(c)) {
@@ -437,6 +459,8 @@ class CssScanner {
       }
       if (css.charAt(this.pos) === ")") {
         this.pos++;
+        this.addressFrom = from;
+        this.addressTo = contentEnd;
         return this.startsWithData(from) ? KEPT_URL : REFUSED_URL;
       }
       // a quote, "(", control character or broken escape makes the address malformed
@@ -464,6 +488,15 @@ function rewrite(css: string): { text: string; refused: number } {
   const scanner = new CssScanner(css);
   const out: string[] = [];
   let refused = 0;
+  // the brackets we are inside, innermost last, each by the character that closes it
+  const inside: string[] = [];
+  // for each of them, whether a string written straight into it would be read as an address
+  const readsStrings: boolean[] = [];
+  const enter = (closer: string, strings: boolean) => {
+    inside.push(closer);
+    readsStrings.push(strings);
+  };
+  let inNamespaceRule = false;
   // We copy the input in long stretches between the few places we rewrite,
   // which keeps a large stylesheet fast.
   let copied = 0;
@@ -476,32 +509,65 @@ function rewrite(css: string): { text: string; refused: number } {
     if (token.split) {
       from = scanner.pos;
       replacement = SEPARATOR;
-    } else if (token.kind === "at" && IMPORT_RULE.test(token.name ?? "")) {
-      // @import pulls in another (remote) stylesheet
-      scanner.skipAtRule();
-      replacement = SEPARATOR;
+    } else if (token.kind === "at") {
+      inNamespaceRule = token.name === "namespace" && inside.length === 0;
+      if (IMPORT_RULE.test(token.name ?? "")) {
+        // @import pulls in another (remote) stylesheet
+        scanner.skipAtRule();
+        replacement = SEPARATOR;
+      }
     } else if (token.kind === "url") {
       // only inline data: URLs may be referenced
       if (!token.safe) {
-        if (token.open) scanner.skipBlock(")");
-        replacement = scanner.joinsNext() ? "none " : "none";
+        // A namespace is named by its address and never fetched, so there we keep the name as a string.
+        if (inNamespaceRule)
+          replacement = scanner.refusedAddressAsString(token);
+        if (replacement === undefined) {
+          if (token.open) scanner.skipBlock(")");
+          replacement = scanner.joinsNext() ? "none " : "none";
+        }
       }
     } else if (token.kind === "function") {
-      const name = token.name ?? "";
-      if (STRING_URL_FUNCTION.test(name)) replacement = "invalid-url-fn(";
-      // legacy script hook
-      else if (name === "expression") replacement = "invalid(";
-    } else if (token.kind === "ident") {
-      // legacy binding hooks
-      if (
-        token.name === "-moz-binding" ||
-        (token.name === "behavior" && scanner.followedByColon())
-      ) {
-        replacement = "invalid";
+      inNamespaceRule = false;
+      const name = token.name;
+      if (name === undefined) {
+        enter(")", false);
+      } else if (STRING_ONLY_FUNCTION.test(name)) {
+        replacement = REFUSED_FUNCTION;
+        enter(")", false);
+      } else if (IMAGE_LIST_FUNCTION.test(name)) {
+        enter(")", true);
+      } else {
+        // var() and its kind could put a string here after we have looked, so only functions that draw an image themselves stay.
+        if (
+          readsStrings[readsStrings.length - 1] === true &&
+          !IMAGE_ARGUMENT_FUNCTION.test(name)
+        ) {
+          replacement = REFUSED_FUNCTION;
+        }
+        enter(")", false);
       }
+    } else if (token.kind === "string") {
+      if (readsStrings[readsStrings.length - 1] === true) {
+        replacement = scanner.joinsNext() ? "none " : "none";
+      }
+    } else if (token.kind === "open") {
+      inNamespaceRule = false;
+      enter(
+        CLOSERS[token.raw ?? ""],
+        readsStrings[readsStrings.length - 1] === true,
+      );
+    } else if (token.kind === "close") {
+      inNamespaceRule = false;
+      if (token.raw === inside[inside.length - 1]) {
+        inside.pop();
+        readsStrings.pop();
+      }
+    } else if (token.kind === "semicolon") {
+      inNamespaceRule = false;
     }
     if (replacement !== undefined) {
-      if (token.patch === undefined) refused++;
+      if (replacement !== token.patch) refused++;
       out.push(css.slice(copied, from), replacement);
       copied = scanner.pos;
     }
@@ -511,13 +577,23 @@ function rewrite(css: string): { text: string; refused: number } {
   return { text: out.join(""), refused };
 }
 
+const refusedIn = (css: string) => rewrite(css).refused;
+let secondReading = refusedIn;
+
 export function sanitizeCss(input: string): string {
   const css = preprocess(input);
   // closing the <style> element would let the rest escape as markup
   const out = rewrite(css).text.replace(/<\/style/gi, "<\\/style");
   // Text we changed can read differently from the text we judged, so we read it once more and apply nothing if it still holds anything we refuse.
-  if (out !== css && rewrite(out).refused > 0) return "";
+  if (out !== css && secondReading(out) > 0) return "";
   return out;
+}
+
+// An empty result for a stylesheet that holds something means we refused it as a whole.
+function sanitizeOrThrow(input: string): string {
+  const css = sanitizeCss(input);
+  if (!css.trim() && input.trim()) throw new Error("refused");
+  return css;
 }
 
 const IGNORED_BETWEEN_RULES = /^(?:[ \n\t]+|\/\*[\s\S]*\*\/|<!--|-->)$/;
@@ -587,12 +663,13 @@ function storageGet(key: string): string {
   }
 }
 
-function storageSet(key: string, value: string): void {
+function storageSet(key: string, value: string): boolean {
   try {
     if (value) localStorage.setItem(key, value);
     else localStorage.removeItem(key);
+    return true;
   } catch {
-    // quota or storage disabled: still applies for this session
+    return false;
   }
 }
 
@@ -635,7 +712,7 @@ async function fetchLink(link: string): Promise<string> {
   if (text.length > MAX_CSS_CHARS) throw new Error("too-large");
   // a file host's preview page instead of the raw file
   if (/^\s*<(!doctype|html)/i.test(text)) throw new Error("not-css");
-  return sanitizeCss(text);
+  return sanitizeOrThrow(text);
 }
 
 let refreshSeq = 0;
@@ -647,6 +724,7 @@ async function refreshLink(): Promise<void> {
   try {
     const css = await fetchLink(link);
     if (seq !== refreshSeq) return;
+    // the copy only bridges the next start, so the stylesheet still applies when storage has no room for it
     storageSet(LINK_CACHE_KEY, css);
     update({ linkCss: css, linkStatus: "ok" });
   } catch {
@@ -672,8 +750,9 @@ export function loadCustomCss(): void {
 /** Saves (or, with "", removes) the user's own pasted/uploaded CSS. */
 export function saveOwnCss(input: string): void {
   if (input.length > MAX_CSS_CHARS) throw new Error("too-large");
-  const own = sanitizeCss(input);
-  storageSet(OWN_KEY, own);
+  const own = sanitizeOrThrow(input);
+  // CSS we cannot keep would be gone at the next start, so we apply it only once it is stored
+  if (!storageSet(OWN_KEY, own)) throw new Error("not-stored");
   update({ own });
 }
 
@@ -684,7 +763,7 @@ export function saveOwnCss(input: string): void {
 export async function setCssLink(input: string): Promise<void> {
   const link = input.trim();
   if (link && !isValidCssLink(link)) throw new Error("bad-link");
-  storageSet(LINK_KEY, link);
+  if (!storageSet(LINK_KEY, link)) throw new Error("not-stored");
   storageSet(LINK_CACHE_KEY, "");
   refreshSeq++;
   update({ link, linkCss: "", linkStatus: link ? "loading" : "none" });
@@ -704,8 +783,16 @@ export function useCustomCssState(): CustomCssState {
   return useSyncExternalStore(subscribe, getCustomCssState);
 }
 
+// test hook: stands in for the second reading, which no known stylesheet fails
+export function setSecondReadingForTests(
+  read: (css: string) => number = refusedIn,
+): void {
+  secondReading = read;
+}
+
 // test hook
 export function resetCustomCssForTests(): void {
+  secondReading = refusedIn;
   loaded = false;
   refreshSeq++;
   state = { own: "", link: "", linkCss: "", linkStatus: "none" };

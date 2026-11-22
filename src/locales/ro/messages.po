@@ -6454,6 +6454,10 @@ msgstr "Acest server nu are gazdă de fișiere. Conectează-te la un server cu g
 msgid "This server only supports one connection type"
 msgstr "Acest server acceptă doar un tip de conexiune"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "This stylesheet could not be made safe, so it was not saved."
+msgstr "Această foaie de stil nu a putut fi făcută sigură, așa că nu a fost salvată."
+
 #. placeholder {0}: children.length
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
 msgid "This will also close the {0} bound networks below."
@@ -6755,6 +6759,10 @@ msgstr "Folosiți un port websocket securizat."
 #: src/components/pages/SettingsPage.tsx
 msgid "Use a server with IRCv3 METADATA to set your avatar, display name, and status."
 msgstr "Folosiți un server cu IRCv3 METADATA pentru a seta avatarul, numele afișat și starea."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Use a smaller stylesheet. This one does not fit in this browser's storage."
+msgstr "Folosește o foaie de stil mai mică. Aceasta nu încape în spațiul de stocare al acestui browser."
 
 #: src/components/ui/settings/BackupField.tsx
 msgid "Use at least {PASSWORD_MIN_LENGTH} characters."

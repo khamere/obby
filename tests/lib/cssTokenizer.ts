@@ -308,28 +308,56 @@ export function tokenize(input: string, engine: Engine): Token[] {
 }
 
 const isDataAddress = (address: string) => /^[\0- ]*data:/i.test(address);
-const STRING_ADDRESS_FUNCTION = /^(-[a-z]+-)?(image-set|image|src)$/i;
+const STRING_ONLY_FUNCTION = /^(-[a-z]+-)?src$/;
+const IMAGE_LIST_FUNCTION = /^(-[a-z]+-)?(image-set|image)$/;
+// what may stand straight inside image-set() or image() without being, or turning into, an address
+const DRAWS_AN_IMAGE =
+  /^(type|invalid-url-fn|(-[a-z]+-)?(repeating-)?(linear|radial|conic)-gradient)$/;
+const CLOSERS: Record<string, string> = { "(": ")", "[": "]", "{": "}" };
 
 /** Everything in the stylesheet that could make some browser engine fetch from a host. */
 export function remoteReferences(css: string): string[] {
   const found = new Set<string>();
   for (const engine of ENGINES) {
     const tokens = tokenize(css, engine);
+    // the open brackets around a token, and whether a string straight inside each is an address
+    const open: { closer: string; readsStrings: boolean }[] = [];
+    const inImageList = () => open[open.length - 1]?.readsStrings === true;
     tokens.forEach((token, index) => {
       if (token.type === "url") {
         if (!isDataAddress(token.value)) found.add(`url(${token.value})`);
       } else if (token.type === "at-keyword") {
         if (token.value.toLowerCase() === "import") found.add("@import");
+      } else if (token.type === "string" || token.type === "bad-string") {
+        if (inImageList())
+          found.add(`string "${token.value}" in an image list`);
+      } else if (token.type === "delim") {
+        if (token.value in CLOSERS) {
+          open.push({
+            closer: CLOSERS[token.value],
+            readsStrings: inImageList(),
+          });
+        } else if (token.value === open[open.length - 1]?.closer) {
+          open.pop();
+        }
       } else if (token.type === "function") {
         const name = token.value.toLowerCase();
-        if (STRING_ADDRESS_FUNCTION.test(name)) found.add(`${name}()`);
-        if (name !== "url") return;
-        const next = tokens
-          .slice(index + 1)
-          .find((later) => later.type !== "whitespace");
-        if (next?.type !== "string" || !isDataAddress(next.value)) {
-          found.add(`url("${next?.value ?? ""}")`);
+        let readsStrings = false;
+        if (STRING_ONLY_FUNCTION.test(name)) {
+          found.add(`${name}()`);
+        } else if (IMAGE_LIST_FUNCTION.test(name)) {
+          readsStrings = true;
+        } else if (name === "url") {
+          const next = tokens
+            .slice(index + 1)
+            .find((later) => later.type !== "whitespace");
+          if (next?.type !== "string" || !isDataAddress(next.value)) {
+            found.add(`url("${next?.value ?? ""}")`);
+          }
+        } else if (inImageList() && !DRAWS_AN_IMAGE.test(name)) {
+          found.add(`${name}() in an image list`);
         }
+        open.push({ closer: ")", readsStrings });
       }
     });
   }

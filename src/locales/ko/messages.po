@@ -6454,6 +6454,10 @@ msgstr "이 서버에는 파일 호스트가 없습니다. 파일을 업로드�
 msgid "This server only supports one connection type"
 msgstr "이 서버는 하나의 연결 유형만 지원합니다"
 
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "This stylesheet could not be made safe, so it was not saved."
+msgstr "이 스타일시트를 안전하게 만들 수 없어 저장하지 않았습니다."
+
 #. placeholder {0}: children.length
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
 msgid "This will also close the {0} bound networks below."
@@ -6755,6 +6759,10 @@ msgstr "보안 웹소켓 포트를 사용하세요."
 #: src/components/pages/SettingsPage.tsx
 msgid "Use a server with IRCv3 METADATA to set your avatar, display name, and status."
 msgstr "아바타, 표시 이름, 상태를 설정하려면 IRCv3 METADATA를 지원하는 서버를 사용하세요."
+
+#: src/components/ui/settings/CustomCssField.tsx
+msgid "Use a smaller stylesheet. This one does not fit in this browser's storage."
+msgstr "더 작은 스타일시트를 사용하세요. 이 스타일시트는 이 브라우저의 저장 공간에 들어가지 않습니다."
 
 #: src/components/ui/settings/BackupField.tsx
 msgid "Use at least {PASSWORD_MIN_LENGTH} characters."

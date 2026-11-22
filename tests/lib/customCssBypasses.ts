@@ -436,4 +436,120 @@ export const BYPASS_ATTEMPTS: BypassAttempt[] = [
     '.z{x:</styleurl(a" b)} .a{background:url(https://evil.example/il)} .b{content:"}',
     "inert",
   ],
+  // strings and stand-ins for strings inside a list of images
+  [
+    "a string beside an inline image in image-set",
+    '.a{background:image-set(url(data:image/png;base64,AA==) 1x,"https://evil.example/ja" 2x)}',
+  ],
+  [
+    "a string beside a gradient in image-set",
+    '.a{background:image-set(linear-gradient(red,blue) 1x,"https://evil.example/jb" 2x)}',
+  ],
+  [
+    "a string in brackets inside image-set",
+    '.a{background:image-set(("https://evil.example/jc") 1x)}',
+  ],
+  [
+    "a string after a type in image-set",
+    '.a{background:image-set(type("image/png") "https://evil.example/jd" 1x)}',
+  ],
+  [
+    "a custom function that returns a string to image-set",
+    '@function --f(){result:"https://evil.example/je"} .a{background:image-set(--f() 1x)}',
+  ],
+  [
+    "an image-set inside an image-set",
+    '.a{background:image-set(image-set("https://evil.example/jf" 1x) 1x)}',
+  ],
+  [
+    "a fallback string of env() in image-set",
+    '.a{background:image-set(env(x,"https://evil.example/jg") 1x)}',
+  ],
+  [
+    "a string and a colour in image()",
+    '.a{background:image("https://evil.example/jh",red)}',
+  ],
+  [
+    "a string in calc() in image-set",
+    '.a{background:image-set(calc("https://evil.example/ji") 1x)}',
+  ],
+  [
+    "a string left open in image-set",
+    '.a{background:image-set("https://evil.example/jj',
+  ],
+  [
+    "an attribute read by a prefixed image-set",
+    ".a{background:-webkit-image-set(attr(title) 1x)}",
+  ],
+  [
+    "a fallback string of var() in image-set",
+    '.a{background:image-set(var(--none,"https://evil.example/jk") 1x)}',
+  ],
+  [
+    "a string behind a gradient left open in image-set",
+    '.a{background:image-set(linear-gradient(red,blue 1x,"https://evil.example/jl" 2x)}',
+    "inert",
+  ],
+  [
+    "a string broken by a line break in image-set",
+    '.a{background:image-set("https://evil.example/jm\n" 1x)}',
+  ],
+  // a namespace rule keeps its address as a name, and nothing else rides along
+  [
+    "an address after a namespace rule",
+    ".x{} @namespace svg url(http://www.w3.org/2000/svg); .a{background:url(https://evil.example/ka)}",
+  ],
+  [
+    "a second address in a namespace rule",
+    "@namespace svg url(http://www.w3.org/2000/svg) url(https://evil.example/kb);",
+  ],
+  [
+    "a namespace rule that runs into a block",
+    "@namespace svg url(http://www.w3.org/2000/svg) .a{background:url(https://evil.example/kc)}",
+  ],
+  [
+    "an image-set in a namespace rule",
+    '@namespace svg image-set(url(https://evil.example/kd) 1x "https://evil.example/ke" 2x);',
+  ],
+  [
+    "a namespace rule inside a declaration block",
+    ".a{@namespace x url(https://evil.example/kf);background:url(https://evil.example/kg)}",
+  ],
+  [
+    "a namespace rule inside image-set",
+    ".a{background:image-set(@namespace url(https://evil.example/kh) 1x)}",
+  ],
+  [
+    "a namespace address with an escape that ends in a quote",
+    '@namespace svg url(a\\22); .a{background:url(https://evil.example/ki)} .b{content:"}',
+  ],
+  [
+    "a namespace address left open",
+    "@namespace svg url(https://evil.example/kj",
+  ],
+  [
+    "a quoted namespace address with a second argument",
+    '@namespace svg url("https://evil.example/kk" url(https://evil.example/kl));',
+  ],
+  [
+    "a namespace address followed by an @import",
+    '@namespace svg url(x)@import "https://evil.example/km.css";',
+  ],
+  // the fine print of escapes
+  [
+    "a tab after a hex escape",
+    ".a{background:\\75\trl(https://evil.example/la)}",
+  ],
+  [
+    "an upper-case hex escape",
+    ".a{background:ur\\6C(https://evil.example/lb)}",
+  ],
+  [
+    "a backslash and a line break before url(",
+    ".a{background:\\\nurl(https://evil.example/lc)}",
+  ],
+  [
+    "a six-digit escape followed by a hex letter",
+    ".a{background:\\000075rl(https://evil.example/ld)} .b{background:u\\000072l(https://evil.example/le)}",
+  ],
 ];
