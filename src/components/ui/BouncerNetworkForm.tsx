@@ -76,7 +76,6 @@ interface BouncerNetworkFormProps {
   errorAttribute?: string;
   errorMessage?: string;
   isSaving?: boolean;
-  isDeleting?: boolean;
   onSave: (attrs: Record<string, string>) => void;
   onDelete?: () => void;
   onCancel: () => void;
@@ -111,7 +110,6 @@ export const BouncerNetworkForm: React.FC<BouncerNetworkFormProps> = ({
   errorAttribute,
   errorMessage,
   isSaving,
-  isDeleting,
   onSave,
   onDelete,
   onCancel,
@@ -120,10 +118,8 @@ export const BouncerNetworkForm: React.FC<BouncerNetworkFormProps> = ({
   const [values, setValues] = useState<BouncerFormValues>(() =>
     initial ? attrsToValues(initial) : EMPTY,
   );
-  const [confirmDelete, setConfirmDelete] = useState(false);
   useEffect(() => {
     setValues(initial ? attrsToValues(initial) : EMPTY);
-    setConfirmDelete(false);
   }, [initial]);
 
   const isEdit = !!initial;
@@ -263,41 +259,17 @@ export const BouncerNetworkForm: React.FC<BouncerNetworkFormProps> = ({
 
       <div className="flex items-center justify-between gap-2 pt-1">
         <div>
-          {isEdit &&
-            onDelete &&
-            (confirmDelete ? (
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-discord-text-muted">
-                  <Trans>Delete this network?</Trans>
-                </span>
-                <button
-                  type="button"
-                  onClick={onDelete}
-                  disabled={isDeleting}
-                  className="px-2 py-1 rounded bg-red-600 hover:bg-red-700 text-white text-xs font-semibold disabled:opacity-50"
-                  data-testid="bouncer-form-confirm-delete"
-                >
-                  <Trans>Yes, delete</Trans>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirmDelete(false)}
-                  className="px-2 py-1 rounded bg-discord-dark-400 hover:bg-discord-dark-300 text-discord-text-normal text-xs"
-                >
-                  <Trans>Cancel</Trans>
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(true)}
-                className="flex items-center gap-1 text-xs text-discord-text-muted hover:text-red-400 transition-colors"
-                data-testid="bouncer-form-delete"
-              >
-                <FaTrash />
-                <Trans>Delete network</Trans>
-              </button>
-            ))}
+          {isEdit && onDelete && (
+            <button
+              type="button"
+              onClick={onDelete}
+              className="flex items-center gap-1 text-xs text-discord-text-muted hover:text-red-400 transition-colors"
+              data-testid="bouncer-form-delete"
+            >
+              <FaTrash />
+              <Trans>Delete network</Trans>
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button

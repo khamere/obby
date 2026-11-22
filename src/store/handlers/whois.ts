@@ -3,7 +3,13 @@ import ircClient from "../../lib/ircClient";
 import type { User } from "../../types";
 import type { AppState } from "../index";
 import * as storage from "../localStorage";
-import { bufferWhoReply, flushWhoReplies } from "../whoReplyBatcher";
+import {
+  beginMemberRefresh,
+  bufferWhoReply,
+  finishWhoReplies,
+  forgetWhoReplies,
+  noteOtherWhoSent,
+} from "../whoReplyBatcher";
 
 export function registerWhoisHandlers(store: StoreApi<AppState>): void {
   // WHOIS event handlers
@@ -386,7 +392,9 @@ export function registerWhoisHandlers(store: StoreApi<AppState>): void {
       }
 
       // Find the channel this WHO reply belongs to
-      const channelData = serverData.channels.find((c) => c.name === channel);
+      const channelData = serverData.channels.find(
+        (c) => c.name.toLowerCase() === channel.toLowerCase(),
+      );
       if (!channelData) {
         return;
       }
@@ -420,12 +428,39 @@ export function registerWhoisHandlers(store: StoreApi<AppState>): void {
     },
   );
 
-  ircClient.on("WHO_END", ({ serverId, mask }) => {
+  let ownRequestLine: string | undefined;
+  ircClient.on(
+    "MEMBERS_REQUESTED",
+    ({ serverId, channelName, token, line }) => {
+      ownRequestLine = line;
+      beginMemberRefresh(serverId, channelName, token);
+    },
+  );
+
+  // A bouncer can answer one WHO from its own records while the answer to another is still arriving, so any other WHO about a channel that goes out leaves our open answers unfit to replace a list.
+  ircClient.on("rawLine", ({ serverId, direction, line }) => {
+    if (direction !== "tx") return;
+    const [command, ...params] = line.trim().split(/\s+/);
+    if (command.toUpperCase() !== "WHO") return;
+    if (line === ownRequestLine) {
+      ownRequestLine = undefined;
+      return;
+    }
+    if (params.some((param) => ircClient.isChannel(serverId, param)))
+      noteOtherWhoSent(serverId);
+  });
+
+  // A reply belongs to the connection that asked, so a connection change ends every reply still open.
+  ircClient.on("connectionStateChange", ({ serverId }) =>
+    forgetWhoReplies(serverId),
+  );
+
+  ircClient.on("WHO_END", ({ serverId, mask, isAborted }) => {
     // Flush any pending batched WHO replies for this channel so the
     // member list updates at the END_OF_WHO boundary instead of waiting
     // out the idle timer.
     if (mask && ircClient.isChannel(serverId, mask)) {
-      flushWhoReplies(store, serverId, mask);
+      finishWhoReplies(store, serverId, mask, isAborted);
     }
     // When WHO list is complete for a channel, request metadata for all users
     // This ensures we get current metadata for users who were already in the channel
@@ -488,6 +523,7 @@ export function registerWhoisHandlers(store: StoreApi<AppState>): void {
       realname,
       isAway,
       opLevel,
+      token,
     }) => {
       const state = store.getState();
       const serverData = state.servers.find((s) => s.id === serverId);
@@ -503,7 +539,7 @@ export function registerWhoisHandlers(store: StoreApi<AppState>): void {
       // refresh (no channel) falls through to the immediate setState
       // path below since it's a single line, not part of a burst.
       if (channel && channel !== "*") {
-        bufferWhoReply(store, serverId, channel, {
+        const row = {
           nick,
           host,
           realname,
@@ -513,7 +549,8 @@ export function registerWhoisHandlers(store: StoreApi<AppState>): void {
           isBot: isBotFromFlags,
           isIrcOp: isIrcOpFromFlags,
           status: opLevel,
-        });
+        };
+        bufferWhoReply(store, serverId, channel, row, token);
         return;
       }
 

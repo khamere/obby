@@ -438,14 +438,17 @@ export function handleWhoxReply(
   parv: string[],
   _mtags: Record<string, string> | undefined,
 ): void {
-  const channel = parv[1];
-  const username = parv[2];
-  const host = parv[3];
-  const nick = parv[4];
-  const flags = parv[5];
-  const account = parv[6];
-  const _opLevelField = parv[7] || "";
-  const realname = parv[8] || "";
+  // We read a leading number only on a row with exactly the fields our own member request asks for, so we never shift the fields of a row shaped any other way.
+  const token =
+    parv.length === 10 && /^\d{1,3}$/.test(parv[1]) ? parv[1] : undefined;
+  const fields = token === undefined ? parv : parv.slice(1);
+  const channel = fields[1];
+  const username = fields[2];
+  const host = fields[3];
+  const nick = fields[4];
+  const flags = fields[5];
+  const account = fields[6];
+  const realname = fields[8] || "";
 
   const isAway = flags.includes("G");
 
@@ -469,6 +472,7 @@ export function handleWhoxReply(
     realname,
     isAway,
     opLevel,
+    token,
   });
 }
 
@@ -480,5 +484,7 @@ export function handleWhoEnd(
   _mtags: Record<string, string> | undefined,
 ): void {
   const mask = parv[1];
-  ctx.triggerEvent("WHO_END", { serverId, mask });
+  // We match the exact text a bouncer sends when it loses its own connection mid-reply, since nothing else tells us rows are missing.
+  const isAborted = parv[2] === "Command aborted";
+  ctx.triggerEvent("WHO_END", { serverId, mask, isAborted });
 }
