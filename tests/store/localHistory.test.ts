@@ -451,6 +451,14 @@ describe("local history with a chathistory server", () => {
         "@msgid=u1;time=9999-99-99T99:99:99.999Z :alice!u@h PRIVMSG #chan :when",
       ],
       ["no time", "@msgid=u1 :alice!u@h PRIVMSG #chan :when"],
+      [
+        "a bare number for a time",
+        "@msgid=u1;time=3000 :alice!u@h PRIVMSG #chan :when",
+      ],
+      [
+        "a time far ahead of our clock",
+        "@msgid=u1;time=9999-12-31T23:59:59.999Z :alice!u@h PRIVMSG #chan :when",
+      ],
     ])(
       "keeps the saved messages after an older page that holds a line with %s",
       async (_case, unplacedLine) => {
@@ -467,6 +475,40 @@ describe("local history with a chathistory server", () => {
         expect(await w.db.gapsFor(SERVER, "#chan")).toEqual([]);
       },
     );
+
+    it("keeps a row whose saved line holds no server time when a later page spans the row's time", async () => {
+      const now = Date.now();
+      await w.db.appendRows([
+        {
+          server: SERVER,
+          target: "#chan",
+          time: now,
+          key: "legacy1",
+          msgid: "legacy1",
+          raw: "@msgid=legacy1;time=9999-99-99T99:99:99.999Z :alice!u@h PRIVMSG #chan :when",
+        },
+      ]);
+      const around = (msgid: string, offsetMs: number) =>
+        `@msgid=${msgid};time=${new Date(now + offsetMs).toISOString()} :alice!u@h PRIVMSG #chan :${msgid}`;
+
+      w.ircClient.sendRaw(SERVER, "CHATHISTORY LATEST #chan * 50");
+      w.feed(
+        ...inBatch("h1", "#chan", [
+          around("n1", -60_000),
+          around("n2", 60_000),
+        ]),
+      );
+      await vi.waitFor(async () =>
+        expect((await w.stored()).map((row) => row.msgid)).toContain("n2"),
+      );
+      await w.drain();
+
+      expect((await w.stored()).map((row) => row.msgid)).toEqual([
+        "n1",
+        "legacy1",
+        "n2",
+      ]);
+    });
 
     it("keeps a line saved at the time we received it when a later page spans that time", async () => {
       await olderPageWith("@msgid=u1 :alice!u@h PRIVMSG #chan :when");

@@ -1,9 +1,17 @@
 import { classifyInbound } from "../e2ee/classify";
 import { E2EE_TAG } from "../e2ee/protocol";
 import type { ParsedLine } from "../irc/IRCClient";
+import { parseServerTime } from "../irc/utils";
 import { isChannelTarget } from "../ircUtils";
 import type { HistoryGap, HistoryRow, NewHistoryRow } from "./historyDb";
-import { OWN_LINE_TAG, stripTags, trailingOf } from "./searchFields";
+import {
+  isTimeTag,
+  OWN_LINE_TAG,
+  serverTimeOf,
+  splitTags,
+  stripTags,
+  trailingOf,
+} from "./searchFields";
 
 export const LOCAL_BATCH_PREFIX = "obby-local-";
 export const LOCAL_HISTORY_TAG = "obby-local";
@@ -81,30 +89,15 @@ interface OpenBatch {
 
 const nickOf = (source: string) => source.split("!")[0];
 
-const isTimeTag = (tag: string) => tag.split("=")[0] === "time";
-
 // A replay reads the time from the saved line, so the line carries one time
 // tag that says what the row's own time says.
 function withRowTime(tags: string[], time: number): string[] {
-  const timeTags = tags.filter(isTimeTag);
-  const isRowTime =
-    timeTags.length === 1 &&
-    Date.parse(timeTags[0].slice("time=".length)) === time;
-  return isRowTime
+  return serverTimeOf(tags) === time
     ? tags
     : [
         ...tags.filter((tag) => !isTimeTag(tag)),
         `time=${new Date(time).toISOString()}`,
       ];
-}
-
-function splitTags(line: string): { tags: string[]; rest: string } {
-  if (!line.startsWith("@")) return { tags: [], rest: line };
-  const space = line.indexOf(" ");
-  return {
-    tags: line.slice(1, space).split(";").filter(Boolean),
-    rest: line.slice(space + 1),
-  };
 }
 
 // We rewrite the raw tag string so escaped tag values stay byte-identical.
@@ -153,7 +146,7 @@ export function withReplayTags(line: string, batchId: string): string {
 }
 
 function lineTime(mtags: Record<string, string> | undefined, now: number) {
-  const parsed = mtags?.time ? Date.parse(mtags.time) : Number.NaN;
+  const parsed = parseServerTime(mtags?.time, now);
   return Number.isNaN(parsed) ? now : parsed;
 }
 
@@ -425,8 +418,7 @@ function countPageItem(
 ) {
   batch.size += 1;
   if (mtags?.msgid) batch.msgids.push(mtags.msgid);
-  const time =
-    mtags?.time && !hasReceiveTime ? Date.parse(mtags.time) : Number.NaN;
+  const time = hasReceiveTime ? Number.NaN : parseServerTime(mtags?.time);
   if (Number.isNaN(time)) return;
   if (batch.oldest === undefined || time < batch.oldest) batch.oldest = time;
   if (batch.newest === undefined || time > batch.newest) batch.newest = time;

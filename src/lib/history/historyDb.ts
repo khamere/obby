@@ -7,6 +7,7 @@ import {
   readBytes,
   TERMS,
 } from "./idb";
+import { serverTimeOf, splitTags } from "./searchFields";
 import {
   backfillChunk,
   indexRow,
@@ -512,7 +513,8 @@ export function deleteMessage(
 // A message redacted while we were away is gone from the server's history and
 // no REDACT reaches us, so we drop saved messages a page skipped inside its span.
 // A row at the time we received it may belong anywhere in the server's history,
-// so a page that skips it says nothing about it.
+// so a page that skips it says nothing about it. A saved line whose own time
+// is not the row's time tells us the row is one of those.
 export function deleteMessagesMissingFromPage(
   server: string,
   target: string,
@@ -534,6 +536,7 @@ export function deleteMessagesMissingFromPage(
         (row) =>
           !row.ref &&
           !row.hasReceiveTime &&
+          serverTimeOf(splitTags(row.raw.split("\r\n")[0]).tags) === row.time &&
           row.msgid &&
           !keptIds.has(row.msgid),
       );

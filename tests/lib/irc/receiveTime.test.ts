@@ -84,6 +84,32 @@ describe("receive time", () => {
     ).toEqual([false, true, true]);
   });
 
+  test.each([
+    "3000",
+    "2026-11-21",
+    "2026-11-21T10:00:00",
+    "2026-11-21T10:00:00.000+00:00",
+    "9999-12-31T23:59:59.999Z",
+  ])("a time tag of %s counts as no server time", (value) => {
+    vi.useFakeTimers({ now: Date.parse("2026-11-22T10:00:00.000Z") });
+    const client = new IRCClient();
+    const onMessage = vi.fn();
+    const onParsed = vi.fn();
+    client.on("CHANMSG", onMessage);
+    client.on("parsedLine", onParsed);
+
+    feed(client, `@time=${value} :alice!a@h PRIVMSG #lobby :hi`);
+
+    expect(client.hasLineServerTime).toBe(false);
+    expect(onParsed.mock.calls[0][0]).toMatchObject({
+      hasReceiveTime: true,
+      mtags: { time: "2026-11-22T10:00:00.000Z" },
+    });
+    expect(onMessage.mock.calls[0][0].timestamp.toISOString()).toBe(
+      "2026-11-22T10:00:00.000Z",
+    );
+  });
+
   test("a row saved with a server-time tag that is no date replays at the time of its row on every replay", () => {
     vi.useFakeTimers({ now: Date.parse("2026-10-14T10:00:00.000Z") });
     const client = new IRCClient();

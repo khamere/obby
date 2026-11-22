@@ -26,6 +26,7 @@ import {
   type MultilineLimits,
   parseMultilineLimits,
 } from "./multiline";
+import { parseServerTime } from "./utils";
 
 // Namespace UUID for generating deterministic channel/chat IDs
 const CHANNEL_NAMESPACE = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
@@ -2263,8 +2264,7 @@ export class IRCClient implements IRCClientContext {
       // Servers without server-time, or with one that is no date, leave the
       // time to us, so we stamp one receive time that the chat and the saved
       // history both read.
-      const hasServerTime =
-        !!mtags?.time && !Number.isNaN(Date.parse(mtags.time));
+      const hasServerTime = !Number.isNaN(parseServerTime(mtags?.time));
       this.hasLineServerTime = hasServerTime;
       if (!mtags?.time || !hasServerTime)
         mtags = { ...mtags, time: new Date().toISOString() };
