@@ -1775,6 +1775,7 @@ msgstr "Hallinnoi ulkoisen median lataamista. Pois / Turvallinen / Luotetut läh
 msgid "Control media display and external content"
 msgstr "Hallinnoi median näyttöä ja ulkoista sisältöä"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 #: src/components/ui/E2EEVerifyModal.tsx
 #: src/components/ui/ExternalLinkWarningModal.tsx
@@ -1811,10 +1812,16 @@ msgstr "Kopioi kanavan nimi"
 msgid "Copy entire JSON"
 msgstr "Kopioi koko JSON"
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Copy error details"
+msgstr "Kopioi virheen tiedot"
+
+#: src/components/AppErrorBoundary.tsx
 #: src/components/ui/CopyButton.tsx
 msgid "Copy failed, select to retry"
 msgstr "Kopiointi epäonnistui, valitse uudelleen yrittämiseksi"
 
+#: src/components/AppErrorBoundary.tsx
 #: src/components/mobile/MessageReaderSheet.tsx
 msgid "Copy failed, tap to retry"
 msgstr "Kopiointi epäonnistui, napauta uudelleen yrittämiseksi"
@@ -4387,6 +4394,10 @@ msgstr "Obby lataa tämän tiedoston aina käynnistyessään, joten kaikki samaa
 msgid "Obby is up to date."
 msgstr "Obby on ajan tasalla."
 
+#: src/components/AppErrorBoundary.tsx
+msgid "Obby stopped working"
+msgstr "Obby lakkasi toimimasta"
+
 #: src/components/ui/UpdateSheet.tsx
 #: src/components/ui/UpdateSheet.tsx
 msgid "Obby will close to install the update; open it again afterwards."
@@ -5115,6 +5126,14 @@ msgstr "Löysä – vähemmän aggressiivinen suojaus"
 #: src/components/ui/UpdateSheet.tsx
 msgid "Release notes"
 msgstr "Julkaisutiedot"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload"
+msgstr "Lataa uudelleen"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Reload to continue. Copy the error details to report the problem."
+msgstr "Jatka lataamalla uudelleen. Kopioi virheen tiedot, jos haluat ilmoittaa ongelmasta."
 
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/components/pages/ChannelSettingsPage.tsx

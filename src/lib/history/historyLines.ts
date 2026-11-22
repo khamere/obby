@@ -1,9 +1,17 @@
 import { classifyInbound } from "../e2ee/classify";
 import { E2EE_TAG } from "../e2ee/protocol";
 import type { ParsedLine } from "../irc/IRCClient";
+import { parseServerTime } from "../irc/utils";
 import { isChannelTarget } from "../ircUtils";
 import type { HistoryGap, HistoryRow, NewHistoryRow } from "./historyDb";
-import { OWN_LINE_TAG, stripTags, trailingOf } from "./searchFields";
+import {
+  isTimeTag,
+  OWN_LINE_TAG,
+  serverTimeOf,
+  splitTags,
+  stripTags,
+  trailingOf,
+} from "./searchFields";
 
 export const LOCAL_BATCH_PREFIX = "obby-local-";
 export const LOCAL_HISTORY_TAG = "obby-local";
@@ -53,7 +61,9 @@ export type HistoryAction =
     };
 
 // Everything a server page held, stored or not, so page fullness and gap
-// edges count the joins and parts we leave off disk.
+// edges count the joins and parts we leave off disk. The edges come from the
+// server's own times only, since a line we had to time ourselves says nothing
+// about the stretch of history the page covers.
 export interface HistoryPage {
   size: number;
   oldest: number | undefined;
@@ -66,6 +76,7 @@ interface OpenBatch {
   params: string[];
   source: string;
   mtags: Record<string, string> | undefined;
+  hasReceiveTime: boolean;
   startLine: string;
   lines: string[];
   rows: NewHistoryRow[];
@@ -78,24 +89,38 @@ interface OpenBatch {
 
 const nickOf = (source: string) => source.split("!")[0];
 
+// A replay reads the time from the saved line, so the line carries one time
+// tag that says what the row's own time says.
+function withRowTime(tags: string[], time: number): string[] {
+  return serverTimeOf(tags) === time
+    ? tags
+    : [
+        ...tags.filter((tag) => !isTimeTag(tag)),
+        `time=${new Date(time).toISOString()}`,
+      ];
+}
+
 // We rewrite the raw tag string so escaped tag values stay byte-identical.
 export function normalizeLine(
   line: string,
   time: number,
   isOwn = false,
 ): string {
-  let tags: string[] = [];
-  let rest = line;
-  if (line.startsWith("@")) {
-    const space = line.indexOf(" ");
-    tags = line.slice(1, space).split(";").filter(Boolean);
-    rest = line.slice(space + 1);
-  }
-  tags = tags.filter((tag) => !DROPPED_TAGS.includes(tag.split("=")[0]));
-  if (!tags.some((tag) => tag.startsWith("time=")))
-    tags.push(`time=${new Date(time).toISOString()}`);
+  const { tags: lineTags, rest } = splitTags(line);
+  const tags = withRowTime(
+    lineTags.filter((tag) => !DROPPED_TAGS.includes(tag.split("=")[0])),
+    time,
+  );
   if (isOwn) tags.push(`${OWN_LINE_TAG}=1`);
   return `@${tags.join(";")} ${rest}`;
+}
+
+// A saved line can hold a time that is no date, or more than one time, next
+// to the time we filed its row under, and the row's time is the one we show.
+function withSavedTime(line: string, time: number): string {
+  const { tags, rest } = splitTags(line);
+  const timed = withRowTime(tags, time);
+  return timed === tags ? line : `@${timed.join(";")} ${rest}`;
 }
 
 // Our nick may differ between sessions, so a replayed line we sent shows the
@@ -121,7 +146,7 @@ export function withReplayTags(line: string, batchId: string): string {
 }
 
 function lineTime(mtags: Record<string, string> | undefined, now: number) {
-  const parsed = mtags?.time ? Date.parse(mtags.time) : Number.NaN;
+  const parsed = parseServerTime(mtags?.time, now);
   return Number.isNaN(parsed) ? now : parsed;
 }
 
@@ -153,7 +178,7 @@ export class HistoryRecorder {
     // A search answer holds scattered old lines, and saving them would make
     // the stretches between them look like history we already have.
     if (outer?.type === "soju.im/search") return [];
-    if (outer?.type === "chathistory") countPageItem(outer, mtags);
+    if (outer?.type === "chathistory") countPageItem(outer, parsed);
     const historyTarget =
       outer?.type === "chathistory" ? outer.params[0] : undefined;
 
@@ -195,12 +220,13 @@ export class HistoryRecorder {
     if (ref.startsWith("+")) {
       const outerId = parsed.mtags?.batch;
       const outer = outerId ? this.batches.get(outerId) : undefined;
-      if (outer?.type === "chathistory") countPageItem(outer, parsed.mtags);
+      if (outer?.type === "chathistory") countPageItem(outer, parsed);
       this.batches.set(id, {
         type: parsed.parv[1] ?? "",
         params: parsed.parv.slice(2),
         source: parsed.source,
         mtags: parsed.mtags,
+        hasReceiveTime: !!parsed.hasReceiveTime,
         startLine: parsed.line,
         lines: [],
         rows: [],
@@ -267,7 +293,9 @@ export class HistoryRecorder {
       ...batch.lines,
       endLine,
     ].join("\r\n");
-    return this.row(target, time, batch.mtags, raw);
+    return this.row(target, time, batch.mtags, raw, {
+      hasReceiveTime: !!historyTarget && batch.hasReceiveTime,
+    });
   }
 
   private rowsFor(
@@ -278,7 +306,10 @@ export class HistoryRecorder {
     const time = lineTime(mtags, this.env.now());
     const raw = normalizeLine(parsed.line, time, this.isOwn(source));
     const make = (target: string, ref?: string) =>
-      this.row(target, time, mtags, raw, ref);
+      this.row(target, time, mtags, raw, {
+        ref,
+        hasReceiveTime: !!historyTarget && !!parsed.hasReceiveTime,
+      });
 
     // We keep conversation content only. Membership and channel-state events
     // are most of the volume and add nothing to scrollback or search.
@@ -365,7 +396,7 @@ export class HistoryRecorder {
     time: number,
     mtags: Record<string, string> | undefined,
     raw: string,
-    ref?: string,
+    { ref, hasReceiveTime }: { ref?: string; hasReceiveTime?: boolean } = {},
   ): NewHistoryRow {
     const msgid = mtags?.msgid;
     return {
@@ -375,6 +406,7 @@ export class HistoryRecorder {
       key: msgid ?? `${time}|${stripTags(raw)}`,
       ...(msgid ? { msgid } : {}),
       ...(ref ? { ref } : {}),
+      ...(hasReceiveTime ? { hasReceiveTime: true as const } : {}),
       raw,
     };
   }
@@ -382,11 +414,11 @@ export class HistoryRecorder {
 
 function countPageItem(
   batch: OpenBatch,
-  mtags: Record<string, string> | undefined,
+  { mtags, hasReceiveTime }: Pick<ParsedLine, "mtags" | "hasReceiveTime">,
 ) {
   batch.size += 1;
   if (mtags?.msgid) batch.msgids.push(mtags.msgid);
-  const time = mtags?.time ? Date.parse(mtags.time) : Number.NaN;
+  const time = hasReceiveTime ? Number.NaN : parseServerTime(mtags?.time);
   if (Number.isNaN(time)) return;
   if (batch.oldest === undefined || time < batch.oldest) batch.oldest = time;
   if (batch.newest === undefined || time > batch.newest) batch.newest = time;
@@ -400,14 +432,15 @@ function isMultiline(type: string) {
 // messages, reactions and replies without touching live state.
 export function buildReplayLines(
   target: string,
-  rows: Pick<HistoryRow, "raw">[],
+  rows: Pick<HistoryRow, "raw" | "time">[],
   batchId: string,
   ownSource?: string,
 ): string[] {
   const lines = [`BATCH +${batchId} chathistory ${target}`];
   for (const row of rows) {
     const [first, ...rest] = row.raw.split("\r\n");
-    const line = ownSource ? withCurrentSource(first, ownSource) : first;
+    const timed = withSavedTime(first, row.time);
+    const line = ownSource ? withCurrentSource(timed, ownSource) : timed;
     lines.push(withReplayTags(line, batchId), ...rest);
   }
   lines.push(`BATCH -${batchId}`);

@@ -306,6 +306,20 @@ describe("mention catch-up by server search", () => {
       historyLoaded();
       expect(searches()).toEqual([search(`after=${at(100 - overlap)};`)]);
     });
+
+    it.each([
+      ["no time", "@batch=h;msgid=n1"],
+      ["a time that is no server time", "@batch=h;msgid=n1;time=3000"],
+    ])("takes a history line with %s as nothing new", (_case, tags) => {
+      feed(
+        `:server MARKREAD #two timestamp=${READ_AT}`,
+        ":server BATCH +h chathistory #two",
+        `${tags} :announcer!u@h NOTICE #two :an old notice`,
+        ":server BATCH -h",
+      );
+      historyLoaded();
+      expect(searches()).toEqual([]);
+    });
   });
 
   it("searches in full again when the earlier search had no loaded line to go by", () => {

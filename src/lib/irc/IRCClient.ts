@@ -36,6 +36,7 @@ import {
   parseMultilineLimits,
   splitAtSpaces,
 } from "./multiline";
+import { parseServerTime } from "./utils";
 
 // Namespace UUID for generating deterministic channel/chat IDs
 const CHANNEL_NAMESPACE = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
@@ -667,6 +668,8 @@ export interface ParsedLine {
   source: string;
   parv: string[];
   mtags: Record<string, string> | undefined;
+  // The time tag holds the time we received the line at, since the server sent none we could read.
+  hasReceiveTime?: boolean;
 }
 
 type EventKey = keyof EventMap;
@@ -2301,10 +2304,17 @@ export class IRCClient implements IRCClientContext {
           lineAfterTags = line.substring(spaceIndex + 1);
         }
       }
-      // Servers without server-time leave the time to us, so we stamp one
-      // receive time that the chat and the saved history both read.
-      this.hasLineServerTime = !!mtags?.time;
-      if (!mtags?.time) mtags = { ...mtags, time: new Date().toISOString() };
+      // Servers without server-time, or with one that is no date, leave the
+      // time to us, so we stamp one receive time that the chat and the saved
+      // history both read. A server's time goes on in the one form every
+      // reader of the tag takes the same way, whatever fraction it came with.
+      const serverTime = parseServerTime(mtags?.time);
+      const hasServerTime = !Number.isNaN(serverTime);
+      this.hasLineServerTime = hasServerTime;
+      mtags = {
+        ...mtags,
+        time: new Date(hasServerTime ? serverTime : Date.now()).toISOString(),
+      };
 
       // Parse IRC message properly handling colon-prefixed trailing parameter
       const spaceIndex = lineAfterTags.indexOf(" :");
@@ -2344,27 +2354,49 @@ export class IRCClient implements IRCClientContext {
         parv.push(trailing);
       }
 
-      const handler = IRC_DISPATCH[command];
-      if (mtags?.batch && this.isDiskOnlyBatch(serverId, mtags.batch)) {
-        if (command === "BATCH") this.trackNestedDiskOnlyBatch(serverId, parv);
-      } else if (handler) {
-        handler(this, serverId, source, parv, mtags, trailing);
-      } else if (/^\d{3}$/.test(command) && !mtags?.batch) {
-        // parv[0] is our own nick; the rest is what the server has to say.
-        this.triggerEvent("SERVER_REPLY", {
-          serverId,
-          source,
-          numeric: command,
-          text: parv.slice(1).join(" "),
-        });
+      // One frame can carry many lines, so a line we fail on is logged and
+      // the lines after it are still handled.
+      try {
+        this.dispatchLine(serverId, command, source, parv, mtags, trailing);
+      } catch (error) {
+        console.error(`Failed to handle ${command} line:`, error);
       }
-      this.triggerEvent("parsedLine", {
+      try {
+        this.triggerEvent("parsedLine", {
+          serverId,
+          line,
+          command,
+          source,
+          parv,
+          mtags,
+          hasReceiveTime: !hasServerTime,
+        });
+      } catch (error) {
+        console.error(`Failed to record ${command} line:`, error);
+      }
+    }
+  }
+
+  private dispatchLine(
+    serverId: string,
+    command: string,
+    source: string,
+    parv: string[],
+    mtags: Record<string, string>,
+    trailing: string,
+  ): void {
+    const handler = IRC_DISPATCH[command];
+    if (mtags.batch && this.isDiskOnlyBatch(serverId, mtags.batch)) {
+      if (command === "BATCH") this.trackNestedDiskOnlyBatch(serverId, parv);
+    } else if (handler) {
+      handler(this, serverId, source, parv, mtags, trailing);
+    } else if (/^\d{3}$/.test(command) && !mtags.batch) {
+      // parv[0] is our own nick; the rest is what the server has to say.
+      this.triggerEvent("SERVER_REPLY", {
         serverId,
-        line,
-        command,
         source,
-        parv,
-        mtags,
+        numeric: command,
+        text: parv.slice(1).join(" "),
       });
     }
   }
