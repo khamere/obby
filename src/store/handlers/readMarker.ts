@@ -85,6 +85,9 @@ function findChat(state: AppState, serverId: string, chatId: string) {
   );
 }
 
+const isRegistered = (state: AppState, serverId: string) =>
+  !!state.servers.find((s) => s.id === serverId)?.isRegistered;
+
 // On a server without read markers we keep the marker for this session only.
 export function markChatRead(
   store: StoreApi<AppState>,
@@ -95,8 +98,13 @@ export function markChatRead(
   const chat = findChat(state, serverId, chatId);
   if (!chat) return;
   const tracks = serverTracksReadMarker(state, serverId);
-  // Until the server tells us the stored marker, ours could only replace it.
-  if (tracks && chat.readMarker === undefined) return;
+  // Until the server tells us the stored marker, ours could only replace it,
+  // and it takes no marker from a connection it has yet to welcome.
+  if (
+    tracks &&
+    (chat.readMarker === undefined || !isRegistered(state, serverId))
+  )
+    return;
   const newest = newestMessageTime(state, chatKey(serverId, chat));
   if (newest === undefined) return;
   if ((readUpTo(chat) ?? Number.NEGATIVE_INFINITY) >= newest) return;
@@ -374,6 +382,8 @@ export function registerReadMarkerHandlers(store: StoreApi<AppState>): void {
 
   if (typeof document !== "undefined")
     document.addEventListener("visibilitychange", scheduleMarkRead);
+  // What the user read while the connection was away goes out once it is back.
+  ircClient.on("ready", scheduleMarkRead);
 
   // Sending a message means the user has read the chat, so we mark it read
   // at once, even when they switch away or scroll up right after.

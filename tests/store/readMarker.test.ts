@@ -65,6 +65,7 @@ async function boot({
             host: "irc.test",
             port: 6667,
             isConnected: true,
+            isRegistered: true,
             capabilities: ["draft/read-marker"],
             account: "me",
             privateChats: [],
@@ -368,6 +369,35 @@ describe("read markers", () => {
     }));
     vi.advanceTimersByTime(1000);
     expect(markreadSet).not.toHaveBeenCalled();
+  });
+
+  it("holds a marker back until the server has welcomed the connection", async () => {
+    vi.useFakeTimers();
+    const { useStore, ircClient, markreadSet, channel } = await boot({
+      selected: true,
+    });
+    const stored = channel().readMarker;
+    useStore.setState((state) => ({
+      servers: state.servers.map((server) => ({
+        ...server,
+        isRegistered: false,
+      })),
+    }));
+    vi.advanceTimersByTime(1000);
+    expect(markreadSet).not.toHaveBeenCalled();
+    expect(channel().readMarker).toBe(stored);
+
+    ircClient.triggerEvent("ready", {
+      serverId: SERVER,
+      serverName: "irc.test",
+      nickname: "tester",
+    });
+    vi.advanceTimersByTime(1000);
+    expect(markreadSet).toHaveBeenCalledWith(
+      SERVER,
+      "#chan",
+      new Date(BASE + 3000).toISOString(),
+    );
   });
 
   it("stops sending markers on a connection once the server refuses one", async () => {
