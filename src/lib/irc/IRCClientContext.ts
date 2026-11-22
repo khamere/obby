@@ -1,5 +1,5 @@
 import type { Server, User, WhoisSession } from "../../types";
-import type { EventMap } from "./IRCClient";
+import type { EventMap, SearchResult } from "./IRCClient";
 
 type EventKey = keyof EventMap;
 
@@ -55,6 +55,8 @@ export interface IRCClientContext {
   finishRegistration(serverId: string): void;
   // The server answered TAGMSG with "Unknown command"; no more go out.
   noteTagmsgRefused(serverId: string): void;
+  hasLineServerTime: boolean;
+  claimSearchAnswer(serverId: string, label: string | undefined): boolean;
   activeBatches: Map<
     string,
     Map<
@@ -64,6 +66,7 @@ export interface IRCClientContext {
         parameters?: string[];
         messages: string[];
         concatFlags?: boolean[];
+        searchResults?: SearchResult[];
         sender?: string;
         messageIds?: string[];
         timestamps?: Date[];

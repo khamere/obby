@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { resolveUserMetadata } from "../../src/store/helpers";
-import type { Channel } from "../../src/types";
+import {
+  resolveUserMetadata,
+  withoutReaction,
+  withReaction,
+} from "../../src/store/helpers";
+import type { Channel, Message } from "../../src/types";
 
 function makeChannel(
   name: string,
@@ -84,5 +88,61 @@ describe("resolveUserMetadata", () => {
     ];
     const result = resolveUserMetadata("bob", { bob: localMeta }, channels);
     expect(result).toEqual(localMeta);
+  });
+});
+
+describe("withReaction", () => {
+  const message = { reactions: [] } as unknown as Message;
+
+  it.each([
+    "👍",
+    "👨‍👩‍👧‍👦",
+    "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+    ":custom_emoji:",
+    "+1",
+    "constructor",
+    "well done",
+    "two  spaces",
+    "bien\u00a0vu",
+    "x PRIVMSG #chan :text",
+  ])("keeps %s", (value) => {
+    expect(withReaction(message, value, "alice")?.reactions).toEqual([
+      { emoji: value, userId: "alice" },
+    ]);
+  });
+
+  it.each([
+    ["a leading space", " x"],
+    ["a trailing space", "x "],
+    ["only spaces", "  "],
+    ["a line separator", "x\u2028y"],
+    ["a line break", "x\r\nQUIT"],
+    ["a tab", "x\ty"],
+    ["a control character", "x\u0000y"],
+    ["a paragraph separator", "x\u2029y"],
+    ["more text than a reaction holds", "x".repeat(65)],
+    ["nothing", ""],
+  ])("drops a reaction with %s", (_, value) => {
+    expect(withReaction(message, value, "alice")).toBeNull();
+  });
+});
+
+// A nick is the same nick in any case, and it can change case while a reaction
+// made under the earlier spelling is still on the message.
+describe("a reaction made before a nick changed case", () => {
+  const message = {
+    reactions: [{ emoji: "👍", userId: "Alice" }],
+  } as unknown as Message;
+
+  it("is not added a second time", () => {
+    expect(withReaction(message, "👍", "alice")).toBeNull();
+  });
+
+  it("is removed", () => {
+    expect(withoutReaction(message, "👍", "alice")?.reactions).toEqual([]);
+  });
+
+  it("leaves another nick's reaction alone", () => {
+    expect(withoutReaction(message, "👍", "alicia")).toBeNull();
   });
 });

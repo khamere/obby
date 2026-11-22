@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useMessageSending } from "../../src/hooks/useMessageSending";
 import { base64DecodeUtf8 } from "../../src/lib/base64";
 import ircClient from "../../src/lib/ircClient";
+import { parseMessageTags } from "../../src/lib/ircUtils";
 import useStore from "../../src/store";
 import type { Channel, PrivateChat, Server, User } from "../../src/types";
 
@@ -145,6 +146,102 @@ describe("our own line on a server that echoes it", () => {
   });
 });
 
+// A message id is the server's own text, so it can hold the characters that
+// end a tag value.
+describe("a reply to a message whose id needs escaping", () => {
+  const msgid = "id;1 x\\y";
+  const replyTags = (line: string) =>
+    parseMessageTags(line.slice(0, line.indexOf(" ")));
+  const expectReplyTo = (line: string) =>
+    expect(replyTags(line)).toMatchObject({
+      "+reply": msgid,
+      "+draft/reply": msgid,
+    });
+
+  function reply(text: string, caps: string[] = []) {
+    useStore.setState({
+      servers: [{ ...server, capabilities: caps }],
+      messages: {},
+    });
+    vi.spyOn(ircClient, "hasCapability").mockImplementation((_, cap) =>
+      caps.includes(cap),
+    );
+    const lines: string[] = [];
+    vi.spyOn(ircClient, "sendRaw").mockImplementation((_, line) => {
+      lines.push(line);
+    });
+    const { result } = renderHook(() =>
+      useMessageSending({
+        selectedServerId: "s1",
+        ...inLobby,
+        currentUser: me,
+        selectedColor: null,
+        selectedFormatting: [],
+        localReplyTo: { msgid } as never,
+      }),
+    );
+    result.current.sendMessage(text);
+    return lines;
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    useStore.setState({ servers: [server], messages: {} });
+  });
+
+  it("names it on a single line", () => {
+    const lines = reply("hello");
+
+    expect(lines).toHaveLength(1);
+    expectReplyTo(lines[0]);
+    expect(lines[0].endsWith(" PRIVMSG #lobby :hello")).toBe(true);
+  });
+
+  it("names it on an action", () => {
+    const lines = reply("/me waves");
+
+    expect(lines).toHaveLength(1);
+    expectReplyTo(lines[0]);
+    expect(lines[0].endsWith(" PRIVMSG #lobby :\u0001ACTION waves\u0001")).toBe(
+      true,
+    );
+  });
+
+  it("names it on the batch of a multiline message", () => {
+    const lines = reply("one\ntwo", ["draft/multiline", "batch"]);
+
+    expect(lines[0]).toMatch(/ BATCH \+\S+ draft\/multiline #lobby$/);
+    expectReplyTo(lines[0]);
+  });
+
+  const withJoining = (autoFallbackToSingleLine: boolean) =>
+    useStore.setState((state) => ({
+      globalSettings: { ...state.globalSettings, autoFallbackToSingleLine },
+    }));
+
+  it("names it on each line when the server has no batches", () => {
+    withJoining(false);
+    const lines = reply("one\ntwo");
+    withJoining(true);
+
+    expect(lines.map((line) => line.slice(line.indexOf(" ") + 1))).toEqual([
+      "PRIVMSG #lobby :one",
+      "PRIVMSG #lobby :two",
+    ]);
+    for (const line of lines) expectReplyTo(line);
+  });
+
+  it("names it on the one line that joins the lines", () => {
+    withJoining(true);
+    const lines = reply("one\ntwo");
+
+    expect(lines.map((line) => line.slice(line.indexOf(" ") + 1))).toEqual([
+      "PRIVMSG #lobby :one two",
+    ]);
+    expectReplyTo(lines[0]);
+  });
+});
+
 describe("/join", () => {
   beforeEach(() => {
     useStore.setState({ servers: [server] });
@@ -172,6 +269,30 @@ describe("/join", () => {
       "JOIN #open",
       "JOIN #vault swordfish",
     ]);
+  });
+
+  it.each([
+    ["/join #vault hunter2", ["JOIN #vault hunter2"]],
+    ["/join #vault :hunter2", ["JOIN #vault hunter2"]],
+    ["/join #vault :two words", ["JOIN #vault :two words"]],
+    ["/join #vault :two  words ", ["JOIN #vault :two  words"]],
+    ["/join #vault :two words   ", ["JOIN #vault :two words"]],
+    ["/join #vault hunter2\u00a0", ["JOIN #vault hunter2\u00a0"]],
+    ["/join #vault :two words\u00a0 ", ["JOIN #vault :two words\u00a0"]],
+    ["/join #vault :a\u2028b", ["JOIN #vault a\u2028b"]],
+    ["/join #vault a\u2029b", ["JOIN #vault a\u2029b"]],
+    ["/join #vault ::secret", ["JOIN #vault ::secret"]],
+    ["/join #a,#b k1,k2", ["JOIN #a k1", "JOIN #b k2"]],
+    ["/join #a,#b :k1,two words", ["JOIN #a k1", "JOIN #b :two words"]],
+    ["/join #vault hunter2 extra", ["JOIN #vault hunter2"]],
+    ["/join #vault", ["JOIN #vault"]],
+  ])("%j sends what the same line sends as raw IRC", (text, lines) => {
+    const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    runCommand(text);
+    const joins = sendRaw.mock.calls
+      .map(([, line]) => line)
+      .filter((line) => line.startsWith("JOIN"));
+    expect(joins).toEqual(lines);
   });
 
   it("reads the key after repeated spaces", () => {

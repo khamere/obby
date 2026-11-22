@@ -9,9 +9,10 @@ import {
   FaPencilAlt,
   FaPlay,
   FaPlus,
-  FaStop,
+  FaTrash,
 } from "react-icons/fa";
 import { v5 as uuidv5 } from "uuid";
+import { useIsTouchInput } from "../../hooks/useIsTouchInput";
 import useStore from "../../store";
 import type { BouncerNetwork } from "../../types";
 import { BouncerNetworkForm } from "./BouncerNetworkForm";
@@ -56,12 +57,14 @@ export const BouncerNetworksPanel: React.FC<BouncerNetworksPanelProps> = ({
   const server = useStore((s) =>
     s.servers.find((srv) => srv.id === bouncerServerId),
   );
+  const isTouch = useIsTouchInput();
   const servers = useStore((s) => s.servers);
   const bouncerAddNetwork = useStore((s) => s.bouncerAddNetwork);
   const bouncerChangeNetwork = useStore((s) => s.bouncerChangeNetwork);
-  const bouncerDelNetwork = useStore((s) => s.bouncerDelNetwork);
   const bouncerConnectNetwork = useStore((s) => s.bouncerConnectNetwork);
-  const requestDeleteServer = useStore((s) => s.requestDeleteServer);
+  const requestDeleteBouncerNetwork = useStore(
+    (s) => s.requestDeleteBouncerNetwork,
+  );
   const bouncerListNetworks = useStore((s) => s.bouncerListNetworks);
   const selectServer = useStore((s) => s.selectServer);
   const pendingBouncerEdit = useStore((s) => s.ui.pendingBouncerEdit);
@@ -141,10 +144,6 @@ export const BouncerNetworksPanel: React.FC<BouncerNetworksPanelProps> = ({
     setPendingFor(netid);
     bouncerChangeNetwork(bouncerServerId, netid, attrs);
   };
-  const onDelete = (netid: string) => {
-    setPendingFor(netid);
-    bouncerDelNetwork(bouncerServerId, netid);
-  };
   const onConnectOrOpen = async (netid: string) => {
     const childId = uuidv5(`${bouncerServerId}:${netid}`, CHILD_NAMESPACE);
     const existing = servers.find((s) => s.id === childId);
@@ -159,8 +158,25 @@ export const BouncerNetworksPanel: React.FC<BouncerNetworksPanelProps> = ({
     return result;
   };
 
+  // A finger has no hover, so on touch the row actions always show and are
+  // large enough to hit; with a mouse they appear on hover or keyboard focus.
+  const rowActionClass = `rounded text-discord-text-muted hover:bg-discord-dark-300 ${
+    isTouch
+      ? "w-11 h-11 shrink-0 flex items-center justify-center"
+      : "p-2 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+  }`;
+
   const editingNetwork =
     mode.kind === "edit" ? bouncer?.networks[mode.netid] : undefined;
+
+  // The network being edited can be deleted under the form, which leaves
+  // nothing to edit.
+  const isEditingGoneNetwork = mode.kind === "edit" && !editingNetwork;
+  useEffect(() => {
+    if (!isEditingGoneNetwork) return;
+    setMode({ kind: "list" });
+    setPendingFor(null);
+  }, [isEditingGoneNetwork]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-discord-dark-200 text-discord-text-normal">
@@ -310,7 +326,7 @@ export const BouncerNetworksPanel: React.FC<BouncerNetworksPanelProps> = ({
                         onClick={() =>
                           setMode({ kind: "edit", netid: net.netid })
                         }
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded text-discord-text-muted hover:text-discord-text-strong hover:bg-discord-dark-300"
+                        className={`${rowActionClass} hover:text-discord-text-strong`}
                         aria-label={t`Edit`}
                         data-testid={`bouncer-row-edit-${net.netid}`}
                       >
@@ -338,17 +354,21 @@ export const BouncerNetworksPanel: React.FC<BouncerNetworksPanelProps> = ({
                           </>
                         )}
                       </button>
-                      {childServer && (
-                        <button
-                          type="button"
-                          onClick={() => requestDeleteServer(childServer.id)}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded text-discord-text-muted hover:text-red-400 hover:bg-discord-dark-300"
-                          aria-label={t`Disconnect`}
-                          data-testid={`bouncer-row-disconnect-${net.netid}`}
-                        >
-                          <FaStop />
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          requestDeleteBouncerNetwork(
+                            bouncerServerId,
+                            net.netid,
+                          )
+                        }
+                        className={`${rowActionClass} hover:text-red-400`}
+                        aria-label={t`Delete network`}
+                        title={t`Delete network`}
+                        data-testid={`bouncer-row-delete-${net.netid}`}
+                      >
+                        <FaTrash />
+                      </button>
                     </li>
                   );
                 })}
@@ -376,9 +396,10 @@ export const BouncerNetworksPanel: React.FC<BouncerNetworksPanelProps> = ({
             errorAttribute={errorForForm?.attribute}
             errorMessage={errorForForm?.description}
             isSaving={pendingFor === editingNetwork.netid}
-            isDeleting={pendingFor === editingNetwork.netid}
             onSave={(attrs) => onSubmitEdit(editingNetwork.netid, attrs)}
-            onDelete={() => onDelete(editingNetwork.netid)}
+            onDelete={() =>
+              requestDeleteBouncerNetwork(bouncerServerId, editingNetwork.netid)
+            }
             onCancel={() => {
               setMode({ kind: "list" });
               setPendingFor(null);

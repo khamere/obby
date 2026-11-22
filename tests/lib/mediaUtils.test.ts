@@ -5,6 +5,7 @@ import {
   canShowMedia,
   detectMediaType,
   extractMediaFromMessage,
+  extractMediaFromText,
   getEmbedThumbnailUrl,
   mediaLevelToSettings,
   TRUSTED_EMBED_DOMAINS,
@@ -231,6 +232,51 @@ describe("extractMediaFromMessage", () => {
     expect(entries).toHaveLength(1);
     expect(entries[0].url).toBe("https://s.h4ks.com/group/F7d.png");
     expect(entries[0].type).toBeNull();
+  });
+});
+
+describe("extractMediaFromText — bracketed IPv6 hosts", () => {
+  const filehost = "http://[2001:db8::1]:8080";
+  const settings = {
+    showSafeMedia: true,
+    showTrustedSourcesMedia: false,
+    showExternalContent: false,
+  };
+
+  test.each([
+    "http://[2001:db8::1]:8080/photo.png",
+    "look http://[2001:db8::1]:8080/photo.png here",
+  ])(
+    "a photo on a trusted IPv6 file host is a preview candidate in %s",
+    (text) => {
+      const entries = extractMediaFromText(text);
+      expect(entries).toEqual([
+        { url: "http://[2001:db8::1]:8080/photo.png", type: null },
+      ]);
+      expect(canShowMedia(entries[0].url, settings, filehost)).toBe(true);
+    },
+  );
+});
+
+describe("extractMediaFromText — map links", () => {
+  test("a map link with a usable position is a map entry", () => {
+    const url =
+      "https://www.openstreetmap.org/?mlat=-16.5&mlon=187.438#map=5/-16.5/187.438";
+    expect(extractMediaFromText(url)).toEqual([{ url, type: "map" }]);
+  });
+
+  test("a map link with an unusable position is no media entry at all", () => {
+    const rejected =
+      "https://www.openstreetmap.org/?mlat=91&mlon=0#map=14/91/0";
+    expect(extractMediaFromText(rejected)).toEqual([]);
+    expect(
+      extractMediaFromText(`here ${rejected} and https://example.com/a.png`),
+    ).toEqual([{ url: "https://example.com/a.png", type: null }]);
+  });
+
+  test("a map page that names no position is still an ordinary link entry", () => {
+    const url = "https://www.openstreetmap.org/about";
+    expect(extractMediaFromText(url)).toEqual([{ url, type: null }]);
   });
 });
 

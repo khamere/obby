@@ -107,10 +107,14 @@ describe("soju child names", () => {
     );
     expect(storage.servers.load()[0].name).toBe(config.name);
   });
-  test("deleted announcements never persist a rename", () => {
+  test("a deleted announcement drops the saved config without renaming it", () => {
     useStore.setState({ servers: [parent] });
+    const save = vi.spyOn(storage.servers, "save");
     announce({ name: "Deleted name" }, parent.id, true);
-    expect(storage.servers.load()[0]).toEqual(config);
+    expect(save).not.toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ id: config.id })]),
+    );
+    expect(storage.servers.load()).toEqual([]);
   });
   test("an unrelated upstream NETWORK update does not replace the soju name", () => {
     announce({ name: "uplink.example" });

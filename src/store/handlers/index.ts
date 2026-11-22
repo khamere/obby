@@ -11,6 +11,7 @@ import { registerE2EEHandlers } from "./e2ee";
 import { registerHistoryHandlers } from "./history";
 import { registerInvitelinkHandlers } from "./invitelink";
 import { registerKeepAliveHandlers } from "./keepAlive";
+import { registerMentionCatchUpHandlers } from "./mentionCatchUp";
 import { registerMessageHandlers } from "./messages";
 import { registerMetadataHandlers } from "./metadata";
 import { registerMuteHandlers } from "./mutes";
@@ -41,6 +42,7 @@ export function registerAllHandlers(store: StoreApi<AppState>): void {
   registerAuthHandlers(store);
   registerNamedModesHandlers(store);
   registerReadMarkerHandlers(store);
+  registerMentionCatchUpHandlers(store);
   registerTicTacToeHandlers(store);
   registerBouncerHandlers(store);
   registerPushBotHandlers(store);
