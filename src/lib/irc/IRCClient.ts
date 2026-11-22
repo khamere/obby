@@ -1523,6 +1523,7 @@ export class IRCClient implements IRCClientContext {
     serverId: string,
     typedName: string,
     key?: string,
+    { isReturning = false }: { isReturning?: boolean } = {},
   ): Channel | undefined {
     const channelName = this.withChannelPrefix(serverId, typedName);
     if (!isJoinableChannelName(channelName, this.chantypes(serverId)))
@@ -1566,7 +1567,8 @@ export class IRCClient implements IRCClientContext {
       };
       server.channels.push(channel);
 
-      if (!this.loadHistoryOrMembers(serverId, channelName))
+      // Our JOIN coming back loads the history and members of a channel we return to, so we send only the JOIN for it.
+      if (isReturning || !this.loadHistoryOrMembers(serverId, channelName))
         channel.needsWhoRequest = false;
 
       return channel;
@@ -1697,7 +1699,7 @@ export class IRCClient implements IRCClientContext {
   }
 
   // We prefix a bare name with the server's first channel type, so `/join foo` reaches a channel the server allows.
-  private withChannelPrefix(serverId: string, name: string): string {
+  withChannelPrefix(serverId: string, name: string): string {
     if (this.isChannel(serverId, name)) return name;
     return `${this.chantypes(serverId)[0]}${name}`;
   }
@@ -1720,20 +1722,6 @@ export class IRCClient implements IRCClientContext {
     if (!server) throw new Error(`Server ${serverId} not found`);
     const channel = server.channels.find((c) => c.id === channelId);
     if (!channel) throw new Error(`Channel ${channelId} not found`);
-
-    // Phantom-channel guard: if our local cache shows zero members
-    // for a non-private channel, the ircd doesn't actually have us
-    // in this channel (either the channel was destroyed when the
-    // last person left, or the ircd was restarted and we haven't
-    // re-JOINed). Send JOIN first so the PRIVMSG that follows lands
-    // somewhere instead of returning 401 No such nick/channel.
-    if (
-      !channel.isPrivate &&
-      (channel.users?.length ?? 0) === 0 &&
-      this.isCapNegotiationComplete(serverId)
-    ) {
-      this.sendRaw(serverId, `JOIN ${channel.name}`);
-    }
 
     // Check if server supports multiline and message has newlines
     // Note: We'll check server capabilities from the store later via helper function
@@ -1871,22 +1859,6 @@ export class IRCClient implements IRCClientContext {
   }
 
   sendTyping(serverId: string, target: string, isActive: boolean): void {
-    // Same phantom-channel guard as sendMessage: if we're typing into
-    // a channel whose local cache is empty (ircd doesn't actually
-    // have us in it), JOIN first so the typing TAGMSG lands instead
-    // of getting bounced with 401.
-    const server = this.servers.get(serverId);
-    if (server && this.isChannel(serverId, target)) {
-      const ch = server.channels.find((c) => c.name === target);
-      if (
-        ch &&
-        !ch.isPrivate &&
-        (ch.users?.length ?? 0) === 0 &&
-        this.isCapNegotiationComplete(serverId)
-      ) {
-        this.sendRaw(serverId, `JOIN ${target}`);
-      }
-    }
     const typingState = isActive ? "active" : "done";
     this.sendRaw(serverId, `@+typing=${typingState} TAGMSG ${target}`);
   }

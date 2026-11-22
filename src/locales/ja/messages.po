@@ -5126,6 +5126,10 @@ msgstr "登録済みユーザーのみ (+R)"
 msgid "Reject"
 msgstr "拒否"
 
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "Rejoin"
+msgstr "再参加"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Relaxed"
@@ -7237,6 +7241,11 @@ msgstr "あなたはIRC Operatorです"
 msgid "You are no longer in this channel"
 msgstr "このチャンネルには参加していません"
 
+#: src/components/layout/ChannelRow.tsx
+#: src/components/layout/ChannelRow.tsx
+msgid "You are not in this channel"
+msgstr "このチャンネルに参加していません"
+
 #: src/components/ui/UpdateSheet.tsx
 msgid "You can close this and keep chatting."
 msgstr "これを閉じてチャットを続けられます。"
@@ -7261,9 +7270,17 @@ msgstr "まだ招待リンクを作成していません。上のフォームか
 msgid "You invited {target} to join {channel}"
 msgstr "{target} を {channel} に招待しました"
 
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "You left this channel."
+msgstr "このチャンネルから退出しました。"
+
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "You verified this contact."
 msgstr "この連絡先を確認しました。"
+
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "You were kicked from this channel."
+msgstr "このチャンネルからキックされました。"
 
 #. placeholder {0}: parent.name
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx

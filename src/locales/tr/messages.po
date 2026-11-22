@@ -5126,6 +5126,10 @@ msgstr "Yalnızca kayıtlı kullanıcılar (+R)"
 msgid "Reject"
 msgstr "Reddet"
 
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "Rejoin"
+msgstr "Yeniden katıl"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Relaxed"
@@ -7237,6 +7241,11 @@ msgstr "IRC Operatörüsünüz"
 msgid "You are no longer in this channel"
 msgstr "Artık bu kanalda değilsiniz"
 
+#: src/components/layout/ChannelRow.tsx
+#: src/components/layout/ChannelRow.tsx
+msgid "You are not in this channel"
+msgstr "Bu kanalda değilsiniz"
+
 #: src/components/ui/UpdateSheet.tsx
 msgid "You can close this and keep chatting."
 msgstr "Bunu kapatıp sohbete devam edebilirsin."
@@ -7261,9 +7270,17 @@ msgstr "Henüz hiç davet bağlantısı oluşturmadınız. İlkini oluşturmak i
 msgid "You invited {target} to join {channel}"
 msgstr "{target} kişisini {channel} kanalına davet ettiniz"
 
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "You left this channel."
+msgstr "Bu kanaldan ayrıldınız."
+
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "You verified this contact."
 msgstr "Bu kişiyi doğruladınız."
+
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "You were kicked from this channel."
+msgstr "Bu kanaldan atıldınız."
 
 #. placeholder {0}: parent.name
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx

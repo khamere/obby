@@ -191,7 +191,9 @@ const ChannelBrowserPage: React.FC<PageProps<"channelBrowser">> = ({
   const mediaSettings = mediaLevelToSettings(mediaLevel);
   const elist = (server?.elist || "").toUpperCase();
   const joinedNames = new Set(
-    server?.channels.map((c) => c.name.toLowerCase()),
+    server?.channels
+      .filter((c) => !c.leftReason)
+      .map((c) => c.name.toLowerCase()),
   );
 
   const visible = useMemo(

@@ -159,6 +159,7 @@ import {
   DEFAULT_VISIBLE_MESSAGE_COUNT,
 } from "./ChannelMessageList";
 import { ChatHeader } from "./ChatHeader";
+import { RejoinChannelBar } from "./RejoinChannelBar";
 import { SidePane } from "./SidePane";
 
 interface AliveChannel {
@@ -1165,6 +1166,14 @@ export const ChatArea: React.FC<{
       applyText(draftMap.current.get(channelKey) ?? "");
     }
   }, [channelKey, applyText]);
+
+  const hasComposer =
+    !!(selectedChannel || selectedPrivateChat) && !selectedChannel?.leftReason;
+
+  // The message box mounts empty, so we show the text we hold for this chat in it each time it mounts.
+  useEffect(() => {
+    if (hasComposer) applyText(messageTextRef.current);
+  }, [hasComposer, applyText]);
 
   // Keep-alive: maintain last 3 visited channels in an LRU list so their message list
   // DOMs are preserved with display:none (scroll position + media elements stay alive).
@@ -2392,8 +2401,19 @@ export const ChatArea: React.FC<{
             )}
           </div>
 
+          {selectedChannel?.leftReason && selectedServerId && (
+            <div
+              className={`${isNarrowView ? "px-2" : "px-4"} chat-input-area`}
+            >
+              <RejoinChannelBar
+                serverId={selectedServerId}
+                channelName={selectedChannel.name}
+                leftReason={selectedChannel.leftReason}
+              />
+            </div>
+          )}
           {/* Input area */}
-          {(selectedChannel || selectedPrivateChat) && (
+          {hasComposer && (
             <div
               className={`${isNarrowView ? "" : "px-4"} relative chat-input-area`}
             >

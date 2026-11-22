@@ -5126,6 +5126,10 @@ msgstr "Doar utilizatori înregistrați (+R)"
 msgid "Reject"
 msgstr "Respinge"
 
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "Rejoin"
+msgstr "Intră din nou"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Relaxed"
@@ -7237,6 +7241,11 @@ msgstr "Ești un Operator IRC"
 msgid "You are no longer in this channel"
 msgstr "Nu mai sunteți în acest canal"
 
+#: src/components/layout/ChannelRow.tsx
+#: src/components/layout/ChannelRow.tsx
+msgid "You are not in this channel"
+msgstr "Nu ești pe acest canal"
+
 #: src/components/ui/UpdateSheet.tsx
 msgid "You can close this and keep chatting."
 msgstr "Poți închide asta și să continui să discuți."
@@ -7261,9 +7270,17 @@ msgstr "Nu ai creat încă niciun link de invitație. Folosește formularul de m
 msgid "You invited {target} to join {channel}"
 msgstr "L-ai invitat pe {target} să se alăture la {channel}"
 
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "You left this channel."
+msgstr "Ai părăsit acest canal."
+
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "You verified this contact."
 msgstr "Ați verificat acest contact."
+
+#: src/components/layout/RejoinChannelBar.tsx
+msgid "You were kicked from this channel."
+msgstr "Ai fost dat afară de pe acest canal."
 
 #. placeholder {0}: parent.name
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx

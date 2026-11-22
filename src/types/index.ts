@@ -287,6 +287,8 @@ export interface ServerConfig {
   bouncerServerId?: string;
   bouncerNetid?: string;
   isBouncerControl?: boolean;
+  // Channels we still show but are out of, so no connection joins them until the user does.
+  leftChannels?: Record<string, "kicked" | "parted">;
 }
 
 export interface ServerOAuthConfig {
@@ -352,6 +354,7 @@ export interface Channel {
   // the user's connected sessions).  null = no marker on file yet.
   readMarker?: string | null;
   needsKey?: boolean;
+  leftReason?: "kicked" | "parted";
 }
 
 export interface PrivateChat {

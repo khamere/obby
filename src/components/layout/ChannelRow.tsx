@@ -6,6 +6,7 @@ import {
   FaEllipsisH,
   FaHashtag,
   FaLock,
+  FaSignOutAlt,
   FaSpinner,
   FaVolumeUp,
 } from "react-icons/fa";
@@ -234,6 +235,14 @@ export const ChannelRow: React.FC<ChannelRowProps> = ({
             aria-label={t`Select to enter the channel key`}
           >
             <FaLock className="w-3 h-3 text-discord-yellow" />
+          </span>
+        ) : channel.leftReason ? (
+          <span
+            role="img"
+            title={t`You are not in this channel`}
+            aria-label={t`You are not in this channel`}
+          >
+            <FaSignOutAlt className="w-3 h-3 text-discord-text-dim" />
           </span>
         ) : channel.isLoadingHistory ? (
           <FaSpinner className="w-3 h-3 text-discord-text-dim animate-spin" />

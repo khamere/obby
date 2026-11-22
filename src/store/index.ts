@@ -10,6 +10,11 @@ import type { E2EEScheme, E2EESessionState } from "../lib/e2ee/session";
 import { e2eeSessionKey } from "../lib/e2ee/session";
 import ircClient from "../lib/ircClient";
 import { makeLabel } from "../lib/labeledResponse";
+import {
+  forgetLeftChannels,
+  leftReasonOf,
+  saveLeftReason,
+} from "../lib/leftChannels";
 import type { MediaType } from "../lib/mediaUtils";
 import { recordPlace, recordSearch } from "../lib/search/recents";
 import { serializeSearchQuery } from "../lib/search/searchQuery";
@@ -72,6 +77,7 @@ import {
   MAX_MESSAGES_PER_CHANNEL,
   normalizeHost,
 } from "./helpers";
+import { withLeftChannels } from "./leftChannelRows";
 import * as storage from "./localStorage";
 import {
   addMention,
@@ -1587,6 +1593,7 @@ const useStore = create<AppState>((set, get) => ({
         operOnConnect: savedServer?.operOnConnect,
         skipLocalhostWarning: savedServer?.skipLocalhostWarning,
         skipLinkSecurityWarning: savedServer?.skipLinkSecurityWarning,
+        leftChannels: savedServer?.leftChannels,
         // Preserve existing addedAt timestamp or set current time for new servers
         addedAt: savedServer?.addedAt || Date.now(),
         oauth: mergedOauth ?? savedServer?.oauth,
@@ -1604,6 +1611,8 @@ const useStore = create<AppState>((set, get) => ({
             ...existingServer,
             ...server,
             id: existingServer.id,
+            // The client's own list of channels knows nothing of the ones we are out of, so we mark them here.
+            channels: withLeftChannels(existingServer.id, server.channels),
           };
           return {
             servers: updatedServers,
@@ -1793,7 +1802,13 @@ const useStore = create<AppState>((set, get) => ({
   },
 
   joinChannel: (serverId, channelName, key, options) => {
-    const channel = ircClient.joinChannel(serverId, channelName, key);
+    const joinedName = ircClient.withChannelPrefix(serverId, channelName);
+    // A channel the user was removed from or left stays theirs to rejoin, so a join nobody asked for passes it by.
+    if (options?.isAutomatic && leftReasonOf(serverId, joinedName)) return;
+    const isReturning = !!leftReasonOf(serverId, joinedName);
+    const channel = ircClient.joinChannel(serverId, channelName, key, {
+      isReturning,
+    });
     if (channel) {
       if (key) markKeyedJoin(serverId, channel.name);
       setAutomaticJoin(serverId, channel.name, !!options?.isAutomatic);
@@ -1867,7 +1882,8 @@ const useStore = create<AppState>((set, get) => ({
     // A voice call keeps running after its view unmounts, so leaving the
     // channel is the only thing left that can end it.
     releaseVoiceClient(serverId, channelName);
-    ircClient.leaveChannel(serverId, channelName); // Send PART command to the IRC server
+    // A bouncer keeps a channel we were kicked from on its list until we part it, so we send PART for a channel we are already out of as well.
+    ircClient.leaveChannel(serverId, channelName);
     get().forgetChannel(serverId, channelName);
   },
 
@@ -1875,6 +1891,7 @@ const useStore = create<AppState>((set, get) => ({
     const isForgotten = (name: string) =>
       name.toLowerCase() === channelName.toLowerCase();
     ircClient.forgetChannel(serverId, channelName);
+    saveLeftReason(serverId, channelName, undefined);
     set((state) => {
       const updatedServers = state.servers.map((server) => {
         if (server.id === serverId) {
@@ -2579,7 +2596,12 @@ const useStore = create<AppState>((set, get) => ({
         // are commonly orphaned across restarts -- the cost of an
         // extra JOIN line is nothing compared to the 401 the user
         // sees today.
-        if (channelName && server && !ch?.needsKey) {
+        if (
+          channelName &&
+          server &&
+          !ch?.needsKey &&
+          !leftReasonOf(server.id, channelName)
+        ) {
           const isVoiceOrStream =
             channelName.startsWith("^") || channelName.startsWith("$");
           const lostMembership =
@@ -3320,6 +3342,7 @@ const useStore = create<AppState>((set, get) => ({
       clearServerConnectionTimeout(id);
       releaseServerVoiceClients(id);
       ircClient.removeServer(id);
+      forgetLeftChannels(id);
     }
 
     set((state) => {

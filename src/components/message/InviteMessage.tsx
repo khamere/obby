@@ -61,7 +61,9 @@ export const InviteMessage: React.FC<InviteMessageProps> = ({
   // Check if we're already in the channel
   const server = servers.find((s) => s.id === message.serverId);
   const alreadyInChannel = server?.channels.some(
-    (c) => c.name === message.inviteChannel,
+    (c) =>
+      !c.leftReason &&
+      c.name.toLowerCase() === message.inviteChannel?.toLowerCase(),
   );
 
   return (
