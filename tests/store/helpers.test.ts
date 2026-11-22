@@ -103,6 +103,7 @@ describe("withReaction", () => {
     "constructor",
     "well done",
     "two  spaces",
+    "bien\u00a0vu",
     "x PRIVMSG #chan :text",
   ])("keeps %s", (value) => {
     expect(withReaction(message, value, "alice")?.reactions).toEqual([
@@ -118,7 +119,7 @@ describe("withReaction", () => {
     ["a line break", "x\r\nQUIT"],
     ["a tab", "x\ty"],
     ["a control character", "x\u0000y"],
-    ["a no-break space", "x\u00a0y"],
+    ["a paragraph separator", "x\u2029y"],
     ["more text than a reaction holds", "x".repeat(65)],
     ["nothing", ""],
   ])("drops a reaction with %s", (_, value) => {

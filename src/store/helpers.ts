@@ -218,12 +218,12 @@ export const REDACTED_BY_TAG = "obby-redacted-by";
 const MAX_REACTION_LENGTH = 64;
 
 // A reaction is an emoji or a few short words that another client chose, so we
-// keep only text that reads as one chip: plain spaces between the words, and
-// no other whitespace or control characters.
+// keep only text that reads as one chip: spaces between the words, and no line
+// breaks or control characters.
 export const isReactionValue = (value: string): boolean =>
   value.length > 0 &&
   value.length <= MAX_REACTION_LENGTH &&
-  !/^ | $|[^\S ]|\p{Cc}/u.test(value);
+  !/^ | $|[\p{Cc}\p{Zl}\p{Zp}]/u.test(value);
 
 // Nicks compare without case, so a reaction stays ours when only the case of
 // our nick changes.
