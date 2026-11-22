@@ -86,13 +86,15 @@ type GapFill = {
   onSettled?: (isSaved: boolean, page?: HistoryPage) => void;
 };
 
-// `msgidTime` is the time of the line a request named by its msgid.
+// `msgidTime` is the time of the line a request named by its msgid, and
+// `before` the time an older page was asked from.
 type PendingRequest =
   | { kind: "latest"; newestStored: Promise<HistoryRow | undefined> }
   | {
       kind: "before" | "after" | "around";
       fill?: GapFill;
       msgidTime?: number;
+      before?: number;
     };
 
 const recorders = new Map<string, HistoryRecorder>();
@@ -110,6 +112,7 @@ const MAX_HIDDEN_PAGES_IN_A_ROW = 10;
 // actually leaves, so a request the socket dropped never claims a reply.
 let nextGapFill: GapFill | undefined;
 let nextMsgidTime: number | undefined;
+let nextBefore: number | undefined;
 
 // Two requests for the same gap ask for the same page, and the second reply,
 // all duplicates, would close the gap, so we keep one request per gap.
@@ -137,6 +140,7 @@ function requestPageBefore(
     return false;
   nextGapFill = fill;
   nextMsgidTime = msgid === undefined ? undefined : before;
+  nextBefore = before;
   const isSent = ircClient.requestChathistoryBefore(
     serverId,
     target,
@@ -145,6 +149,7 @@ function requestPageBefore(
   );
   nextGapFill = undefined;
   nextMsgidTime = undefined;
+  nextBefore = undefined;
   return isSent;
 }
 
@@ -512,6 +517,8 @@ async function saveHistoryPage(
       page.newest,
       page.msgids,
     );
+  if (request?.kind === "before" && request.before !== undefined)
+    await settleGapsBelow(key, target, request.before, page, request.fill?.gap);
   if (request?.kind === "latest") {
     const newestStored = await request.newestStored;
     const decision = decideAfterLatest({
@@ -530,7 +537,7 @@ async function saveHistoryPage(
         ...(page.oldestMsgid ? { toMsgid: page.oldestMsgid } : {}),
       });
       const [gap] = (await gapsFor(key, target)).filter(
-        (g) => g.from === from && g.to === to,
+        (g) => !g.lost && g.from === from && g.to >= to,
       );
       if (gap) settleGap(store, serverId, target, gap, MAX_AUTO_FILL_PAGES);
     }
@@ -623,6 +630,32 @@ async function saveHistoryPage(
       return;
   }
   await refreshHasMore(store, serverId, target, page.size > 0);
+}
+
+// An older page holds every line the server has between its oldest line and
+// the time it was asked from, so a gap inside that stretch misses nothing and
+// a gap reaching below it starts at the page's oldest line. An empty page is
+// the end of the server's history, which no gap below that time can outlast.
+// The gap the page was asked for is decided by its own fill.
+async function settleGapsBelow(
+  server: string,
+  target: string,
+  before: number,
+  page: HistoryPage,
+  filling: HistoryGap | undefined,
+) {
+  for (const gap of await gapsFor(server, target)) {
+    if (gap.lost || gap.id === filling?.id) continue;
+    if (page.size === 0) {
+      if (gap.from < before) await updateGap({ ...gap, lost: true });
+    } else if (page.oldest === undefined) {
+    } else if (gap.to <= before && gap.from >= page.oldest) {
+      await deleteGap(gap.id);
+    } else if (gap.to <= before && gap.to > page.oldest) {
+      const { toMsgid: _, ...rest } = gap;
+      await updateGap({ ...rest, to: page.oldest });
+    }
+  }
 }
 
 // We decide load more for a chat from every source: the server may have an
@@ -1039,6 +1072,7 @@ function trackOutgoing(
             kind,
             fill: nextGapFill,
             ...(isByMsgid ? { msgidTime: nextMsgidTime } : {}),
+            ...(kind === "before" ? { before: nextBefore } : {}),
           },
     );
     pendingRequests.set(conversationKey(serverId, target), queue);
