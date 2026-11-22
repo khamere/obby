@@ -194,23 +194,34 @@ function startMissingMarkers(store: StoreApi<AppState>) {
   for (const server of store.getState().servers) {
     const since = registeredAt.get(server.id);
     if (!since) continue;
+    if (serverTracksReadMarker(store.getState(), server.id)) {
+      askPrivateMarkers(store, server.id);
+      continue;
+    }
     for (const { id } of [...server.channels, ...(server.privateChats ?? [])]) {
-      const state = store.getState();
-      const chat = findChat(state, server.id, id);
-      if (!chat) continue;
-      const tracks = serverTracksReadMarker(state, server.id);
-      if (!tracks && chat.readMarker == null)
+      const chat = findChat(store.getState(), server.id, id);
+      if (chat && chat.readMarker == null)
         setReadMarker(store, server.id, chat.id, since);
-      else if (tracks && "username" in chat && !chat.readMarkerFetched) {
-        store.setState((s) => ({
-          servers: mapChats(s.servers, server.id, (pc) =>
-            pc.id === chat.id ? { ...pc, readMarkerFetched: true } : pc,
-          ),
-        }));
-        ircClient.markreadGet(server.id, chat.username);
-      }
     }
   }
+}
+
+// Every store update runs the subscriber again, so we flag all the chats in
+// one update before we send the first request.
+function askPrivateMarkers(store: StoreApi<AppState>, serverId: string) {
+  const server = store.getState().servers.find((s) => s.id === serverId);
+  const pending = (server?.privateChats ?? []).filter(
+    (pc) => !pc.readMarkerFetched,
+  );
+  if (pending.length === 0) return;
+  store.setState((state) => ({
+    servers: mapChats(state.servers, serverId, (chat) =>
+      "username" in chat && !chat.readMarkerFetched
+        ? { ...chat, readMarkerFetched: true }
+        : chat,
+    ),
+  }));
+  for (const pc of pending) ircClient.markreadGet(serverId, pc.username);
 }
 
 const READ = { unreadCount: 0, mentionCount: 0, isMentioned: false };
