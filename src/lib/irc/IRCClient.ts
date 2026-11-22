@@ -39,7 +39,7 @@ import {
   parseMultilineLimits,
   splitAtSpaces,
 } from "./multiline";
-import { parseServerTime } from "./utils";
+import { nextMemberRequestNumber, parseServerTime } from "./utils";
 
 // Namespace UUID for generating deterministic channel/chat IDs
 const CHANNEL_NAMESPACE = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
@@ -300,8 +300,15 @@ export interface EventMap {
     realname: string;
     isAway: boolean;
     opLevel: string;
+    token?: string;
   };
-  WHO_END: { serverId: string; mask: string };
+  WHO_END: { serverId: string; mask: string; isAborted?: boolean };
+  MEMBERS_REQUESTED: {
+    serverId: string;
+    channelName: string;
+    token: string;
+    line: string;
+  };
   RPL_AWAY: {
     serverId: string;
     nick: string;
@@ -689,6 +696,7 @@ function splitCapToken(token: string): { cap: string; value?: string } {
 
 export class IRCClient implements IRCClientContext {
   private sockets: Map<string, ISocket> = new Map();
+  private memberRequestNumbers = new WeakMap<ISocket, number>();
   servers: Map<string, Server> = new Map();
   nicks: Map<string, string> = new Map();
   myIdents: Map<string, string> = new Map(); // Our own ident per server, populated by draft/whoami SETNAME burst and CHGHOST
@@ -1596,8 +1604,27 @@ export class IRCClient implements IRCClientContext {
   // the server keeps no history. Returns whether history was requested.
   loadHistoryOrMembers(serverId: string, channelName: string): boolean {
     if (this.loadLatestHistory(serverId, channelName)) return true;
-    this.sendRaw(serverId, `WHO ${channelName} %cuhnfaro`);
+    this.requestMembers(serverId, channelName);
     return false;
+  }
+
+  // The server repeats the number we send in every row of its answer, so the member list can tell the answer to this request from any other WHO reply.
+  requestMembers(serverId: string, channelName: string): void {
+    const socket = this.sockets.get(serverId);
+    const number = nextMemberRequestNumber(
+      socket && this.memberRequestNumbers.get(socket),
+    );
+    if (socket) this.memberRequestNumbers.set(socket, number);
+    const token = String(number);
+    const line = `WHO ${channelName} %tcuhnfaro,${token}`;
+    // We announce the request ahead of the line, so the line is known as ours when it goes out.
+    this.triggerEvent("MEMBERS_REQUESTED", {
+      serverId,
+      channelName,
+      token,
+      line,
+    });
+    this.sendRaw(serverId, line);
   }
 
   // Servers state their per-request maximum as CHATHISTORY=<n>, where 0 means
