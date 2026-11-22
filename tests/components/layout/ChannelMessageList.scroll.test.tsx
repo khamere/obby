@@ -431,6 +431,35 @@ describe("an older page the server refuses", () => {
     });
     expect(requests()).toBe(1);
   });
+
+  it("asks again for a page that came back empty once the chat offers older history anew", () => {
+    const area = scrollToTopOfChat();
+    updateChat({ isLoadingHistory: false, hasMoreHistory: false });
+    updateChat({ hasMoreHistory: true });
+
+    act(() => {
+      fireEvent.scroll(area);
+    });
+    expect(requests()).toBe(2);
+  });
+
+  it("asks again for a page that came back empty after a reconnect", () => {
+    const area = scrollToTopOfChat();
+    updateChat({ isLoadingHistory: false });
+    const connect = (isConnected: boolean) =>
+      act(() => {
+        useStore.setState((state) => ({
+          servers: state.servers.map((server) => ({ ...server, isConnected })),
+        }));
+      });
+    connect(false);
+    connect(true);
+
+    act(() => {
+      fireEvent.scroll(area);
+    });
+    expect(requests()).toBe(2);
+  });
 });
 
 describe("ChannelMessageList scroll state", () => {
