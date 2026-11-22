@@ -90,7 +90,10 @@ describe("ChannelKeyModal", () => {
 
     expect(sendRaw).not.toHaveBeenCalled();
     expect(useStore.getState().channelKeyPrompt).not.toBeNull();
-    expect(screen.getByText("Enter a key without commas")).toBeInTheDocument();
+    expect(screen.getByLabelText("Channel key")).toBeInvalid();
+    expect(screen.getByLabelText("Channel key")).toHaveAccessibleDescription(
+      "Enter a key without commas",
+    );
     expect(screen.queryByText("Wrong key, try again")).not.toBeInTheDocument();
   });
 

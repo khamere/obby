@@ -162,7 +162,9 @@ describe("AddChannelRow with a name that is not one channel", () => {
     expect(onAdd).not.toHaveBeenCalled();
     expect(screen.getByLabelText("Text channel")).toHaveValue(value);
     expect(screen.getByLabelText("Text channel")).toBeInvalid();
-    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByLabelText("Text channel")).toHaveAccessibleDescription(
+      screen.getByRole("alert").textContent ?? "",
+    );
   });
 
   it.each([
