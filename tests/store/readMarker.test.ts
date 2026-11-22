@@ -371,64 +371,178 @@ describe("read markers", () => {
     expect(markreadSet).not.toHaveBeenCalled();
   });
 
-  const markReadWhileAway = async (action: "one" | "all") => {
+  // A network bound through a bouncer keeps its account while its connection
+  // is away, so the server still counts as one that stores markers.
+  const bootBoundNetwork = async () => {
     const booted = await boot({ selected: false });
-    const { useStore, markreadSet, channel } = booted;
+    const { useStore, ircClient } = booted;
+    const markreadGet = vi
+      .spyOn(ircClient, "markreadGet")
+      .mockImplementation(() => {});
+    vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
     useStore.setState((state) => ({
-      servers: state.servers.map((server) => ({
-        ...server,
-        isRegistered: false,
-      })),
+      servers: [
+        ...state.servers.map((server) => ({
+          ...server,
+          bouncerServerId: "control",
+          bouncerNetid: "1",
+          privateChats: [
+            {
+              id: "pm-service",
+              username: "service",
+              serverId: SERVER,
+              unreadCount: 0,
+              isMentioned: false,
+              readMarker: null,
+              readMarkerFetched: true,
+            },
+          ],
+        })),
+        {
+          id: "control",
+          name: "bouncer",
+          host: "irc.test",
+          port: 6667,
+          isConnected: true,
+          isRegistered: true,
+          isBouncerControl: true,
+          capabilities: ["draft/read-marker"],
+          account: "me",
+          channels: [],
+          privateChats: [],
+          users: [],
+        },
+      ],
+      messages: {
+        ...state.messages,
+        [`${SERVER}-pm-service`]: [
+          { ...message(2, "service"), channelId: "pm-service" },
+        ],
+      },
     }));
+    const state = (connectionState: string) =>
+      ircClient.triggerEvent("connectionStateChange", {
+        serverId: SERVER,
+        connectionState,
+      } as never);
+    const drop = () => {
+      state("disconnected");
+      state("reconnecting");
+    };
+    const welcome = () => {
+      state("connecting");
+      state("connected");
+      ircClient.triggerEvent("ready", {
+        serverId: SERVER,
+        serverName: "irc.test",
+        nickname: "tester",
+      });
+      ircClient.triggerEvent("parsedLine", {
+        serverId: SERVER,
+        line: ":irc.test 001 tester :Welcome",
+        command: "001",
+        source: "irc.test",
+        parv: ["tester", "Welcome"],
+        mtags: undefined,
+      });
+    };
+    const answer = (target: string, timestamp: string | null) =>
+      ircClient.triggerEvent("MARKREAD", {
+        serverId: SERVER,
+        target,
+        timestamp,
+      } as never);
+    const service = () => useStore.getState().servers[0].privateChats?.[0];
+    return { ...booted, markreadGet, drop, welcome, answer, service };
+  };
+  const STORED = new Date(BASE + 1000).toISOString();
+  const READ = new Date(BASE + 3000).toISOString();
+
+  const markReadWhileAway = async (action: "one" | "all") => {
+    const booted = await bootBoundNetwork();
+    const { useStore, markreadSet, channel, drop } = booted;
+    drop();
+    expect(useStore.getState().servers[0].account).toBe("me");
     if (action === "all") useStore.getState().markAllRead();
     else useStore.getState().markChannelAsRead(SERVER, "chan-1");
     expect(markreadSet).not.toHaveBeenCalled();
     expect(channel()).toMatchObject({
       unreadCount: 0,
       isMentioned: false,
-      readMarker: new Date(BASE + 3000).toISOString(),
+      readMarker: READ,
     });
-    useStore.setState((state) => ({
-      servers: state.servers.map((server) => ({
-        ...server,
-        isRegistered: true,
-      })),
-    }));
     return booted;
   };
 
   it("clears a chat marked read while its connection is away and sends the marker once the server names its own", async () => {
-    const { ircClient, markreadSet, channel } = await markReadWhileAway("one");
-    ircClient.triggerEvent("MARKREAD", {
-      serverId: SERVER,
-      target: "#chan",
-      timestamp: new Date(BASE + 1000).toISOString(),
-    } as never);
+    const { markreadSet, channel, welcome, answer } =
+      await markReadWhileAway("one");
+    welcome();
+    answer("#chan", STORED);
 
-    expect(markreadSet.mock.calls).toEqual([
-      [SERVER, "#chan", new Date(BASE + 3000).toISOString()],
-    ]);
+    expect(markreadSet.mock.calls).toEqual([[SERVER, "#chan", READ]]);
     expect(channel().unreadCount).toBe(0);
 
-    ircClient.triggerEvent("MARKREAD", {
-      serverId: SERVER,
-      target: "#chan",
-      timestamp: new Date(BASE + 3000).toISOString(),
-    } as never);
+    answer("#chan", READ);
     expect(markreadSet).toHaveBeenCalledTimes(1);
   });
 
   it("drops a marker from while the connection was away when another client read further", async () => {
-    const { ircClient, markreadSet, channel } = await markReadWhileAway("all");
+    const { markreadSet, channel, welcome, answer } =
+      await markReadWhileAway("all");
     const further = new Date(BASE + 5000).toISOString();
-    ircClient.triggerEvent("MARKREAD", {
-      serverId: SERVER,
-      target: "#chan",
-      timestamp: further,
-    } as never);
+    welcome();
+    answer("#chan", further);
 
-    expect(markreadSet).not.toHaveBeenCalled();
+    expect(markreadSet).not.toHaveBeenCalledWith(SERVER, "#chan", READ);
     expect(channel().readMarker).toBe(further);
+  });
+
+  it("sends a waiting marker again when the connection drops before the server stored it", async () => {
+    const { markreadSet, channel, drop, welcome, answer } =
+      await markReadWhileAway("one");
+    welcome();
+    answer("#chan", STORED);
+    expect(markreadSet).toHaveBeenCalledTimes(1);
+
+    drop();
+    welcome();
+    answer("#chan", STORED);
+    expect(markreadSet.mock.calls).toEqual([
+      [SERVER, "#chan", READ],
+      [SERVER, "#chan", READ],
+    ]);
+    expect(channel()).toMatchObject({ unreadCount: 0, readMarker: READ });
+
+    answer("#chan", READ);
+    drop();
+    welcome();
+    answer("#chan", READ);
+    expect(markreadSet).toHaveBeenCalledTimes(2);
+  });
+
+  it("asks at the welcome for a channel whose marker is waiting", async () => {
+    const { markreadGet, welcome } = await markReadWhileAway("one");
+    welcome();
+    expect(markreadGet).toHaveBeenCalledWith(SERVER, "#chan");
+  });
+
+  it("keeps a chat read when the server stores no marker for it", async () => {
+    const { useStore, markreadSet, service, drop, welcome, answer } =
+      await bootBoundNetwork();
+    expect(service()?.unreadCount).toBe(1);
+    drop();
+    useStore.getState().markAllRead();
+    const read = new Date(BASE + 2000).toISOString();
+    expect(service()).toMatchObject({ unreadCount: 0, readMarker: read });
+
+    welcome();
+    answer("service", null);
+    answer("service", null);
+    expect(
+      markreadSet.mock.calls.filter(([, target]) => target === "service"),
+    ).toEqual([[SERVER, "service", read]]);
+    expect(service()).toMatchObject({ unreadCount: 0, readMarker: read });
   });
 
   it("leaves the chats alone when an update touches neither chats nor messages", async () => {

@@ -25,6 +25,9 @@ const registeredAt = new Map<string, string>();
 // A server takes no marker from a connection it has yet to welcome, so what
 // the user reads meanwhile waits here until it tells us the chat's marker.
 const unsentMarkers = new Map<string, string>();
+// A server that stores nothing for a chat answers our marker with its old one,
+// so we send each waiting marker once per connection.
+const resentMarkers = new Map<string, Set<string>>();
 
 const NOTHING_UNREAD: UnreadCounts = {
   unreadCount: 0,
@@ -242,6 +245,18 @@ function askPrivateMarkers(store: StoreApi<AppState>, serverId: string) {
   for (const pc of pending) ircClient.markreadGet(serverId, pc.username);
 }
 
+// A bouncer answers for a channel before the upstream has joined it, so we
+// ask there instead of waiting for the join to bring the marker.
+function askWaitingChannelMarkers(store: StoreApi<AppState>, serverId: string) {
+  const state = store.getState();
+  const server = state.servers.find((s) => s.id === serverId);
+  if (!server?.bouncerServerId || !serverTracksReadMarker(state, serverId))
+    return;
+  for (const channel of server.channels)
+    if (unsentMarkers.has(chatKey(serverId, channel)))
+      ircClient.markreadGet(serverId, channel.name);
+}
+
 const READ = { unreadCount: 0, mentionCount: 0, isMentioned: false };
 
 export function registerReadMarkerHandlers(store: StoreApi<AppState>): void {
@@ -252,26 +267,34 @@ export function registerReadMarkerHandlers(store: StoreApi<AppState>): void {
         if (!eqIC(targetOf(chat), target)) return chat;
         const key = chatKey(serverId, chat);
         const unsent = unsentMarkers.get(key);
-        unsentMarkers.delete(key);
-        // What the user read while the connection was away goes out now,
-        // unless another client has read further since.
-        const isUnsentNewer =
+        // What the user read while the connection was away waits until the
+        // server names that marker or a later one from another client.
+        const isWaiting =
           unsent !== undefined &&
           (timestamp === null || Date.parse(unsent) > Date.parse(timestamp));
-        if (isUnsentNewer) toSend = unsent;
+        if (!isWaiting) unsentMarkers.delete(key);
+        const resent = resentMarkers.get(serverId) ?? new Set<string>();
+        if (isWaiting && !resent.has(key)) {
+          resentMarkers.set(serverId, resent.add(key));
+          toSend = unsent;
+        }
         if (!isPrivate) {
           // A channel the user never read has no marker on the server, so we
           // count what arrives from now on, leave its backlog read and store
           // that start on the server, so the next session counts from there.
-          const readMarker = isUnsentNewer
+          const readMarker = isWaiting
             ? unsent
             : (timestamp ?? chat.readMarker ?? new Date().toISOString());
-          if (timestamp === null) toSend = readMarker;
+          if (timestamp === null && !isWaiting) toSend = readMarker;
           return chat.readMarker === readMarker
             ? chat
             : { ...chat, readMarker };
         }
-        const readMarker = isUnsentNewer ? unsent : timestamp;
+        // A server that keeps no marker for a chat answers `*` to our own
+        // marker too, so what we already read here stays read.
+        const readMarker = isWaiting
+          ? unsent
+          : (timestamp ?? chat.readMarker ?? null);
         return chat.readMarker === readMarker &&
           "username" in chat &&
           chat.readMarkerFetched
@@ -341,6 +364,7 @@ export function registerReadMarkerHandlers(store: StoreApi<AppState>): void {
   ircClient.on("connectionStateChange", ({ serverId, connectionState }) => {
     if (connectionState === "connected") return setRefused(serverId, false);
     registeredAt.delete(serverId);
+    resentMarkers.delete(serverId);
     askPrivateMarkersAgain(serverId);
   });
   // We take the time from the server's welcome when it sends one, so a local
@@ -349,6 +373,7 @@ export function registerReadMarkerHandlers(store: StoreApi<AppState>): void {
     if (command !== "001") return;
     registeredAt.set(serverId, mtags?.time ?? new Date().toISOString());
     startMissingMarkers(store);
+    askWaitingChannelMarkers(store, serverId);
   });
   // Markers need an account, so a login after the welcome is when we first
   // learn where the user left off.
