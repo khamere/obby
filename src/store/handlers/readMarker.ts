@@ -22,6 +22,11 @@ const MARK_READ_DELAY_MS = 1000;
 // start local markers from then on.
 const registeredAt = new Map<string, string>();
 
+// We keep each chat's newest read until the server names it or a later one.
+const unsentMarkers = new Map<string, string>();
+// We send a waiting marker once per connection, whatever the server answers.
+const resentMarkers = new Map<string, Set<string>>();
+
 const NOTHING_UNREAD: UnreadCounts = {
   unreadCount: 0,
   mentionCount: 0,
@@ -85,6 +90,9 @@ function findChat(state: AppState, serverId: string, chatId: string) {
   );
 }
 
+const isRegistered = (state: AppState, serverId: string) =>
+  !!state.servers.find((s) => s.id === serverId)?.isRegistered;
+
 // On a server without read markers we keep the marker for this session only.
 export function markChatRead(
   store: StoreApi<AppState>,
@@ -103,7 +111,15 @@ export function markChatRead(
   const marker = new Date(newest).toISOString();
   setReadMarker(store, serverId, chatId, marker);
   closeChatNotification(serverId, targetOf(chat));
-  if (tracks) ircClient.markreadSet(serverId, targetOf(chat), marker);
+  if (!tracks) return;
+  const key = chatKey(serverId, chat);
+  unsentMarkers.set(key, marker);
+  if (!isRegistered(state, serverId)) return;
+  resentMarkers.set(
+    serverId,
+    (resentMarkers.get(serverId) ?? new Set<string>()).add(key),
+  );
+  ircClient.markreadSet(serverId, targetOf(chat), marker);
 }
 
 // Every chat with unread lines, on every server: the "Read all" button.
@@ -146,6 +162,13 @@ function withUnreadCounts(
 ): Server[] | undefined {
   const inView = chatInView(state);
   const wasInView = chatInView(previous);
+  if (
+    state.servers === previous.servers &&
+    state.messages === previous.messages &&
+    state.historyWindows === previous.historyWindows &&
+    inView === wasInView
+  )
+    return undefined;
   let servers = state.servers;
   for (const server of state.servers) {
     const before = previous.servers.find((s) => s.id === server.id);
@@ -189,64 +212,94 @@ function withUnreadCounts(
 
 // A server without read markers gives us none to start from, so we count what
 // arrived since it welcomed us. A private chat's marker comes only when asked,
-// so we ask once per chat.
+// so we ask once per chat on each connection.
 function startMissingMarkers(store: StoreApi<AppState>) {
   for (const server of store.getState().servers) {
     const since = registeredAt.get(server.id);
     if (!since) continue;
+    if (serverTracksReadMarker(store.getState(), server.id)) {
+      askPrivateMarkers(store, server.id);
+      continue;
+    }
     for (const { id } of [...server.channels, ...(server.privateChats ?? [])]) {
-      const state = store.getState();
-      const chat = findChat(state, server.id, id);
-      if (!chat) continue;
-      const tracks = serverTracksReadMarker(state, server.id);
-      if (!tracks && chat.readMarker == null)
+      const chat = findChat(store.getState(), server.id, id);
+      if (chat && chat.readMarker == null)
         setReadMarker(store, server.id, chat.id, since);
-      else if (
-        tracks &&
-        "username" in chat &&
-        chat.readMarker === undefined &&
-        !chat.readMarkerFetched
-      ) {
-        store.setState((s) => ({
-          servers: mapChats(s.servers, server.id, (pc) =>
-            pc.id === chat.id ? { ...pc, readMarkerFetched: true } : pc,
-          ),
-        }));
-        ircClient.markreadGet(server.id, chat.username);
-      }
     }
   }
+}
+
+// We flag every chat in one update, since each update runs the subscriber.
+function askPrivateMarkers(store: StoreApi<AppState>, serverId: string) {
+  const server = store.getState().servers.find((s) => s.id === serverId);
+  const pending = (server?.privateChats ?? []).filter(
+    (pc) => !pc.readMarkerFetched,
+  );
+  if (pending.length === 0) return;
+  store.setState((state) => ({
+    servers: mapChats(state.servers, serverId, (chat) =>
+      "username" in chat && !chat.readMarkerFetched
+        ? { ...chat, readMarkerFetched: true }
+        : chat,
+    ),
+  }));
+  for (const pc of pending) ircClient.markreadGet(serverId, pc.username);
+}
+
+// A bouncer keeps channel markers itself, so we ask once it welcomes us.
+function askWaitingChannelMarkers(store: StoreApi<AppState>, serverId: string) {
+  const state = store.getState();
+  const server = state.servers.find((s) => s.id === serverId);
+  if (!server?.bouncerServerId || !serverTracksReadMarker(state, serverId))
+    return;
+  for (const channel of server.channels)
+    if (unsentMarkers.has(chatKey(serverId, channel)))
+      ircClient.markreadGet(serverId, channel.name);
 }
 
 const READ = { unreadCount: 0, mentionCount: 0, isMentioned: false };
 
 export function registerReadMarkerHandlers(store: StoreApi<AppState>): void {
   ircClient.on("MARKREAD", ({ serverId, target, timestamp }) => {
-    let startedMarker: string | undefined;
+    let toSend: string | undefined;
     store.setState((state) => ({
       servers: mapChats(state.servers, serverId, (chat, isPrivate) => {
         if (!eqIC(targetOf(chat), target)) return chat;
+        const key = chatKey(serverId, chat);
+        const unsent = unsentMarkers.get(key);
+        // An older answer left before ours arrived, so the chat stays read.
+        const isWaiting =
+          unsent !== undefined &&
+          (timestamp === null || Date.parse(unsent) > Date.parse(timestamp));
+        if (!isWaiting) unsentMarkers.delete(key);
+        const resent = resentMarkers.get(serverId) ?? new Set<string>();
+        if (isWaiting && !resent.has(key)) {
+          resentMarkers.set(serverId, resent.add(key));
+          toSend = unsent;
+        }
         if (!isPrivate) {
           // A channel the user never read has no marker on the server, so we
           // count what arrives from now on, leave its backlog read and store
           // that start on the server, so the next session counts from there.
-          const readMarker =
-            timestamp ?? chat.readMarker ?? new Date().toISOString();
-          if (timestamp === null) startedMarker = readMarker;
+          const readMarker = isWaiting
+            ? unsent
+            : (timestamp ?? chat.readMarker ?? new Date().toISOString());
+          if (timestamp === null && !isWaiting) toSend = readMarker;
           return chat.readMarker === readMarker
             ? chat
             : { ...chat, readMarker };
         }
-        return chat.readMarker === timestamp &&
+        const readMarker = isWaiting ? unsent : timestamp;
+        return chat.readMarker === readMarker &&
           "username" in chat &&
           chat.readMarkerFetched
           ? chat
-          : { ...chat, readMarker: timestamp, readMarkerFetched: true };
+          : { ...chat, readMarker, readMarkerFetched: true };
       }),
     }));
     const state = store.getState();
-    if (startedMarker && serverTracksReadMarker(state, serverId))
-      ircClient.markreadSet(serverId, target, startedMarker);
+    if (toSend && serverTracksReadMarker(state, serverId))
+      ircClient.markreadSet(serverId, target, toSend);
     const server = state.servers.find((s) => s.id === serverId);
     const chat = [
       ...(server?.channels ?? []),
@@ -277,6 +330,19 @@ export function registerReadMarkerHandlers(store: StoreApi<AppState>): void {
     }
   });
 
+  // Our copy can be stale after a drop or a logout, so we ask for each again.
+  const askPrivateMarkersAgain = (serverId: string) =>
+    store.setState((state) => ({
+      servers: mapChats(state.servers, serverId, (chat) =>
+        "username" in chat && chat.readMarkerFetched
+          ? { ...chat, readMarkerFetched: false }
+          : chat,
+      ),
+    }));
+  ircClient.on("LOGGED_OUT", ({ serverId }) =>
+    askPrivateMarkersAgain(serverId),
+  );
+
   const setRefused = (serverId: string, readMarkerRefused: boolean) =>
     store.setState((state) => ({
       servers: state.servers.map((server) =>
@@ -290,8 +356,10 @@ export function registerReadMarkerHandlers(store: StoreApi<AppState>): void {
   // that connection after its first FAIL.
   ircClient.on("MARKREAD_FAIL", ({ serverId }) => setRefused(serverId, true));
   ircClient.on("connectionStateChange", ({ serverId, connectionState }) => {
-    if (connectionState === "connected") setRefused(serverId, false);
-    else registeredAt.delete(serverId);
+    if (connectionState === "connected") return setRefused(serverId, false);
+    registeredAt.delete(serverId);
+    resentMarkers.delete(serverId);
+    askPrivateMarkersAgain(serverId);
   });
   // We take the time from the server's welcome when it sends one, so a local
   // clock ahead of the server cannot hide the first messages.
@@ -299,6 +367,7 @@ export function registerReadMarkerHandlers(store: StoreApi<AppState>): void {
     if (command !== "001") return;
     registeredAt.set(serverId, mtags?.time ?? new Date().toISOString());
     startMissingMarkers(store);
+    askWaitingChannelMarkers(store, serverId);
   });
   // Markers need an account, so a login after the welcome is when we first
   // learn where the user left off.
@@ -307,8 +376,8 @@ export function registerReadMarkerHandlers(store: StoreApi<AppState>): void {
     const server = state.servers.find((s) => s.id === serverId);
     if (!server || !registeredAt.has(serverId)) return;
     if (!serverTracksReadMarker(state, serverId)) return;
-    for (const chat of [...server.channels, ...(server.privateChats ?? [])])
-      ircClient.markreadGet(serverId, targetOf(chat));
+    for (const channel of server.channels)
+      ircClient.markreadGet(serverId, channel.name);
   });
 
   let timer: ReturnType<typeof setTimeout> | undefined;

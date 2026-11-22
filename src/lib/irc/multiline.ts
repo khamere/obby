@@ -35,9 +35,33 @@ export function parseMultilineLimits(
   return limits;
 }
 
+// A link cut in two opens nothing, so we break a line only at its spaces and
+// leave the server to rule on a word wider than a line. With `keepSpaces` the
+// parts join back into the exact line, as the receiver of a concat does.
+export function splitAtSpaces(
+  line: string,
+  maxBytes: number,
+  keepSpaces: boolean,
+): string[] {
+  if (byteLength(line) <= maxBytes) return [line];
+  const sent = (part: string) => (keepSpaces ? part : part.trimEnd());
+  const parts: string[] = [];
+  let part = "";
+  for (const word of line.match(/[^ ]* */g) ?? []) {
+    if (part && byteLength(sent(part + word)) > maxBytes) {
+      parts.push(sent(part));
+      part = "";
+    }
+    part += word;
+  }
+  if (part) parts.push(sent(part));
+  return parts.filter(Boolean);
+}
+
 // `lines` holds one entry per logical line, already split into the parts that
 // fit a single PRIVMSG. A logical line's parts stay in one batch: the receiver
-// concatenates them, so a batch break between them lands mid-word.
+// concatenates them, so a batch break between them lands mid-word. The server
+// counts the line break between two logical lines as a byte of the batch.
 export function chunkForMultiline(
   lines: readonly (readonly string[])[],
   limits: MultilineLimits,
@@ -62,13 +86,13 @@ export function chunkForMultiline(
       if (
         batch.length > 0 &&
         (lineCount + parts > limits.maxLines ||
-          byteCount + bytes > limits.maxBytes)
+          byteCount + 1 + bytes > limits.maxBytes)
       ) {
         flush();
       }
+      byteCount += bytes + (batch.length > 0 ? 1 : 0);
       batch.push([...part]);
       lineCount += parts;
-      byteCount += bytes;
     }
   }
   flush();

@@ -323,7 +323,7 @@ describe("a join the server refuses", () => {
       expect(needsKey("#saved")).toBeFalsy();
       expect(ircClient.sendRaw).toHaveBeenCalledWith(
         SERVER,
-        "WHO #saved %cuhnfaro",
+        expect.stringMatching(/^WHO #saved %tcuhnfaro,\d{1,3}$/),
       );
     });
 
