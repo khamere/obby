@@ -28,7 +28,7 @@ const isSameLine = (a: MentionEntry, b: MentionEntry) =>
   a.serverId === b.serverId &&
   a.channelId === b.channelId &&
   a.timestamp === b.timestamp &&
-  a.sender === b.sender &&
+  a.sender.toLowerCase() === b.sender.toLowerCase() &&
   a.content === b.content;
 
 export function addMention(

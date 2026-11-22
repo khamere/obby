@@ -50,6 +50,7 @@ const DEAD_SOCKET_CLOSE_WAIT_MS = 2_000;
 
 // One message of a `soju.im/search` answer.
 export interface SearchResult {
+  command: "PRIVMSG" | "NOTICE";
   sender: string;
   target: string;
   message: string;

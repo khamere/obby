@@ -1,5 +1,6 @@
 import type { WhoisSession } from "../../../types";
 import { chantypesOf, isChannelTarget } from "../../ircUtils";
+import type { SearchResult } from "../IRCClient";
 import type { IRCClientContext } from "../IRCClientContext";
 import { getNickFromNuh, getTimestampFromTags } from "../utils";
 
@@ -48,15 +49,20 @@ export function handleCannotSendToChan(
 
 const SEARCH_BATCH = "soju.im/search";
 
-function isInSearchBatch(
+// A search answer repeats old messages, so we hand them to whoever asked and
+// keep them out of the chat.
+function takeSearchResult(
   ctx: IRCClientContext,
   serverId: string,
-  mtags: Record<string, string> | undefined,
+  result: SearchResult,
 ): boolean {
-  if (!mtags?.batch) return false;
-  return (
-    ctx.activeBatches.get(serverId)?.get(mtags.batch)?.type === SEARCH_BATCH
-  );
+  const batchId = result.mtags?.batch;
+  const batch = batchId
+    ? ctx.activeBatches.get(serverId)?.get(batchId)
+    : undefined;
+  if (batch?.type !== SEARCH_BATCH) return false;
+  batch.searchResults?.push(result);
+  return true;
 }
 
 export function handlePrivmsg(
@@ -75,18 +81,15 @@ export function handlePrivmsg(
   if (batchId) {
     const serverBatches = ctx.activeBatches.get(serverId);
     const batch = serverBatches?.get(batchId);
-    // A search answer repeats old messages, so we hand them to whoever asked
-    // and keep them out of the chat.
-    if (batch?.type === SEARCH_BATCH) {
-      batch.searchResults?.push({
-        sender,
-        target,
-        message,
-        mtags,
-        timestamp: getTimestampFromTags(mtags),
-      });
-      return;
-    }
+    const isSearchResult = takeSearchResult(ctx, serverId, {
+      command: "PRIVMSG",
+      sender,
+      target,
+      message,
+      mtags,
+      timestamp: getTimestampFromTags(mtags),
+    });
+    if (isSearchResult) return;
     if (
       batch &&
       (batch.type === "multiline" || batch.type === "draft/multiline")
@@ -151,7 +154,15 @@ export function handleNotice(
   const sender = getNickFromNuh(source);
   const message = parv.slice(1).join(" ");
 
-  if (isInSearchBatch(ctx, serverId, mtags)) return;
+  const isSearchResult = takeSearchResult(ctx, serverId, {
+    command: "NOTICE",
+    sender,
+    target,
+    message,
+    mtags,
+    timestamp: getTimestampFromTags(mtags),
+  });
+  if (isSearchResult) return;
 
   if (isChannel) {
     const channelName = target;

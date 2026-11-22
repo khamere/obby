@@ -173,21 +173,17 @@ describe("mention catch-up by server search", () => {
     expect(searches()).toHaveLength(1);
   });
 
-  it("searches again after a long absence, from where the last search ended", () => {
+  it("searches again after a long absence, from the read marker", () => {
     vi.useFakeTimers();
     vi.setSystemTime(Date.parse(at(7200)));
     feed(`:server MARKREAD #two timestamp=${READ_AT}`, ...emptyAnswer("s"));
     vi.setSystemTime(Date.now() + SEARCH_AGAIN_AFTER_MS);
     reconnect();
     feed(`:server MARKREAD #two timestamp=${READ_AT}`);
+    // The bound is the server's own time, whatever our clock says.
     expect(searches()[1]).toBe(
-      `SEARCH in=#two;after=${at(7200 - 60)};text=me;limit=${SEARCH_PAGE_SIZE}`,
+      `SEARCH in=#two;after=${READ_AT};text=me;limit=${SEARCH_PAGE_SIZE}`,
     );
-    reconnect();
-    vi.setSystemTime(Date.now() + SEARCH_AGAIN_AFTER_MS);
-    // A marker past the last search is the later of the two starts.
-    feed(`:server MARKREAD #two timestamp=${at(9000)}`);
-    expect(searches()[2]).toContain(`after=${at(9000)};`);
   });
 
   it("asks one question at a time, one per highlight word", () => {
@@ -217,7 +213,7 @@ describe("mention catch-up by server search", () => {
     ]);
   });
 
-  it("asks on both sides of a full page, whichever end the server cut", () => {
+  it("asks on both sides of a page, whichever end the server cut", () => {
     feed(`:server MARKREAD #two timestamp=${READ_AT}`);
     // A server that answers with the newest matches leaves the older ones.
     feed(...fullPage("p", 1000));
@@ -231,12 +227,57 @@ describe("mention catch-up by server search", () => {
       ":server BATCH -q",
     );
     expect(log()[0].msgid).toBe("older");
-    expect(searches()[2]).toBe(
+    // A short page may still have neighbours, so both its sides are asked.
+    expect(searches().slice(2)).toEqual([
+      `SEARCH in=#two;after=${READ_AT};before=${at(10)};text=me;limit=${SEARCH_PAGE_SIZE}`,
+    ]);
+    feed(...emptyAnswer("r1"));
+    expect(searches()[3]).toBe(
+      `SEARCH in=#two;after=${at(10)};before=${at(1000)};text=me;limit=${SEARCH_PAGE_SIZE}`,
+    );
+    feed(...emptyAnswer("r2"));
+    expect(searches()[4]).toBe(
       `SEARCH in=#two;after=${at(1000 + SEARCH_PAGE_SIZE - 1)};text=me;limit=${SEARCH_PAGE_SIZE}`,
     );
-    feed(...emptyAnswer("r"));
-    expect(searches()).toHaveLength(3);
+    feed(...emptyAnswer("r3"));
+    expect(searches()).toHaveLength(5);
     expect(log()).toHaveLength(SEARCH_PAGE_SIZE + 1);
+  });
+
+  it("keeps asking after a page shorter than the limit", () => {
+    feed(
+      `:server MARKREAD #two timestamp=${READ_AT}`,
+      ":server BATCH +s soju.im/search",
+      `@batch=s;msgid=a;time=${at(50)} :bob!u@h PRIVMSG #two :me: first half`,
+      ":server BATCH -s",
+    );
+    expect(searches().slice(1)).toEqual([
+      `SEARCH in=#two;after=${READ_AT};before=${at(50)};text=me;limit=${SEARCH_PAGE_SIZE}`,
+    ]);
+    feed(...emptyAnswer("e1"));
+    expect(searches()[2]).toBe(
+      `SEARCH in=#two;after=${at(50)};text=me;limit=${SEARCH_PAGE_SIZE}`,
+    );
+    feed(
+      ":server BATCH +t soju.im/search",
+      `@batch=t;msgid=b;time=${at(80)} :bob!u@h PRIVMSG #two :me: second half`,
+      ":server BATCH -t",
+    );
+    expect(log().map((m) => m.msgid)).toEqual(["a", "b"]);
+  });
+
+  it("pages past a notice without filing it", () => {
+    feed(`:server MARKREAD #two timestamp=${READ_AT}`);
+    feed(
+      ":server BATCH +s soju.im/search",
+      `@batch=s;msgid=n;time=${at(40)} :bob!u@h NOTICE #two :me in a notice`,
+      ":server BATCH -s",
+    );
+    expect(log()).toEqual([]);
+    expect(messages()).toEqual([]);
+    expect(searches()[1]).toBe(
+      `SEARCH in=#two;after=${READ_AT};before=${at(40)};text=me;limit=${SEARCH_PAGE_SIZE}`,
+    );
   });
 
   it("stops after a few full pages", () => {
@@ -415,7 +456,6 @@ describe("mention catch-up by server search", () => {
     reconnect();
     forgetSearches();
     feed(`:server MARKREAD #two timestamp=${READ_AT}`, ...answer);
-    expect(searches()).toHaveLength(2);
     expect(log().map((m) => [m.sender, m.content])).toEqual([
       ["bob", "me: ping"],
     ]);
@@ -440,6 +480,26 @@ describe("mention catch-up by server search", () => {
       ":server BATCH -s",
     );
     expect(log().map((m) => m.msgid)).toEqual(["a", "live"]);
+  });
+
+  it("keeps a line without msgid once whatever the case of its sender", () => {
+    const entry = {
+      messageId: "x",
+      serverId: "s1",
+      channelId: "c2",
+      channelName: "#two",
+      sender: "Bob",
+      content: "me: ping",
+      timestamp: at(5),
+      seen: false,
+    };
+    useStore.getState().recordMention(entry);
+    useStore.getState().recordMention({ ...entry, sender: "bob" });
+    useStore.getState().recordMention({ ...entry, content: "Me: ping" });
+    expect(log().map((m) => [m.sender, m.content])).toEqual([
+      ["Bob", "me: ping"],
+      ["Bob", "Me: ping"],
+    ]);
   });
 
   it("builds the search terms from the nick and the highlight words", () => {

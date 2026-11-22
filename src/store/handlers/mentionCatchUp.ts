@@ -22,8 +22,6 @@ export const MAX_PAGES_PER_TERM = 3;
 export const ANSWER_TIMEOUT_MS = 30_000;
 // A reconnect this soon after a search is covered by the history catch-up.
 export const SEARCH_AGAIN_AFTER_MS = 10 * 60_000;
-// Server and local clocks differ, so a later search overlaps the earlier one.
-const CLOCK_MARGIN_MS = 60_000;
 
 interface Question {
   channelName: string;
@@ -154,6 +152,8 @@ export function mentionsAmong(
   const isMuted = isSilenced(serverId, channel.id, true);
   const mentions: MentionEntry[] = [];
   for (const result of results) {
+    // A notice counts toward the page and never as a mention.
+    if (result.command !== "PRIVMSG") continue;
     if (result.target.toLowerCase() !== channel.name.toLowerCase()) continue;
     const time = result.timestamp.getTime();
     if (!(time > unreadFrom)) continue;
@@ -192,14 +192,16 @@ export function mentionsAmong(
   return mentions;
 }
 
-// A full page has more matches on one side of it, and servers differ on
-// which: some answer with the oldest matches and some with the newest. We
-// ask both ways, and the side with nothing answers with an empty page.
+// A page can have more matches on either side of it: servers differ on
+// whether they answer with the oldest or the newest. We ask both ways, and
+// the side with nothing answers with an empty page.
 export function pagesAfter(
   question: Question,
   results: SearchResult[],
 ): Question[] {
-  if (results.length < SEARCH_PAGE_SIZE) return [];
+  // A server may answer with fewer lines than we asked for, so only an empty
+  // page says there is nothing more on that side.
+  if (results.length === 0) return [];
   if (question.page >= MAX_PAGES_PER_TERM) return [];
   const times = results.map((r) => r.timestamp.getTime());
   const oldest = new Date(Math.min(...times)).toISOString();
@@ -231,12 +233,11 @@ export function registerMentionCatchUpHandlers(
     // counts as read from the moment the user first opens it.
     if (timestamp === null) return;
     const lastSearch = searchedAt.get(channelKey(serverId, target));
-    let after = timestamp;
-    if (lastSearch !== undefined) {
-      if (Date.now() - lastSearch < SEARCH_AGAIN_AFTER_MS) return;
-      const overlap = new Date(lastSearch - CLOCK_MARGIN_MS).toISOString();
-      if (overlap > after) after = overlap;
-    }
+    if (
+      lastSearch !== undefined &&
+      Date.now() - lastSearch < SEARCH_AGAIN_AFTER_MS
+    )
+      return;
     const terms = searchTerms(
       me.username,
       store.getState().globalSettings.customMentions,
@@ -245,7 +246,7 @@ export function registerMentionCatchUpHandlers(
       queue.waiting.push({
         channelName: target,
         readAt: timestamp,
-        after,
+        after: timestamp,
         term,
         page: 1,
       });
