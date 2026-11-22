@@ -42,6 +42,7 @@ interface CssToken {
   kind:
     | "eof"
     | "text"
+    | "string"
     | "open"
     | "close"
     | "semicolon"
@@ -49,28 +50,57 @@ interface CssToken {
     | "at"
     | "function"
     | "url";
-  raw: string;
+  // the bracket itself, for an "open" or "close" token
+  raw?: string;
   // lower-cased with escapes decoded, so "\75 RL" compares equal to "url"
   name?: string;
   // a url() we may keep as written
   safe?: boolean;
   // a refused url("...") whose arguments still run up to its ")"
   open?: boolean;
-  // raw differs from the input because we closed a string or comment
-  patched?: boolean;
+  // a string that ends at its own closing quote
+  closed?: boolean;
+  // the text that replaces a string or comment the stylesheet leaves open
+  patch?: string;
+  // another engine may start a new token right after this one
+  split?: boolean;
 }
 
 const CLOSERS: Record<string, string> = { "(": ")", "[": "]", "{": "}" };
 // characters that are a token of their own wherever they stand
 const PLAIN_RUN = /[ \n\t,:>+~*=!%&|^$?]+/y;
-const NAME_RUN = /[A-Za-z0-9_\-\u0080-\uffff]+/y;
+const ASCII_NAME_RUN = /[A-Za-z0-9_-]+/y;
+const HIGH_NAME_RUN = /[\u0080-\uffff]+/y;
+const DOUBLE_QUOTED_RUN = /[^"\\\n]+/y;
+const SINGLE_QUOTED_RUN = /[^'\\\n]+/y;
+// everything an unquoted address may hold as written: no space, quote, bracket, backslash or control character
+const UNQUOTED_URL_RUN = /[!#-&*-[\]-~\u0080-\uffff]+/y;
 const NUMBER = /(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][+-]?\d+)?/y;
 const COLON_NEXT = /[ \n\t]*:/y;
-// Functions that take a bare string as an address: image-set("x"), src("x").
-// Engines disagree on which characters above ASCII belong to a name, so we
-// match the end of the name and one engine's "<nbsp>image-set(" is covered too.
-const STRING_URL_FUNCTION = /(image-set|image|src)$/;
+// The functions that read a bare string as an address are image() and image-set() (CSS Images 4) and src() (CSS Values 5).
+const STRING_URL_FUNCTION = /^(?:-[a-z]+-)?(?:image-set|image|src)$/;
 const IMPORT_RULE = /^import($|[\u0080-\uffff])/;
+// An empty comment keeps the text on both sides apart, where a space could be swallowed by a hex escape before it.
+const SEPARATOR = "/**/";
+
+const TEXT: CssToken = { kind: "text" };
+const SPLIT: CssToken = { kind: "text", split: true };
+const END: CssToken = { kind: "eof" };
+const CLOSED_STRING: CssToken = { kind: "string", closed: true };
+const BROKEN_STRING: CssToken = { kind: "string" };
+const KEPT_URL: CssToken = { kind: "url", safe: true };
+const REFUSED_URL: CssToken = { kind: "url" };
+const REFUSED_OPEN_URL: CssToken = { kind: "url", open: true };
+const KEPT_QUOTED_URL: CssToken = { kind: "function" };
+const PUNCTUATION: Record<string, CssToken> = {
+  "(": { kind: "open", raw: "(" },
+  "[": { kind: "open", raw: "[" },
+  "{": { kind: "open", raw: "{" },
+  ")": { kind: "close", raw: ")" },
+  "]": { kind: "close", raw: "]" },
+  "}": { kind: "close", raw: "}" },
+  ";": { kind: "semicolon" },
+};
 
 const isWhitespace = (c: string) => c === " " || c === "\n" || c === "\t";
 const isDigit = (c: string) => c >= "0" && c <= "9";
@@ -82,21 +112,11 @@ const isNameStart = (c: string) =>
   c === "_" ||
   c >= "\u0080";
 const isNameChar = (c: string) => isNameStart(c) || isDigit(c) || c === "-";
-// a control character makes an unquoted url( malformed; tab and line break
-// count as whitespace instead
-const isNonPrintable = (c: string) =>
-  c !== "" && c !== "\t" && c !== "\n" && (c < " " || c === "\u007f");
-
-// The browser drops leading spaces and control characters before it reads the
-// scheme, so we do the same before we look for "data:".
-function isDataUrl(address: string): boolean {
-  let start = 0;
-  while (start < address.length && address.charAt(start) <= " ") start++;
-  return address.slice(start, start + 5).toLowerCase() === "data:";
-}
+const takesAddress = (name: string) =>
+  name === "url" || STRING_URL_FUNCTION.test(name);
 
 function closerOf(token: CssToken): string {
-  if (token.kind === "open") return CLOSERS[token.raw] ?? "";
+  if (token.kind === "open") return CLOSERS[token.raw ?? ""] ?? "";
   if (token.kind === "function" || token.open) return ")";
   return "";
 }
@@ -107,6 +127,10 @@ function closerOf(token: CssToken): string {
 class CssScanner {
   private readonly css: string;
   pos = 0;
+  // where the name we read last continues after its last character above ASCII
+  private tailAt = -1;
+  private tailName = "";
+  private danglingEscape = false;
 
   constructor(css: string) {
     this.css = css;
@@ -115,31 +139,37 @@ class CssScanner {
   next(): CssToken {
     const css = this.css;
     const start = this.pos;
-    if (start >= css.length) return { kind: "eof", raw: "" };
-    const c = css.charAt(start);
+    if (start >= css.length) return END;
+    this.tailAt = -1;
 
     PLAIN_RUN.lastIndex = start;
     if (PLAIN_RUN.test(css)) {
       this.pos = PLAIN_RUN.lastIndex;
-      return { kind: "text", raw: css.slice(start, this.pos) };
+      return TEXT;
     }
+    const c = css.charAt(start);
     if (c === "/" && css.charAt(start + 1) === "*") {
       const end = css.indexOf("*/", start + 2);
-      this.pos = end === -1 ? css.length : end + 2;
-      const raw = css.slice(start, this.pos);
-      // we close an open comment so that CSS joined on later starts outside it
-      if (end !== -1) return { kind: "text", raw };
-      return { kind: "text", raw: `${raw}*/`, patched: true };
+      if (end !== -1) {
+        this.pos = end + 2;
+        return TEXT;
+      }
+      this.pos = css.length;
+      // we close an open comment so that the stylesheet ends outside it
+      return { kind: "text", patch: `${css.slice(start)}*/` };
     }
     if (c === '"' || c === "'") {
-      const text = this.readString();
-      return { kind: "text", raw: text.raw, patched: !text.closed };
+      if (this.skipString()) return CLOSED_STRING;
+      if (this.pos < css.length) return BROKEN_STRING;
+      // we leave out a final backslash, which would escape the quote we add
+      const end = this.danglingEscape ? css.length - 1 : css.length;
+      return { kind: "string", patch: css.slice(start, end) + c };
     }
     // The browser reads "<!--" and "-->" as one token each, so a name that
     // follows them starts after them.
     if (css.startsWith("<!--", start) || css.startsWith("-->", start)) {
       this.pos = start + (c === "<" ? 4 : 3);
-      return { kind: "text", raw: css.slice(start, this.pos) };
+      return TEXT;
     }
     if (isDigit(c) || (c === "." && isDigit(css.charAt(start + 1)))) {
       NUMBER.lastIndex = start;
@@ -147,7 +177,7 @@ class CssScanner {
       this.pos = NUMBER.lastIndex;
       // a name right after a number is its unit, so "1url(" holds no address
       if (this.startsName(this.pos)) this.readName();
-      return { kind: "text", raw: css.slice(start, this.pos) };
+      return this.splitAfterName(-1) ?? TEXT;
     }
     if (c === "#") {
       this.pos = start + 1;
@@ -155,30 +185,25 @@ class CssScanner {
       if (isNameChar(css.charAt(this.pos)) || this.validEscape(this.pos)) {
         this.readName();
       }
-      return { kind: "text", raw: css.slice(start, this.pos) };
+      return this.splitAfterName(-1) ?? TEXT;
     }
     if (c === "@" && this.startsName(start + 1)) {
       this.pos = start + 1;
       const name = this.readName();
-      return { kind: "at", raw: css.slice(start, this.pos), name };
+      if (IMPORT_RULE.test(name)) return { kind: "at", name };
+      return this.splitAfterName(-1) ?? { kind: "at", name };
     }
     if (this.startsName(start)) {
       const name = this.readName();
-      if (css.charAt(this.pos) !== "(") {
-        return { kind: "ident", raw: css.slice(start, this.pos), name };
-      }
+      const split = this.splitAfterName(start);
+      if (split) return split;
+      if (css.charAt(this.pos) !== "(") return { kind: "ident", name };
       this.pos++;
-      if (name === "url") return this.readUrl(start, true);
-      // We refuse every longer name that ends in "url", so an engine that
-      // starts the name at a later character than we do still finds no address.
-      if (name.endsWith("url")) return this.readUrl(start, false);
-      return { kind: "function", raw: css.slice(start, this.pos), name };
+      if (name === "url") return this.readUrl();
+      return { kind: "function", name };
     }
     this.pos = start + 1;
-    if (c in CLOSERS) return { kind: "open", raw: c };
-    if (c === ")" || c === "]" || c === "}") return { kind: "close", raw: c };
-    if (c === ";") return { kind: "semicolon", raw: c };
-    return { kind: "text", raw: c };
+    return PUNCTUATION[c] ?? TEXT;
   }
 
   /** Drops everything up to the bracket that closes the current block. */
@@ -221,8 +246,10 @@ class CssScanner {
     return COLON_NEXT.test(this.css);
   }
 
-  nameFollows(): boolean {
-    return isNameChar(this.css.charAt(this.pos)) || this.validEscape(this.pos);
+  /** Whether a word we write here would grow into a longer name or a function. */
+  joinsNext(): boolean {
+    const c = this.css.charAt(this.pos);
+    return isNameChar(c) || c === "(" || this.validEscape(this.pos);
   }
 
   private validEscape(at: number): boolean {
@@ -257,89 +284,164 @@ class CssScanner {
   private readName(): string {
     const css = this.css;
     let name = "";
+    let tailFrom = 0;
+    this.tailAt = -1;
+    ASCII_NAME_RUN.lastIndex = this.pos;
+    if (ASCII_NAME_RUN.test(css)) {
+      name = css.slice(this.pos, ASCII_NAME_RUN.lastIndex);
+      this.pos = ASCII_NAME_RUN.lastIndex;
+      const next = css.charCodeAt(this.pos);
+      // most names are plain ASCII, and those we can hand back without a second look
+      if (next !== 0x5c && !(next >= 0x80)) return name.toLowerCase();
+    }
     for (;;) {
-      NAME_RUN.lastIndex = this.pos;
-      if (NAME_RUN.test(css)) {
-        name += css.slice(this.pos, NAME_RUN.lastIndex);
-        this.pos = NAME_RUN.lastIndex;
+      ASCII_NAME_RUN.lastIndex = this.pos;
+      HIGH_NAME_RUN.lastIndex = this.pos;
+      if (ASCII_NAME_RUN.test(css)) {
+        name += css.slice(this.pos, ASCII_NAME_RUN.lastIndex);
+        this.pos = ASCII_NAME_RUN.lastIndex;
+      } else if (HIGH_NAME_RUN.test(css)) {
+        name += css.slice(this.pos, HIGH_NAME_RUN.lastIndex);
+        this.pos = HIGH_NAME_RUN.lastIndex;
+        this.tailAt = this.pos;
+        tailFrom = name.length;
       } else if (this.validEscape(this.pos)) {
         name += this.readEscape();
       } else {
+        this.tailName = name.slice(tailFrom).toLowerCase();
         return name.toLowerCase();
       }
     }
   }
 
-  private readString(): { raw: string; value: string; closed: boolean } {
+  // Engines disagree on which characters above ASCII belong to a name and on unicode-range tokens, so we look for a URL function that one of them would start inside or right after the name.
+  private splitAfterName(nameStart: number): CssToken | undefined {
     const css = this.css;
-    const start = this.pos;
-    const quote = css.charAt(start);
-    let value = "";
+    const tail = this.tailAt;
+    if (tail !== -1 && tail !== this.pos) {
+      if (css.charAt(this.pos) === "(" && takesAddress(this.tailName)) {
+        this.pos = tail;
+        return SPLIT;
+      }
+    }
+    const u = this.pos - 1;
+    if ((u === nameStart || u === tail) && "uU".includes(css.charAt(u))) {
+      const end = this.unicodeRangeEnd(u);
+      if (end === -1) return undefined;
+      this.pos = end;
+      return this.addressFunctionFollows() ? SPLIT : TEXT;
+    }
+    return undefined;
+  }
+
+  private addressFunctionFollows(): boolean {
+    const from = this.pos;
+    if (!this.startsName(from)) return false;
+    const name = this.readName();
+    const found = this.css.charAt(this.pos) === "(" && takesAddress(name);
+    this.pos = from;
+    return found;
+  }
+
+  // Some engines read "u+" followed by hex digits or "?" as a unicode-range token of at most six characters and a second part after "-".
+  private unicodeRangeEnd(at: number): number {
+    const css = this.css;
+    if (css.charAt(at + 1) !== "+") return -1;
+    let end = at + 2;
+    const limit = end + 6;
+    while (end < limit && isHexDigit(css.charAt(end))) end++;
+    const digitsEnd = end;
+    while (end < limit && css.charAt(end) === "?") end++;
+    if (end === at + 2) return -1;
+    if (end !== digitsEnd) return end;
+    if (css.charAt(end) === "-" && isHexDigit(css.charAt(end + 1))) {
+      const secondLimit = end + 7;
+      end++;
+      while (end < secondLimit && isHexDigit(css.charAt(end))) end++;
+    }
+    return end;
+  }
+
+  /** Moves past a string without copying it and tells whether its closing quote was there. */
+  private skipString(): boolean {
+    const css = this.css;
+    const quote = css.charAt(this.pos);
+    const run = quote === '"' ? DOUBLE_QUOTED_RUN : SINGLE_QUOTED_RUN;
+    this.danglingEscape = false;
     this.pos++;
-    while (this.pos < css.length) {
+    for (;;) {
+      run.lastIndex = this.pos;
+      if (run.test(css)) this.pos = run.lastIndex;
       const c = css.charAt(this.pos);
       if (c === quote) {
         this.pos++;
-        return { raw: css.slice(start, this.pos), value, closed: true };
+        return true;
       }
       // a raw line break ends the string and the browser reads on from there
-      if (c === "\n") {
-        return { raw: css.slice(start, this.pos), value, closed: false };
-      }
-      if (c !== "\\") {
-        value += c;
+      if (c === "" || c === "\n") return false;
+      if (this.pos + 1 >= css.length) {
+        this.danglingEscape = true;
         this.pos++;
-      } else if (this.pos + 1 >= css.length) {
-        // we leave out a final backslash, which would escape the quote we add
-        const raw = css.slice(start, this.pos) + quote;
-        this.pos++;
-        return { raw, value, closed: false };
       } else if (css.charAt(this.pos + 1) === "\n") {
         this.pos += 2;
       } else {
-        value += this.readEscape();
+        this.readEscape();
       }
     }
-    // we close an open string so that CSS joined on later starts outside it
-    return { raw: css.slice(start) + quote, value, closed: false };
+  }
+
+  // We decode only the start of an address, which is all it takes to tell an inline data: address from one the browser would fetch.
+  private startsWithData(from: number): boolean {
+    const css = this.css;
+    const end = this.pos;
+    let scheme = "";
+    this.pos = from;
+    while (scheme.length < 5 && this.pos < end) {
+      let c = css.charAt(this.pos);
+      if (c !== "\\") {
+        this.pos++;
+      } else if (css.charAt(this.pos + 1) === "\n") {
+        this.pos += 2;
+        continue;
+      } else {
+        c = this.readEscape();
+      }
+      // the browser drops leading spaces and control characters before it reads the scheme
+      if (scheme || c > " ") scheme += c;
+    }
+    this.pos = end;
+    return scheme.toLowerCase() === "data:";
   }
 
   // Called just after "url(". A quoted address makes an ordinary function, an
   // unquoted one is a single token that runs to the next ")".
-  private readUrl(start: number, mayKeep: boolean): CssToken {
+  private readUrl(): CssToken {
     const css = this.css;
-    const refused: CssToken = { kind: "url", raw: "", safe: false };
     this.skipWhitespace();
-    const first = css.charAt(this.pos);
+    const from = this.pos;
+    const first = css.charAt(from);
     if (first === '"' || first === "'") {
-      const address = this.readString();
-      if (mayKeep && address.closed && isDataUrl(address.value)) {
-        return { kind: "function", raw: css.slice(start, this.pos), name: "" };
-      }
-      return { ...refused, open: true };
+      return this.skipString() && this.startsWithData(from + 1)
+        ? KEPT_QUOTED_URL
+        : REFUSED_OPEN_URL;
     }
-    let value = "";
     for (;;) {
+      UNQUOTED_URL_RUN.lastIndex = this.pos;
+      if (UNQUOTED_URL_RUN.test(css)) this.pos = UNQUOTED_URL_RUN.lastIndex;
       const c = css.charAt(this.pos);
-      if (c === "") return refused;
+      if (c === "") return REFUSED_URL;
       if (isWhitespace(c)) {
         this.skipWhitespace();
-        if (this.pos >= css.length) return refused;
+        if (this.pos >= css.length) return REFUSED_URL;
         if (css.charAt(this.pos) !== ")") break;
       }
       if (css.charAt(this.pos) === ")") {
         this.pos++;
-        const raw = css.slice(start, this.pos);
-        return { kind: "url", raw, safe: mayKeep && isDataUrl(value) };
+        return this.startsWithData(from) ? KEPT_URL : REFUSED_URL;
       }
-      if (c === '"' || c === "'" || c === "(" || isNonPrintable(c)) break;
-      if (c === "\\") {
-        if (!this.validEscape(this.pos)) break;
-        value += this.readEscape();
-      } else {
-        value += c;
-        this.pos++;
-      }
+      // a quote, "(", control character or broken escape makes the address malformed
+      if (!this.validEscape(this.pos)) break;
+      this.readEscape();
     }
     // the browser discards a malformed url( up to the next unescaped ")"
     while (this.pos < css.length) {
@@ -349,7 +451,7 @@ class CssScanner {
         break;
       }
     }
-    return refused;
+    return REFUSED_URL;
   }
 
   private skipWhitespace(): void {
@@ -357,10 +459,11 @@ class CssScanner {
   }
 }
 
-export function sanitizeCss(input: string): string {
-  const css = preprocess(input);
+// One reading of the stylesheet: the rewritten text, and how many places held something we refuse.
+function rewrite(css: string): { text: string; refused: number } {
   const scanner = new CssScanner(css);
   const out: string[] = [];
+  let refused = 0;
   // We copy the input in long stretches between the few places we rewrite,
   // which keeps a large stylesheet fast.
   let copied = 0;
@@ -368,18 +471,20 @@ export function sanitizeCss(input: string): string {
     const at = scanner.pos;
     const token = scanner.next();
     if (token.kind === "eof") break;
-    let replacement: string | undefined;
-    if (token.kind === "at" && IMPORT_RULE.test(token.name ?? "")) {
-      // @import pulls in another (remote) stylesheet. We leave a space in its
-      // place so the text on either side cannot join into a new name.
+    let from = at;
+    let replacement = token.patch;
+    if (token.split) {
+      from = scanner.pos;
+      replacement = SEPARATOR;
+    } else if (token.kind === "at" && IMPORT_RULE.test(token.name ?? "")) {
+      // @import pulls in another (remote) stylesheet
       scanner.skipAtRule();
-      replacement = " ";
+      replacement = SEPARATOR;
     } else if (token.kind === "url") {
       // only inline data: URLs may be referenced
       if (!token.safe) {
         if (token.open) scanner.skipBlock(")");
-        // a space keeps the text that follows from growing our word into a name
-        replacement = scanner.nameFollows() ? "none " : "none";
+        replacement = scanner.joinsNext() ? "none " : "none";
       }
     } else if (token.kind === "function") {
       const name = token.name ?? "";
@@ -394,17 +499,65 @@ export function sanitizeCss(input: string): string {
       ) {
         replacement = "invalid";
       }
-    } else if (token.patched) {
-      replacement = token.raw;
     }
     if (replacement !== undefined) {
-      out.push(css.slice(copied, at), replacement);
+      if (token.patch === undefined) refused++;
+      out.push(css.slice(copied, from), replacement);
       copied = scanner.pos;
     }
   }
+  if (out.length === 0) return { text: css, refused };
   out.push(css.slice(copied));
+  return { text: out.join(""), refused };
+}
+
+export function sanitizeCss(input: string): string {
+  const css = preprocess(input);
   // closing the <style> element would let the rest escape as markup
-  return out.join("").replace(/<\/style/gi, "<\\/style");
+  const out = rewrite(css).text.replace(/<\/style/gi, "<\\/style");
+  // Text we changed can read differently from the text we judged, so we read it once more and apply nothing if it still holds anything we refuse.
+  if (out !== css && rewrite(out).refused > 0) return "";
+  return out;
+}
+
+const IGNORED_BETWEEN_RULES = /^(?:[ \n\t]+|\/\*[\s\S]*\*\/|<!--|-->)$/;
+
+// The user's own CSS is a stylesheet of its own, so we repeat the namespace prefixes the linked one declares and selectors such as svg|path keep matching.
+export function namespacePrefixRules(css: string): string {
+  const scanner = new CssScanner(css);
+  const rules: string[] = [];
+  const read = () => {
+    const at = scanner.pos;
+    const token = scanner.next();
+    return { token, raw: css.slice(at, scanner.pos) };
+  };
+  const readPastSpace = () => {
+    let part = read();
+    while (IGNORED_BETWEEN_RULES.test(part.raw)) part = read();
+    return part;
+  };
+  for (;;) {
+    const rule = readPastSpace();
+    if (rule.token.kind !== "at") break;
+    if (rule.token.name === "namespace") {
+      const first = readPastSpace();
+      const named = first.token.kind === "ident";
+      const address = named ? readPastSpace() : first;
+      if (!address.token.closed) break;
+      if (readPastSpace().token.kind !== "semicolon") break;
+      // a default namespace would change which elements the user's own selectors match
+      if (named) {
+        rules.push(`@namespace ${first.raw}${SEPARATOR}${address.raw};`);
+      }
+    } else if (rule.token.name === "charset" || rule.token.name === "layer") {
+      scanner.skipAtRule();
+      // a rule with a block ends the part of a stylesheet where namespaces may be declared
+      if (css.charAt(scanner.pos - 1) !== ";") break;
+    } else {
+      break;
+    }
+  }
+  return rules.join("\n");
 }
 
 export function isValidCssLink(link: string): boolean {
@@ -466,7 +619,8 @@ function update(patch: Partial<CustomCssState>): void {
   // Each source gets a <style> element of its own, so a block the linked
   // file leaves open ends with that file and the user's own CSS still applies.
   applyToDocument(LINK_STYLE_ID, state.linkCss);
-  applyToDocument(STYLE_ID, state.own);
+  const prefixes = state.own.trim() ? namespacePrefixRules(state.linkCss) : "";
+  applyToDocument(STYLE_ID, prefixes ? `${prefixes}\n${state.own}` : state.own);
   for (const l of listeners) l();
 }
 
