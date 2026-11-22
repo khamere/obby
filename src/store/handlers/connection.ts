@@ -21,9 +21,7 @@ import { reportServerReply } from "./serverReplies";
 // Track which servers have had their ready handler run to prevent duplicate processing
 export const readyProcessedServers = new Set<string>();
 
-// A bouncer names a bound network's account only when its upstream is logged
-// in, so between connections the network takes the control connection's
-// account and keeps its last one while the control connection has none.
+// We fall back to the bouncer's account until the network's next connection names its own.
 function accountBetweenConnections(
   servers: Server[],
   server: Server,
@@ -162,9 +160,7 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
           ? undefined
           : state.servers.find((s) => s.id === serverId)?.account;
       const updatedServers = state.servers.map((server) => {
-        // The bouncer names an upstream account per connection, so a network
-        // whose control connection drops goes back to the bouncer's account
-        // while we still know it.
+        // We reset the networks here because we forget the bouncer's account with this connection.
         if (server.bouncerServerId === serverId && controlAccount)
           return { ...server, account: controlAccount };
         if (server.id !== serverId) return server;
