@@ -79,6 +79,12 @@ export const BouncerNetworkDisconnectConfirmModal: React.FC = () => {
           shouldDelete={isHistoryDeleted}
           onChange={setShouldDeleteHistory}
           isDisabled={isSent}
+          keptHint={
+            <Trans>
+              Its saved chat history stays on this device. A network you add
+              again gets it back only if the bouncer gives it the same ID.
+            </Trans>
+          }
         />
         {!isControlUp && (
           <p
@@ -127,7 +133,7 @@ export const BouncerNetworkDisconnectConfirmModal: React.FC = () => {
         <Button
           variant="danger"
           onClick={() => confirm(isHistoryDeleted)}
-          disabled={isDeleting || !isControlUp}
+          disabled={isDeleting || !isControlUp || target.isAwaitingList}
         >
           {isDeleting ? (
             <Trans>Deleting…</Trans>

@@ -25,6 +25,7 @@ const state = {
       status: undefined as "deleting" | "unanswered" | "refused" | undefined,
       shouldDeleteHistory: undefined as boolean | undefined,
       refusal: undefined as string | undefined,
+      isAwaitingList: undefined as boolean | undefined,
     },
   },
   confirmDisconnectNetwork,
@@ -51,6 +52,30 @@ describe("BouncerNetworkDisconnectConfirmModal", () => {
     state.ui.disconnectNetworkConfirmTarget.status = undefined;
     state.ui.disconnectNetworkConfirmTarget.shouldDeleteHistory = undefined;
     state.ui.disconnectNetworkConfirmTarget.refusal = undefined;
+    state.ui.disconnectNetworkConfirmTarget.isAwaitingList = undefined;
+  });
+
+  it("holds the second delete back until the network list is in", () => {
+    state.ui.disconnectNetworkConfirmTarget.status = "unanswered";
+    state.ui.disconnectNetworkConfirmTarget.isAwaitingList = true;
+    render(<BouncerNetworkDisconnectConfirmModal />);
+
+    expect(
+      screen.getByRole("button", { name: "Delete network" }),
+    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeEnabled();
+  });
+
+  it("promises the saved history back only for a network with the same ID", async () => {
+    (hasSavedHistory as Mock).mockResolvedValue(true);
+    render(<BouncerNetworkDisconnectConfirmModal />);
+
+    expect(
+      await screen.findByText(/only if the bouncer gives it the same ID/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Add this network again to get/),
+    ).not.toBeInTheDocument();
   });
 
   it("names the action a delete and says what goes with the network", () => {

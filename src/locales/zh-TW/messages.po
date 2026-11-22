@@ -3266,6 +3266,10 @@ msgstr "IRC 伺服器："
 msgid "is now known as **{newNick}**"
 msgstr "現在稱為 **{newNick}**"
 
+#: src/components/ui/BouncerNetworkDisconnectConfirmModal.tsx
+msgid "Its saved chat history stays on this device. A network you add again gets it back only if the bouncer gives it the same ID."
+msgstr "已儲存的聊天記錄會保留在此裝置上。重新新增的網路只有在 bouncer 指派相同 ID 時才能取回這些記錄。"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "JetBrains Mono"
 msgstr "JetBrains Mono"

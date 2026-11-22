@@ -1,6 +1,6 @@
 import type { StoreApi } from "zustand";
 import ircClient from "../../lib/ircClient";
-import type { BouncerState } from "../../types";
+import type { BouncerNetwork, BouncerState } from "../../types";
 import { generateDeterministicId } from "../helpers";
 import type { AppState } from "../index";
 import * as storage from "../localStorage";
@@ -78,6 +78,51 @@ function findChild(state: AppState, childId: string) {
   );
 }
 
+export type PendingNetworkDelete = {
+  childServerId: string;
+  shouldDeleteHistory: boolean;
+  // What the network was when the user confirmed its delete.
+  identity: string;
+  // Set once the answer is lost, so the next full network list decides.
+  isUnanswered?: boolean;
+};
+
+export const networkDeleteKey = (serverId: string, netid: string) =>
+  `${serverId}:${netid}`;
+
+// A bouncer can hand a deleted network's id to a new network, so we tell
+// networks apart by what they connect to as well.
+export function networkIdentity(network: BouncerNetwork | undefined): string {
+  const attrs = network?.attributes ?? {};
+  return [attrs.name, attrs.host, attrs.port].join("\n");
+}
+
+// Returns the pending delete of this network and forgets it.
+function takePendingDelete(
+  store: StoreApi<AppState>,
+  serverId: string,
+  netid: string,
+): PendingNetworkDelete | undefined {
+  const key = networkDeleteKey(serverId, netid);
+  const pending = store.getState().pendingNetworkDeletes[key];
+  if (pending)
+    store.setState((state) => {
+      const { [key]: _, ...rest } = state.pendingNetworkDeletes;
+      return { pendingNetworkDeletes: rest };
+    });
+  return pending;
+}
+
+function closeNetworkDeleteDialog(
+  store: StoreApi<AppState>,
+  serverId: string,
+  netid: string,
+) {
+  const target = store.getState().ui.disconnectNetworkConfirmTarget;
+  if (target?.bouncerServerId === serverId && target.netid === netid)
+    setNetworkDeleteTarget(store, null);
+}
+
 // A network the bouncer no longer has takes its row, its connection and its
 // saved profile with it, and our own delete of it also settles the saved
 // history the way its dialog chose.
@@ -88,16 +133,12 @@ function dropNetwork(
 ) {
   const childId = generateDeterministicId(serverId, netid);
   autoBindAttempted.delete(childId);
+  const pending = takePendingDelete(store, serverId, netid);
   const state = store.getState();
-  const target = state.ui.disconnectNetworkConfirmTarget;
-  if (target?.bouncerServerId === serverId && target.netid === netid) {
-    const child = findChild(state, target.childServerId);
-    const isOurDelete =
-      target.status === "deleting" || target.status === "unanswered";
-    if (child && isOurDelete)
-      void settleSavedHistory(child, target.shouldDeleteHistory === true);
-    setNetworkDeleteTarget(store, null);
-  }
+  const child = pending && findChild(state, pending.childServerId);
+  if (pending && child)
+    void settleSavedHistory(child, pending.shouldDeleteHistory);
+  closeNetworkDeleteDialog(store, serverId, netid);
   const bouncer = state.bouncers[serverId];
   if (bouncer?.networks[netid]) {
     const { [netid]: _, ...networks } = bouncer.networks;
@@ -106,6 +147,26 @@ function dropNetwork(
     }));
   }
   if (findChild(state, childId)) state.deleteServer(childId);
+}
+
+// The bouncer's full network list settles every delete whose answer was
+// lost: a missing network is dropped above, and one still listed was never
+// deleted. An id that now names another network ends the old delete without
+// touching the new network.
+function resolveUnansweredDeletes(store: StoreApi<AppState>, serverId: string) {
+  const state = store.getState();
+  const networks = state.bouncers[serverId]?.networks ?? {};
+  for (const [netid, network] of Object.entries(networks)) {
+    const key = networkDeleteKey(serverId, netid);
+    const pending = state.pendingNetworkDeletes[key];
+    if (!pending?.isUnanswered) continue;
+    takePendingDelete(store, serverId, netid);
+    if (pending.identity !== networkIdentity(network))
+      closeNetworkDeleteDialog(store, serverId, netid);
+  }
+  const target = store.getState().ui.disconnectNetworkConfirmTarget;
+  if (target?.bouncerServerId === serverId && target.isAwaitingList)
+    setNetworkDeleteTarget(store, { ...target, isAwaitingList: false });
 }
 
 export function registerBouncerHandlers(store: StoreApi<AppState>): void {
@@ -209,15 +270,39 @@ export function registerBouncerHandlers(store: StoreApi<AppState>): void {
     dropNetwork(store, serverId, netid);
   });
 
-  // A dropped control connection loses the answer to a pending delete, so we
-  // stop waiting and keep the dialog's choice for the network list the
-  // bouncer sends once we are back.
+  // A dropped control connection loses the answer to every pending delete
+  // and cuts short any network list it was sending, so the list the bouncer
+  // sends once we are back decides.
   ircClient.on("connectionStateChange", ({ serverId, connectionState }) => {
     if (connectionState === "connected") return;
+    for (const key of snapshots.keys())
+      if (key.startsWith(`${serverId}:`)) snapshots.delete(key);
+    store.setState((state) => {
+      const pendingNetworkDeletes = { ...state.pendingNetworkDeletes };
+      for (const [key, pending] of Object.entries(pendingNetworkDeletes))
+        if (key.startsWith(`${serverId}:`))
+          pendingNetworkDeletes[key] = { ...pending, isUnanswered: true };
+      return { pendingNetworkDeletes };
+    });
     const target = store.getState().ui.disconnectNetworkConfirmTarget;
     if (target?.bouncerServerId !== serverId || target.status !== "deleting")
       return;
-    setNetworkDeleteTarget(store, { ...target, status: "unanswered" });
+    setNetworkDeleteTarget(store, {
+      ...target,
+      status: "unanswered",
+      isAwaitingList: true,
+    });
+  });
+
+  // Only a bouncer with the notify capability sends its network list on its
+  // own after a login, so we ask the others for it while a delete is open.
+  ircClient.on("ready", ({ serverId }) => {
+    const state = store.getState();
+    if (state.bouncers[serverId]?.notifyEnabled) return;
+    const hasOpenDelete = Object.keys(state.pendingNetworkDeletes).some((key) =>
+      key.startsWith(`${serverId}:`),
+    );
+    if (hasOpenDelete) state.bouncerListNetworks(serverId);
   });
 
   // Errors from any subcommand. Stash on the bouncer state so the UI
@@ -230,9 +315,15 @@ export function registerBouncerHandlers(store: StoreApi<AppState>): void {
           lastError: { code, subcommand, attribute, netid, description },
         }),
       }));
+      if (subcommand.toUpperCase() !== "DELNETWORK") return;
       const target = store.getState().ui.disconnectNetworkConfirmTarget;
+      const refusedNetid =
+        netid ??
+        (target?.bouncerServerId === serverId && target.status === "deleting"
+          ? target.netid
+          : undefined);
+      if (refusedNetid) takePendingDelete(store, serverId, refusedNetid);
       if (
-        subcommand.toUpperCase() === "DELNETWORK" &&
         target?.bouncerServerId === serverId &&
         target.status === "deleting" &&
         (netid === undefined || netid === target.netid)
@@ -290,8 +381,11 @@ export function registerBouncerHandlers(store: StoreApi<AppState>): void {
   // (a bound child, a direct server) would flip the wrong bouncer's
   // "listed" flag and orphan the real LISTNETWORKS batch.
   ircClient.on("BATCH_START", ({ serverId, batchId, type }) => {
+    // Batch references repeat, so one opened as anything else ends a list
+    // we still hold under the same reference.
     if (type === "soju.im/bouncer-networks")
       snapshots.set(`${serverId}:${batchId}`, new Set());
+    else snapshots.delete(`${serverId}:${batchId}`);
   });
   ircClient.on("BATCH_END", ({ serverId, batchId }) => {
     const batchKey = `${serverId}:${batchId}`;
@@ -303,6 +397,7 @@ export function registerBouncerHandlers(store: StoreApi<AppState>): void {
     const held = store.getState().bouncers[serverId]?.networks ?? {};
     for (const netid of Object.keys(held))
       if (!listedNetids.has(netid)) dropNetwork(store, serverId, netid);
+    resolveUnansweredDeletes(store, serverId);
     store.setState((state) => ({
       bouncers: ensureBouncer(state, serverId, { listed: true }),
     }));
