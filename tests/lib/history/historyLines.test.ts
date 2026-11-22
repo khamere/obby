@@ -1299,3 +1299,15 @@ describe("decideAfterForwardFill", () => {
     });
   });
 });
+
+describe("search answers", () => {
+  it("are not saved, so the lines between them stay unknown", () => {
+    const { feedAll } = setup();
+    const actions = feedAll([
+      ":srv BATCH +s soju.im/search",
+      `@batch=s;msgid=a;time=${T1} :bob!u@h PRIVMSG #c :me: an old line`,
+      ":srv BATCH -s",
+    ]);
+    expect(actions).toEqual([]);
+  });
+});

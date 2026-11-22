@@ -1,5 +1,6 @@
 import type { WhoisSession } from "../../../types";
 import { chantypesOf, isChannelTarget } from "../../ircUtils";
+import type { SearchResult } from "../IRCClient";
 import type { IRCClientContext } from "../IRCClientContext";
 import { getNickFromNuh, getTimestampFromTags } from "../utils";
 
@@ -46,6 +47,37 @@ export function handleCannotSendToChan(
   });
 }
 
+const SEARCH_BATCH = "soju.im/search";
+
+// The label sits on the search batch itself or on the batch that wraps it.
+function searchLabel(
+  ctx: IRCClientContext,
+  serverId: string,
+  mtags: Record<string, string> | undefined,
+): string | undefined {
+  if (mtags?.label) return mtags.label;
+  const outer = mtags?.batch;
+  return outer
+    ? ctx.activeBatches.get(serverId)?.get(outer)?.batchTags?.label
+    : undefined;
+}
+
+// A search answer repeats old messages, so we hand them to whoever asked and
+// keep them out of the chat.
+function takeSearchResult(
+  ctx: IRCClientContext,
+  serverId: string,
+  result: SearchResult,
+): boolean {
+  const batchId = result.mtags?.batch;
+  const batch = batchId
+    ? ctx.activeBatches.get(serverId)?.get(batchId)
+    : undefined;
+  if (batch?.type !== SEARCH_BATCH || !batch.searchResults) return false;
+  batch.searchResults.push(result);
+  return true;
+}
+
 export function handlePrivmsg(
   ctx: IRCClientContext,
   serverId: string,
@@ -62,6 +94,16 @@ export function handlePrivmsg(
   if (batchId) {
     const serverBatches = ctx.activeBatches.get(serverId);
     const batch = serverBatches?.get(batchId);
+    const isSearchResult = takeSearchResult(ctx, serverId, {
+      command: "PRIVMSG",
+      hasServerTime: ctx.hasLineServerTime,
+      sender,
+      target,
+      message,
+      mtags,
+      timestamp: getTimestampFromTags(mtags),
+    });
+    if (isSearchResult) return;
     if (
       batch &&
       (batch.type === "multiline" || batch.type === "draft/multiline")
@@ -125,6 +167,17 @@ export function handleNotice(
   const isChannel = isChannelOn(ctx, serverId, target);
   const sender = getNickFromNuh(source);
   const message = parv.slice(1).join(" ");
+
+  const isSearchResult = takeSearchResult(ctx, serverId, {
+    command: "NOTICE",
+    hasServerTime: ctx.hasLineServerTime,
+    sender,
+    target,
+    message,
+    mtags,
+    timestamp: getTimestampFromTags(mtags),
+  });
+  if (isSearchResult) return;
 
   if (isChannel) {
     const channelName = target;
@@ -212,6 +265,10 @@ export function handleBatch(
       parameters,
       sender,
       messages: [],
+      ...(batchType === SEARCH_BATCH &&
+      ctx.claimSearchAnswer(serverId, searchLabel(ctx, serverId, mtags))
+        ? { searchResults: [] }
+        : {}),
       timestamps: [],
       concatFlags: [],
       messageIds: [],
@@ -365,6 +422,13 @@ export function handleBatch(
     }
 
     serverBatches?.delete(batchId);
+
+    if (batch?.type === SEARCH_BATCH && batch.searchResults)
+      ctx.triggerEvent("SEARCH_RESULTS", {
+        serverId,
+        results: batch.searchResults,
+        label: searchLabel(ctx, serverId, batch.batchTags),
+      });
 
     ctx.triggerEvent("BATCH_END", {
       serverId,

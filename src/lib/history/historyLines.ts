@@ -150,6 +150,9 @@ export class HistoryRecorder {
       outer.lines.push(parsed.line);
       return [];
     }
+    // A search answer holds scattered old lines, and saving them would make
+    // the stretches between them look like history we already have.
+    if (outer?.type === "soju.im/search") return [];
     if (outer?.type === "chathistory") countPageItem(outer, mtags);
     const historyTarget =
       outer?.type === "chathistory" ? outer.params[0] : undefined;
