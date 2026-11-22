@@ -101,7 +101,9 @@ describe("opening the app from a link with a channel parameter", () => {
     becomeReady();
 
     expect(joinFromLink).toHaveBeenCalledTimes(1);
-    expect(joinChannel).toHaveBeenCalledWith(SERVER, "#weather", undefined);
+    expect(joinChannel).toHaveBeenCalledWith(SERVER, "#weather", undefined, {
+      isReturning: false,
+    });
     expect(savedChannels()).toEqual(["#saved", "#weather"]);
     // The link sends one JOIN, and the welcome repeats the JOIN of every channel the client holds, the saved one included.
     expect(joinLines()).toEqual([
