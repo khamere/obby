@@ -405,11 +405,18 @@ export function handleBatch(
 
     serverBatches?.delete(batchId);
 
-    if (batch?.type === SEARCH_BATCH)
+    if (batch?.type === SEARCH_BATCH) {
+      // The label sits on the batch itself or on the batch that wraps it.
+      const outer = batch.batchTags?.batch;
+      const label =
+        batch.batchTags?.label ??
+        (outer ? serverBatches?.get(outer)?.batchTags?.label : undefined);
       ctx.triggerEvent("SEARCH_RESULTS", {
         serverId,
         results: batch.searchResults ?? [],
+        label,
       });
+    }
 
     ctx.triggerEvent("BATCH_END", {
       serverId,

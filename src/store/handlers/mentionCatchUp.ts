@@ -6,6 +6,7 @@ import {
 import { isUserIgnored } from "../../lib/ignoreUtils";
 import type { SearchResult } from "../../lib/irc/IRCClient";
 import ircClient from "../../lib/ircClient";
+import { makeLabel } from "../../lib/labeledResponse";
 import { isSilenced } from "../../lib/mutes";
 import { upstreamHostForServer } from "../../lib/networkHost";
 import { checkForMention } from "../../lib/notifications";
@@ -16,9 +17,15 @@ import type { MentionEntry } from "../mentionLog";
 // the unread lines that name the user, however far back they are.
 
 export const SEARCH_PAGE_SIZE = 100;
-// A channel that mentions the user more often than this fills the inbox on
-// its own.
+// A channel that mentions the user on more pages than this fills the inbox
+// on its own.
 export const MAX_PAGES_PER_TERM = 3;
+// A server may match more loosely than we do, so pages without a mention get
+// a larger budget of their own.
+export const MAX_REQUESTS_PER_TERM = 12;
+// A server may stop scanning after a long stretch without a match, so we do
+// not start further back than this.
+export const MAX_LOOKBACK_MS = 90 * 24 * 60 * 60_000;
 export const ANSWER_TIMEOUT_MS = 30_000;
 // A reconnect this soon after a search is covered by the history catch-up.
 export const SEARCH_AGAIN_AFTER_MS = 10 * 60_000;
@@ -30,7 +37,9 @@ interface Question {
   after: string;
   before?: string;
   term: string;
-  page: number;
+  // What the pages of one word in one channel have used up between them.
+  budget: { requests: number; pagesWithMentions: number };
+  label?: string;
 }
 
 interface ServerQueue {
@@ -80,28 +89,44 @@ export function searchTerms(nick: string, customMentions: string[]): string[] {
   return [...terms.values()];
 }
 
+const isSpent = (budget: Question["budget"]) =>
+  budget.pagesWithMentions >= MAX_PAGES_PER_TERM ||
+  budget.requests >= MAX_REQUESTS_PER_TERM;
+
 function askNext(serverId: string): void {
   const queue = queues.get(serverId);
   if (!queue || queue.asked || queue.isStopped) return;
-  const next = queue.waiting.shift();
+  // Pages asked on both sides share one budget, which a sibling may have
+  // used up since this one was queued.
+  let next = queue.waiting.shift();
+  while (next && isSpent(next.budget)) next = queue.waiting.shift();
   if (!next) return;
-  const isSent = ircClient.search(serverId, {
-    in: next.channelName,
-    after: next.after,
-    ...(next.before ? { before: next.before } : {}),
-    text: next.term,
-    limit: String(SEARCH_PAGE_SIZE),
-  });
+  const label = ircClient.hasCapability(serverId, "labeled-response")
+    ? makeLabel()
+    : undefined;
+  const isSent = ircClient.search(
+    serverId,
+    {
+      in: next.channelName,
+      after: next.after,
+      ...(next.before ? { before: next.before } : {}),
+      text: next.term,
+      limit: String(SEARCH_PAGE_SIZE),
+    },
+    label,
+  );
   if (!isSent) {
     dropQueue(serverId);
     return;
   }
-  queue.asked = next;
+  next.budget.requests += 1;
+  queue.asked = { ...next, label };
   queue.timer = setTimeout(() => giveUp(serverId), ANSWER_TIMEOUT_MS);
 }
 
-// An answer names no question, so once one is overdue we can no longer tell
-// whose answer the next batch is, and we stop asking on this connection.
+// A server without labels names no question in its answer, so once one is
+// overdue we can no longer tell whose answer the next batch is, and we stop
+// asking on this connection.
 function giveUp(serverId: string): void {
   const queue = queues.get(serverId);
   if (!queue) return;
@@ -178,7 +203,8 @@ export function mentionsAmong(
     const timestamp = result.timestamp.toISOString();
     const msgid = result.mtags?.msgid;
     mentions.push({
-      messageId: msgid ?? `search-${channel.id}-${timestamp}-${sender}`,
+      messageId:
+        msgid ?? `search-${channel.id}-${timestamp}-${sender}-${content}`,
       msgid,
       serverId,
       channelId: channel.id,
@@ -202,18 +228,28 @@ export function pagesAfter(
   // A server may answer with fewer lines than we asked for, so only an empty
   // page says there is nothing more on that side.
   if (results.length === 0) return [];
-  if (question.page >= MAX_PAGES_PER_TERM) return [];
+  if (isSpent(question.budget)) return [];
   const times = results.map((r) => r.timestamp.getTime());
   const oldest = new Date(Math.min(...times)).toISOString();
   const newest = new Date(Math.max(...times)).toISOString();
-  const page = question.page + 1;
+  const { label: _label, ...next } = question;
   const pages: Question[] = [];
   if (oldest > question.after && oldest !== question.before)
-    pages.push({ ...question, before: oldest, page });
+    pages.push({ ...next, before: oldest });
   if (newest > question.after && (!question.before || newest < question.before))
-    pages.push({ ...question, after: newest, page });
+    pages.push({ ...next, after: newest });
   return pages;
 }
+
+// A line without a usable time from the server can be neither placed in the
+// unread stretch nor used as the edge of the next page.
+const hasServerTime = (result: SearchResult) =>
+  !Number.isNaN(Date.parse(result.mtags?.time ?? ""));
+
+// With labels on, an answer to a search someone typed by hand carries another
+// label or none, and is not ours.
+const answersAsked = (asked: Question, label: string | undefined) =>
+  asked.label === undefined || asked.label === label;
 
 export function registerMentionCatchUpHandlers(
   store: StoreApi<AppState>,
@@ -242,33 +278,35 @@ export function registerMentionCatchUpHandlers(
       me.username,
       store.getState().globalSettings.customMentions,
     );
+    const horizon = new Date(Date.now() - MAX_LOOKBACK_MS).toISOString();
     for (const term of terms)
       queue.waiting.push({
         channelName: target,
         readAt: timestamp,
-        after: timestamp,
+        after: horizon > timestamp ? horizon : timestamp,
         term,
-        page: 1,
+        budget: { requests: 0, pagesWithMentions: 0 },
       });
     askNext(serverId);
   });
 
-  ircClient.on("SEARCH_RESULTS", ({ serverId, results }) => {
+  ircClient.on("SEARCH_RESULTS", ({ serverId, results, label }) => {
     const queue = queues.get(serverId);
     const question = queue?.asked;
-    if (!queue || !question) return;
-    const mentions = mentionsAmong(
-      store.getState(),
-      serverId,
-      question,
-      results,
-    );
+    if (!queue || !question || !answersAsked(question, label)) return;
+    const timed = results.filter(hasServerTime);
+    const mentions = mentionsAmong(store.getState(), serverId, question, timed);
     for (const mention of mentions) store.getState().recordMention(mention);
-    queue.waiting.unshift(...pagesAfter(question, results));
+    if (mentions.length > 0) question.budget.pagesWithMentions += 1;
+    queue.waiting.unshift(...pagesAfter(question, timed));
     finish(serverId, true);
   });
 
-  ircClient.on("SEARCH_FAIL", ({ serverId }) => finish(serverId, false));
+  ircClient.on("SEARCH_FAIL", ({ serverId, mtags }) => {
+    const question = queues.get(serverId)?.asked;
+    if (question && answersAsked(question, mtags?.label))
+      finish(serverId, false);
+  });
 
   ircClient.on("connectionStateChange", ({ serverId, connectionState }) => {
     if (connectionState !== "connected") dropQueue(serverId);

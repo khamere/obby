@@ -5,7 +5,9 @@ import useStore from "../../src/store";
 import {
   ANSWER_TIMEOUT_MS,
   forgetSearches,
+  MAX_LOOKBACK_MS,
   MAX_PAGES_PER_TERM,
+  MAX_REQUESTS_PER_TERM,
   SEARCH_AGAIN_AFTER_MS,
   SEARCH_PAGE_SIZE,
   searchTerms,
@@ -44,6 +46,7 @@ const messages = () => Object.values(useStore.getState().messages).flat();
 describe("mention catch-up by server search", () => {
   let sent: string[];
   let canSearch: boolean;
+  let hasLabels: boolean;
 
   const searches = () => sent.filter((line) => line.startsWith("SEARCH "));
   const reconnect = () => {
@@ -54,13 +57,19 @@ describe("mention catch-up by server search", () => {
   };
 
   beforeEach(() => {
+    // The marker in these tests is recent, well inside the lookback limit.
+    vi.useFakeTimers();
+    vi.setSystemTime(Date.parse(READ_AT) + 7_200_000);
     sent = [];
     canSearch = true;
+    hasLabels = false;
     vi.spyOn(ircClient, "sendRaw").mockImplementation((_serverId, line) => {
       sent.push(line);
     });
     vi.spyOn(ircClient, "hasCapability").mockImplementation(
-      (_serverId, cap) => cap === "soju.im/search" && canSearch,
+      (_serverId, cap) =>
+        (cap === "soju.im/search" && canSearch) ||
+        (cap === "labeled-response" && hasLabels),
     );
     vi.spyOn(ircClient, "getCurrentUser").mockReturnValue({
       id: "u1",
@@ -298,21 +307,155 @@ describe("mention catch-up by server search", () => {
     expect(searches()).toHaveLength(asked);
   });
 
-  it("ends a term whose full page does not move", () => {
+  it("ends a side whose page does not move", () => {
     feed(`:server MARKREAD #two timestamp=${READ_AT}`);
-    const sameInstant = Array.from(
-      { length: SEARCH_PAGE_SIZE },
-      (_, i) =>
-        `@batch=s;msgid=i${i};time=${at(5)} :bob!u@h PRIVMSG #two :me ${i}`,
-    );
-    feed(":server BATCH +s soju.im/search", ...sameInstant, ":server BATCH -s");
-    feed(...emptyAnswer("a"), ...emptyAnswer("b"));
-    feed(
-      ...fullPage("c", 5).map((line) =>
-        line.replace(/time=[^ ]+/, `time=${at(5)}`),
+    const sameInstant = (id: string) => [
+      `:server BATCH +${id} soju.im/search`,
+      ...Array.from(
+        { length: SEARCH_PAGE_SIZE },
+        (_, i) =>
+          `@batch=${id};msgid=${id}${i};time=${at(5)} :bob!u@h PRIVMSG #two :me ${i}`,
       ),
+      `:server BATCH -${id}`,
+    ];
+    feed(...sameInstant("s"));
+    expect(searches().slice(1)).toEqual([
+      `SEARCH in=#two;after=${READ_AT};before=${at(5)};text=me;limit=${SEARCH_PAGE_SIZE}`,
+    ]);
+    feed(...emptyAnswer("a"));
+    expect(searches()[2]).toBe(
+      `SEARCH in=#two;after=${at(5)};text=me;limit=${SEARCH_PAGE_SIZE}`,
     );
-    expect(searches().length).toBeLessThanOrEqual(3);
+    // The same page again as the answer to the pending question: nothing moved.
+    feed(...sameInstant("t"));
+    expect(searches()).toHaveLength(3);
+  });
+
+  it("keeps paging past pages the server matched more loosely than we do", () => {
+    feed(`:server MARKREAD #two timestamp=${READ_AT}`);
+    const loose = (id: string, firstSecond: number) => [
+      `:server BATCH +${id} soju.im/search`,
+      ...Array.from({ length: SEARCH_PAGE_SIZE }, (_, i) => {
+        const time = at(firstSecond + i);
+        return `@batch=${id};msgid=${id}${i};time=${time} :bob!u@h PRIVMSG #two :some of them ${i}`;
+      }),
+      `:server BATCH -${id}`,
+    ];
+    // An oldest-first server: four full pages of lines that only hold the nick inside a word.
+    for (let page = 0; page < 4; page++) {
+      feed(...loose(`l${page}`, 100 + page * 100));
+      feed(...emptyAnswer(`b${page}`));
+    }
+    expect(log()).toEqual([]);
+    feed(
+      ":server BATCH +real soju.im/search",
+      `@batch=real;msgid=real;time=${at(600)} :bob!u@h PRIVMSG #two :me: ping`,
+      ":server BATCH -real",
+    );
+    expect(log().map((m) => m.msgid)).toEqual(["real"]);
+  });
+
+  it("stops a word that keeps matching loosely", () => {
+    feed(`:server MARKREAD #two timestamp=${READ_AT}`);
+    for (let page = 0; page < 30; page++)
+      feed(
+        `:server BATCH +l${page} soju.im/search`,
+        `@batch=l${page};msgid=l${page};time=${at(100 + page)} :bob!u@h PRIVMSG #two :some of them`,
+        `:server BATCH -l${page}`,
+      );
+    expect(searches()).toHaveLength(MAX_REQUESTS_PER_TERM);
+  });
+
+  it("does not start further back than the lookback limit", () => {
+    const old = new Date(Date.now() - 2 * MAX_LOOKBACK_MS).toISOString();
+    feed(`:server MARKREAD #two timestamp=${old}`);
+    const horizon = new Date(Date.now() - MAX_LOOKBACK_MS).toISOString();
+    expect(searches()).toEqual([
+      `SEARCH in=#two;after=${horizon};text=me;limit=${SEARCH_PAGE_SIZE}`,
+    ]);
+  });
+
+  it("skips a line with a broken time and keeps the queue going", () => {
+    feed(
+      `:server MARKREAD #one timestamp=${READ_AT}`,
+      `:server MARKREAD #two timestamp=${READ_AT}`,
+      ":server BATCH +s soju.im/search",
+      "@batch=s;msgid=b;time=not-a-time :bob!u@h PRIVMSG #one :me: broken time",
+      ":server BATCH -s",
+    );
+    expect(log()).toEqual([]);
+    expect(searches().at(-1)).toContain("in=#two;");
+  });
+
+  it("gives two lines without msgid at one instant their own ids", () => {
+    feed(
+      `:server MARKREAD #two timestamp=${READ_AT}`,
+      ":server BATCH +s soju.im/search",
+      `@batch=s;time=${at(5)} :bob!u@h PRIVMSG #two :me: one`,
+      `@batch=s;time=${at(5)} :bob!u@h PRIVMSG #two :me: two`,
+      ":server BATCH -s",
+    );
+    expect(new Set(log().map((m) => m.messageId)).size).toBe(2);
+  });
+
+  describe("on a server that returns labels", () => {
+    const labelOf = (line: string) => /^@label=(\S+) /.exec(line)?.[1];
+
+    beforeEach(() => {
+      hasLabels = true;
+      sent = [];
+    });
+
+    it("takes only the answer that carries the label of its question", () => {
+      feed(
+        `:server MARKREAD #one timestamp=${READ_AT}`,
+        `:server MARKREAD #two timestamp=${READ_AT}`,
+      );
+      const asked = sent.filter((line) => line.includes(" SEARCH "));
+      expect(asked).toHaveLength(1);
+      const label = labelOf(asked[0]);
+      expect(label).toBeTruthy();
+      // A search typed by hand answers without our label and is left alone.
+      feed(
+        ":server BATCH +m soju.im/search",
+        `@batch=m;msgid=x;time=${at(5)} :bob!u@h PRIVMSG #one :me: from a manual search`,
+        ":server BATCH -m",
+      );
+      expect(log()).toEqual([]);
+      expect(sent.filter((line) => line.includes(" SEARCH "))).toHaveLength(1);
+      feed(
+        `@label=${label} :server BATCH +o labeled-response`,
+        "@batch=o :server BATCH +s soju.im/search",
+        `@batch=s;msgid=a;time=${at(6)} :bob!u@h PRIVMSG #one :me: ours`,
+        ":server BATCH -s",
+        ":server BATCH -o",
+      );
+      expect(log().map((m) => m.msgid)).toEqual(["a"]);
+    });
+
+    it("reads a label set on the search batch itself and on a refusal", () => {
+      feed(
+        `:server MARKREAD #one timestamp=${READ_AT}`,
+        `:server MARKREAD #two timestamp=${READ_AT}`,
+      );
+      const first = labelOf(sent.filter((l) => l.includes(" SEARCH "))[0]);
+      feed(
+        `@label=${first} :server BATCH +s soju.im/search`,
+        `@batch=s;msgid=a;time=${at(6)} :bob!u@h PRIVMSG #one :me: ours`,
+        ":server BATCH -s",
+      );
+      expect(log().map((m) => m.msgid)).toEqual(["a"]);
+      const before = sent.filter((l) => l.includes(" SEARCH ")).length;
+      feed(":server FAIL SEARCH INTERNAL_ERROR :not ours");
+      expect(sent.filter((l) => l.includes(" SEARCH "))).toHaveLength(before);
+      const pending = labelOf(
+        sent.filter((l) => l.includes(" SEARCH ")).at(-1) ?? "",
+      );
+      feed(`@label=${pending} :server FAIL SEARCH INTERNAL_ERROR :ours`);
+      expect(sent.filter((l) => l.includes(" SEARCH ")).length).toBe(
+        before + 1,
+      );
+    });
   });
 
   it("moves on when the server refuses", () => {

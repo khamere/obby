@@ -422,7 +422,7 @@ export interface EventMap {
     message: string;
   };
   // soju.im/search: the messages of one answered SEARCH, in server order.
-  SEARCH_RESULTS: BaseIRCEvent & { results: SearchResult[] };
+  SEARCH_RESULTS: BaseIRCEvent & { results: SearchResult[]; label?: string };
   SEARCH_FAIL: EventWithTags & { code: string; message: string };
   // draft/chathistory: one `CHATHISTORY TARGETS <target> <timestamp>`
   // reply line, i.e. a conversation that had activity in the window
@@ -2078,9 +2078,16 @@ export class IRCClient implements IRCClientContext {
 
   // soju.im/search: the server answers with one `soju.im/search` batch, which
   // carries no reference to the question, so callers ask one at a time.
-  search(serverId: string, attributes: Record<string, string>): boolean {
+  // The answer names its question only through a label, which the caller
+  // passes where the server returns labels.
+  search(
+    serverId: string,
+    attributes: Record<string, string>,
+    label?: string,
+  ): boolean {
     if (!this.hasCapability(serverId, "soju.im/search")) return false;
-    this.sendRaw(serverId, `SEARCH ${encodeBouncerAttrs(attributes)}`);
+    const tags = label ? `@label=${label} ` : "";
+    this.sendRaw(serverId, `${tags}SEARCH ${encodeBouncerAttrs(attributes)}`);
     return true;
   }
 
