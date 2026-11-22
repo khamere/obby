@@ -316,7 +316,9 @@ export const ChannelMessageList = forwardRef<
     }, [isActive]);
 
     useImperativeHandle(ref, () => ({
+      // Sending a message or leaving a reply goes to the present, so it ends a hold on a jumped-to row.
       scrollToBottom: () => {
+        releaseJump();
         wasAtBottomRef.current = true;
         scrollToBottom();
       },
