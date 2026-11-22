@@ -178,6 +178,90 @@ describe("deleteMessage", () => {
   });
 });
 
+describe("gaps for one stretch", () => {
+  const gap = { server: "s1", target: "#a", lost: false };
+  const edges = async (target = "#a") =>
+    (await db.gapsFor("s1", target)).map(({ from, to, lost }) => ({
+      from,
+      to,
+      lost,
+    }));
+
+  it("keeps one record when the same stretch is added again", async () => {
+    await db.addGap({ ...gap, from: 10, to: 20 });
+    await db.addGap({ ...gap, from: 10, to: 20 });
+
+    expect(await edges()).toEqual([{ from: 10, to: 20, lost: false }]);
+  });
+
+  it("extends the record when the stretch is added again with a later end", async () => {
+    await db.addGap({ ...gap, from: 10, to: 20, fromMsgid: "a" });
+    const [first] = await db.gapsFor("s1", "#a");
+    await db.addGap({ ...gap, from: 10, to: 30, toMsgid: "z" });
+
+    expect(await db.gapsFor("s1", "#a")).toEqual([
+      { ...gap, id: first.id, from: 10, to: 30, fromMsgid: "a", toMsgid: "z" },
+    ]);
+  });
+
+  it("cuts a wider record where another one starts inside it", async () => {
+    await db.addGap({ ...gap, from: 10, to: 40 });
+    await db.addGap({ ...gap, from: 20, to: 30 });
+
+    expect(await edges()).toEqual([
+      { from: 10, to: 20, lost: false },
+      { from: 20, to: 40, lost: false },
+    ]);
+  });
+
+  it("keeps records apart that only touch, that are in other chats, or that differ in being lost", async () => {
+    await db.addGap({ ...gap, from: 10, to: 20 });
+    await db.addGap({ ...gap, from: 20, to: 30 });
+    await db.addGap({ ...gap, from: 10, to: 20, lost: true });
+    await db.addGap({ ...gap, target: "#b", from: 10, to: 20 });
+
+    expect(await edges()).toHaveLength(3);
+    expect(await edges("#b")).toHaveLength(1);
+  });
+
+  it("merges two records when an update makes them overlap", async () => {
+    await db.addGap({ ...gap, from: 10, to: 20 });
+    await db.addGap({ ...gap, from: 10, to: 20, lost: true });
+    const open = (await db.gapsFor("s1", "#a")).find((g) => !g.lost);
+
+    if (open) await db.updateGap({ ...open, lost: true });
+
+    expect(await edges()).toEqual([{ from: 10, to: 20, lost: true }]);
+  });
+
+  it("merges the records already saved when the database opens", async () => {
+    await db.gapsFor("s1", "#a");
+    await new Promise<void>((resolve, reject) => {
+      const open = indexedDB.open("obby-history");
+      open.onsuccess = () => {
+        const tx = open.result.transaction(["gaps"], "readwrite");
+        for (const to of [20, 20, 25, 30, 30, 30])
+          tx.objectStore("gaps").add({ ...gap, from: 10, to });
+        tx.objectStore("gaps").add({ ...gap, from: 50, to: 60 });
+        tx.objectStore("gaps").add({ ...gap, target: "#b", from: 10, to: 20 });
+        tx.oncomplete = () => {
+          open.result.close();
+          resolve();
+        };
+        tx.onerror = () => reject(tx.error);
+      };
+    });
+    vi.resetModules();
+    db = await import("../../../src/lib/history/historyDb");
+
+    expect(await edges()).toEqual([
+      { from: 10, to: 30, lost: false },
+      { from: 50, to: 60, lost: false },
+    ]);
+    expect(await edges("#b")).toEqual([{ from: 10, to: 20, lost: false }]);
+  });
+});
+
 describe("gaps", () => {
   it("adds, updates, lists and deletes", async () => {
     await db.addGap({
