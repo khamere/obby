@@ -134,6 +134,8 @@ describe("a bouncer child's account across a reconnect", () => {
     drop("child");
     drop("parent");
     open("child");
+    expect(server("child")?.account).toBe("me");
+    expect(serverTracksReadMarker(useStore.getState(), "child")).toBe(true);
     open("parent");
     logIn("parent");
 
