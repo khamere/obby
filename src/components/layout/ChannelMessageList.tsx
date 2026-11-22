@@ -371,6 +371,7 @@ export const ChannelMessageList = forwardRef<
     const {
       isHoldingRef,
       isHoldingRow,
+      isHoldingShownRow,
       isHoldingJump,
       holdRow,
       releaseJump,
@@ -399,6 +400,9 @@ export const ChannelMessageList = forwardRef<
     const hasKeptRowsAtJoin = joinKeptIndex >= 0;
     // A reader who pages down into the present reads on from the rows on screen.
     const isReadingOnAtJoin = hasKeptRowsAtJoin && isLoadingNewerRef.current;
+    // The DOM still shows the window during this render, so we note where the rows on screen sit.
+    if (isReadingOnAtJoin && messagesContainerRef.current)
+      captureViewAnchor(messagesContainerRef.current);
     // We grow the window during render: grown one commit later, slice(-N)
     // would drop the top rows for a commit and remount them all.
     if (
@@ -821,10 +825,14 @@ export const ChannelMessageList = forwardRef<
       wasDetachedRef.current = isDetached;
       if (isDetached || !wasDetached) return;
       resetWindowTracking();
-      if (hasKeptRowsAtJoin && isHoldingRef.current) return;
+      // A jump on its way to a row, or holding one of the rows shown, owns the scroll position.
+      if (useStore.getState().ui.messageJump || isHoldingShownRow()) return;
       if (isReadingOnAtJoin) {
         const container = messagesContainerRef.current;
         if (!container) return;
+        // The joined list can change the height of the rows above the reader, so we put the rows on screen back in place.
+        droppedRowsAnchorRef.current = null;
+        keepViewAnchor(container);
         resizeObserverPrevSHRef.current = container.scrollHeight;
         container.dispatchEvent(new Event("scroll"));
         return;
