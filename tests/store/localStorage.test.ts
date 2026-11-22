@@ -208,6 +208,9 @@ describe("mentionLog.load", () => {
     ["no seen flag", { seen: undefined }],
     ["a msgid that is not text", { msgid: 7 }],
     ["a null msgid", { msgid: null }],
+    ["an empty channel name", { channelName: "" }],
+    ["an empty server id", { serverId: "" }],
+    ["an empty channel id", { channelId: "" }],
   ])("drops an entry saved with %s", (_case, change) => {
     mockStored([{ ...entry, ...change }, entry]);
     expect(mentionLog.load()).toEqual([entry]);

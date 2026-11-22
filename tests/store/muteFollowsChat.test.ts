@@ -330,8 +330,11 @@ describe("a muted chat that is created again", () => {
 
       feed(":irc.example.org 005 me CHANTYPES=# :are supported by this server");
 
-      expect(() => feed(line)).not.toThrow();
+      const failures = vi.spyOn(console, "error").mockImplementation(() => {});
 
+      feed(line);
+
+      expect(failures).not.toHaveBeenCalled();
       expect(server().channels[0].name).toBe("#general");
       expect(useStore.getState().mentionLog[0].channelName).toBe("#general");
       expect(silencesFor(server())).toEqual([

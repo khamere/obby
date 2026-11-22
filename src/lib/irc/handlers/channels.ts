@@ -105,9 +105,8 @@ export function handleRename(
   const oldName = parv[0];
   const newName = parv[1];
   // A channel always has a name the server could hold, so we skip a rename
-  // that lacks the old one or leads to anything else.
+  // that leads to anything else.
   if (
-    !oldName ||
     !isJoinableChannelName(
       newName,
       chantypesOf(ctx.isupportValues.get(serverId)),
