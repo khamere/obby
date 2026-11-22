@@ -302,7 +302,6 @@ export interface EventMap {
     opLevel: string;
   };
   WHO_END: { serverId: string; mask: string };
-  MEMBERS_REQUESTED: { serverId: string; channelName: string };
   RPL_AWAY: {
     serverId: string;
     nick: string;
@@ -687,6 +686,9 @@ function splitCapToken(token: string): { cap: string; value?: string } {
     ? { cap: token }
     : { cap: token.slice(0, eq), value: token.slice(eq + 1) };
 }
+
+// A WHO with exactly these fields and no filter is our request for every member of a channel.
+export const MEMBER_WHO_FIELDS = "%cuhnfaro";
 
 export class IRCClient implements IRCClientContext {
   private sockets: Map<string, ISocket> = new Map();
@@ -1601,10 +1603,8 @@ export class IRCClient implements IRCClientContext {
     return false;
   }
 
-  // Only the answer to this request lists every member of the channel, so we announce it for the member list to tell that answer from any other WHO reply.
   requestMembers(serverId: string, channelName: string): void {
-    this.sendRaw(serverId, `WHO ${channelName} %cuhnfaro`);
-    this.triggerEvent("MEMBERS_REQUESTED", { serverId, channelName });
+    this.sendRaw(serverId, `WHO ${channelName} ${MEMBER_WHO_FIELDS}`);
   }
 
   // Servers state their per-request maximum as CHATHISTORY=<n>, where 0 means

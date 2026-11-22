@@ -107,6 +107,31 @@ function whoReply(nick: string, opLevel = "") {
   });
 }
 
+function clientSockets() {
+  return (ircClient as unknown as { sockets: Map<string, unknown> }).sockets;
+}
+
+// Hands the client lines as the server sends them.
+function receive(...lines: string[]) {
+  (
+    ircClient as unknown as {
+      handleMessage: (data: string, serverId: string) => void;
+    }
+  ).handleMessage(lines.map((line) => `${line}\r\n`).join(""), serverId);
+}
+
+function whoxRow(nick: string, flags = "H", name = channelName) {
+  return `:irc.test 354 me ${name} u h ${nick} ${flags} 0 0 :${nick}`;
+}
+
+function whoRow(nick: string, flags = "H", name = channelName) {
+  return `:irc.test 352 me ${name} u h irc.test ${nick} ${flags} :0 ${nick}`;
+}
+
+function endOfWho(name = channelName) {
+  return `:irc.test 315 me ${name} :End of WHO list`;
+}
+
 function otherJoin(username: string) {
   ircClient.triggerEvent("JOIN", { serverId, username, channelName });
 }
@@ -117,12 +142,14 @@ function whoEnd() {
 
 describe("member list after coming back to a channel", () => {
   beforeEach(() => {
-    vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    vi.spyOn(ircClient, "sendRaw");
+    clientSockets().set(serverId, { readyState: WebSocket.OPEN, send() {} });
     _resetWhoReplyBatcher();
   });
   afterEach(() => {
     vi.restoreAllMocks();
     _resetWhoReplyBatcher();
+    clientSockets().delete(serverId);
     ircClient.nicks.delete(serverId);
   });
 
@@ -338,14 +365,113 @@ describe("member list after coming back to a channel", () => {
     expect(members()).toEqual(["@caroline", "me", "robert"]);
   });
 
-  test("a reply to a request the user typed removes nobody", () => {
+  test("a typed request sent before ours keeps its own reply, and ours still replaces the list", () => {
     seed([user("me", "@"), user("bob"), user("carol")]);
 
     ircClient.sendRaw(serverId, `WHO ${channelName} o`);
-    whoReply("me", "@");
-    whoEnd();
+    ownJoin();
+    receive(whoRow("me", "H*@"), endOfWho());
+    expect(members()).toEqual(["@me", "bob", "carol"]);
+
+    receive(whoxRow("me", "H@"), whoxRow("bob"), endOfWho());
+    expect(members()).toEqual(["@me", "bob"]);
+  });
+
+  test("a typed request sent before ours that names nobody leaves ours to replace the list", () => {
+    seed([user("me"), user("bob"), user("carol")]);
+
+    ircClient.sendRaw(serverId, `WHO ${channelName} o`);
+    ownJoin();
+    receive(endOfWho());
+    receive(whoxRow("me"), whoxRow("bob"), endOfWho());
+
+    expect(members()).toEqual(["bob", "me"]);
+  });
+
+  test("a typed request sent after ours removes nobody", () => {
+    seed([user("me", "@"), user("bob"), user("carol")]);
+
+    ownJoin();
+    ircClient.sendRaw(serverId, `WHO ${channelName} o`);
+    receive(whoxRow("me", "H@"), whoxRow("bob"), whoxRow("dave"), endOfWho());
+    expect(members()).toEqual(["@me", "bob", "dave"]);
+
+    receive(whoRow("me", "H*@"), endOfWho());
+    expect(members()).toEqual(["@me", "bob", "dave"]);
+  });
+
+  test("a typed request on its own removes nobody", () => {
+    seed([user("me", "@"), user("bob"), user("carol")]);
+
+    ircClient.sendRaw(serverId, `WHO ${channelName} o`);
+    receive(whoRow("me", "H*@"), endOfWho());
 
     expect(members()).toEqual(["@me", "bob", "carol"]);
+  });
+
+  test("a nick taken over while the reply is on its way stays with its new holder", () => {
+    seed([user("me"), user("bob"), user("carol")]);
+
+    ownJoin();
+    ircClient.triggerEvent("QUIT", { serverId, username: "bob", reason: "" });
+    ircClient.triggerEvent("NICK", {
+      serverId,
+      mtags: undefined,
+      oldNick: "carol",
+      newNick: "bob",
+    });
+    receive(whoxRow("me"), whoxRow("bob"), endOfWho());
+
+    expect(members()).toEqual(["bob", "me"]);
+  });
+
+  test("a reply that spells the channel in another case still replaces the list", () => {
+    seed([user("me"), user("bob")]);
+
+    ownJoin();
+    const spelled = channelName.toUpperCase();
+    receive(whoRow("me", "H", spelled), whoRow("dave", "H@", spelled));
+    receive(endOfWho(spelled));
+
+    expect(members()).toEqual(["@dave", "me"]);
+  });
+
+  test("a request whose reply never ended replaces nothing later and is asked again", () => {
+    vi.useFakeTimers();
+    try {
+      seed([user("me", "@"), user("bob")]);
+
+      ownJoin();
+      vi.advanceTimersByTime(61_000);
+      ownJoin();
+      expect(whoLines()).toHaveLength(2);
+
+      receive(whoRow("me", "H*@"), endOfWho());
+      expect(members()).toEqual(["@me", "bob"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("our join asks for the channel's own metadata along with its members", () => {
+    seed([user("me"), user("bob")]);
+    useStore.setState((state) => ({
+      servers: state.servers.map((s) => ({
+        ...s,
+        capabilities: ["draft/metadata-2"],
+      })),
+    }));
+    const metadataGet = vi
+      .spyOn(ircClient, "metadataGet")
+      .mockImplementation(() => {});
+
+    setConnection("disconnected");
+    setConnection("connected");
+    ownJoin();
+
+    expect(metadataGet.mock.calls).toEqual([
+      [serverId, channelName.toLowerCase(), ["avatar", "display-name"]],
+    ]);
   });
 
   test("a second reply on the same request removes nobody", () => {

@@ -11,6 +11,7 @@ import {
   getCurrentSelection,
   isHistoryEvent,
   resolveUserMetadata,
+  serverSupportsMetadata,
   setUserAway,
 } from "../helpers";
 import type { AppState } from "../index";
@@ -295,7 +296,15 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
         // ircClient I/O OUTSIDE setState: triggerEvent inside setState
         // causes a nested-setState race (see batches.ts:215-218).
         if (isNewChannel) ircClient.loadHistoryOrMembers(serverId, channelName);
-        if (isAskingMembersNow) ircClient.requestMembers(serverId, channelName);
+        if (isAskingMembersNow) {
+          ircClient.requestMembers(serverId, channelName);
+          // The channel's own picture and name may have changed while we were away, so we ask for them with its members.
+          if (serverSupportsMetadata(store.getState(), serverId))
+            ircClient.metadataGet(serverId, channelName, [
+              "avatar",
+              "display-name",
+            ]);
+        }
         // Fall through to shared message creation below — same JOIN event, same path.
       } else {
         noteMemberJoined(serverId, channelName, username);
@@ -412,7 +421,14 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
       }
     }
     saveConfirmedNick(store, serverId, newNick);
-    noteMemberRenamed(serverId, oldNick, newNick);
+    noteMemberRenamed(
+      serverId,
+      oldNick,
+      newNick,
+      (store.getState().servers.find((s) => s.id === serverId)?.channels ?? [])
+        .filter((c) => c.users.some((u) => u.username === oldNick))
+        .map((c) => c.name),
+    );
     moveChatMute(serverId, "dm", oldNick, newNick);
     store.setState((state) => {
       const updatedServers = state.servers.map((server) => {

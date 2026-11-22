@@ -1,13 +1,14 @@
 import type { StoreApi } from "zustand";
+import { MEMBER_WHO_FIELDS } from "../../lib/irc/IRCClient";
 import ircClient from "../../lib/ircClient";
 import type { User } from "../../types";
 import type { AppState } from "../index";
 import * as storage from "../localStorage";
 import {
-  beginMemberRefresh,
   bufferWhoReply,
   finishWhoReplies,
   forgetWhoReplies,
+  noteWhoSent,
 } from "../whoReplyBatcher";
 
 export function registerWhoisHandlers(store: StoreApi<AppState>): void {
@@ -391,7 +392,9 @@ export function registerWhoisHandlers(store: StoreApi<AppState>): void {
       }
 
       // Find the channel this WHO reply belongs to
-      const channelData = serverData.channels.find((c) => c.name === channel);
+      const channelData = serverData.channels.find(
+        (c) => c.name.toLowerCase() === channel.toLowerCase(),
+      );
       if (!channelData) {
         return;
       }
@@ -425,9 +428,14 @@ export function registerWhoisHandlers(store: StoreApi<AppState>): void {
     },
   );
 
-  ircClient.on("MEMBERS_REQUESTED", ({ serverId, channelName }) =>
-    beginMemberRefresh(serverId, channelName),
-  );
+  // The server answers WHO requests in the order we send them, so we record every one we send for a channel, typed ones included.
+  ircClient.on("rawLine", ({ serverId, direction, line }) => {
+    if (direction !== "tx") return;
+    const [command, target, ...filter] = line.split(" ");
+    if (command.toUpperCase() !== "WHO" || !target) return;
+    if (!ircClient.isChannel(serverId, target)) return;
+    noteWhoSent(serverId, target, filter.join(" ") === MEMBER_WHO_FIELDS);
+  });
 
   // A reply belongs to the connection that asked, so a connection change ends every reply still open.
   ircClient.on("connectionStateChange", ({ serverId }) =>
