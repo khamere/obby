@@ -32,7 +32,7 @@ const channel = (id: string, name: string): Channel => ({
   users: [],
 });
 
-function feed(...lines: string[]) {
+function feedRaw(...lines: string[]) {
   (
     ircClient as unknown as {
       handleMessage(data: string, serverId: string): void;
@@ -49,7 +49,21 @@ describe("mention catch-up by server search", () => {
   let hasLabels: boolean;
   let hasHistory: boolean;
 
-  const searches = () => sent.filter((line) => line.startsWith("SEARCH "));
+  const SEARCH_LINE = /^@label=(\S+) (SEARCH .*)$/;
+  // The searches sent so far, without their labels.
+  const searches = () =>
+    sent.flatMap((line) => SEARCH_LINE.exec(line)?.[2] ?? []);
+  const labels = () =>
+    sent.flatMap((line) => SEARCH_LINE.exec(line)?.[1] ?? []);
+  // The server answers the search that is out, under its label.
+  const feed = (...lines: string[]) => {
+    for (const line of lines) {
+      const isAnswer =
+        /^:server BATCH \+\S+ soju\.im\/search$/.test(line) ||
+        line.startsWith(":server FAIL SEARCH ");
+      feedRaw(isAnswer ? `@label=${labels().at(-1)} ${line}` : line);
+    }
+  };
   const reconnect = () => {
     ircClient.triggerEvent("connectionStateChange", {
       serverId: "s1",
@@ -63,7 +77,7 @@ describe("mention catch-up by server search", () => {
     vi.setSystemTime(Date.parse(READ_AT) + 7_200_000);
     sent = [];
     canSearch = true;
-    hasLabels = false;
+    hasLabels = true;
     hasHistory = false;
     vi.spyOn(ircClient, "sendRaw").mockImplementation((_serverId, line) => {
       sent.push(line);
@@ -261,6 +275,17 @@ describe("mention catch-up by server search", () => {
       expect(searches()).toEqual([search(`after=${at(100 - overlap)};`)]);
     });
 
+    it("counts a history reply that came before the marker, lines the chat leaves out included", () => {
+      feed(
+        ":server BATCH +h chathistory #two",
+        `@batch=h;msgid=n1;time=${at(700)} :announcer!u@h NOTICE #two :a notice, not a chat line`,
+        ":server BATCH -h",
+      );
+      historyLoaded();
+      feed(`:server MARKREAD #two timestamp=${READ_AT}`);
+      expect(searches()).toEqual([search(`after=${at(100 - overlap)};`)]);
+    });
+
     it("looks again when a later history page brings the new lines", () => {
       feed(`:server MARKREAD #two timestamp=${READ_AT}`);
       // A page of older lines ends first and says nothing new.
@@ -434,6 +459,26 @@ describe("mention catch-up by server search", () => {
     expect(log().map((m) => m.msgid)).toEqual(["beyond"]);
   });
 
+  it("steps past each of two full instants in a row", () => {
+    feed(`:server MARKREAD #two timestamp=${READ_AT}`);
+    const instant = (id: string, second: number) =>
+      answer(
+        id,
+        ...Array.from({ length: SEARCH_PAGE_SIZE }, (_, i) =>
+          hit(`${second}-${i}`, second, `some of them ${i}`),
+        ),
+      );
+    // An oldest-first server: the page, its 'before' side, then onward.
+    feed(...instant("a1", 5), ...emptyAnswer("b1"));
+    feed(...instant("a2", 5));
+    expect(searches().at(-1)).toBe(search(`after=${at(5)};`));
+    feed(...instant("a3", 7), ...emptyAnswer("b2"));
+    feed(...instant("a4", 7));
+    expect(searches().at(-1)).toBe(search(`after=${at(7)};`));
+    feed(...answer("a5", hit("beyond", 9)));
+    expect(log().map((m) => m.msgid)).toEqual(["beyond"]);
+  });
+
   it("ends a side that brings nothing past its edge", () => {
     feed(`:server MARKREAD #two timestamp=${READ_AT}`);
     feed(...answer("s", hit("a", 50)));
@@ -554,22 +599,10 @@ describe("mention catch-up by server search", () => {
     expect(searches()).toHaveLength(2);
   });
 
-  it("stops asking on a connection whose unlabelled answer is overdue", () => {
-    feed(
-      `:server MARKREAD #one timestamp=${READ_AT}`,
-      `:server MARKREAD #two timestamp=${READ_AT}`,
-    );
-    vi.advanceTimersByTime(ANSWER_TIMEOUT_MS - 1000);
-    expect(searches()).toHaveLength(1);
-    vi.advanceTimersByTime(2000);
-    expect(searches()).toHaveLength(1);
-    // The late answer belongs to no question we could still name.
-    feed(...answer("s", hit("a", 5, "me, late")));
-    expect(log()).toEqual([]);
-    expect(searches()).toHaveLength(1);
-    reconnect();
+  it("stays quiet on a server that returns no labels", () => {
+    hasLabels = false;
     feed(`:server MARKREAD #two timestamp=${READ_AT}`);
-    expect(searches()).toHaveLength(2);
+    expect(sent.filter((line) => line.includes("SEARCH "))).toEqual([]);
   });
 
   it("stays quiet without the capability, a marker or a channel", () => {
@@ -709,61 +742,58 @@ describe("mention catch-up by server search", () => {
     expect(log().map((m) => m.msgid)).toEqual(["a", "live"]);
   });
 
-  describe("on a server that returns labels", () => {
-    const labelled = () => sent.filter((line) => line.includes(" SEARCH "));
-    const labelOf = (line: string | undefined) =>
-      /^@label=(\S+) /.exec(line ?? "")?.[1];
-
-    beforeEach(() => {
-      hasLabels = true;
-    });
-
-    it("takes only the answer that carries the label of its question", () => {
+  describe("answers and their labels", () => {
+    it("leaves an answer without our label to the chat and keeps the question open", () => {
       feed(
         `:server MARKREAD #one timestamp=${READ_AT}`,
         `:server MARKREAD #two timestamp=${READ_AT}`,
       );
-      expect(labelled()).toHaveLength(1);
-      const label = labelOf(labelled()[0]);
-      expect(label).toBeTruthy();
+      expect(searches()).toHaveLength(1);
       // A search typed by hand answers without our label: its lines reach the
-      // chat as they always did, and our question stays open.
-      feed(
-        ...answer(
-          "m",
-          `msgid=x;time=${at(5)} :bob!u@h PRIVMSG #one :from a manual search`,
-        ),
+      // chat as they always did.
+      feedRaw(
+        ":server BATCH +m soju.im/search",
+        `@batch=m;msgid=x;time=${at(5)} :bob!u@h PRIVMSG #one :from a manual search`,
+        ":server BATCH -m",
       );
       expect(messages().map((m) => m.msgid)).toEqual(["x"]);
-      expect(labelled()).toHaveLength(1);
-      feed(
-        `@label=${label} :server BATCH +o labeled-response`,
+      expect(searches()).toHaveLength(1);
+      feedRaw(
+        `@label=${labels()[0]} :server BATCH +o labeled-response`,
         "@batch=o :server BATCH +s soju.im/search",
         `@batch=s;msgid=a;time=${at(6)} :bob!u@h PRIVMSG #one :me: ours`,
         ":server BATCH -s",
         ":server BATCH -o",
       );
       expect(log().map((m) => m.msgid)).toEqual(["a"]);
+      expect(messages().map((m) => m.msgid)).toEqual(["x"]);
     });
 
-    it("reads a label set on the search batch itself and on a refusal", () => {
+    it("leaves a hand-typed search alone when it answers before our own", () => {
+      // The user's search went out first, and ours follows before its answer.
+      feed(`:server MARKREAD #one timestamp=${READ_AT}`);
+      feedRaw(
+        ":server BATCH +m soju.im/search",
+        `@batch=m;msgid=x;time=${at(5)} :bob!u@h PRIVMSG #one :from a manual search`,
+        ":server BATCH -m",
+      );
+      expect(messages().map((m) => m.msgid)).toEqual(["x"]);
+      feed(
+        ...answer("s", `msgid=a;time=${at(6)} :bob!u@h PRIVMSG #one :me: ours`),
+      );
+      expect(log().map((m) => m.msgid)).toEqual(["a"]);
+    });
+
+    it("reads a label set on the search batch itself and takes only our refusals", () => {
       feed(
         `:server MARKREAD #one timestamp=${READ_AT}`,
         `:server MARKREAD #two timestamp=${READ_AT}`,
       );
-      feed(
-        `@label=${labelOf(labelled()[0])} :server BATCH +s soju.im/search`,
-        `@batch=s;msgid=a;time=${at(6)} :bob!u@h PRIVMSG #one :me: ours`,
-        ":server BATCH -s",
-      );
-      expect(log().map((m) => m.msgid)).toEqual(["a"]);
-      const asked = labelled().length;
-      feed(":server FAIL SEARCH INTERNAL_ERROR :not ours");
-      expect(labelled()).toHaveLength(asked);
-      feed(
-        `@label=${labelOf(labelled().at(-1))} :server FAIL SEARCH INTERNAL_ERROR :ours`,
-      );
-      expect(labelled()).toHaveLength(asked + 1);
+      const asked = searches().length;
+      feedRaw(":server FAIL SEARCH INTERNAL_ERROR :not ours");
+      expect(searches()).toHaveLength(asked);
+      feed(":server FAIL SEARCH INTERNAL_ERROR :ours");
+      expect(searches()).toHaveLength(asked + 1);
     });
 
     it("goes on after one overdue answer and stops after two in a row", () => {
@@ -772,19 +802,24 @@ describe("mention catch-up by server search", () => {
         `:server MARKREAD #two timestamp=${READ_AT}`,
         `:server MARKREAD #three timestamp=${READ_AT}`,
       );
-      const first = labelOf(labelled()[0]);
+      const first = labels()[0];
       vi.advanceTimersByTime(ANSWER_TIMEOUT_MS + 1000);
-      expect(labelled()).toHaveLength(2);
-      // The late answer to the first question is told apart by its label.
-      feed(
+      expect(searches()).toHaveLength(2);
+      // The late answer to the first question is told apart by its label,
+      // and stays out of the chat too.
+      feedRaw(
         `@label=${first} :server BATCH +s soju.im/search`,
         `@batch=s;msgid=late;time=${at(6)} :bob!u@h PRIVMSG #two :me: late`,
         ":server BATCH -s",
       );
       expect(log()).toEqual([]);
-      expect(labelled()).toHaveLength(2);
+      expect(messages()).toEqual([]);
+      expect(searches()).toHaveLength(2);
       vi.advanceTimersByTime(ANSWER_TIMEOUT_MS + 1000);
-      expect(labelled()).toHaveLength(2);
+      expect(searches()).toHaveLength(2);
+      reconnect();
+      feed(`:server MARKREAD #two timestamp=${READ_AT}`);
+      expect(searches()).toHaveLength(3);
     });
   });
 

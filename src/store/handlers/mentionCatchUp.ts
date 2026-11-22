@@ -28,8 +28,6 @@ export const MAX_REQUESTS_PER_TERM = 12;
 // not start further back than this.
 export const MAX_LOOKBACK_MS = 90 * 24 * 60 * 60_000;
 export const ANSWER_TIMEOUT_MS = 30_000;
-// A labelled answer that comes late is told apart, so one slow search costs
-// only itself; a second in a row says the server has stopped answering.
 const MAX_TIMEOUTS_IN_A_ROW = 2;
 // Servers differ on whether a bound includes its own instant, and some keep
 // time to the second, so the next page overlaps the last by this much.
@@ -153,9 +151,7 @@ function askNext(store: StoreApi<AppState>, serverId: string): void {
   while (next && !next.isSweep && isSpent(next.budget))
     next = queue.waiting.shift();
   if (!next) return;
-  const label = ircClient.hasCapability(serverId, "labeled-response")
-    ? makeLabel()
-    : undefined;
+  const label = makeLabel();
   const isSent = ircClient.search(
     serverId,
     {
@@ -176,17 +172,13 @@ function askNext(store: StoreApi<AppState>, serverId: string): void {
   queue.timer = setTimeout(() => onOverdue(store, serverId), ANSWER_TIMEOUT_MS);
 }
 
-// A server without labels names no question in its answer, so once one is
-// overdue we can no longer tell whose answer the next batch is, and we stop
-// asking on this connection.
+// A late answer is told apart by its label, so one slow search costs only
+// itself; a second in a row says the server has stopped answering.
 function onOverdue(store: StoreApi<AppState>, serverId: string): void {
   const queue = queues.get(serverId);
   if (!queue?.asked) return;
   queue.timeoutsInARow += 1;
-  const canGoOn =
-    queue.asked.label !== undefined &&
-    queue.timeoutsInARow < MAX_TIMEOUTS_IN_A_ROW;
-  if (canGoOn) {
+  if (queue.timeoutsInARow < MAX_TIMEOUTS_IN_A_ROW) {
     finish(store, serverId, false);
     return;
   }
@@ -306,6 +298,7 @@ export function pagesAfter(
       ...next,
       before: shifted(oldest, EDGE_OVERLAP_MS),
       beforeEdge: oldest,
+      isStrictBefore: false,
     });
   if (
     newest > lowerEdge &&
@@ -315,6 +308,7 @@ export function pagesAfter(
       ...next,
       after: shifted(newest, -EDGE_OVERLAP_MS),
       afterEdge: newest,
+      isStrictAfter: false,
     });
   if (pages.length > 0 || results.length < SEARCH_PAGE_SIZE) return pages;
   // A full page that did not move may be one instant holding more lines than
@@ -355,10 +349,14 @@ function sweepAfter(question: Question, results: SearchResult[]): Question[] {
 const isPlaced = (result: SearchResult) =>
   result.hasServerTime && !Number.isNaN(result.timestamp.getTime());
 
-// With labels on, an answer to a search someone typed by hand carries another
-// label or none, and is not ours.
+// An answer names its question only through its label, so a server has to
+// return labels for us to search it at all.
+const canSearch = (serverId: string) =>
+  ircClient.hasCapability(serverId, "soju.im/search") &&
+  ircClient.hasCapability(serverId, "labeled-response");
+
 const answersAsked = (asked: Question, label: string | undefined) =>
-  asked.label === undefined || asked.label === label;
+  asked.label === label;
 
 function enqueue(
   store: StoreApi<AppState>,
@@ -392,7 +390,7 @@ export function registerMentionCatchUpHandlers(
   store: StoreApi<AppState>,
 ): void {
   ircClient.on("MARKREAD", ({ serverId, target, timestamp }) => {
-    if (!ircClient.hasCapability(serverId, "soju.im/search")) return;
+    if (!canSearch(serverId)) return;
     if (!ircClient.isChannel(serverId, target)) return;
     const queue = queueFor(serverId);
     // The first marker of a connection says where the user left off; later
@@ -454,15 +452,20 @@ export function registerMentionCatchUpHandlers(
   };
 
   ircClient.on("parsedLine", ({ serverId, command, parv, mtags }) => {
-    const queue = queues.get(serverId);
-    if (!queue) return;
     if (command === "BATCH") {
       const ref = parv[0] ?? "";
-      if (ref.startsWith("-")) queue.historyBatches.delete(ref.slice(1));
-      else if (parv[1] === "chathistory" && parv[2])
-        queue.historyBatches.set(ref.slice(1), parv[2].toLowerCase());
+      if (ref.startsWith("-"))
+        queues.get(serverId)?.historyBatches.delete(ref.slice(1));
+      // History may come before the marker that makes us look at it.
+      else if (parv[1] === "chathistory" && parv[2] && canSearch(serverId))
+        queueFor(serverId).historyBatches.set(
+          ref.slice(1),
+          parv[2].toLowerCase(),
+        );
       return;
     }
+    const queue = queues.get(serverId);
+    if (!queue) return;
     const channel = mtags?.batch
       ? queue.historyBatches.get(mtags.batch)
       : undefined;
@@ -475,8 +478,7 @@ export function registerMentionCatchUpHandlers(
   ircClient.on(
     "CHATHISTORY_LOADING",
     ({ serverId, channelName, isLoading }) => {
-      if (isLoading) return;
-      if (!ircClient.hasCapability(serverId, "soju.im/search")) return;
+      if (isLoading || !canSearch(serverId)) return;
       const queue = queueFor(serverId);
       const key = channelName.toLowerCase();
       // The marker and the history come in either order.

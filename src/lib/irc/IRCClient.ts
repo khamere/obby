@@ -753,12 +753,8 @@ export class IRCClient implements IRCClientContext {
   private diskOnlyBatches = new Set<string>();
   // Whether the line being handled came with the server's own time.
   hasLineServerTime = true;
-  // Searches we sent and still expect an answer to, by label where the
-  // server returns labels.
-  private pendingSearches = new Map<
-    string,
-    { labels: Set<string>; unlabelled: number }
-  >();
+  // The labels of the searches we sent and still expect an answer to.
+  private pendingSearches = new Map<string, Set<string>>();
   motdLines: Map<string, string[]> = new Map();
 
   private ourCaps: string[] = [
@@ -2088,37 +2084,28 @@ export class IRCClient implements IRCClientContext {
 
   // soju.im/search: the server answers with one `soju.im/search` batch, which
   // carries no reference to the question, so callers ask one at a time.
-  // The answer names its question only through a label, which the caller
-  // passes where the server returns labels.
+  // The answer names its question only through the label.
   search(
     serverId: string,
     attributes: Record<string, string>,
-    label?: string,
+    label: string,
   ): boolean {
     if (!this.hasCapability(serverId, "soju.im/search")) return false;
-    const pending = this.pendingSearches.get(serverId) ?? {
-      labels: new Set<string>(),
-      unlabelled: 0,
-    };
-    if (label) pending.labels.add(label);
-    else pending.unlabelled += 1;
+    const pending = this.pendingSearches.get(serverId) ?? new Set<string>();
+    pending.add(label);
     this.pendingSearches.set(serverId, pending);
-    const tags = label ? `@label=${label} ` : "";
-    this.sendRaw(serverId, `${tags}SEARCH ${encodeBouncerAttrs(attributes)}`);
+    this.sendRaw(
+      serverId,
+      `@label=${label} SEARCH ${encodeBouncerAttrs(attributes)}`,
+    );
     return true;
   }
 
-  // An answer is ours when it carries the label of a search we sent, or,
-  // where the server returns no labels, while one of ours is out, however
+  // An answer is ours when it carries the label of a search we sent, however
   // late it comes. Any other answers a search the user typed, and reaches
   // the chat like other lines.
   claimSearchAnswer(serverId: string, label: string | undefined): boolean {
-    const pending = this.pendingSearches.get(serverId);
-    if (!pending) return false;
-    if (label) return pending.labels.delete(label);
-    if (pending.unlabelled === 0) return false;
-    pending.unlabelled -= 1;
-    return true;
+    return !!label && !!this.pendingSearches.get(serverId)?.delete(label);
   }
 
   forgetSearches(serverId: string): void {
