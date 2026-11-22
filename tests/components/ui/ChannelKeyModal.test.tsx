@@ -55,6 +55,37 @@ describe("ChannelKeyModal", () => {
     expect(useStore.getState().channelKeyPrompt).toBeNull();
   });
 
+  it("drops the spaces around a pasted key", () => {
+    const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    render(<ChannelKeyModal />);
+
+    fireEvent.change(screen.getByLabelText("Channel key"), {
+      target: { value: " hunter2 " },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Join" }));
+
+    expect(sendRaw).toHaveBeenCalledWith(SERVER, "JOIN #vault hunter2");
+  });
+
+  it.each(["hunter2 #other", "hunter2,other"])(
+    "keeps the prompt open for %j and sends nothing",
+    (key) => {
+      const sendRaw = vi
+        .spyOn(ircClient, "sendRaw")
+        .mockImplementation(() => {});
+      render(<ChannelKeyModal />);
+
+      fireEvent.change(screen.getByLabelText("Channel key"), {
+        target: { value: key },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Join" }));
+
+      expect(sendRaw).not.toHaveBeenCalled();
+      expect(useStore.getState().channelKeyPrompt).not.toBeNull();
+      expect(screen.getByText("Wrong key, try again")).toBeInTheDocument();
+    },
+  );
+
   it("tells the user when the last key was wrong", () => {
     useStore.setState({
       channelKeyPrompt: {

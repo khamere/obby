@@ -3,6 +3,7 @@ import type { StoreApi } from "zustand";
 import { forgetAutoAway, forgetExpectedBack } from "../../lib/autoAway";
 import { isLiveChannel } from "../../lib/channelFolders";
 import ircClient from "../../lib/ircClient";
+import { breaksJoinLine } from "../../lib/ircUtils";
 import type { PrivateChat } from "../../types";
 import {
   generateDeterministicId,
@@ -395,15 +396,17 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
         channelsToJoin = savedServer.channels;
       }
 
+      // We drop only the saved names that would change the JOIN line, and leave every other name for the server to answer.
+      const sendableChannels = channelsToJoin.filter(
+        (channelName) => !breaksJoinLine(channelName),
+      );
+      if (sendableChannels.length < channelsToJoin.length) {
+        savedServer.channels = sendableChannels;
+        storage.servers.save(savedServers);
+        channelsToJoin = sendableChannels;
+      }
+
       if (!isBouncerSession) {
-        const joinableChannels = channelsToJoin.filter((channelName) =>
-          ircClient.isJoinableChannel(serverId, channelName),
-        );
-        if (joinableChannels.length < channelsToJoin.length) {
-          savedServer.channels = joinableChannels;
-          storage.servers.save(savedServers);
-          channelsToJoin = joinableChannels;
-        }
         for (const channelName of channelsToJoin) {
           if (channelName) {
             store.getState().joinChannel(serverId, channelName, undefined, {

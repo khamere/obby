@@ -77,11 +77,27 @@ describe("joining a name that is not one channel", () => {
     expect(useStore.getState().channelOrder[SERVER]).toBeUndefined();
   });
 
-  it("sends nothing for a key with a line break", () => {
-    useStore.getState().joinChannel(SERVER, "#locked", "key\r\nQUIT");
+  it.each([
+    ["a line break", "key\r\nQUIT"],
+    ["a space", "key #other"],
+    ["a comma", "key,other"],
+  ])("sends and saves nothing for a key with %s", (_, key) => {
+    useStore.getState().joinChannel(SERVER, "#locked", key);
 
     expect(sentLines()).toEqual([]);
     expect(channelNames()).toEqual([]);
+    expect(savedChannels()).toEqual(["#saved"]);
+  });
+
+  it.each([
+    ["a name longer than any limit we know", `#${"a".repeat(300)}`],
+    ["a name with a non-breaking space", "#two\u00a0words"],
+    ["a name outside ASCII", "#日本語"],
+  ])("sends %s to the server", (_, name) => {
+    useStore.getState().joinChannel(SERVER, name);
+
+    expect(sentLines()).toContain(`JOIN ${name}`);
+    expect(savedChannels()).toEqual(["#saved", name]);
   });
 
   it("still joins a plain channel, with and without a key", () => {
@@ -91,6 +107,28 @@ describe("joining a name that is not one channel", () => {
     expect(sentLines()).toContain("JOIN #open");
     expect(sentLines()).toContain("JOIN #locked secret");
     expect(channelNames()).toEqual(["#open", "#locked"]);
+  });
+
+  it("keeps every saved name the server can judge when it connects", () => {
+    const saved = [
+      "#saved",
+      `#${"a".repeat(200)}`,
+      "#two\u00a0words",
+      "#café",
+      "#tab\there",
+    ];
+    saveChannels(saved);
+
+    ircClient.triggerEvent("ready", {
+      serverId: SERVER,
+      serverName: "Test",
+      nickname: "me",
+    });
+
+    expect(savedChannels()).toEqual(saved);
+    expect(
+      sentLines().filter((line: string) => line.startsWith("JOIN")),
+    ).toEqual(saved.map((name) => `JOIN ${name}`));
   });
 
   it("drops such a saved name on connect and rejoins the others", () => {
@@ -105,6 +143,27 @@ describe("joining a name that is not one channel", () => {
     const joins = sentLines().filter((line: string) => line.startsWith("JOIN"));
     expect(joins).toEqual(["JOIN #saved"]);
     expect(channelNames()).toEqual(["#saved"]);
+    expect(savedChannels()).toEqual(["#saved"]);
+  });
+
+  it("drops such a saved name in a bouncer session too", () => {
+    saveChannels(["#saved", INJECTED, "#a,0"]);
+    useStore.setState((state) => ({
+      servers: state.servers.map((server) => ({
+        ...server,
+        bouncerNetid: "1",
+      })),
+    }));
+
+    ircClient.triggerEvent("ready", {
+      serverId: SERVER,
+      serverName: "Test",
+      nickname: "me",
+    });
+
+    expect(
+      sentLines().filter((line: string) => line.startsWith("JOIN")),
+    ).toEqual([]);
     expect(savedChannels()).toEqual(["#saved"]);
   });
 });

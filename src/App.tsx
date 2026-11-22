@@ -22,11 +22,11 @@ import { useChannelTabSwitching } from "./hooks/useChannelTabSwitching";
 import { useConnectionResilience } from "./hooks/useConnectionResilience";
 import { useDesktopTray } from "./hooks/useDesktopTray";
 import { useKeyboardResize } from "./hooks/useKeyboardResize";
+import { joinOnFirstReady, takeChannelFromAddress } from "./lib/channelLink";
 import { whenHistoryIdle } from "./lib/history/historyDb";
 import { useHistoryPoll } from "./lib/historyPoll/useHistoryPoll";
 import ircClient from "./lib/ircClient";
 import { parseIrcUrl } from "./lib/ircUrlParser";
-import { channelFromLink } from "./lib/ircUtils";
 import { handleNotificationTaps } from "./lib/notifications";
 import { openNotificationTarget } from "./lib/openNotificationTarget";
 import { isTauri } from "./lib/platformUtils";
@@ -35,37 +35,9 @@ import { offerNotificationsOnce } from "./store/handlers/chatNotifications";
 import { isAppInFront } from "./store/helpers";
 import type { ConnectionDetails } from "./store/types";
 
-/* Channel auto-join from URL query string.
- *
- * When the hosted client is reached via an invite-page "Join via
- * Web" link the URL carries `?channel=<urlencoded>` (the obbyircd
- * invite-page module appends it on channel-specific invites). Read
- * the param once on module load, normalise the value, and stash for
- * the first `ready` event to consume.  The query param is stripped
- * from the visible address bar immediately so a refresh doesn't
- * silently re-fire the auto-join. */
-let pendingJoinChannel: string | null = null;
-if (typeof window !== "undefined") {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const raw = params.get("channel");
-    if (raw) {
-      // Accept both encoded ("%23weather") and unencoded ("#weather") forms.
-      pendingJoinChannel = channelFromLink(raw);
-      // Strip the param so refreshes don't re-trigger.  Preserve any
-      // other query params the host page may use.
-      params.delete("channel");
-      const remaining = params.toString();
-      const newUrl =
-        window.location.pathname +
-        (remaining ? `?${remaining}` : "") +
-        window.location.hash;
-      window.history.replaceState({}, "", newUrl);
-    }
-  } catch {
-    /* malformed URL -- silently ignore */
-  }
-}
+// The address still carries the link's parameter only while the module loads, so we read it here.
+const linkedChannel =
+  typeof window !== "undefined" ? takeChannelFromAddress() : null;
 
 const initializeEnvSettings = (
   toggleAddServerModal: (
@@ -215,16 +187,12 @@ const App: React.FC = () => {
     initializeEnvSettings(toggleAddServerModal, joinChannel);
     connectToSavedServers();
 
-    /* Auto-join the channel encoded in `?channel=` on the URL the
-     * user landed on.  Fires on the first server that finishes
-     * registration so persistence reconnects and fresh connects both
-     * get caught.  Channel pending state is module-scoped and
-     * consumed exactly once. */
-    if (pendingJoinChannel) {
-      const onReady = ({ serverId }: { serverId: string }) => {
-        if (!pendingJoinChannel) return;
-        const channel = pendingJoinChannel;
-        pendingJoinChannel = null;
+    if (linkedChannel) {
+      // A bouncer's control session holds no channels, so the link waits for the first network.
+      const holdsChannels = (serverId: string) =>
+        !useStore.getState().servers.find((s) => s.id === serverId)
+          ?.isBouncerControl;
+      joinOnFirstReady(linkedChannel, holdsChannels, (serverId, channel) => {
         joinChannel(serverId, channel);
         // Wait a tick for the JOIN echo to register the channel in
         // the store, then focus it.  Same pattern UserProfileModal
@@ -236,9 +204,7 @@ const App: React.FC = () => {
           const ch = srv?.channels.find((c) => c.name === channel);
           if (ch) selectChannel(ch.id, { navigate: true });
         }, 200);
-        ircClient.deleteHook("ready", onReady);
-      };
-      ircClient.on("ready", onReady);
+      });
     }
   }, [connectToSavedServers, joinChannel, selectChannel, toggleAddServerModal]);
 

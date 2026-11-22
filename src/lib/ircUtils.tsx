@@ -38,12 +38,19 @@ export function isChannelTarget(
   return !!name && chantypes.includes(name[0]);
 }
 
-const CHANNEL_NAME_MAX_LENGTH = 200;
-const JOIN_ARGUMENT_BREAK = /[\s,\p{Cc}]/u;
-const CONTROL_CHARACTER = /\p{Cc}/u;
+// A space or comma starts another argument or list entry in a JOIN line, and
+// NUL, CR or LF ends the line.
+const JOIN_LINE_BREAKS = [" ", ",", "\0", "\r", "\n"];
+const BEL = "\x07";
 
-/** True when `name` is exactly one channel in a JOIN line: a space or comma
- * would add arguments to the line and a control character would end it. */
+/** True when `value` would change the JOIN line it is sent in. */
+export function breaksJoinLine(value: string): boolean {
+  return JOIN_LINE_BREAKS.some((character) => value.includes(character));
+}
+
+/** True when `name` is exactly one channel in a JOIN line. The protocol also
+ * keeps BEL out of channel names; length and every other character are for
+ * the server to judge. */
 export function isJoinableChannelName(
   name: string | undefined | null,
   chantypes: string = KNOWN_CHANTYPES,
@@ -51,13 +58,14 @@ export function isJoinableChannelName(
   return (
     isChannelTarget(name, chantypes) &&
     !!name &&
-    name.length <= CHANNEL_NAME_MAX_LENGTH &&
-    !JOIN_ARGUMENT_BREAK.test(name)
+    !breaksJoinLine(name) &&
+    !name.includes(BEL)
   );
 }
 
-export function hasControlCharacter(value: string): boolean {
-  return CONTROL_CHARACTER.test(value);
+/** True when `key` stays the one key argument of a JOIN line. */
+export function isJoinableChannelKey(key: string): boolean {
+  return !breaksJoinLine(key);
 }
 
 /** The channel a link asks us to join, or null when its value is not one

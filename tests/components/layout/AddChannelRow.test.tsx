@@ -165,6 +165,17 @@ describe("AddChannelRow with a name that is not one channel", () => {
     expect(screen.getByRole("alert")).toBeInTheDocument();
   });
 
+  it.each([
+    ["a name with a non-breaking space", "two\u00a0words"],
+    ["a name outside ASCII", "日本語"],
+    ["a very long name", "a".repeat(300)],
+  ])("leaves %s for the server to judge", (_, value) => {
+    const onAdd = openRow(false);
+    typeAndSubmit("Text channel", value);
+
+    expect(onAdd).toHaveBeenCalledWith(`#${value}`);
+  });
+
   it("shows no hint for a plain name", () => {
     openRow(false);
     fireEvent.change(screen.getByLabelText("Text channel"), {
