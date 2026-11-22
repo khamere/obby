@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
   breaksJoinLine,
+  cannotBeChannelName,
   channelFromLink,
   isJoinableChannelKey,
   isJoinableChannelName,
@@ -57,6 +58,18 @@ describe("breaksJoinLine", () => {
     "lobby",
   ])("%j leaves the line whole", (name) =>
     expect(breaksJoinLine(name)).toBe(false),
+  );
+});
+
+describe("cannotBeChannelName", () => {
+  test.each(["#a b", "#a,#b", "#a\nb", "#lob\x07by"])(
+    "%j is a name no server holds",
+    (name) => expect(cannotBeChannelName(name)).toBe(true),
+  );
+
+  test.each(["#two\u00a0words", "#lob\tby", `#${"a".repeat(300)}`, "#café"])(
+    "%j is for the server to judge",
+    (name) => expect(cannotBeChannelName(name)).toBe(false),
   );
 });
 

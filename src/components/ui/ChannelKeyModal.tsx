@@ -1,7 +1,7 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type React from "react";
 import { useEffect, useState } from "react";
-import { isJoinableChannelKey } from "../../lib/ircUtils";
+import { isJoinableChannelKey, trimPlainSpaces } from "../../lib/ircUtils";
 import BaseModal from "../../lib/modal/BaseModal";
 import {
   Button,
@@ -10,8 +10,6 @@ import {
   ModalFooter,
 } from "../../lib/modal/components";
 import useStore from "../../store";
-
-const trimSpaces = (value: string) => value.replace(/^ +| +$/g, "");
 
 export const ChannelKeyModal: React.FC = () => {
   const { t } = useLingui();
@@ -34,7 +32,7 @@ export const ChannelKeyModal: React.FC = () => {
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // A pasted key often carries a space at either end. Servers compare every other character exactly, so we send those as typed.
-    const typedKey = trimSpaces(key);
+    const typedKey = trimPlainSpaces(key);
     if (!typedKey) return;
     if (!isJoinableChannelKey(typedKey)) {
       setIsUnusableKey(true);
@@ -73,7 +71,11 @@ export const ChannelKeyModal: React.FC = () => {
           />
         </ModalBody>
         <ModalFooter>
-          <Button type="submit" variant="primary" disabled={!trimSpaces(key)}>
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={!trimPlainSpaces(key)}
+          >
             <Trans>Join</Trans>
           </Button>
         </ModalFooter>

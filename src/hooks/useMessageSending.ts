@@ -329,7 +329,12 @@ export function useMessageSending({
       if (lowerName === "nick") {
         if (args[0]) useStore.getState().changeNick(selectedServerId, args[0]);
       } else if (lowerName === "join") {
-        const targets = parseJoinCommand(command.slice(commandName.length + 1));
+        // We read the arguments from the typed text, where only plain spaces are padding.
+        const targets = parseJoinCommand(
+          cleanedText.slice(
+            cleanedText.indexOf(commandName) + commandName.length,
+          ),
+        );
         if (targets.length > 0) {
           for (const { name, key } of targets)
             useStore.getState().joinChannel(selectedServerId, name, key);

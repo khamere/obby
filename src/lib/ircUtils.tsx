@@ -48,18 +48,20 @@ export function breaksJoinLine(value: string): boolean {
   return JOIN_LINE_BREAKS.some((character) => value.includes(character));
 }
 
-/** True when `name` is exactly one channel in a JOIN line. The protocol also
- * keeps BEL out of channel names; length and every other character are for
- * the server to judge. */
+/** True when no server holds a channel of this name: it would change the JOIN
+ * line, or it holds BEL, which the protocol keeps out of channel names. */
+export function cannotBeChannelName(name: string): boolean {
+  return breaksJoinLine(name) || name.includes(BEL);
+}
+
+/** True when `name` is exactly one channel in a JOIN line. Length and every
+ * character `cannotBeChannelName` allows are for the server to judge. */
 export function isJoinableChannelName(
   name: string | undefined | null,
   chantypes: string = KNOWN_CHANTYPES,
 ): name is string {
   return (
-    isChannelTarget(name, chantypes) &&
-    !!name &&
-    !breaksJoinLine(name) &&
-    !name.includes(BEL)
+    isChannelTarget(name, chantypes) && !!name && !cannotBeChannelName(name)
   );
 }
 
@@ -78,14 +80,22 @@ export function joinKeyArgument(key: string): string {
   return key.includes(" ") || key.startsWith(":") ? `:${key}` : key;
 }
 
+/** `value` without the plain spaces at either end. Every other character, a
+ * non-breaking space included, can be part of a channel key. */
+export function trimPlainSpaces(value: string): string {
+  return value.replace(/^ +| +$/g, "");
+}
+
 /** The channels and keys of a typed `/join`, read as the server reads a JOIN
  * line: the second argument is the key list, and after a colon it runs to the
  * end of the line, spaces included. */
 export function parseJoinCommand(
   argumentText: string,
 ): { name: string; key: string | undefined }[] {
-  const [, channels = "", rest = ""] =
-    /^ *([^ ]*) *(.*)$/.exec(argumentText) ?? [];
+  const text = trimPlainSpaces(argumentText);
+  const channelsEnd = text.includes(" ") ? text.indexOf(" ") : text.length;
+  const channels = text.slice(0, channelsEnd);
+  const rest = trimPlainSpaces(text.slice(channelsEnd));
   const keyList = rest.startsWith(":") ? rest.slice(1) : rest.split(" ")[0];
   const keys = keyList.split(",");
   return channels

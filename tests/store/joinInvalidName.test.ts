@@ -257,7 +257,7 @@ describe("joining a name that is not one channel", () => {
   );
 
   it("drops such a saved name on connect and rejoins the others", () => {
-    saveChannels(["#saved", INJECTED, "#a b"]);
+    saveChannels(["#saved", INJECTED, "#a b", "#be\x07ll"]);
 
     ircClient.triggerEvent("ready", {
       serverId: SERVER,

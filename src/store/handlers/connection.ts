@@ -3,7 +3,7 @@ import type { StoreApi } from "zustand";
 import { forgetAutoAway, forgetExpectedBack } from "../../lib/autoAway";
 import { isLiveChannel } from "../../lib/channelFolders";
 import ircClient from "../../lib/ircClient";
-import { breaksJoinLine } from "../../lib/ircUtils";
+import { cannotBeChannelName } from "../../lib/ircUtils";
 import type { PrivateChat } from "../../types";
 import {
   generateDeterministicId,
@@ -396,10 +396,10 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
         channelsToJoin = savedServer.channels;
       }
 
-      // We drop only the saved entries that are no name or would change the JOIN line, and leave every other name for the server to answer.
+      // We drop only the saved entries that no server holds as a channel, and leave every other name for the server to answer.
       const sendableChannels = channelsToJoin.filter(
         (channelName: unknown) =>
-          typeof channelName === "string" && !breaksJoinLine(channelName),
+          typeof channelName === "string" && !cannotBeChannelName(channelName),
       );
       if (sendableChannels.length < channelsToJoin.length) {
         savedServer.channels = sendableChannels;

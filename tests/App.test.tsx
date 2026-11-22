@@ -5,6 +5,11 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import App from "../src/App";
 import ircClient from "../src/lib/ircClient";
 
+// The app reads the link's channel from the address while its module loads, so we set it before the import above runs.
+vi.hoisted(() => {
+  window.history.replaceState({}, "", "/?channel=%23weather&theme=dark");
+});
+
 // Mock IRC client
 vi.mock("../src/lib/ircClient", () => ({
   default: {
@@ -63,6 +68,7 @@ const mockStoreState = {
     showQuits: true,
   },
   updateGlobalSettings: vi.fn(),
+  joinChannel: vi.fn(),
   metadataSet: vi.fn(),
   sendRaw: vi.fn(),
   setName: vi.fn(),
@@ -144,6 +150,28 @@ describe("App", () => {
       pressCmdK();
       expect(mockStoreState.toggleQuickActions).toHaveBeenCalledTimes(1);
       now.mockRestore();
+    });
+  });
+
+  describe("Opened from a link with a channel", () => {
+    it("takes the channel out of the address and joins it when a server registers", () => {
+      expect(window.location.search).toBe("?theme=dark");
+
+      render(
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>,
+      );
+      const readyHandlers = vi
+        .mocked(ircClient.on)
+        .mock.calls.filter(([event]) => event === "ready")
+        .map(([, handler]) => handler as (e: { serverId: string }) => void);
+      for (const handler of readyHandlers) handler({ serverId: "srv-1" });
+
+      expect(mockStoreState.joinChannel).toHaveBeenCalledWith(
+        "srv-1",
+        "#weather",
+      );
     });
   });
 
