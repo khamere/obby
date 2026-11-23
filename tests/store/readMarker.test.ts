@@ -314,6 +314,33 @@ describe("read markers", () => {
     expect(markreadSet).toHaveBeenCalledWith(SERVER, "#chan", newest);
   });
 
+  it("marks the chat read after a multiline batch has closed, never inside it", async () => {
+    const { useStore, ircClient, markreadSet } = await boot({
+      selected: true,
+    });
+    useStore.setState((state) => ({
+      ui: { ...state.ui, isChatAwayFromPresent: true },
+    }));
+    const send = (line: string) =>
+      ircClient.triggerEvent("rawLine", {
+        serverId: SERVER,
+        direction: "tx",
+        line,
+      });
+
+    send("@+reply=abc BATCH +ml1 draft/multiline #chan");
+    send("@batch=ml1 PRIVMSG #chan :one");
+    send("@batch=ml1;draft/multiline-concat PRIVMSG #chan :two");
+    expect(markreadSet).not.toHaveBeenCalled();
+
+    send("BATCH -ml1");
+    expect(markreadSet).toHaveBeenCalledExactlyOnceWith(
+      SERVER,
+      "#chan",
+      new Date(BASE + 3000).toISOString(),
+    );
+  });
+
   it("marks our own line read at the time the server stored it, never at the time we sent it", async () => {
     const { useStore, ircClient, markreadSet } = await boot({
       selected: true,

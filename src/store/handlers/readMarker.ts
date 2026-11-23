@@ -259,6 +259,30 @@ function askWaitingChannelMarkers(store: StoreApi<AppState>, serverId: string) {
 
 const READ = { unreadCount: 0, mentionCount: 0, isMentioned: false };
 
+const OPENS_MULTILINE = /^(?:@\S+ )?BATCH \+(\S+) draft\/multiline (\S+)/;
+const CLOSES_BATCH = /^BATCH -(\S+)/;
+const IS_BATCHED = /^@(?:[^ ]*;)?batch=/;
+const SENDS_MESSAGE = /^(?:@\S+ )?PRIVMSG (\S+) :/;
+const openMultilineTargets = new Map<string, string>();
+
+// A server refuses every other command inside an open multiline batch, so a batch names its chat once it has closed.
+function sentMessageTarget(serverId: string, line: string): string | undefined {
+  const opened = OPENS_MULTILINE.exec(line);
+  if (opened) {
+    openMultilineTargets.set(`${serverId} ${opened[1]}`, opened[2]);
+    return undefined;
+  }
+  const closed = CLOSES_BATCH.exec(line);
+  if (closed) {
+    const batch = `${serverId} ${closed[1]}`;
+    const target = openMultilineTargets.get(batch);
+    openMultilineTargets.delete(batch);
+    return target;
+  }
+  if (IS_BATCHED.test(line)) return undefined;
+  return SENDS_MESSAGE.exec(line)?.[1];
+}
+
 export function registerReadMarkerHandlers(store: StoreApi<AppState>): void {
   ircClient.on("MARKREAD", ({ serverId, target, timestamp }) => {
     let toSend: string | undefined;
@@ -359,6 +383,8 @@ export function registerReadMarkerHandlers(store: StoreApi<AppState>): void {
     if (connectionState === "connected") return setRefused(serverId, false);
     registeredAt.delete(serverId);
     resentMarkers.delete(serverId);
+    for (const batch of openMultilineTargets.keys())
+      if (batch.startsWith(`${serverId} `)) openMultilineTargets.delete(batch);
     askPrivateMarkersAgain(serverId);
   });
   // We take the time from the server's welcome when it sends one, so a local
@@ -426,7 +452,7 @@ export function registerReadMarkerHandlers(store: StoreApi<AppState>): void {
   // at once, even when they switch away or scroll up right after.
   ircClient.on("rawLine", ({ serverId, direction, line }) => {
     if (direction !== "tx") return;
-    const target = /^(?:@\S+ )?PRIVMSG (\S+) :/.exec(line)?.[1];
+    const target = sentMessageTarget(serverId, line);
     const chat = target && findConversation(store, serverId, target);
     if (chat) markChatRead(store, serverId, chat.channelId);
   });
