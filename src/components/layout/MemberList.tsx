@@ -666,7 +666,7 @@ export const MemberList: React.FC = () => {
               }}
               title={t`Clear search`}
               aria-label={t`Clear search`}
-              className={`absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center rounded text-discord-text-muted hover:text-white ${isTouch ? "w-11 h-11" : "w-8 h-8"}`}
+              className={`absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center rounded text-discord-text-muted hover:text-discord-text-strong ${isTouch ? "w-11 h-11" : "w-8 h-8"}`}
             >
               <FaTimes size={12} />
             </button>

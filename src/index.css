@@ -163,7 +163,7 @@
     container-type: inline-size;
   }
   .detail-row {
-    @apply flex flex-col gap-0.5 px-4 py-2.5 border-t border-white/[0.06] first:border-t-0;
+    @apply flex flex-col gap-0.5 px-4 py-2.5 border-t border-discord-text-strong/[0.06] first:border-t-0;
   }
   .detail-label {
     @apply text-xs text-discord-text-muted;

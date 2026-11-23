@@ -51,14 +51,14 @@ export const NickClaimStrip: React.FC<{ server: Server }> = ({ server }) => {
     verify: <Trans>Enter the code sent to your email</Trans>,
     login: (
       <Trans>
-        <strong className="text-white">{nick}</strong> is registered. Log in to
-        use it
+        <strong className="text-discord-text-strong">{nick}</strong> is
+        registered. Log in to use it
       </Trans>
     ),
     register: (
       <Trans>
-        <strong className="text-white">{nick}</strong> is not registered.
-        Register it to keep it
+        <strong className="text-discord-text-strong">{nick}</strong> is not
+        registered. Register it to keep it
       </Trans>
     ),
     loggedOut: <Trans>You are not logged in</Trans>,
@@ -83,7 +83,7 @@ export const NickClaimStrip: React.FC<{ server: Server }> = ({ server }) => {
           onClick={() => useStore.getState().hideNickPrompt(server.id)}
           title={t`Don't show again for this server`}
           aria-label={t`Don't show again for this server`}
-          className={`shrink-0 flex items-center justify-center rounded text-discord-text-muted hover:text-white ${isTouch ? "w-11 h-11 -m-2.5" : "w-5 h-5"}`}
+          className={`shrink-0 flex items-center justify-center rounded text-discord-text-muted hover:text-discord-text-strong ${isTouch ? "w-11 h-11 -m-2.5" : "w-5 h-5"}`}
         >
           <FaTimes />
         </button>
