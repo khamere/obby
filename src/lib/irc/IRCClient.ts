@@ -19,6 +19,7 @@ import { parseIrcUrl } from "../ircUrlParser";
 import {
   chantypesOf,
   escapeTagValue,
+  formatTags,
   isChannelTarget,
   isJoinableChannelKey,
   isJoinableChannelName,
@@ -155,7 +156,10 @@ export interface EventMap {
     sender: string;
   };
   NAMES: BaseIRCEvent & { channelName: string; users: User[] };
-  "CAP LS": BaseIRCEvent & { cliCaps: string };
+  "CAP LS": BaseIRCEvent & {
+    values: Record<string, string>;
+    isFirstLine: boolean;
+  };
   "CAP ACK": BaseIRCEvent & { cliCaps: string };
   "CAP DEL": BaseIRCEvent & { caps: string[] };
   ISUPPORT: BaseIRCEvent & { key: string; value: string };
@@ -698,6 +702,14 @@ function splitCapToken(token: string): { cap: string; value?: string } {
     : { cap: token.slice(0, eq), value: token.slice(eq + 1) };
 }
 
+/** A connect that we closed on purpose before its socket opened. */
+export class ConnectionClosedError extends Error {
+  constructor(address: string) {
+    super(`Connection to ${address} was closed`);
+    this.name = "ConnectionClosedError";
+  }
+}
+
 export class IRCClient implements IRCClientContext {
   private sockets: Map<string, ISocket> = new Map();
   private memberRequestNumbers = new WeakMap<ISocket, number>();
@@ -712,6 +724,7 @@ export class IRCClient implements IRCClientContext {
   private saslCredentials: Map<string, { username: string; password: string }> =
     new Map();
   private pendingConnections: Map<string, Promise<Server>> = new Map();
+  private cancelPendingConnection: Map<string, () => void> = new Map();
   // Requested capabilities still awaiting an ACK. A long CAP REQ is split
   // across batches and the server may ACK in arbitrary pieces, so completion
   // is tracked by name rather than by counting ACK lines.
@@ -728,7 +741,7 @@ export class IRCClient implements IRCClientContext {
   rateLimitedServers: Map<string, number> = new Map(); // Track rate-limited servers (serverId -> timestamp)
   private pingTimers: Map<string, NodeJS.Timeout> = new Map(); // Track ping timers per server
   pongTimeouts: Map<string, NodeJS.Timeout> = new Map(); // Track pong timeouts per server
-  private pongWaitMs: Map<string, number> = new Map();
+  joinsDuringReady: Map<string, Set<string>> = new Map();
   private serverConnectParams: Map<
     string,
     {
@@ -897,6 +910,9 @@ export class IRCClient implements IRCClientContext {
 
     // Create a new connection promise and store it
     const connectionPromise = new Promise<Server>((resolve, reject) => {
+      this.cancelPendingConnection.set(connectionKey, () =>
+        reject(new ConnectionClosedError(`${host}:${port}`)),
+      );
       let protocol: "wss" | "ircs" | "irc" = "wss";
       let actualHost = host;
       let actualPort = port;
@@ -1041,6 +1057,7 @@ export class IRCClient implements IRCClientContext {
           direction: "info",
           line: `** connected to ${actualHost}:${actualPort}`,
         });
+        this.capLsAccumulated.delete(server.id);
         socket.send("CAP LS 302");
 
         // Send password if provided (before CAP negotiation completes)
@@ -1131,22 +1148,7 @@ export class IRCClient implements IRCClientContext {
         const serverId = Array.from(this.servers.keys()).find(
           (id) => this.sockets.get(id) === socket,
         );
-        if (serverId) {
-          this.restartPongWait(serverId, socket);
-          const data =
-            typeof event.data === "string"
-              ? event.data
-              : String(event.data ?? "");
-          for (const line of data.split(/\r?\n/)) {
-            if (line.length === 0) continue;
-            this.triggerEvent("rawLine", {
-              serverId,
-              direction: "rx",
-              line,
-            });
-          }
-          this.handleMessage(event.data, serverId);
-        }
+        if (serverId) this.receiveFromSocket(serverId, event.data);
       };
     });
 
@@ -1154,8 +1156,12 @@ export class IRCClient implements IRCClientContext {
     this.pendingConnections.set(connectionKey, connectionPromise);
 
     // Clean up the pending connection when it resolves or rejects
-    const forgetPending = () => this.pendingConnections.delete(connectionKey);
-    connectionPromise.then(forgetPending, forgetPending);
+    connectionPromise
+      .finally(() => {
+        this.pendingConnections.delete(connectionKey);
+        this.cancelPendingConnection.delete(connectionKey);
+      })
+      .catch(() => {});
 
     return connectionPromise;
   }
@@ -1201,11 +1207,12 @@ export class IRCClient implements IRCClientContext {
         serverId: server.id,
         connectionState: "disconnected",
       });
-      // connect() keys the pending promise by serverId when present and
-      // falls back to host:port, so clear both to avoid a stuck entry
-      // that would block a later reconnect for the same server.
-      this.pendingConnections.delete(serverId);
-      this.pendingConnections.delete(`${server.host}:${server.port}`);
+      // connect() keys the pending promise by serverId or host:port, and the
+      // socket's handlers are detached above, so we settle both entries here.
+      for (const key of [serverId, `${server.host}:${server.port}`]) {
+        this.pendingConnections.delete(key);
+        this.cancelPendingConnection.get(key)?.();
+      }
     }
     // Clear reconnection state
     this.reconnectionAttempts.delete(serverId);
@@ -1339,6 +1346,7 @@ export class IRCClient implements IRCClientContext {
       );
       this.reconnectionTimeouts.delete(serverId);
     } catch (error) {
+      if (error instanceof ConnectionClosedError) return;
       console.log(`Reconnection failed for server ${serverId}:`, error);
       // Failed - try again
       this.startReconnection(
@@ -1413,10 +1421,37 @@ export class IRCClient implements IRCClientContext {
     return Date.now() - at <= IRCClient.RECENT_SEND_MS;
   }
 
-  sendRaw(serverId: string, text: string): void {
-    // The server reads every line of a frame as a command of its own, so we
-    // send only the first line of whatever a caller hands us.
-    const command = text.split(/[\r\n\0]/, 1)[0];
+  // A reconnect reuses what we connected with, so a login saved during the
+  // session has to reach these too or the next reconnect comes back as a guest.
+  setSaslLogin(
+    serverId: string,
+    account: string,
+    storedPassword: string,
+  ): void {
+    const params = this.serverConnectParams.get(serverId);
+    if (params)
+      this.serverConnectParams.set(serverId, {
+        ...params,
+        saslAccountName: account,
+        saslPassword: storedPassword,
+      });
+    this.saslEnabled.set(serverId, true);
+    this.saslCredentials.set(serverId, {
+      username: account,
+      password: storedPassword,
+    });
+  }
+
+  sendRaw(serverId: string, command: string): void {
+    if (/[\r\n\0]/.test(command)) {
+      console.warn(`Dropped a line with CR, LF or NUL for ${serverId}`);
+      this.triggerEvent("rawLine", {
+        serverId,
+        direction: "info",
+        line: `** dropped TX (line break or NUL): ${JSON.stringify(command)}`,
+      });
+      return;
+    }
     if (this.tagmsgRefused.has(serverId) && /^(?:@\S+ )?TAGMSG /i.test(command))
       return;
     const privmsg = /^(?:@\S+ )?PRIVMSG (\S+) /i.exec(command);
@@ -1460,12 +1495,6 @@ export class IRCClient implements IRCClientContext {
     // A check already waiting for its PONG keeps its earlier deadline.
     if (this.pongTimeouts.has(serverId)) return;
     this.sendRaw(serverId, `PING :${Date.now()}`);
-    this.pongWaitMs.set(serverId, timeoutMs);
-    this.awaitPong(serverId, socket, timeoutMs);
-  }
-
-  private awaitPong(serverId: string, socket: ISocket, timeoutMs: number) {
-    clearTimeout(this.pongTimeouts.get(serverId));
     this.pongTimeouts.set(
       serverId,
       setTimeout(() => {
@@ -1474,13 +1503,6 @@ export class IRCClient implements IRCClientContext {
         this.dropDeadSocket(serverId, socket);
       }, timeoutMs),
     );
-  }
-
-  // A busy server answers our PING after the lines it has queued, so every line we receive starts the wait for the PONG over.
-  private restartPongWait(serverId: string, socket: ISocket): void {
-    const timeoutMs = this.pongWaitMs.get(serverId);
-    if (timeoutMs === undefined || !this.pongTimeouts.has(serverId)) return;
-    this.awaitPong(serverId, socket, timeoutMs);
   }
 
   // We silence the old socket before closing it, so a reconnect never leaves a second live session under one server.
@@ -1513,11 +1535,12 @@ export class IRCClient implements IRCClientContext {
       this.pingTimers.delete(serverId);
     }
 
-    const pongTimeout = this.pongTimeouts.get(serverId);
-    if (pongTimeout) {
-      clearTimeout(pongTimeout);
-      this.pongTimeouts.delete(serverId);
-    }
+    this.clearPongTimeout(serverId);
+  }
+
+  clearPongTimeout(serverId: string): void {
+    clearTimeout(this.pongTimeouts.get(serverId));
+    this.pongTimeouts.delete(serverId);
   }
 
   isRateLimitError(message: string): boolean {
@@ -1538,7 +1561,10 @@ export class IRCClient implements IRCClientContext {
     serverId: string,
     typedName: string,
     key?: string,
-    { isReturning = false }: { isReturning?: boolean } = {},
+    {
+      isReturning = false,
+      deferHistory = false,
+    }: { isReturning?: boolean; deferHistory?: boolean } = {},
   ): Channel | undefined {
     const channelName = this.withChannelPrefix(serverId, typedName);
     if (!isJoinableChannelName(channelName, this.chantypes(serverId)))
@@ -1547,6 +1573,7 @@ export class IRCClient implements IRCClientContext {
     const joinLine = key
       ? `JOIN ${channelName} ${joinKeyArgument(key)}`
       : `JOIN ${channelName}`;
+    this.joinsDuringReady.get(serverId)?.add(channelName.toLowerCase());
     const server = this.servers.get(serverId);
     if (server) {
       const existing = server.channels.find((c) => c.name === channelName);
@@ -1564,6 +1591,7 @@ export class IRCClient implements IRCClientContext {
       this.sendRaw(serverId, joinLine);
 
       const wantsChathistory = this.hasChathistory(serverId);
+      const historyDeferred = wantsChathistory && deferHistory;
 
       const channel: Channel = {
         id: generateDeterministicId(serverId, channelName),
@@ -1578,12 +1606,15 @@ export class IRCClient implements IRCClientContext {
         isLoadingHistory: wantsChathistory,
         hasMoreHistory: wantsChathistory,
         needsWhoRequest: true,
-        chathistoryRequested: wantsChathistory,
+        chathistoryRequested: wantsChathistory && !historyDeferred,
       };
       server.channels.push(channel);
 
       // Our JOIN coming back loads the history and members of a channel we return to, so we send only the JOIN for it.
-      if (isReturning || !this.loadHistoryOrMembers(serverId, channelName))
+      if (
+        isReturning ||
+        (!historyDeferred && !this.loadHistoryOrMembers(serverId, channelName))
+      )
         channel.needsWhoRequest = false;
 
       return channel;
@@ -1796,17 +1827,31 @@ export class IRCClient implements IRCClientContext {
     content: string,
   ): void {
     // Send a whisper with both the ratified and draft channel-context tags for backwards compat
-    const context = escapeTagValue(channelName);
-    this.sendRaw(
-      serverId,
-      `@+channel-context=${context};+draft/channel-context=${context} PRIVMSG ${targetUser} :${content}`,
-    );
+    const tags = formatTags({
+      "+channel-context": channelName,
+      "+draft/channel-context": channelName,
+    });
+    this.sendPrivmsgLines(serverId, targetUser, content, tags);
+  }
+
+  sendPrivmsgLines(
+    serverId: string,
+    target: string,
+    text: string,
+    tags = "",
+  ): void {
+    for (const line of text.split(/[\r\n]+/)) {
+      if (line) this.sendRaw(serverId, `${tags}PRIVMSG ${target} :${line}`);
+    }
   }
 
   setTopic(serverId: string, channelName: string, topic: string): void {
     // Send TOPIC command to set the channel topic
     // Format: TOPIC #channel :New topic text
-    this.sendRaw(serverId, `TOPIC ${channelName} :${topic}`);
+    this.sendRaw(
+      serverId,
+      `TOPIC ${channelName} :${topic.replace(/[\r\n]+/g, " ")}`,
+    );
   }
 
   getTopic(serverId: string, channelName: string): void {
@@ -1931,7 +1976,7 @@ export class IRCClient implements IRCClientContext {
     email: string,
     password: string,
   ): void {
-    this.sendRaw(serverId, `REGISTER ${account} ${email} ${password}`);
+    this.sendRaw(serverId, `REGISTER ${account} ${email} :${password}`);
   }
 
   verifyAccount(serverId: string, account: string, code: string): void {
@@ -2409,16 +2454,14 @@ export class IRCClient implements IRCClientContext {
   }
 
   private handleMessage(data: string, serverId: string): void {
-    const lines = data.split("\r\n");
-    for (let line of lines) {
+    // We end a line at any CR or LF so no parsed parameter carries one into a line we send.
+    const lines = data.split(/[\r\n]+/);
+    for (const line of lines) {
       let mtags: Record<string, string> | undefined;
       let source: string;
       const parv: string[] = [];
       let i = 0;
       let l: string[];
-      // We strip only line endings, since a multiline-concat part keeps its
-      // trailing space and trimming it would glue two words together.
-      line = line.replace(/^[\r\n]+|[\r\n]+$/g, "");
 
       // Skip empty lines
       if (!line) continue;
@@ -2559,44 +2602,50 @@ export class IRCClient implements IRCClientContext {
 
   // Lines from local history go through the same parser and handlers as
   // lines from the socket.
+  receiveFromSocket(serverId: string, received: unknown): void {
+    const data =
+      typeof received === "string" ? received : String(received ?? "");
+    for (const line of data.split(/\r?\n/)) {
+      if (line.length === 0) continue;
+      this.triggerEvent("rawLine", { serverId, direction: "rx", line });
+    }
+    // A server that paces our commands answers a PING late, so we take any line it sends as proof the link is alive.
+    this.clearPongTimeout(serverId);
+    this.handleMessage(data, serverId);
+  }
+
   replayLines(serverId: string, lines: string[]): void {
     this.handleMessage(lines.join("\r\n"), serverId);
   }
 
   onCapLs(serverId: string, cliCaps: string, isFinal: boolean): void {
     let accumulated = this.capLsAccumulated.get(serverId);
+    const isFirstLine = !accumulated;
     if (!accumulated) {
       accumulated = new Set();
       this.capLsAccumulated.set(serverId, accumulated);
     }
 
-    const caps = cliCaps.split(" ");
-    for (const c of caps) {
+    const values: Record<string, string> = {};
+    for (const c of cliCaps.split(" ")) {
+      if (!c) continue;
       const { cap, value } = splitCapToken(c);
       accumulated.add(cap);
-      if (value) {
-        const server = this.servers.get(serverId);
-        if (server) {
-          server.capabilityValues = {
-            ...(server.capabilityValues ?? {}),
-            [cap]: value,
-          };
-        }
-      }
+      if (value) values[cap] = value;
       if (cap === "sasl" && value) {
         const mechanisms = value.split(",");
         this.saslMechanisms.set(serverId, mechanisms);
       }
-      // Handle informational unrealircd.org/link-security capability
-      if (cap === "unrealircd.org/link-security" && value) {
-        const linkSecurityValue = Number.parseInt(value, 10) || 0;
-        // Trigger event with the link security value so the store can handle it
-        this.triggerEvent("CAP LS", {
-          serverId,
-          cliCaps: `unrealircd.org/link-security=${linkSecurityValue}`,
-        });
-      }
     }
+    // Each negotiation lists every cap again, so values from an earlier
+    // connection never outlive it.
+    const server = this.servers.get(serverId);
+    if (server)
+      server.capabilityValues = {
+        ...(isFirstLine ? {} : server.capabilityValues),
+        ...values,
+      };
+    this.triggerEvent("CAP LS", { serverId, values, isFirstLine });
 
     if (isFinal) {
       // Now request the caps we want from the accumulated list

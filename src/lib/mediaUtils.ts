@@ -4,6 +4,7 @@ import {
   isRejectedLocationShareUrl,
   parseLocationShareUrl,
 } from "./geolocation";
+import { revealHiddenChars } from "./hiddenChars";
 import {
   isAbsoluteHttpUrl,
   isUrlFromFilehost,
@@ -314,7 +315,9 @@ export function getEmbedFallbackLabel(url: string, short = false): string {
 
 export function filenameFromUrl(url: string): string {
   try {
-    return decodeURIComponent(new URL(url).pathname.split("/").pop() ?? "");
+    return revealHiddenChars(
+      decodeURIComponent(new URL(url).pathname.split("/").pop() ?? ""),
+    );
   } catch {
     return "";
   }
@@ -366,4 +369,16 @@ export function canShowAvatarUrl(
     }
   }
   return false;
+}
+
+/** The user chose to connect to the server, and the server chose its icon, so
+ *  we load the icon whatever the media setting is. */
+export function canShowServerIcon(url: string | undefined): url is string {
+  if (!url || !isAbsoluteHttpUrl(url)) return false;
+  try {
+    return new URL(url.trim()).hostname !== "";
+  } catch (error) {
+    if (error instanceof TypeError) return false;
+    throw error;
+  }
 }

@@ -3,6 +3,7 @@ import { serverFilehosts } from "../../src/lib/ircUtils";
 import {
   canShowAvatarUrl,
   canShowMedia,
+  canShowServerIcon,
   detectMediaType,
   extractMediaFromMessage,
   extractMediaFromText,
@@ -724,5 +725,22 @@ describe("getEmbedThumbnailUrl", () => {
   });
   test("returns null for invalid URL", () => {
     expect(getEmbedThumbnailUrl("not-a-url")).toBeNull();
+  });
+});
+
+describe("canShowServerIcon", () => {
+  test("shows any absolute http(s) icon the server sends", () => {
+    expect(canShowServerIcon("https://cdn.example.org/logo.png")).toBe(true);
+    expect(canShowServerIcon("http://cdn.example.org/logo.png")).toBe(true);
+  });
+
+  test("hides missing and relative icons", () => {
+    expect(canShowServerIcon(undefined)).toBe(false);
+    expect(canShowServerIcon("/logo.png")).toBe(false);
+    expect(canShowServerIcon("javascript:alert(1)")).toBe(false);
+  });
+
+  test("hides an http(s) icon with no host", () => {
+    expect(canShowServerIcon("https://")).toBe(false);
   });
 });

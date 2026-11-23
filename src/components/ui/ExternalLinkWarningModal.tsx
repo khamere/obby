@@ -2,6 +2,7 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import type React from "react";
 import { useState } from "react";
 import { FaCheck, FaCopy, FaExternalLinkAlt } from "react-icons/fa";
+import { revealHiddenChars } from "../../lib/hiddenChars";
 import { ConfirmDialog } from "../../lib/modal/ConfirmDialog";
 import { openExternalUrl } from "../../lib/openUrl";
 import { isTauri } from "../../lib/platformUtils";
@@ -32,8 +33,9 @@ const ExternalLinkWarningModal: React.FC<ExternalLinkWarningModalProps> = ({
     });
   };
 
-  // Truncate very long URLs for display
-  const displayUrl = url.length > 80 ? `${url.substring(0, 80)}...` : url;
+  const shownUrl = revealHiddenChars(url);
+  const displayUrl =
+    shownUrl.length > 80 ? `${shownUrl.substring(0, 80)}...` : shownUrl;
   const inApp = isTauri();
   // Only web links become an anchor or go to the system browser; anything
   // else (javascript:, data:, custom schemes) is closed without opening.

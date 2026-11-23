@@ -32,7 +32,6 @@ import {
 } from "../../lib/ircUtils";
 import { jumpToReply } from "../../lib/jumpToReply";
 import {
-  canShowAvatarUrl,
   canShowMedia,
   extractHostname,
   extractMediaFromMessage,
@@ -457,20 +456,10 @@ export const MessageItem = memo((props: MessageItemProps) => {
   // draft/custom-emoji: gather pack URLs for this message's channel +
   // network in priority order so a channel pack can shadow a network
   // shortcode of the same name.
-  // Packs and their images follow the avatar rule for this server.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the visibility flags derive from mediaVisibilityLevel
-  const allowEmojiUrl = useCallback(
-    (url: string) =>
-      canShowAvatarUrl(url, fileHosts, {
-        showSafeMedia,
-        showTrustedSourcesMedia,
-        showExternalContent,
-      }),
-    [fileHosts, mediaVisibilityLevel],
-  );
   const { resolve: resolveEmoji } = useEmojiResolver(
     [channelEmojiUrl, serverEmojiPackUrl],
-    allowEmojiUrl,
+    fileHosts,
+    mediaVisibilityLevel,
   );
 
   // We label only plaintext messages, and lead with the real host because the linked page supplies the title.

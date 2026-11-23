@@ -18,11 +18,7 @@ export function handlePong(
   _source: string,
   _parv: string[],
 ): void {
-  const pongTimeout = ctx.pongTimeouts.get(serverId);
-  if (pongTimeout) {
-    clearTimeout(pongTimeout);
-    ctx.pongTimeouts.delete(serverId);
-  }
+  ctx.clearPongTimeout(serverId);
 }
 
 export function handleError(
@@ -86,19 +82,22 @@ export function handleRplWelcome(
     });
   }
 
+  const heldChannels = [...(ctx.servers.get(serverId)?.channels ?? [])];
+  const joinedByReadyHandlers = new Set<string>();
+  ctx.joinsDuringReady.set(serverId, joinedByReadyHandlers);
   ctx.triggerEvent("ready", { serverId, serverName, nickname });
+  ctx.joinsDuringReady.delete(serverId);
 
   ctx.startWebSocketPing(serverId);
 
   // Registration must complete before these go out: bytes sent while still
   // unregistered count against the server's handshake-flood limit, which bans
   // the IP when a client with many channels reconnects.
-  const server = ctx.servers.get(serverId);
-  if (server && server.channels.length > 0) {
-    for (const channel of server.channels) {
-      if (leftReasonOf(serverId, channel.name)) continue;
+  // The ready handlers rejoin the saved channels themselves, so we rejoin only the held channels they left out.
+  for (const channel of heldChannels) {
+    if (leftReasonOf(serverId, channel.name)) continue;
+    if (!joinedByReadyHandlers.has(channel.name.toLowerCase()))
       ctx.sendRaw(serverId, `JOIN ${channel.name}`);
-    }
   }
 }
 

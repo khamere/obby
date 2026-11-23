@@ -175,4 +175,40 @@ describe("useReactions", () => {
       },
     );
   });
+
+  it("keeps a msgid with a line break inside its tag", () => {
+    const hostile = { ...message, msgid: "x\nNICK pwned" };
+    useStore.setState({
+      servers: [
+        {
+          id: "s1",
+          channels: [{ id: "chan1", name: "#a", users: [] }],
+          privateChats: [],
+        },
+      ] as never,
+      messages: { "s1-chan1": [hostile] },
+    });
+    const sendRaw = vi.mocked(ircClient.sendRaw);
+    sendRaw.mockClear();
+    const { result } = renderHook(() =>
+      useReactions({
+        selectedServerId: "s1",
+        currentUser: { id: "u", username: "me" } as never,
+      }),
+    );
+
+    act(() => result.current.directReaction("a b", hostile));
+    act(() => result.current.unreact("a b", hostile));
+
+    expect(sendRaw.mock.calls).toEqual([
+      [
+        "s1",
+        "@+draft/react=a\\sb;+reply=x\\nNICK\\spwned;+draft/reply=x\\nNICK\\spwned TAGMSG #a",
+      ],
+      [
+        "s1",
+        "@+draft/unreact=a\\sb;+reply=x\\nNICK\\spwned;+draft/reply=x\\nNICK\\spwned TAGMSG #a",
+      ],
+    ]);
+  });
 });

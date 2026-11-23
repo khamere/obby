@@ -6,7 +6,13 @@ import { parseMultilineLimits } from "../../src/lib/irc/multiline";
 import ircClient from "../../src/lib/ircClient";
 import { parseMessageTags } from "../../src/lib/ircUtils";
 import useStore from "../../src/store";
-import type { Channel, PrivateChat, Server, User } from "../../src/types";
+import type {
+  Channel,
+  Message,
+  PrivateChat,
+  Server,
+  User,
+} from "../../src/types";
 
 const bot = (username: string) => ({
   id: username,
@@ -240,6 +246,100 @@ describe("a reply to a message whose id needs escaping", () => {
       "PRIVMSG #lobby :one two",
     ]);
     expectReplyTo(lines[0]);
+  });
+});
+
+describe("a reply to a msgid with a line break", () => {
+  const hostile = {
+    id: "m1",
+    msgid: "x\nNICK pwned",
+    userId: "eve",
+  } as unknown as Message;
+
+  beforeEach(() => {
+    useStore.setState({ servers: [server], messages: {} });
+    vi.restoreAllMocks();
+  });
+
+  it.each(["hello", "/me waves"])("sends %s as one escaped line", (text) => {
+    const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    const { result } = renderHook(() =>
+      useMessageSending({
+        selectedServerId: "s1",
+        selectedChannelId: "c1",
+        selectedPrivateChatId: null,
+        selectedChannel: channel,
+        selectedPrivateChat: null,
+        currentUser: me,
+        selectedColor: null,
+        selectedFormatting: [],
+        localReplyTo: hostile,
+      }),
+    );
+    result.current.sendMessage(text);
+    expect(sendRaw).toHaveBeenCalledTimes(1);
+    expect(sendRaw.mock.calls[0][1]).toMatch(
+      /^@\+reply=x\\nNICK\\spwned;\+draft\/reply=x\\nNICK\\spwned PRIVMSG #lobby :/,
+    );
+  });
+});
+
+describe("a command with a line break", () => {
+  const whisper = {
+    id: "w1",
+    msgid: "w1",
+    userId: "bob",
+    tags: { "+channel-context": "#lobby" },
+  } as unknown as Message;
+  const sent = (sendRaw: ReturnType<typeof vi.spyOn>) =>
+    sendRaw.mock.calls.map(([, line]: string[]) => line);
+
+  beforeEach(() => {
+    useStore.setState({ servers: [server], messages: {} });
+    vi.restoreAllMocks();
+  });
+
+  it("sends /whisper as one PRIVMSG per line", () => {
+    const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    runCommand("/whisper bob one\ntwo");
+    expect(sent(sendRaw)).toEqual([
+      "@+channel-context=#lobby;+draft/channel-context=#lobby PRIVMSG bob :one",
+      "@+channel-context=#lobby;+draft/channel-context=#lobby PRIVMSG bob :two",
+    ]);
+  });
+
+  it("sends /me in a whisper reply as one ACTION per line", () => {
+    const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    const { result } = renderHook(() =>
+      useMessageSending({
+        selectedServerId: "s1",
+        selectedChannelId: "c1",
+        selectedPrivateChatId: null,
+        selectedChannel: channel,
+        selectedPrivateChat: null,
+        currentUser: me,
+        selectedColor: null,
+        selectedFormatting: [],
+        localReplyTo: whisper,
+      }),
+    );
+    result.current.sendMessage("/me one\ntwo");
+    expect(sent(sendRaw)).toEqual([
+      "@+channel-context=#lobby;+draft/channel-context=#lobby PRIVMSG bob :\u0001ACTION one\u0001",
+      "@+channel-context=#lobby;+draft/channel-context=#lobby PRIVMSG bob :\u0001ACTION two\u0001",
+    ]);
+  });
+
+  it("sends /msg as one PRIVMSG per line", () => {
+    const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    runCommand("/msg bob one\ntwo");
+    expect(sent(sendRaw)).toEqual(["PRIVMSG bob :one", "PRIVMSG bob :two"]);
+  });
+
+  it("sends a server command on one line", () => {
+    const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    runCommand("/quote one\ntwo");
+    expect(sent(sendRaw)).toEqual(["quote one two"]);
   });
 });
 
