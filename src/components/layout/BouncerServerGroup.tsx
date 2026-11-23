@@ -4,7 +4,8 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { FaPalette, FaPencilAlt, FaRedo, FaTrash } from "react-icons/fa";
 import { GiGlassShot } from "react-icons/gi";
 import { useLongPress } from "../../hooks/useLongPress";
-import { canShowServerIcon } from "../../lib/mediaUtils";
+import { serverFilehosts } from "../../lib/ircUtils";
+import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
 import { isServerMuted, useMutes } from "../../lib/mutes";
 import { networkHost } from "../../lib/networkHost";
 import { serverDisplayName } from "../../lib/serverDisplayName";
@@ -186,7 +187,15 @@ const GroupedAvatar: React.FC<GroupedAvatarProps> = ({
   const host = networkHost(server, network);
 
   const iconUrl = server.icon;
-  const showIcon = canShowServerIcon(iconUrl);
+  // The server names its icon and can point it at any host, so the media setting decides whether we load it.
+  const mediaSettings = mediaLevelToSettings(
+    useStore((state) => state.globalSettings.mediaVisibilityLevel),
+  );
+  const showIcon = canShowAvatarUrl(
+    iconUrl,
+    serverFilehosts(server),
+    mediaSettings,
+  );
 
   useMutes(); // re-render when mutes change
   const hasMentions =

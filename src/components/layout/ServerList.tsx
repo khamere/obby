@@ -14,7 +14,8 @@ import { useShallow } from "zustand/react/shallow";
 import { useIsTouchInput } from "../../hooks/useIsTouchInput";
 import { useLongPress } from "../../hooks/useLongPress";
 import ircClient from "../../lib/ircClient";
-import { canShowServerIcon } from "../../lib/mediaUtils";
+import { serverFilehosts } from "../../lib/ircUtils";
+import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
 import { isServerMuted, useMutes } from "../../lib/mutes";
 import { networkHost } from "../../lib/networkHost";
 import { serverDisplayName } from "../../lib/serverDisplayName";
@@ -66,7 +67,15 @@ const ServerIcon: React.FC<ServerIconProps> = ({
   const hasAlerts = useStore((s) => (s.serverAlerts[server.id] ?? 0) > 0);
 
   const iconUrl = server.icon;
-  const showIcon = canShowServerIcon(iconUrl);
+  // The server names its icon and can point it at any host, so the media setting decides whether we load it.
+  const mediaSettings = mediaLevelToSettings(
+    useStore((state) => state.globalSettings.mediaVisibilityLevel),
+  );
+  const showIcon = canShowAvatarUrl(
+    iconUrl,
+    serverFilehosts(server),
+    mediaSettings,
+  );
   const serverName = displayName;
   const label = server.isDisabled ? t`${serverName}, turned off` : serverName;
   const dimmed = server.isDisabled ? "grayscale opacity-50" : "";
