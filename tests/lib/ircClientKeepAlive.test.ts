@@ -70,11 +70,14 @@ describe("waiting for the answer to a keep-alive PING", () => {
     expect(socket.close).not.toHaveBeenCalled();
   });
 
-  it("drops the connection once the lines stop for the whole wait", () => {
+  it("drops the connection at the next check once the lines have stopped", () => {
     const { client, socket } = connectedClient();
     client.checkAlive(SERVER, PONG_TIMEOUT_MS);
     vi.advanceTimersByTime(8000);
     socket.receive(":me!u@h PRIVMSG #a :the last line");
+    vi.advanceTimersByTime(60_000);
+    expect(socket.close).not.toHaveBeenCalled();
+    client.checkAlive(SERVER, PONG_TIMEOUT_MS);
     vi.advanceTimersByTime(PONG_TIMEOUT_MS - 1);
     expect(socket.close).not.toHaveBeenCalled();
     vi.advanceTimersByTime(1);
@@ -97,11 +100,14 @@ describe("waiting for the answer to a keep-alive PING", () => {
     expect(socket.close).toHaveBeenCalledTimes(1);
   });
 
-  it("gives a wake check its own shorter wait again after each line", () => {
+  it("ends a wake check on the first line and gives the next one its shorter wait", () => {
     const { client, socket } = connectedClient();
     client.checkAlive(SERVER, WAKE_PONG_TIMEOUT_MS);
     vi.advanceTimersByTime(4000);
     socket.receive(":me!u@h PRIVMSG #a :a line");
+    vi.advanceTimersByTime(60_000);
+    expect(socket.close).not.toHaveBeenCalled();
+    client.checkAlive(SERVER, WAKE_PONG_TIMEOUT_MS);
     vi.advanceTimersByTime(WAKE_PONG_TIMEOUT_MS - 1);
     expect(socket.close).not.toHaveBeenCalled();
     vi.advanceTimersByTime(1);

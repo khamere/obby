@@ -149,8 +149,12 @@ describe("ProfilePane", () => {
 
     render(<ProfilePane target={target} />);
     fireEvent.click(screen.getByText("https://host/%E2%80%AEgpj.exe"));
-    fireEvent.click(screen.getByText("Open Link"));
 
-    await waitFor(() => expect(openExternalUrl).toHaveBeenCalledWith(homepage));
+    await waitFor(() =>
+      expect(
+        screen.getByText("Open Link").closest("a")?.getAttribute("href"),
+      ).toBe(new URL(homepage).href),
+    );
+    expect(openExternalUrl).not.toHaveBeenCalled();
   });
 });

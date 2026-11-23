@@ -17,10 +17,9 @@ const pack = {
 
 // A channel op or the server names the pack URL, so the user's media
 // visibility rule decides whether anything is fetched from it at all.
-// Callers keep the rule's identity stable, as these do.
-const deny = () => false;
-const allowOwnHost = (url: string) =>
-  !url.startsWith("https://attacker.example/");
+const HOSTS = ["https://packs.example", "https://files.example"];
+const NO_MEDIA = 0;
+const SAFE_MEDIA = 1;
 
 describe("useEmojiResolver media gate", () => {
   const fetchMock = vi.fn(async () => ({
@@ -35,7 +34,9 @@ describe("useEmojiResolver media gate", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("never fetches a pack the rule rejects", async () => {
-    const { result } = renderHook(() => useEmojiResolver([PACK], deny));
+    const { result } = renderHook(() =>
+      useEmojiResolver([PACK], HOSTS, NO_MEDIA),
+    );
     await act(async () => {});
     expect(fetchMock).not.toHaveBeenCalled();
     expect(result.current.resolve("ok")).toBeNull();
@@ -43,7 +44,9 @@ describe("useEmojiResolver media gate", () => {
   });
 
   it("fetches an allowed pack but hides emoji hosted elsewhere", async () => {
-    const { result } = renderHook(() => useEmojiResolver([PACK], allowOwnHost));
+    const { result } = renderHook(() =>
+      useEmojiResolver([PACK], HOSTS, SAFE_MEDIA),
+    );
     await act(async () => {});
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(result.current.resolve("ok")?.url).toBe(

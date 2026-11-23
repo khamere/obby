@@ -205,7 +205,7 @@ describe("joining saved channels at startup", () => {
       deferHistory: true,
     });
     expect(sent).toEqual(["JOIN #later"]);
-    expect(channel.chathistoryRequested).toBe(false);
+    expect(channel?.chathistoryRequested).toBe(false);
   });
 
   it("requests history with the join otherwise", () => {

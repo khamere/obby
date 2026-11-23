@@ -91,7 +91,7 @@ describe("opening the app from a link with a channel parameter", () => {
     window.history.replaceState({}, "", "/");
   });
 
-  it("adds one JOIN for an encoded channel to the repeat every channel gets, and keeps the other parameters", () => {
+  it("sends one JOIN for an encoded channel after the saved one, and keeps the other parameters", () => {
     startWithAddress("/app?theme=dark&channel=%23weather&lang=de#top");
 
     expect(window.location.pathname).toBe("/app");
@@ -105,13 +105,8 @@ describe("opening the app from a link with a channel parameter", () => {
       isReturning: false,
     });
     expect(savedChannels()).toEqual(["#saved", "#weather"]);
-    // The link sends one JOIN, and the welcome repeats the JOIN of every channel the client holds, the saved one included.
-    expect(joinLines()).toEqual([
-      "JOIN #saved",
-      "JOIN #weather",
-      "JOIN #saved",
-      "JOIN #weather",
-    ]);
+    // The welcome repeats no JOIN that the saved list or the link has sent on this connection.
+    expect(joinLines()).toEqual(["JOIN #saved", "JOIN #weather"]);
 
     readyProcessedServers.delete(SERVER);
     becomeReady();
@@ -132,7 +127,7 @@ describe("opening the app from a link with a channel parameter", () => {
     becomeReady();
 
     expect(joinFromLink).not.toHaveBeenCalled();
-    expect(joinLines()).toEqual(["JOIN #saved", "JOIN #saved"]);
+    expect(joinLines()).toEqual(["JOIN #saved"]);
     expect(savedChannels()).toEqual(["#saved"]);
   });
 

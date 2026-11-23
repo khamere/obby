@@ -617,17 +617,18 @@ describe("IRCClient", () => {
       ["a carriage return", "PRIVMSG #a :one\rPRIVMSG #b :two"],
       ["a NUL", "PRIVMSG #a :one\u0000PRIVMSG #b :two"],
       ["a trailing line end", "PRIVMSG #a :one\r\n"],
-    ])("sends one line when a command holds %s", (_, command) => {
+    ])("sends nothing when a command holds %s", (_, command) => {
       const lines: string[] = [];
       client.on("rawLine", ({ direction, line }) => {
         if (direction === "tx") lines.push(line);
       });
+      const before = mockSocket.sentMessages.length;
+      vi.spyOn(console, "warn").mockImplementation(() => {});
 
       client.sendRaw(server.id, command);
 
-      expect(mockSocket.sentMessages.at(-1)).toBe("PRIVMSG #a :one");
-      expect(lines.at(-1)).toBe("PRIVMSG #a :one");
-      expect(mockSocket.sentMessages.join("")).not.toContain("#b");
+      expect(mockSocket.sentMessages).toHaveLength(before);
+      expect(lines).toEqual([]);
     });
 
     test("keeps a channel name inside the whisper tags", () => {

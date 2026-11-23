@@ -229,11 +229,11 @@ describe("App", () => {
       expect(screen.queryByTestId("connecting-overlay")).toBeNull();
     });
 
-    it("waits behind a spinner while a newly added server connects", () => {
+    it("stays usable while a newly added server connects", () => {
       mockStoreState.isConnecting = true;
       mockStoreState.isAddingNewServer = true;
       renderApp();
-      expect(screen.getByTestId("connecting-overlay")).toBeInTheDocument();
+      expect(screen.queryByTestId("connecting-overlay")).toBeNull();
     });
   });
 

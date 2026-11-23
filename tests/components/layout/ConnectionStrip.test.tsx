@@ -155,8 +155,9 @@ describe("ConnectionStrip", () => {
       connectionState: "disconnected",
       loginRefused: true,
     });
-    for (const button of screen.getAllByRole("button"))
-      expect(button).toHaveClass("h-11");
+    for (const name of [/log in again/i, /reconnect/i])
+      expect(screen.getByRole("button", { name })).toHaveClass("strip-action");
+    expect(screen.getByRole("button", { name: /close/i })).toHaveClass("h-11");
   });
 
   it("keeps the compact actions for a mouse", () => {
@@ -166,8 +167,9 @@ describe("ConnectionStrip", () => {
       connectionState: "disconnected",
       loginRefused: true,
     });
-    for (const button of screen.getAllByRole("button"))
-      expect(button).toHaveClass("h-7");
+    for (const name of [/log in again/i, /reconnect/i])
+      expect(screen.getByRole("button", { name })).toHaveClass("strip-action");
+    expect(screen.getByRole("button", { name: /close/i })).toHaveClass("h-5");
   });
 
   it("stays closed through the retries of one outage and shows the next one", () => {
