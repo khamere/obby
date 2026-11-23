@@ -257,6 +257,11 @@ msgstr "{sender} aloitti salauksen uudelleen. Odota hetki ennen viestin lähett�
 msgid "{sender} sent you a message: {body}"
 msgstr "{sender} lähetti sinulle viestin: {body}"
 
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/ServerList.tsx
+msgid "{serverName}, turned off"
+msgstr "{serverName}, pois päältä"
+
 #: src/components/layout/ProfilePane.tsx
 msgid "{sessionCount} sessions connected. Sign in as this account or ask an IRC operator to see their details."
 msgstr "{sessionCount} istuntoa yhdistetty. Kirjaudu sisään tälle tilille tai pyydä IRC-operaattoria näyttämään tiedot."
@@ -273,7 +278,7 @@ msgstr "{stepCount, plural, one {# vaihe} other {# vaihetta}}"
 msgid "{title} Client"
 msgstr "{title} asiakasohjelma"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "{total, plural, one {# channel} other {# channels}}"
 msgstr "{total, plural, one {# kanava} other {# kanavaa}}"
 
@@ -293,11 +298,11 @@ msgstr "{userCount} käyttäjää"
 msgid "{userCount} watching"
 msgstr "{userCount} katsojaa"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "*channel*"
 msgstr "*kanava*"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "*spam*"
 msgstr "*spam*"
 
@@ -354,6 +359,14 @@ msgstr "<0>{0}</0>, <1>{1}</1> ja <2>{2}</2> kirjoittavat..."
 #: src/components/ui/TypingIndicator.tsx
 msgid "<0>{0}</0>, <1>{1}</1>, <2>{2}</2> and {3} others are typing..."
 msgstr "<0>{0}</0>, <1>{1}</1>, <2>{2}</2> ja {3} muuta kirjoittavat..."
+
+#: src/components/layout/NickClaimStrip.tsx
+msgid "<0>{nick}</0> is not registered. Register it to keep it"
+msgstr "<0>{nick}</0> ei ole rekisteröity. Rekisteröi se pitääksesi sen"
+
+#: src/components/layout/NickClaimStrip.tsx
+msgid "<0>{nick}</0> is registered. Log in to use it"
+msgstr "<0>{nick}</0> on rekisteröity. Kirjaudu sisään käyttääksesi sitä"
 
 #: src/components/ui/ExternalLinkWarningModal.tsx
 msgid "<0>⚠️ Be careful!</0> Only open links from trusted sources. Malicious links can compromise your security or privacy."
@@ -769,7 +782,7 @@ msgstr "Sovellus"
 msgid "Appearance"
 msgstr "Ulkoasu"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Apply and refresh"
 msgstr "Käytä ja päivitä"
 
@@ -1102,6 +1115,10 @@ msgstr "Botti tässä kanavassa"
 msgid "Bots"
 msgstr "Botit"
 
+#: src/components/layout/BouncerServerGroup.tsx
+msgid "Bouncer: {networkName}"
+msgstr "Bouncer: {networkName}"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Bridge rules"
 msgstr "Siltasäännöt"
@@ -1238,6 +1255,10 @@ msgstr "Vaihda salasana"
 msgid "Change the channel name (operators only)"
 msgstr "Muuta kanavan nimeä (vain operaattorit)"
 
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Change your nick to register, this one is not allowed"
+msgstr "Vaihda nimimerkkiä rekisteröityäksesi, tämä ei ole sallittu"
+
 #: src/lib/clientCommands.ts
 msgid "Change your nickname on this server"
 msgstr "Vaihda lempinimesi tällä palvelimella"
@@ -1312,7 +1333,7 @@ msgstr "Kanavalinkki (+L)"
 msgid "Channel name"
 msgstr "Kanavan nimi"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Channel name mask"
 msgstr "Kanavanimen maski"
 
@@ -1363,6 +1384,7 @@ msgstr "Kanavakohtainen"
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/ProfilePane.tsx
+#: src/components/ui/BlankPage.tsx
 #: src/components/ui/HomeScreen.tsx
 #: src/components/ui/QuickActions/resultMeta.tsx
 msgid "Channels"
@@ -1400,6 +1422,10 @@ msgstr "Tarkista uudet julkaisut"
 msgid "Check now"
 msgstr "Tarkista nyt"
 
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Check the code and try again"
+msgstr "Tarkista koodi ja yritä uudelleen"
+
 #: src/components/ui/UpdateSheet.tsx
 msgid "Checking the download"
 msgstr "Tarkistetaan lataus"
@@ -1419,6 +1445,10 @@ msgstr "Valitse alle {limit} tiedosto, se on suurin tiedostopalvelimen hyväksym
 #: src/lib/mediaUpload.ts
 msgid "Choose a file with an extension. The file host does not accept files without one."
 msgstr "Valitse tiedosto, jossa on tiedostopääte. Tiedostopalvelin ei hyväksy tiedostoja ilman päätettä."
+
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Choose a longer password"
+msgstr "Valitse pidempi salasana"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Choose a predefined flood protection profile for common use cases."
@@ -1452,7 +1482,7 @@ msgstr "Valitse kuva…"
 msgid "Choose microphone and camera"
 msgstr "Valitse mikrofoni ja kamera"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Choose sort order"
 msgstr "Valitse lajittelujärjestys"
 
@@ -1493,6 +1523,7 @@ msgstr "Tyhjennetäänkö kaikki tallennettu historia?"
 msgid "Clear history"
 msgstr "Tyhjennä historia"
 
+#: src/components/layout/MemberList.tsx
 #: src/components/layout/MemberList.tsx
 msgid "Clear search"
 msgstr "Tyhjennä haku"
@@ -1536,6 +1567,8 @@ msgstr "Käyttäjärajoitus (+l)"
 
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/BotPane.tsx
+#: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 #: src/components/layout/ProfilePane.tsx
 #: src/components/layout/ProfilePane.tsx
 #: src/components/message/ServerNoticesPopup.tsx
@@ -1578,6 +1611,11 @@ msgstr "Sulje katseluohjelma"
 #: src/components/ui/BotToolsCard.tsx
 msgid "Close workflow"
 msgstr "Sulje työnkulku"
+
+#: src/components/pages/RegisterAccountSection.tsx
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Code"
+msgstr "Koodi"
 
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Code accepted."
@@ -1695,6 +1733,8 @@ msgstr "Vahvista poisto"
 msgid "Confirm?"
 msgstr "Vahvista?"
 
+#: src/components/pages/ServerSettingsPage.tsx
+#: src/components/pages/ServerSettingsPage.tsx
 #: src/components/ui/AddServerModal.tsx
 #: src/components/ui/BouncerNetworksPanel.tsx
 msgid "Connect"
@@ -1712,6 +1752,10 @@ msgstr "Liitä mikrofoni puhuaksesi"
 msgid "Connect to a server to manage operator settings."
 msgstr "Yhdistä palvelimeen hallitaksesi operaattoriasetuksia."
 
+#: src/components/pages/ChannelBrowser.tsx
+msgid "Connect to the server to list its channels."
+msgstr "Yhdistä palvelimeen nähdäksesi sen kanavat."
+
 #: src/components/pages/ServerSettingsPage.tsx
 msgid "Connected as a guest"
 msgstr "Yhdistetty vieraana"
@@ -1720,6 +1764,8 @@ msgstr "Yhdistetty vieraana"
 msgid "Connected to"
 msgstr "Yhdistetty palvelimeen"
 
+#: src/components/layout/ChannelList.tsx
+#: src/components/layout/ChannelList.tsx
 #: src/components/layout/UserPanel.tsx
 #: src/components/ui/MiniMediaPlayer.tsx
 msgid "Connecting"
@@ -1907,6 +1953,10 @@ msgstr "Linkkiä ei voitu ladata. Sen on osoitettava suoraan .json-tiedostoon."
 msgid "Could not reach the file host. Check your connection and try again."
 msgstr "Tiedostopalvelimeen ei saatu yhteyttä. Tarkista yhteytesi ja yritä uudelleen."
 
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Could not register. Try again"
+msgstr "Rekisteröinti epäonnistui. Yritä uudelleen"
+
 #: src/components/layout/ChatArea.tsx
 msgid "Could not remove the metadata from this image, so it was not uploaded."
 msgstr "Tämän kuvan metatietoja ei voitu poistaa, joten sitä ei lähetetty."
@@ -1920,6 +1970,10 @@ msgstr "Uuden salasanan asettaminen epäonnistui: {0}"
 #: src/components/ui/ChangePasswordModal.tsx
 msgid "Could not update password: {0}"
 msgstr "Salasanaa ei voitu päivittää: {0}"
+
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Could not verify. Try again"
+msgstr "Vahvistus epäonnistui. Yritä uudelleen"
 
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Couldn't set up encryption with {nick}."
@@ -1951,11 +2005,11 @@ msgstr "Luo kansio"
 msgid "Create pack"
 msgstr "Luo paketti"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Created after (min ago)"
 msgstr "Luotu jälkeen (min sitten)"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Created before (min ago)"
 msgstr "Luotu ennen (min sitten)"
 
@@ -2287,6 +2341,11 @@ msgstr "Näytä kun käyttäjät liittyvät kanavalle tai poistuvat"
 msgid "Do you want to open this link in a new tab?"
 msgstr "Haluatko avata tämän linkin uudessa välilehdessä?"
 
+#: src/components/layout/NickClaimStrip.tsx
+#: src/components/layout/NickClaimStrip.tsx
+msgid "Don't show again for this server"
+msgstr "Älä näytä enää tälle palvelimelle"
+
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "Don't warn me about low link security for this server"
 msgstr "Älä varoita minua tämän palvelimen heikosta linkkiturvallisuudesta"
@@ -2396,6 +2455,11 @@ msgstr "Muokkaa profiilia"
 #: src/components/mobile/ServerBottomSheet.tsx
 msgid "Edit Server"
 msgstr "Muokkaa palvelinta"
+
+#: src/components/pages/RegisterAccountSection.tsx
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Email"
+msgstr "Sähköposti"
 
 #: src/components/pages/SettingsPage.tsx
 msgid "Email:"
@@ -2555,6 +2619,10 @@ msgstr "Anna luku kohteelle {0}"
 msgid "Enter a URL. Use {sizeToken} in the URL for dynamic sizing. Example: https://example.com/avatar/{sizeToken}/channel.jpg"
 msgstr "Kirjoita URL-osoite. Käytä {sizeToken}-paikkamerkkiä dynaamista kokoa varten. Esimerkki: https://example.com/avatar/{sizeToken}/channel.jpg"
 
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Enter a valid email address"
+msgstr "Anna kelvollinen sähköpostiosoite"
+
 #. placeholder {0}: e.name
 #: src/components/chat/CommandArgHint.tsx
 msgid "Enter a whole number for {0}"
@@ -2579,6 +2647,10 @@ msgstr "Anna http(s)-linkki .json-tiedostoon."
 #: src/components/ui/settings/ThemeLinkField.tsx
 msgid "Enter an http(s) link to a theme .json file."
 msgstr "Anna http(s)-linkki teeman .json-tiedostoon."
+
+#: src/components/layout/NickClaimStrip.tsx
+msgid "Enter code"
+msgstr "Syötä koodi"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Enter default nickname..."
@@ -2646,6 +2718,14 @@ msgstr "Syötä sähköpostiisi saapunut 6-numeroinen koodi."
 msgid "Enter the account name you want to recover."
 msgstr "Anna tilin nimi, jonka haluat palauttaa."
 
+#: src/components/layout/NickClaimStrip.tsx
+msgid "Enter the code sent to your email"
+msgstr "Anna sähköpostiisi lähetetty koodi"
+
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Enter the code sent to your email."
+msgstr "Syötä sähköpostiisi lähetetty koodi."
+
 #: src/components/ui/settings/UserFilehostField.tsx
 msgid "Enter the http(s) address of your Zipline, like https://img.example.com"
 msgstr "Anna Ziplinesi http(s)-osoite, esim. https://img.example.com"
@@ -2695,7 +2775,7 @@ msgstr "EsimerkKi"
 msgid "Exceptions"
 msgstr "Poikkeukset"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Exclude channel name mask"
 msgstr "Ohita kanavanimen maski"
 
@@ -2813,11 +2893,11 @@ msgstr "Suodata kiroilu (+G)"
 msgid "Filter members…"
 msgstr "Suodata jäseniä…"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Filters"
 msgstr "Suodattimet"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Filters are unavailable on this server"
 msgstr "Suodattimet eivät ole käytettävissä tällä palvelimella"
 
@@ -3275,7 +3355,7 @@ msgid "JetBrains Mono"
 msgstr "JetBrains Mono"
 
 #: src/components/message/JsonLogMessage.tsx
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 #: src/components/ui/ChannelKeyModal.tsx
 msgid "Join"
 msgstr "Liity"
@@ -3283,7 +3363,7 @@ msgstr "Liity"
 #. placeholder {0}: channel.channel
 #. placeholder {0}: message.inviteChannel
 #: src/components/message/InviteMessage.tsx
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Join {0}"
 msgstr "Liity kanavalle {0}"
 
@@ -3321,7 +3401,7 @@ msgid "Join voice channel {channelName}"
 msgstr "Liity äänikanavaan {channelName}"
 
 #: src/components/layout/ProfilePane.tsx
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Joined"
 msgstr "Liittyi"
 
@@ -3579,6 +3659,8 @@ msgstr "Sijainti"
 msgid "Location access was denied. Allow location access in your browser or system settings, then try again."
 msgstr "Sijainnin käyttöoikeus evättiin. Salli sijainnin käyttö selaimen tai järjestelmän asetuksista ja yritä uudelleen."
 
+#: src/components/layout/NickClaimStrip.tsx
+#: src/components/layout/NickClaimStrip.tsx
 #: src/components/pages/ServerSettingsPage.tsx
 msgid "Log in"
 msgstr "Kirjaudu sisään"
@@ -3693,7 +3775,7 @@ msgstr "Merkitse itsesi poissaolevaksi, kun Obbya ei ole käytetty näin pitkä�
 msgid "Mark yourself back"
 msgstr "Merkitse itsesi takaisin"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Max users"
 msgstr "Käyttäjiä enintään"
 
@@ -3736,8 +3818,8 @@ msgstr "Jäsenet"
 msgid "Members — {0}"
 msgstr "Jäsenet — {0}"
 
-#. placeholder {0}: shownUsers?.length || 0
-#. placeholder {1}: sortedUsers?.length || 0
+#. placeholder {0}: shownUsers?.length ?? 0
+#. placeholder {1}: sortedUsers?.length ?? 0
 #: src/components/layout/MemberList.tsx
 msgid "Members — {0} of {1}"
 msgstr "Jäsenet — {0}/{1}"
@@ -3861,7 +3943,7 @@ msgstr "Mikrofoni {0}"
 msgid "Microphone level"
 msgstr "Mikrofonin taso"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Min users"
 msgstr "Käyttäjiä vähintään"
 
@@ -4134,7 +4216,7 @@ msgstr "Kameraa ei havaittu."
 msgid "No Central Server:"
 msgstr "Ei keskuspalvelinta:"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "No channels found. Change the search or filters."
 msgstr "Kanavia ei löytynyt. Muuta hakua tai suodattimia."
 
@@ -4211,8 +4293,8 @@ msgid "No media in this channel"
 msgstr "Tällä kanavalla ei ole mediaa"
 
 #: src/components/layout/MemberList.tsx
-msgid "No members match"
-msgstr "Ei vastaavia jäseniä"
+msgid "No members match. Clear the search to see everyone"
+msgstr "Yksikään jäsen ei täsmää. Tyhjennä haku nähdäksesi kaikki"
 
 #: src/components/layout/ProfilePane.tsx
 msgid "no message"
@@ -4278,7 +4360,7 @@ msgstr "Ei ääntä, ilmoitusta eikä punaista pistettä tältä kanavalta, ei e
 msgid "No speaker detected."
 msgstr "Kaiutinta ei havaittu."
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "No topic"
 msgstr "Ei aihetta"
 
@@ -4477,7 +4559,7 @@ msgid "Open"
 msgstr "Avaa"
 
 #. placeholder {0}: channel.channel
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Open {0}"
 msgstr "Avaa {0}"
 
@@ -4632,6 +4714,8 @@ msgstr "Paketit"
 msgid "Pages"
 msgstr "Sivut"
 
+#: src/components/pages/RegisterAccountSection.tsx
+#: src/components/pages/RegisterAccountSection.tsx
 #: src/components/pages/ServerSettingsPage.tsx
 #: src/components/pages/ServerSettingsPage.tsx
 #: src/components/ui/AddServerModal.tsx
@@ -5106,6 +5190,16 @@ msgstr "Päivitä"
 msgid "Refresh WHOIS"
 msgstr "Päivitä WHOIS"
 
+#: src/components/layout/NickClaimStrip.tsx
+#: src/components/pages/RegisterAccountSection.tsx
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Register"
+msgstr "Rekisteröidy"
+
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Register {nick} as your account on this server."
+msgstr "Rekisteröi {nick} tilisi nimeksi tällä palvelimella."
+
 #: src/components/ui/AddServerModal.tsx
 msgid "Register for an account"
 msgstr "Rekisteröidy tilille"
@@ -5459,7 +5553,7 @@ msgstr "Hae"
 msgid "Search again"
 msgstr "Hae uudelleen"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Search channels..."
 msgstr "Hae kanavia..."
 
@@ -5481,12 +5575,9 @@ msgid "Search GIFs..."
 msgstr "Hae GIF-kuvia..."
 
 #: src/components/layout/MemberList.tsx
+#: src/components/layout/MemberList.tsx
 msgid "Search members"
 msgstr "Hae jäseniä"
-
-#: src/components/layout/MemberList.tsx
-msgid "Search members…"
-msgstr "Hae jäseniä…"
 
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/SearchPane.tsx
@@ -5682,11 +5773,6 @@ msgstr "Lähetetty salaamattomana, koska tiedosto on liian suuri salattavaksi"
 #: src/components/layout/BotPane.tsx
 msgid "server"
 msgstr "palvelin"
-
-#: src/components/ui/BlankPage.tsx
-#: src/components/ui/BlankPage.tsx
-msgid "Server Channels"
-msgstr "Palvelimen kanavat"
 
 #: src/components/pages/TwoFactorPage.tsx
 msgid "Server does not advertise WebAuthn support"
@@ -6044,11 +6130,11 @@ msgstr "soju bouncer (hallinta)"
 msgid "someone"
 msgstr "joku"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Sort by name"
 msgstr "Lajittele nimen mukaan"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Sort by users"
 msgstr "Lajittele käyttäjien mukaan"
 
@@ -6316,6 +6402,10 @@ msgstr "Bouncer säilytti verkon."
 #: src/lib/voiceErrors.ts
 msgid "The call server refused the request. Try again in a moment."
 msgstr "Puhelupalvelin hylkäsi pyynnön. Yritä hetken kuluttua uudelleen."
+
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "The code expired. Ask the server operators for help"
+msgstr "Koodi vanheni. Pyydä apua palvelimen operaattoreilta"
 
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
@@ -6595,11 +6685,11 @@ msgstr "työkalu"
 msgid "Topic"
 msgstr "Aihe"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Topic set after (min ago)"
 msgstr "Aihe asetettu jälkeen (min sitten)"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Topic set before (min ago)"
 msgstr "Aihe asetettu ennen (min sitten)"
 
@@ -6837,6 +6927,7 @@ msgstr "Käytä pienempää tyylitiedostoa. Tämä ei mahdu tämän selaimen tal
 msgid "Use at least {PASSWORD_MIN_LENGTH} characters."
 msgstr "Käytä vähintään {PASSWORD_MIN_LENGTH} merkkiä."
 
+#: src/components/pages/RegisterAccountSection.tsx
 #: src/components/pages/ServerSettingsPage.tsx
 msgid "Use only Latin characters in the password"
 msgstr "Käytä salasanassa vain latinalaisia merkkejä"
@@ -6942,6 +7033,7 @@ msgstr "Kelvollinen palvelinportti on pakollinen"
 msgid "Verified account"
 msgstr "Vahvistettu tili"
 
+#: src/components/pages/RegisterAccountSection.tsx
 #: src/components/ui/TotpStepUpModal.tsx
 msgid "Verify"
 msgstr "Vahvista"
@@ -7246,6 +7338,10 @@ msgstr "Et ole enää tällä kanavalla"
 msgid "You are not in this channel"
 msgstr "Et ole tällä kanavalla"
 
+#: src/components/layout/NickClaimStrip.tsx
+msgid "You are not logged in"
+msgstr "Et ole kirjautunut sisään"
+
 #: src/components/ui/UpdateSheet.tsx
 msgid "You can close this and keep chatting."
 msgstr "Voit sulkea tämän ja jatkaa keskustelua."
@@ -7286,6 +7382,10 @@ msgstr "Sinut potkittiin tältä kanavalta."
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
 msgid "You're connected to <0>{0}</0>."
 msgstr "Olet yhteydessä kohteeseen <0>{0}</0>."
+
+#: src/components/layout/NickClaimStrip.tsx
+msgid "Your account"
+msgstr "Tilisi"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your account password for authentication"

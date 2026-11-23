@@ -5,14 +5,11 @@
 // channel metadata key.  This module fetches and caches both, and
 // exposes a renderer that swaps `:shortcode:` for an <img>.
 //
-// URL trust: a channel op sets the channel pack and the network pack
-// comes from the server, so neither is the user's choice. Both the pack
-// fetch and every emoji <img> go through the caller's `allowUrl`, the same
-// media visibility rule as avatars: nothing loads with previews off, and
-// with them on only trusted hosts, so a pack URL cannot make every viewer
-// of a channel contact a host of someone else's choosing.
+// A server or channel op picks these URLs, so we load them only from origins the media setting shows.
 
 import * as React from "react";
+import { canLoadEmojiUrl, canShowImageUrl } from "./imageUtils";
+import type { MediaVisibilityLevel } from "./mediaUtils";
 
 export interface EmojiEntry {
   url: string;
@@ -46,6 +43,16 @@ function isExpired(e: CacheEntry): boolean {
   return Date.now() - e.fetchedAt > TTL_MS;
 }
 
+// A pack can list emoji by a path relative to itself, so we resolve them against the pack URL.
+function withAbsoluteEmojiUrls(pack: EmojiPack, packUrl: string): EmojiPack {
+  const emoji: Record<string, EmojiEntry> = {};
+  for (const [shortcode, entry] of Object.entries(pack.emoji ?? {})) {
+    if (!URL.canParse(entry.url, packUrl)) continue;
+    emoji[shortcode] = { ...entry, url: new URL(entry.url, packUrl).href };
+  }
+  return { ...pack, emoji };
+}
+
 export async function fetchEmojiPacks(
   url: string,
 ): Promise<EmojiPack[] | null> {
@@ -69,7 +76,9 @@ export async function fetchEmojiPacks(
         return null;
       }
       const body = await res.json();
-      const packs: EmojiPack[] = Array.isArray(body) ? body : [body];
+      const packs = (Array.isArray(body) ? body : [body]).map(
+        (pack: EmojiPack) => withAbsoluteEmojiUrls(pack, url),
+      );
       CACHE.set(url, { state: "ok", packs, fetchedAt: Date.now() });
       return packs;
     } catch (err) {
@@ -95,13 +104,10 @@ export interface ResolvedShortcode extends EmojiEntry {
   packName: string;
 }
 
-function collectShortcodesUnsafe(
-  packUrls: ReadonlyArray<string | undefined>,
-): ResolvedShortcode[] {
+function collectShortcodes(packUrls: readonly string[]): ResolvedShortcode[] {
   const out: ResolvedShortcode[] = [];
   const seen = new Set<string>();
   for (const url of packUrls) {
-    if (!url) continue;
     const entry = CACHE.get(url);
     if (entry?.state !== "ok") continue;
     for (const pack of entry.packs) {
@@ -130,21 +136,29 @@ function collectShortcodesUnsafe(
 // in-memory cache directly.
 export function useEmojiResolver(
   packUrls: ReadonlyArray<string | undefined>,
-  // Decides which pack and emoji URLs may be fetched; callers keep its
-  // identity stable with useCallback.
-  allowUrl: (url: string) => boolean,
+  fileHosts: string[],
+  mediaLevel: MediaVisibilityLevel,
 ): {
   resolve: (shortcode: string) => EmojiEntry | null;
   shortcodes: ResolvedShortcode[];
 } {
-  // Callers build the URL list inline, so the joined string is the only stable
-  // identity to key off. A resolver with a new identity each render re-runs the
-  // markdown pass for every visible message.
+  // Callers build the URL lists inline, so the joined strings are the only
+  // stable identity to key off. A resolver with a new identity each render
+  // re-runs the markdown pass for every visible message.
   const key = packUrls.filter(Boolean).join("|");
+  const hostsKey = fileHosts.join(" ");
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the joined key is what makes the same set of hosts one identity
+  const canLoad = React.useCallback(
+    (url: string) => canLoadEmojiUrl(url, fileHosts, mediaLevel),
+    [hostsKey, mediaLevel],
+  );
   // biome-ignore lint/correctness/useExhaustiveDependencies: the joined key is what makes the same set of URLs one identity
   const urls = React.useMemo(
-    () => packUrls.filter((u): u is string => !!u && allowUrl(u)),
-    [key, allowUrl],
+    () =>
+      packUrls.filter(
+        (u): u is string => !!u && canShowImageUrl(u, mediaLevel, fileHosts),
+      ),
+    [key, hostsKey, mediaLevel],
   );
   const [revision, force] = React.useReducer((x: number) => x + 1, 0);
 
@@ -170,30 +184,21 @@ export function useEmojiResolver(
         if (entry?.state !== "ok") continue;
         for (const pack of entry.packs) {
           const e = pack.emoji?.[shortcode];
-          if (e) return allowUrl(e.url) ? e : null;
+          if (e) return canLoad(e.url) ? e : null;
         }
       }
       return null;
     },
-    [urls, revision, allowUrl],
+    [urls, canLoad, revision],
   );
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: a pack finishing its load changes which shortcodes exist
   const shortcodes = React.useMemo(
-    () => collectShortcodesUnsafe(urls).filter((e) => allowUrl(e.url)),
-    [urls, revision, allowUrl],
+    () => collectShortcodes(urls).filter((sc) => canLoad(sc.url)),
+    [urls, canLoad, revision],
   );
 
   return { resolve, shortcodes };
-}
-
-// Synchronous accessor for callers that aren't in a React tree.  Only
-// returns shortcodes from packs already in the cache; doesn't trigger
-// fetches.
-export function getLoadedShortcodes(
-  packUrls: ReadonlyArray<string | undefined>,
-): ResolvedShortcode[] {
-  return collectShortcodesUnsafe(packUrls);
 }
 
 const SHORTCODE_RX = /:([A-Za-z0-9._-]+):/g;

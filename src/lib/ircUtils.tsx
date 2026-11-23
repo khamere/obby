@@ -5,6 +5,7 @@ import { ChannelLink } from "../components/message/ChannelLink";
 /* eslint-disable no-control-regex */
 import type { Server, User } from "../types";
 import { findChannelMentions } from "./channelMentions";
+import { revealHiddenChars } from "./hiddenChars";
 import {
   decodeCharacterReferences,
   decodeHtmlEntities,
@@ -197,7 +198,7 @@ function parseStatus(
 // A trailing lone backslash is dropped; a backslash followed by any
 // other char is collapsed to that char (per spec, "drop the preceding
 // backslash").
-function unescapeTagValue(s: string): string {
+export function unescapeTagValue(s: string): string {
   let out = "";
   for (let i = 0; i < s.length; i++) {
     const c = s[i];
@@ -232,17 +233,27 @@ function unescapeTagValue(s: string): string {
 }
 
 const TAG_VALUE_ESCAPES: Record<string, string> = {
+  "\\": "\\\\",
   ";": "\\:",
   " ": "\\s",
-  "\\": "\\\\",
   "\r": "\\r",
   "\n": "\\n",
 };
 
-// A tag value ends at the first space or semicolon, so we escape every value
-// we put into an outgoing line to keep the rest of it out of the command.
-export function escapeTagValue(value: string): string {
-  return value.replace(/[; \\\r\n]/g, (c) => TAG_VALUE_ESCAPES[c]);
+export function escapeTagValue(s: string): string {
+  return s.replace(/[\\; \r\n]/g, (c) => TAG_VALUE_ESCAPES[c]);
+}
+
+// We escape every value since a server- or peer-supplied one could otherwise start a command of its own.
+export function formatTags(tags: Record<string, string>): string {
+  const pairs = Object.entries(tags).map(
+    ([key, value]) => `${key}=${escapeTagValue(value)}`,
+  );
+  return pairs.length > 0 ? `@${pairs.join(";")} ` : "";
+}
+
+export function replyTags(msgid: string | undefined): string {
+  return msgid ? formatTags({ "+reply": msgid, "+draft/reply": msgid }) : "";
 }
 
 export function parseMessageTags(tags: string): Record<string, string> {
@@ -668,7 +679,7 @@ export function renderMarkdown(
       const linkClass = isExternalLink
         ? "text-blue-500 hover:text-blue-700 underline external-link-security"
         : "text-blue-500 hover:text-blue-700 underline";
-      return `<a href="${sanitizedHref}" target="_blank" rel="noopener noreferrer" class="${linkClass}">[Image: ${escapeHtml(text || "") || sanitizedHref}]</a>`;
+      return `<a href="${sanitizedHref}" target="_blank" rel="noopener noreferrer" class="${linkClass}">[Image: ${escapeHtml(text || "") || revealHiddenChars(sanitizedHref)}]</a>`;
     }
     // Allow the image to render normally, but make it clickable
     const titleAttr = title ? ` title="${title.replace(/"/g, "&quot;")}"` : "";
@@ -957,11 +968,8 @@ export function mircToHtml(
   text: string,
   keyPrefix = "",
   linkLabels?: LinkLabels,
-  options: { linkify?: boolean } = {},
+  isInteractive = true,
 ): React.ReactNode {
-  // linkify=false keeps formatting but emits no anchors, for places that
-  // sit outside EnhancedLinkWrapper (link clicks would bypass the warning).
-  const { linkify = true } = options;
   const state = {
     bold: false,
     underline: false,
@@ -1088,10 +1096,6 @@ export function mircToHtml(
     );
   }
 
-  if (!linkify) {
-    return <>{result}</>;
-  }
-
   // Process URLs in the result
   const processedResult: React.ReactNode[] = [];
   const elementIndexRef = { current: 0 };
@@ -1109,6 +1113,7 @@ export function mircToHtml(
           keyPrefix,
           elementIndexRef,
           linkLabels,
+          isInteractive,
         );
         processedResult.push(...urlProcessed);
       } else {
@@ -1179,10 +1184,12 @@ export const makeUrlRegex = () =>
 
 /** A web address as people read it: no scheme, no "www." and no trailing slash. */
 export function compactUrl(url: string): string {
-  return url
-    .replace(/^https?:\/\//i, "")
-    .replace(/^www\./i, "")
-    .replace(/\/$/, "");
+  return revealHiddenChars(
+    url
+      .replace(/^https?:\/\//i, "")
+      .replace(/^www\./i, "")
+      .replace(/\/$/, ""),
+  );
 }
 
 /** The first web link in `text`, exactly as chat would linkify it. */
@@ -1199,9 +1206,18 @@ function processUrlsInText(
   keyPrefix = "",
   elementIndexRef?: { current: number },
   linkLabels?: LinkLabels,
+  isInteractive = true,
 ): React.ReactNode[] {
   // Check if running in Tauri native environment
   const isTauriEnv = isTauri();
+  const renderPlainText = (plainText: string) =>
+    isInteractive
+      ? processChannelsInText(plainText, style, keyPrefix, () => elementIndex++)
+      : [
+          <span key={`${keyPrefix}text-${elementIndex++}`} style={style}>
+            {plainText}
+          </span>,
+        ];
 
   const urlRegex = makeUrlRegex();
 
@@ -1213,14 +1229,7 @@ function processUrlsInText(
   while (match !== null) {
     // Add text before the URL
     if (match.index > lastIndex) {
-      parts.push(
-        ...processChannelsInText(
-          text.slice(lastIndex, match.index),
-          style,
-          keyPrefix,
-          () => elementIndex++,
-        ),
-      );
+      parts.push(...renderPlainText(text.slice(lastIndex, match.index)));
     }
 
     const url = match[0];
@@ -1228,6 +1237,7 @@ function processUrlsInText(
 
     // Ensure URL has protocol
     const fullUrl = url.startsWith("http") ? url : `https://${url}`;
+    const shownUrl = revealHiddenChars(url);
 
     // IRC links: only make clickable on Tauri, otherwise show as plain text
     if (isIrcLink && !isTauriEnv) {
@@ -1237,7 +1247,17 @@ function processUrlsInText(
           style={style}
           className="text-discord-text-muted"
         >
-          {url}
+          {shownUrl}
+        </span>,
+      );
+    } else if (!isInteractive) {
+      parts.push(
+        <span
+          key={`${keyPrefix}url-${elementIndex++}`}
+          className={`text-blue-500 underline inline-block max-w-[min(40ch,100%)] truncate align-bottom${isIrcLink ? "" : " link-compact"}`}
+          style={style}
+        >
+          {isIrcLink ? url : (labelFor(linkLabels, url) ?? compactUrl(url))}
         </span>,
       );
     } else {
@@ -1258,11 +1278,11 @@ function processUrlsInText(
           rel="noopener noreferrer"
           className={`${linkClass} inline-block max-w-[min(40ch,100%)] truncate align-bottom`}
           style={style}
-          title={isExternalLink ? undefined : url}
+          title={isExternalLink ? undefined : shownUrl}
         >
           {isExternalLink
             ? (labelFor(linkLabels, url) ?? compactUrl(url))
-            : url}
+            : shownUrl}
         </a>,
       );
     }
@@ -1273,14 +1293,7 @@ function processUrlsInText(
 
   // Add remaining text
   if (lastIndex < text.length) {
-    parts.push(
-      ...processChannelsInText(
-        text.slice(lastIndex),
-        style,
-        keyPrefix,
-        () => elementIndex++,
-      ),
-    );
+    parts.push(...renderPlainText(text.slice(lastIndex)));
   }
 
   // Update the shared elementIndex if provided

@@ -61,21 +61,24 @@ const ServerIcon: React.FC<ServerIconProps> = ({
   const displayName = serverDisplayName(server, network);
   const host = networkHost(server, network);
 
-  const mediaSettings = mediaLevelToSettings(
-    useStore((state) => state.globalSettings.mediaVisibilityLevel),
-  );
-
   useMutes(); // re-render when mutes change
   const hasMentions =
     !isServerMuted(server.id) && serverHasUnreadMention(server);
   const hasAlerts = useStore((s) => (s.serverAlerts[server.id] ?? 0) > 0);
 
   const iconUrl = server.icon;
+  // The server names its icon and can point it at any host, so the media setting decides whether we load it.
+  const mediaSettings = mediaLevelToSettings(
+    useStore((state) => state.globalSettings.mediaVisibilityLevel),
+  );
   const showIcon = canShowAvatarUrl(
     iconUrl,
     serverFilehosts(server),
     mediaSettings,
   );
+  const serverName = displayName;
+  const label = server.isDisabled ? t`${serverName}, turned off` : serverName;
+  const dimmed = server.isDisabled ? "grayscale opacity-50" : "";
 
   const getServerInitial = (s: Server): string => {
     const displayName = serverDisplayName(s, network);
@@ -109,10 +112,10 @@ const ServerIcon: React.FC<ServerIconProps> = ({
         `}
         data-selected={isSelected}
         data-network-host={host || undefined}
-        title={displayName}
+        title={label}
         role="button"
         tabIndex={0}
-        aria-label={displayName}
+        aria-label={label}
         aria-pressed={isSelected}
         onKeyDown={(e) => {
           if (
@@ -129,10 +132,11 @@ const ServerIcon: React.FC<ServerIconProps> = ({
           ? { onTouchStart, onTouchMove, onTouchEnd, onTouchCancel }
           : {})}
       >
-        {(server.connectionState === "disconnected" ||
-          isServerConnecting(server)) && (
-          <div className="absolute inset-0 bg-discord-text-faint bg-opacity-50 rounded-lg" />
-        )}
+        {!server.isDisabled &&
+          (server.connectionState === "disconnected" ||
+            isServerConnecting(server)) && (
+            <div className="absolute inset-0 bg-discord-text-faint bg-opacity-50 rounded-lg" />
+          )}
 
         {isServerConnecting(server) && (
           <span className={CONNECTION_BADGE_CLASS}>
@@ -140,7 +144,7 @@ const ServerIcon: React.FC<ServerIconProps> = ({
           </span>
         )}
 
-        {server.connectionState === "disconnected" && (
+        {server.connectionState === "disconnected" && !server.isDisabled && (
           <button
             type="button"
             className={`${CONNECTION_BADGE_CLASS} text-discord-text-strong hover:bg-discord-primary transition-colors after:absolute after:-inset-3 after:content-['']`}
@@ -165,11 +169,13 @@ const ServerIcon: React.FC<ServerIconProps> = ({
           <img
             src={iconUrl}
             alt={server.name}
-            className="w-9 h-9 rounded-full pointer-events-none"
+            className={`w-9 h-9 rounded-full pointer-events-none ${dimmed}`}
             draggable={false}
           />
         ) : (
-          <div className="text-xl font-semibold text-discord-text-strong">
+          <div
+            className={`text-xl font-semibold text-discord-text-strong ${dimmed}`}
+          >
             {getServerInitial(server)}
           </div>
         )}

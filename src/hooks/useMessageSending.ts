@@ -9,8 +9,9 @@ import { base64EncodeUtf8 } from "../lib/base64";
 import { botPriority } from "../lib/botPriority";
 import { slapAction } from "../lib/clientCommands";
 import { coerceOptionValue } from "../lib/commandInvocation";
+import { LINE_BREAK } from "../lib/irc/IRCClient";
 import ircClient from "../lib/ircClient";
-import { escapeTagValue, parseJoinCommand } from "../lib/ircUtils";
+import { parseJoinCommand, replyTags } from "../lib/ircUtils";
 import {
   makeLabel,
   shouldUseLabeledResponse,
@@ -356,7 +357,7 @@ export function useMessageSending({
         const routed = routeOutgoingPM(selectedServerId, target, message);
         if (routed === "withheld") return "withheld" as const;
         if (routed === "sent") return;
-        ircClient.sendRaw(selectedServerId, `PRIVMSG ${target} :${message}`);
+        ircClient.sendPrivmsgLines(selectedServerId, target, message);
       } else if (lowerName === "whisper") {
         const [targetUser, ...messageParts] = args;
         if (!selectedChannel) {
@@ -383,12 +384,17 @@ export function useMessageSending({
         const whisperContext = getWhisperContext(localReplyTo, currentUser);
         const target =
           selectedChannel?.name ?? selectedPrivateChat?.username ?? "";
+        const actionLines = actionMessage
+          .split(/[\r\n]+/)
+          .filter(Boolean)
+          .map((line) => `\u0001ACTION ${line}\u0001`)
+          .join("\n");
         if (whisperContext) {
           ircClient.sendWhisper(
             selectedServerId,
             whisperContext.targetUser,
             whisperContext.channelContext,
-            `\u0001ACTION ${actionMessage}\u0001`,
+            actionLines,
           );
         } else {
           if (!target) return;
@@ -404,9 +410,11 @@ export function useMessageSending({
             if (routed === "withheld") return "withheld" as const;
             if (routed === "sent") return;
           }
-          ircClient.sendRaw(
+          ircClient.sendPrivmsgLines(
             selectedServerId,
-            `${localReplyTo?.msgid ? `@+reply=${escapeTagValue(localReplyTo.msgid)};+draft/reply=${escapeTagValue(localReplyTo.msgid)} ` : ""}PRIVMSG ${target} :\u0001ACTION ${actionMessage}\u0001`,
+            target,
+            actionLines,
+            replyTags(localReplyTo?.msgid),
           );
         }
         if (selectedPrivateChat && currentUser) {
@@ -457,7 +465,10 @@ export function useMessageSending({
       } else {
         const fullCommand =
           args.length > 0 ? `${commandName} ${args.join(" ")}` : commandName;
-        ircClient.sendRaw(selectedServerId, fullCommand);
+        ircClient.sendRaw(
+          selectedServerId,
+          fullCommand.replace(/[\r\n]+/g, " "),
+        );
       }
     },
     [
@@ -501,9 +512,7 @@ export function useMessageSending({
         return;
       }
 
-      const replyPrefix = localReplyTo?.msgid
-        ? `@+reply=${escapeTagValue(localReplyTo.msgid)};+draft/reply=${escapeTagValue(localReplyTo.msgid)} `
-        : "";
+      const replyPrefix = replyTags(localReplyTo?.msgid);
 
       const format = (line: string) =>
         formatMessageForIrc(line, {
@@ -561,9 +570,7 @@ export function useMessageSending({
         return;
       }
 
-      const messagePrefix = localReplyTo?.msgid
-        ? `@+reply=${escapeTagValue(localReplyTo.msgid)};+draft/reply=${escapeTagValue(localReplyTo.msgid)} `
-        : "";
+      const messagePrefix = replyTags(localReplyTo?.msgid);
 
       if (globalSettings.autoFallbackToSingleLine) {
         const combinedText = lines.join(" ");
@@ -660,9 +667,7 @@ export function useMessageSending({
         arm_pending_timeout(selectedServerId, bufferId, label);
       }
 
-      const replyPrefix = localReplyTo?.msgid
-        ? `@+reply=${escapeTagValue(localReplyTo.msgid)};+draft/reply=${escapeTagValue(localReplyTo.msgid)} `
-        : "";
+      const replyPrefix = replyTags(localReplyTo?.msgid);
       const tagPrefix = withLabel(replyPrefix, label);
 
       const outgoingLines = rainbow
@@ -749,7 +754,7 @@ export function useMessageSending({
         if (routed === "sent") return;
       }
 
-      const lines = cleanedText.split("\n");
+      const lines = cleanedText.split(LINE_BREAK);
       const supportsMultiline = serverSupportsMultiline(selectedServerId);
       const hasMultipleLines = lines.length > 1;
 

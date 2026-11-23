@@ -12,7 +12,6 @@ import { BouncerDisconnectConfirmModal } from "./components/ui/BouncerDisconnect
 import { BouncerNetworkDisconnectConfirmModal } from "./components/ui/BouncerNetworkDisconnectConfirmModal";
 import { ChannelKeyModal } from "./components/ui/ChannelKeyModal";
 import LinkSecurityWarningModal from "./components/ui/LinkSecurityWarningModal";
-import LoadingOverlay from "./components/ui/LoadingOverlay";
 import QuickActions from "./components/ui/QuickActions";
 import { RemoveServerConfirmModal } from "./components/ui/RemoveServerConfirmModal";
 import { TicTacToeModal } from "./components/ui/TicTacToeModal";
@@ -101,7 +100,6 @@ const AppContent: React.FC = () => {
     selectChannel,
     connectToSavedServers,
     toggleServerNoticesPopup,
-    isAddingServer,
     hasConnectedToSavedServers,
   } = useStore(
     useShallow((state) => ({
@@ -114,8 +112,6 @@ const AppContent: React.FC = () => {
       selectChannel: state.selectChannel,
       connectToSavedServers: state.connectToSavedServers,
       toggleServerNoticesPopup: state.toggleServerNoticesPopup,
-      // Saved servers connect behind a usable app, so only a server being added waits behind the spinner.
-      isAddingServer: state.isConnecting && state.isAddingNewServer,
       hasConnectedToSavedServers: state.hasConnectedToSavedServers,
     })),
   );
@@ -125,6 +121,7 @@ const AppContent: React.FC = () => {
       !state.servers.some(
         (s) =>
           s.isConnected ||
+          s.isDisabled ||
           s.connectionState === "connecting" ||
           s.connectionState === "reconnecting",
       ),
@@ -397,7 +394,6 @@ const AppContent: React.FC = () => {
                   joinChannel={joinChannel}
                 />
               )}
-              {isAddingServer && <LoadingOverlay />}
             </>
           }
         />

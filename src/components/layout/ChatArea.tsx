@@ -71,7 +71,6 @@ import {
   uploadFileTokenless,
   validateFileAgainstInfo,
 } from "../../lib/mediaUpload";
-import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
 import {
   type FormattingType,
   getPreviewStyles,
@@ -580,23 +579,10 @@ export const ChatArea: React.FC<{
       "draft/emoji"
     ]?.value;
   }, [servers, selectedServerId, selectedChannelId]);
-  // Packs and their images follow the avatar rule for this server.
-  const emojiFileHostsKey = serverFilehosts(
-    servers.find((s) => s.id === selectedServerId),
-  ).join(" ");
-  const mediaVisibilityLevel = globalSettings.mediaVisibilityLevel;
-  const allowEmojiUrl = useCallback(
-    (url: string) =>
-      canShowAvatarUrl(
-        url,
-        emojiFileHostsKey.split(" ").filter(Boolean),
-        mediaLevelToSettings(mediaVisibilityLevel),
-      ),
-    [emojiFileHostsKey, mediaVisibilityLevel],
-  );
   const { shortcodes: customEmojiShortcodes } = useEmojiResolver(
     [channelEmojiPackUrl, networkEmojiPackUrl],
-    allowEmojiUrl,
+    serverFilehosts(servers.find((s) => s.id === selectedServerId)),
+    globalSettings.mediaVisibilityLevel,
   );
   const pickerCustomEmojis = useMemo(
     () => packEntriesForPicker(customEmojiShortcodes),

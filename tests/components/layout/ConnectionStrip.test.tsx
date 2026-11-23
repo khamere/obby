@@ -155,8 +155,9 @@ describe("ConnectionStrip", () => {
       connectionState: "disconnected",
       loginRefused: true,
     });
-    for (const button of screen.getAllByRole("button"))
-      expect(button).toHaveClass("h-11");
+    for (const name of [/log in again/i, /reconnect/i])
+      expect(screen.getByRole("button", { name })).toHaveClass("strip-action");
+    expect(screen.getByRole("button", { name: /close/i })).toHaveClass("h-11");
   });
 
   it("keeps the compact actions for a mouse", () => {
@@ -166,7 +167,60 @@ describe("ConnectionStrip", () => {
       connectionState: "disconnected",
       loginRefused: true,
     });
-    for (const button of screen.getAllByRole("button"))
-      expect(button).toHaveClass("h-7");
+    for (const name of [/log in again/i, /reconnect/i])
+      expect(screen.getByRole("button", { name })).toHaveClass("strip-action");
+    expect(screen.getByRole("button", { name: /close/i })).toHaveClass("h-5");
+  });
+
+  it("stays closed through the retries of one outage and shows the next one", () => {
+    const lost = {
+      ...baseServer,
+      id: "outage",
+      isConnected: false,
+      connectionState: "disconnected" as const,
+    };
+    const { container, rerender } = renderSettled(lost);
+    fireEvent.click(screen.getByRole("button", { name: /close/i }));
+
+    rerender(
+      <ConnectionStrip server={{ ...lost, connectionState: "reconnecting" }} />,
+    );
+    act(() => {
+      vi.advanceTimersByTime(10_000);
+    });
+    expect(container).toBeEmptyDOMElement();
+
+    rerender(<ConnectionStrip server={{ ...baseServer, id: "outage" }} />);
+    rerender(<ConnectionStrip server={lost} />);
+    act(() => {
+      vi.advanceTimersByTime(10_000);
+    });
+    expect(
+      screen.getByRole("button", { name: /reconnect/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("stays closed until the failed login clears, then shows the next failure", () => {
+    const failed = {
+      ...baseServer,
+      id: "closer",
+      isRegistered: true,
+      saslFailed: true,
+    };
+    const { container, rerender } = renderSettled(failed);
+    fireEvent.click(screen.getByRole("button", { name: /close/i }));
+    expect(container).toBeEmptyDOMElement();
+
+    rerender(<ConnectionStrip server={failed} />);
+    expect(container).toBeEmptyDOMElement();
+
+    rerender(<ConnectionStrip server={{ ...failed, saslFailed: false }} />);
+    rerender(<ConnectionStrip server={failed} />);
+    act(() => {
+      vi.advanceTimersByTime(10_000);
+    });
+    expect(
+      screen.getByRole("button", { name: /log in again/i }),
+    ).toBeInTheDocument();
   });
 });

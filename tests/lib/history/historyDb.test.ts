@@ -335,6 +335,14 @@ describe("gaps", () => {
     expect(await db.gapsFor("s1", "#a")).toEqual([]);
     expect(await db.gapsFor("s1", "#b")).toHaveLength(1);
   });
+
+  it("stores a stretch once, however often a connection computes it", async () => {
+    const gap = { server: "s1", target: "#a", from: 10, to: 20, lost: false };
+    await db.addGap(gap);
+    await db.addGap(gap);
+    await db.addGap({ ...gap, to: 18 });
+    expect(await db.gapsFor("s1", "#a")).toHaveLength(1);
+  });
 });
 
 describe("pruneToLimit", () => {

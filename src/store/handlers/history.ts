@@ -480,6 +480,19 @@ async function addIslandGaps(
     });
 }
 
+// Records for one stretch merge into a single one, so the record a fill
+// started from may be gone while another record of the same stretch remains.
+export function findFilledGap(
+  gaps: HistoryGap[],
+  started: HistoryGap | undefined,
+): HistoryGap | undefined {
+  if (!started) return undefined;
+  return (
+    gaps.find((gap) => gap.id === started.id) ??
+    gaps.find((gap) => gap.from === started.from && gap.to === started.to)
+  );
+}
+
 async function saveHistoryPage(
   store: StoreApi<AppState>,
   serverId: string,
@@ -545,9 +558,7 @@ async function saveHistoryPage(
     await addIslandGaps(key, target, page, inserted);
     request.fill?.onSettled?.(true);
   } else if (request?.kind === "after" && request.fill) {
-    const filled = (await gapsFor(key, target)).find(
-      (gap) => gap.id === request.fill?.gap?.id,
-    );
+    const filled = findFilledGap(await gapsFor(key, target), request.fill.gap);
     const decision =
       filled &&
       decideAfterForwardFill({
@@ -571,9 +582,7 @@ async function saveHistoryPage(
   } else if (request?.kind === "before" && request.fill) {
     const { pagesLeft } = request.fill;
     // We decide on the gap as saved now, since another fill may have moved it.
-    const filled = (await gapsFor(key, target)).find(
-      (gap) => gap.id === request.fill?.gap?.id,
-    );
+    const filled = findFilledGap(await gapsFor(key, target), request.fill.gap);
     const decision =
       filled &&
       decideAfterGapFill({

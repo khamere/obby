@@ -10,8 +10,9 @@ import { stripIrcFormatting } from "./messageFormatter";
  * (colours, bold, …). With it off, the codes are stripped entirely so
  * only the plain text remains; the digits of a colour code never show.
  *
- * `linkify: false` emits no anchors, for places outside EnhancedLinkWrapper
- * where a clickable link would bypass the external-link warning.
+ * `linkify: false` shows links and channel names as text that cannot be
+ * clicked, for places outside EnhancedLinkWrapper where a clickable link would
+ * bypass the external-link warning.
  */
 export function renderTopic(
   topic: string,
@@ -20,8 +21,8 @@ export function renderTopic(
 ): React.ReactNode {
   const { format, linkify = true } = options;
   if (format) {
-    return mircToHtml(topic, keyPrefix, undefined, { linkify });
+    return mircToHtml(topic, keyPrefix, undefined, linkify);
   }
   const plain = stripIrcFormatting(topic);
-  return linkify ? mircToHtml(plain, keyPrefix) : plain;
+  return mircToHtml(plain, keyPrefix, undefined, linkify);
 }

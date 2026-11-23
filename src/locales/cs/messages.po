@@ -257,6 +257,11 @@ msgstr "{sender} znovu spustil(a) šifrování. Chvíli počkejte, než odešlet
 msgid "{sender} sent you a message: {body}"
 msgstr "{sender} vám poslal zprávu: {body}"
 
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/ServerList.tsx
+msgid "{serverName}, turned off"
+msgstr "{serverName}, vypnuto"
+
 #: src/components/layout/ProfilePane.tsx
 msgid "{sessionCount} sessions connected. Sign in as this account or ask an IRC operator to see their details."
 msgstr "{sessionCount} relací je připojeno. Přihlaste se k tomuto účtu nebo požádejte IRC operátora o zobrazení podrobností."
@@ -273,7 +278,7 @@ msgstr "{stepCount, plural, one {# krok} few {# kroky} many {# kroků} other {# 
 msgid "{title} Client"
 msgstr "klient {title}"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "{total, plural, one {# channel} other {# channels}}"
 msgstr "{total, plural, one {# kanál} few {# kanály} other {# kanálů}}"
 
@@ -293,11 +298,11 @@ msgstr "{userCount} uživatelů"
 msgid "{userCount} watching"
 msgstr "{userCount} diváků"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "*channel*"
 msgstr "*kanál*"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "*spam*"
 msgstr "*spam*"
 
@@ -354,6 +359,14 @@ msgstr "<0>{0}</0>, <1>{1}</1> a <2>{2}</2> píší..."
 #: src/components/ui/TypingIndicator.tsx
 msgid "<0>{0}</0>, <1>{1}</1>, <2>{2}</2> and {3} others are typing..."
 msgstr "<0>{0}</0>, <1>{1}</1>, <2>{2}</2> a {3} dalších píší..."
+
+#: src/components/layout/NickClaimStrip.tsx
+msgid "<0>{nick}</0> is not registered. Register it to keep it"
+msgstr "<0>{nick}</0> není registrovaný. Zaregistrujte si ho, abyste si ho ponechali"
+
+#: src/components/layout/NickClaimStrip.tsx
+msgid "<0>{nick}</0> is registered. Log in to use it"
+msgstr "<0>{nick}</0> je registrovaná. Přihlaste se, abyste ji mohli použít"
 
 #: src/components/ui/ExternalLinkWarningModal.tsx
 msgid "<0>⚠️ Be careful!</0> Only open links from trusted sources. Malicious links can compromise your security or privacy."
@@ -769,7 +782,7 @@ msgstr "Aplikace"
 msgid "Appearance"
 msgstr "Vzhled"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Apply and refresh"
 msgstr "Použít a obnovit"
 
@@ -1102,6 +1115,10 @@ msgstr "Bot v tomto kanálu"
 msgid "Bots"
 msgstr "Boti"
 
+#: src/components/layout/BouncerServerGroup.tsx
+msgid "Bouncer: {networkName}"
+msgstr "Bouncer: {networkName}"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Bridge rules"
 msgstr "Pravidla mostů"
@@ -1238,6 +1255,10 @@ msgstr "Změnit heslo"
 msgid "Change the channel name (operators only)"
 msgstr "Změnit název kanálu (pouze operátoři)"
 
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Change your nick to register, this one is not allowed"
+msgstr "Pro registraci změňte přezdívku, tato není povolena"
+
 #: src/lib/clientCommands.ts
 msgid "Change your nickname on this server"
 msgstr "Změnit vaši přezdívku na tomto serveru"
@@ -1312,7 +1333,7 @@ msgstr "Odkaz kanálu (+L)"
 msgid "Channel name"
 msgstr "Název kanálu"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Channel name mask"
 msgstr "Maska názvu kanálu"
 
@@ -1363,6 +1384,7 @@ msgstr "Pouze pro kanál"
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/ProfilePane.tsx
+#: src/components/ui/BlankPage.tsx
 #: src/components/ui/HomeScreen.tsx
 #: src/components/ui/QuickActions/resultMeta.tsx
 msgid "Channels"
@@ -1400,6 +1422,10 @@ msgstr "Hledat nová vydání"
 msgid "Check now"
 msgstr "Zkontrolovat"
 
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Check the code and try again"
+msgstr "Zkontrolujte kód a zkuste to znovu"
+
 #: src/components/ui/UpdateSheet.tsx
 msgid "Checking the download"
 msgstr "Kontrola stažení"
@@ -1419,6 +1445,10 @@ msgstr "Vyberte soubor do {limit}, což je maximum, které úložiště souborů
 #: src/lib/mediaUpload.ts
 msgid "Choose a file with an extension. The file host does not accept files without one."
 msgstr "Vyberte soubor s příponou. Úložiště souborů nepřijímá soubory bez přípony."
+
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Choose a longer password"
+msgstr "Zvolte delší heslo"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Choose a predefined flood protection profile for common use cases."
@@ -1452,7 +1482,7 @@ msgstr "Vybrat obrázek…"
 msgid "Choose microphone and camera"
 msgstr "Vybrat mikrofon a kameru"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Choose sort order"
 msgstr "Vyberte pořadí řazení"
 
@@ -1493,6 +1523,7 @@ msgstr "Vymazat celou uloženou historii?"
 msgid "Clear history"
 msgstr "Vymazat historii"
 
+#: src/components/layout/MemberList.tsx
 #: src/components/layout/MemberList.tsx
 msgid "Clear search"
 msgstr "Vymazat hledání"
@@ -1536,6 +1567,8 @@ msgstr "Limit klientů (+l)"
 
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/BotPane.tsx
+#: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 #: src/components/layout/ProfilePane.tsx
 #: src/components/layout/ProfilePane.tsx
 #: src/components/message/ServerNoticesPopup.tsx
@@ -1578,6 +1611,11 @@ msgstr "Zavřít prohlížeč"
 #: src/components/ui/BotToolsCard.tsx
 msgid "Close workflow"
 msgstr "Zavřít workflow"
+
+#: src/components/pages/RegisterAccountSection.tsx
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Code"
+msgstr "Kód"
 
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Code accepted."
@@ -1695,6 +1733,8 @@ msgstr "Potvrdit odebrání"
 msgid "Confirm?"
 msgstr "Potvrdit?"
 
+#: src/components/pages/ServerSettingsPage.tsx
+#: src/components/pages/ServerSettingsPage.tsx
 #: src/components/ui/AddServerModal.tsx
 #: src/components/ui/BouncerNetworksPanel.tsx
 msgid "Connect"
@@ -1712,6 +1752,10 @@ msgstr "Připojte mikrofon, abyste mohli mluvit"
 msgid "Connect to a server to manage operator settings."
 msgstr "Připojte se k serveru a spravujte nastavení operátora."
 
+#: src/components/pages/ChannelBrowser.tsx
+msgid "Connect to the server to list its channels."
+msgstr "Připojte se k serveru a zobrazte jeho kanály."
+
 #: src/components/pages/ServerSettingsPage.tsx
 msgid "Connected as a guest"
 msgstr "Připojeno jako host"
@@ -1720,6 +1764,8 @@ msgstr "Připojeno jako host"
 msgid "Connected to"
 msgstr "Připojeno k"
 
+#: src/components/layout/ChannelList.tsx
+#: src/components/layout/ChannelList.tsx
 #: src/components/layout/UserPanel.tsx
 #: src/components/ui/MiniMediaPlayer.tsx
 msgid "Connecting"
@@ -1907,6 +1953,10 @@ msgstr "Tento odkaz nelze načíst. Musí vést přímo na soubor .json."
 msgid "Could not reach the file host. Check your connection and try again."
 msgstr "Nepodařilo se spojit se serverem pro soubory. Zkontrolujte připojení a zkuste to znovu."
 
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Could not register. Try again"
+msgstr "Registrace se nezdařila. Zkuste to znovu"
+
 #: src/components/layout/ChatArea.tsx
 msgid "Could not remove the metadata from this image, so it was not uploaded."
 msgstr "Metadata z tohoto obrázku se nepodařilo odstranit, proto nebyl nahrán."
@@ -1920,6 +1970,10 @@ msgstr "Nepodařilo se nastavit nové heslo: {0}"
 #: src/components/ui/ChangePasswordModal.tsx
 msgid "Could not update password: {0}"
 msgstr "Heslo se nepodařilo změnit: {0}"
+
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Could not verify. Try again"
+msgstr "Ověření se nezdařilo. Zkuste to znovu"
 
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Couldn't set up encryption with {nick}."
@@ -1951,11 +2005,11 @@ msgstr "Vytvořit složku"
 msgid "Create pack"
 msgstr "Vytvořit balíček"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Created after (min ago)"
 msgstr "Vytvořeno po (min. zpět)"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Created before (min ago)"
 msgstr "Vytvořeno před (min. zpět)"
 
@@ -2287,6 +2341,11 @@ msgstr "Zobrazovat, když uživatelé vstupují nebo opouštějí kanály"
 msgid "Do you want to open this link in a new tab?"
 msgstr "Chcete otevřít tento odkaz v nové záložce?"
 
+#: src/components/layout/NickClaimStrip.tsx
+#: src/components/layout/NickClaimStrip.tsx
+msgid "Don't show again for this server"
+msgstr "Pro tento server už nezobrazovat"
+
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "Don't warn me about low link security for this server"
 msgstr "Neupozorňovat mě na nízkou bezpečnost připojení pro tento server"
@@ -2396,6 +2455,11 @@ msgstr "Upravit profil"
 #: src/components/mobile/ServerBottomSheet.tsx
 msgid "Edit Server"
 msgstr "Upravit server"
+
+#: src/components/pages/RegisterAccountSection.tsx
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Email"
+msgstr "E-mail"
 
 #: src/components/pages/SettingsPage.tsx
 msgid "Email:"
@@ -2555,6 +2619,10 @@ msgstr "Zadejte číslo pro {0}"
 msgid "Enter a URL. Use {sizeToken} in the URL for dynamic sizing. Example: https://example.com/avatar/{sizeToken}/channel.jpg"
 msgstr "Zadejte URL. Pro dynamickou velikost použijte v URL {sizeToken}. Příklad: https://example.com/avatar/{sizeToken}/channel.jpg"
 
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Enter a valid email address"
+msgstr "Zadejte platnou e-mailovou adresu"
+
 #. placeholder {0}: e.name
 #: src/components/chat/CommandArgHint.tsx
 msgid "Enter a whole number for {0}"
@@ -2579,6 +2647,10 @@ msgstr "Zadejte odkaz http(s) na soubor .json."
 #: src/components/ui/settings/ThemeLinkField.tsx
 msgid "Enter an http(s) link to a theme .json file."
 msgstr "Zadejte odkaz http(s) na soubor motivu .json."
+
+#: src/components/layout/NickClaimStrip.tsx
+msgid "Enter code"
+msgstr "Zadat kód"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Enter default nickname..."
@@ -2646,6 +2718,14 @@ msgstr "Zadejte 6místný kód z e-mailu."
 msgid "Enter the account name you want to recover."
 msgstr "Zadejte název účtu, který chcete obnovit."
 
+#: src/components/layout/NickClaimStrip.tsx
+msgid "Enter the code sent to your email"
+msgstr "Zadejte kód zaslaný na váš e-mail"
+
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Enter the code sent to your email."
+msgstr "Zadejte kód zaslaný na váš e-mail."
+
 #: src/components/ui/settings/UserFilehostField.tsx
 msgid "Enter the http(s) address of your Zipline, like https://img.example.com"
 msgstr "Zadejte http(s) adresu svého Ziplinu, např. https://img.example.com"
@@ -2695,7 +2775,7 @@ msgstr "PříkladSÍŤ"
 msgid "Exceptions"
 msgstr "Výjimky"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Exclude channel name mask"
 msgstr "Vyloučit masku názvu kanálu"
 
@@ -2813,11 +2893,11 @@ msgstr "Filtrovat sprosté výrazy (+G)"
 msgid "Filter members…"
 msgstr "Filtrovat členy…"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Filters"
 msgstr "Filtry"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Filters are unavailable on this server"
 msgstr "Filtry na tomto serveru nejsou dostupné"
 
@@ -3275,7 +3355,7 @@ msgid "JetBrains Mono"
 msgstr "JetBrains Mono"
 
 #: src/components/message/JsonLogMessage.tsx
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 #: src/components/ui/ChannelKeyModal.tsx
 msgid "Join"
 msgstr "Připojit se"
@@ -3283,7 +3363,7 @@ msgstr "Připojit se"
 #. placeholder {0}: channel.channel
 #. placeholder {0}: message.inviteChannel
 #: src/components/message/InviteMessage.tsx
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Join {0}"
 msgstr "Připojit se k {0}"
 
@@ -3321,7 +3401,7 @@ msgid "Join voice channel {channelName}"
 msgstr "Připojit se k hlasovému kanálu {channelName}"
 
 #: src/components/layout/ProfilePane.tsx
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Joined"
 msgstr "Připojeno"
 
@@ -3579,6 +3659,8 @@ msgstr "Poloha"
 msgid "Location access was denied. Allow location access in your browser or system settings, then try again."
 msgstr "Přístup k poloze byl odepřen. Povolte přístup k poloze v nastavení prohlížeče nebo systému a zkuste to znovu."
 
+#: src/components/layout/NickClaimStrip.tsx
+#: src/components/layout/NickClaimStrip.tsx
 #: src/components/pages/ServerSettingsPage.tsx
 msgid "Log in"
 msgstr "Přihlásit se"
@@ -3693,7 +3775,7 @@ msgstr "Označit se jako nepřítomný po této době nečinnosti v Obby a znovu
 msgid "Mark yourself back"
 msgstr "Označit se jako zpět"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Max users"
 msgstr "Max. počet uživatelů"
 
@@ -3736,8 +3818,8 @@ msgstr "Členové"
 msgid "Members — {0}"
 msgstr "Členové — {0}"
 
-#. placeholder {0}: shownUsers?.length || 0
-#. placeholder {1}: sortedUsers?.length || 0
+#. placeholder {0}: shownUsers?.length ?? 0
+#. placeholder {1}: sortedUsers?.length ?? 0
 #: src/components/layout/MemberList.tsx
 msgid "Members — {0} of {1}"
 msgstr "Členové — {0} z {1}"
@@ -3861,7 +3943,7 @@ msgstr "Mikrofon {0}"
 msgid "Microphone level"
 msgstr "Úroveň mikrofonu"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Min users"
 msgstr "Min. počet uživatelů"
 
@@ -4134,7 +4216,7 @@ msgstr "Nebyla zjištěna žádná kamera."
 msgid "No Central Server:"
 msgstr "Bez centrálního serveru:"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "No channels found. Change the search or filters."
 msgstr "Žádné kanály nenalezeny. Změňte hledání nebo filtry."
 
@@ -4211,8 +4293,8 @@ msgid "No media in this channel"
 msgstr "V tomto kanálu nejsou žádná média"
 
 #: src/components/layout/MemberList.tsx
-msgid "No members match"
-msgstr "Žádný člen neodpovídá"
+msgid "No members match. Clear the search to see everyone"
+msgstr "Žádní členové neodpovídají. Vymažte hledání a uvidíte všechny"
 
 #: src/components/layout/ProfilePane.tsx
 msgid "no message"
@@ -4278,7 +4360,7 @@ msgstr "Žádný zvuk, upozornění ani červená tečka z tohoto kanálu, ani k
 msgid "No speaker detected."
 msgstr "Nebyl zjištěn žádný reproduktor."
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "No topic"
 msgstr "Bez tématu"
 
@@ -4477,7 +4559,7 @@ msgid "Open"
 msgstr "Otevřít"
 
 #. placeholder {0}: channel.channel
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Open {0}"
 msgstr "Otevřít {0}"
 
@@ -4632,6 +4714,8 @@ msgstr "Balíčky"
 msgid "Pages"
 msgstr "Stránky"
 
+#: src/components/pages/RegisterAccountSection.tsx
+#: src/components/pages/RegisterAccountSection.tsx
 #: src/components/pages/ServerSettingsPage.tsx
 #: src/components/pages/ServerSettingsPage.tsx
 #: src/components/ui/AddServerModal.tsx
@@ -5106,6 +5190,16 @@ msgstr "Obnovit"
 msgid "Refresh WHOIS"
 msgstr "Obnovit WHOIS"
 
+#: src/components/layout/NickClaimStrip.tsx
+#: src/components/pages/RegisterAccountSection.tsx
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Register"
+msgstr "Zaregistrovat"
+
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Register {nick} as your account on this server."
+msgstr "Zaregistrujte {nick} jako svůj účet na tomto serveru."
+
 #: src/components/ui/AddServerModal.tsx
 msgid "Register for an account"
 msgstr "Zaregistrovat účet"
@@ -5459,7 +5553,7 @@ msgstr "Hledat"
 msgid "Search again"
 msgstr "Hledat znovu"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Search channels..."
 msgstr "Hledat kanály..."
 
@@ -5481,12 +5575,9 @@ msgid "Search GIFs..."
 msgstr "Hledat GIFy..."
 
 #: src/components/layout/MemberList.tsx
+#: src/components/layout/MemberList.tsx
 msgid "Search members"
 msgstr "Hledat členy"
-
-#: src/components/layout/MemberList.tsx
-msgid "Search members…"
-msgstr "Hledat členy…"
 
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/SearchPane.tsx
@@ -5682,11 +5773,6 @@ msgstr "Odesláno nešifrovaně, protože soubor je příliš velký na šifrov�
 #: src/components/layout/BotPane.tsx
 msgid "server"
 msgstr "server"
-
-#: src/components/ui/BlankPage.tsx
-#: src/components/ui/BlankPage.tsx
-msgid "Server Channels"
-msgstr "Kanály serveru"
 
 #: src/components/pages/TwoFactorPage.tsx
 msgid "Server does not advertise WebAuthn support"
@@ -6044,11 +6130,11 @@ msgstr "soju bouncer (řízení)"
 msgid "someone"
 msgstr "někdo"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Sort by name"
 msgstr "Řadit podle názvu"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Sort by users"
 msgstr "Řadit podle uživatelů"
 
@@ -6316,6 +6402,10 @@ msgstr "Bouncer síť ponechal."
 #: src/lib/voiceErrors.ts
 msgid "The call server refused the request. Try again in a moment."
 msgstr "Server hovorů žádost odmítl. Zkuste to za chvíli znovu."
+
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "The code expired. Ask the server operators for help"
+msgstr "Platnost kódu vypršela. Požádejte operátory serveru o pomoc"
 
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
@@ -6595,11 +6685,11 @@ msgstr "nástroj"
 msgid "Topic"
 msgstr "Téma"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Topic set after (min ago)"
 msgstr "Téma nastaveno po (min. zpět)"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Topic set before (min ago)"
 msgstr "Téma nastaveno před (min. zpět)"
 
@@ -6837,6 +6927,7 @@ msgstr "Použijte menší styl. Tento se do úložiště tohoto prohlížeče ne
 msgid "Use at least {PASSWORD_MIN_LENGTH} characters."
 msgstr "Použijte alespoň {PASSWORD_MIN_LENGTH} znaků."
 
+#: src/components/pages/RegisterAccountSection.tsx
 #: src/components/pages/ServerSettingsPage.tsx
 msgid "Use only Latin characters in the password"
 msgstr "V hesle použijte jen latinková písmena"
@@ -6942,6 +7033,7 @@ msgstr "Je vyžadován platný port serveru"
 msgid "Verified account"
 msgstr "Ověřený účet"
 
+#: src/components/pages/RegisterAccountSection.tsx
 #: src/components/ui/TotpStepUpModal.tsx
 msgid "Verify"
 msgstr "Ověřit"
@@ -7246,6 +7338,10 @@ msgstr "Už nejste v tomto kanálu"
 msgid "You are not in this channel"
 msgstr "Nejste v tomto kanálu"
 
+#: src/components/layout/NickClaimStrip.tsx
+msgid "You are not logged in"
+msgstr "Nejste přihlášeni"
+
 #: src/components/ui/UpdateSheet.tsx
 msgid "You can close this and keep chatting."
 msgstr "Tohle můžeš zavřít a dál chatovat."
@@ -7286,6 +7382,10 @@ msgstr "Byli jste vyhozeni z tohoto kanálu."
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
 msgid "You're connected to <0>{0}</0>."
 msgstr "Jste připojeni k <0>{0}</0>."
+
+#: src/components/layout/NickClaimStrip.tsx
+msgid "Your account"
+msgstr "Váš účet"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your account password for authentication"

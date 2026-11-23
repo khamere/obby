@@ -69,6 +69,16 @@ export interface BouncerState {
   };
 }
 
+// Our REGISTER of the nick we use, followed until the server logs us in.
+export interface NickClaim {
+  account: string;
+  // We save this as the SASL login once the server logs us in to the account.
+  storedPassword: string;
+  // "verifying" is a VERIFY in flight, so a dropped connection returns to "verify".
+  stage: "sending" | "verify" | "verifying" | "failed";
+  failure?: { command: "REGISTER" | "VERIFY"; code: string };
+}
+
 export interface Server {
   id: string;
   name: string;
@@ -106,6 +116,12 @@ export interface Server {
   capabilities?: string[];
   // The account this connection is logged in to.
   account?: string;
+  // A nick the server told us belongs to an account, so we offer to log in to it.
+  registeredNick?: string;
+  // The user hid the offer to register or log in to their nick on this server.
+  isNickPromptHidden?: boolean;
+  isDisabled?: boolean;
+  nickClaim?: NickClaim;
   // The server answered MARKREAD with FAIL on this connection.
   readMarkerRefused?: boolean;
   // Per-cap value strings as advertised in CAP LS (e.g.
@@ -276,6 +292,9 @@ export interface ServerConfig {
   // Per-network accent colour (hex), overrides the global accent while
   // this network is selected.
   accentColor?: string;
+  skipNickPrompt?: boolean;
+  // A saved server we leave unconnected until the user turns it back on. Unset means on.
+  enabled?: boolean;
   operUsername?: string;
   operPassword?: string;
   operOnConnect?: boolean;

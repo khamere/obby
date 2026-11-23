@@ -1,9 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  filterMembers,
-  MemberList,
-} from "../../../src/components/layout/MemberList";
+import { MemberList } from "../../../src/components/layout/MemberList";
+import { filterMembers } from "../../../src/lib/filterMembers";
 import useStore from "../../../src/store";
 import type { Channel, User } from "../../../src/types";
 import { defaultUIExtensions } from "../../fixtures/uiState";
@@ -87,7 +85,7 @@ describe("member list search", () => {
       "Alice",
       "alfred",
     ]);
-    expect(filterMembers(users, "  ")).toBe(users);
+    expect(filterMembers(users, "  ")).toEqual(users);
     expect(filterMembers(users, "zz")).toEqual([]);
   });
 
@@ -107,9 +105,9 @@ describe("member list search", () => {
     render(<MemberList />);
     const input = screen.getByLabelText("Search members");
     fireEvent.change(input, { target: { value: "nobody" } });
-    expect(screen.getByText("No members match")).toBeInTheDocument();
+    expect(screen.getByText(/^No members match/)).toBeInTheDocument();
     fireEvent.click(screen.getByLabelText("Clear search"));
-    expect(screen.queryByText("No members match")).not.toBeInTheDocument();
+    expect(screen.queryByText(/^No members match/)).not.toBeInTheDocument();
     expect(screen.getByText("Members — 4")).toBeInTheDocument();
   });
 

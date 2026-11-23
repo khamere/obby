@@ -207,7 +207,7 @@ describe("capability negotiation", () => {
     test("forgets the values the old connection advertised", async () => {
       const second = await reconnect(await loggedIn());
       second.receive(":irc.example CAP * LS :batch");
-      expect(client.servers.get(serverId)?.capabilityValues).toBeUndefined();
+      expect(client.servers.get(serverId)?.capabilityValues).toEqual({});
     });
   });
 

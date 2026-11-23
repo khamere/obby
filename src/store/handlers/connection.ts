@@ -15,6 +15,7 @@ import {
 import type { AppState } from "../index";
 import { withLeftChannels } from "../leftChannelRows";
 import * as storage from "../localStorage";
+import { clearPacedRequests, sendOpenChatFirst } from "../pacedRequests";
 import { forgetJoins } from "../pendingJoins";
 import { findConversation } from "./history";
 import { reportServerReply } from "./serverReplies";
@@ -163,6 +164,7 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
     // An automatic away belongs to the connection it was sent on.
     forgetAutoAway(serverId);
     forgetExpectedBack(serverId);
+    clearPacedRequests(serverId);
     // Allow the ready handler to re-run metadata restoration after reconnect
     if (connectionState === "disconnected") {
       readyProcessedServers.delete(serverId);
@@ -175,6 +177,27 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
       // that no longer protects anything. Encryption resumes after reconnecting,
       // which is why this is not the same call the user's End encryption makes.
       store.getState().dropE2EESessionsForServer(serverId);
+      // A LIST, REGISTER or VERIFY cut off by the drop never gets its reply,
+      // so we stop waiting: a half list is dropped so the browser lists again,
+      // and a code we sent can be entered again.
+      store.setState((state) => {
+        const { [serverId]: _partialList, ...channelList } = state.channelList;
+        return {
+          listingInProgress: { ...state.listingInProgress, [serverId]: false },
+          ...(state.listingInProgress[serverId] ? { channelList } : {}),
+          servers: state.servers.map((server) => {
+            if (server.id !== serverId || !server.nickClaim) return server;
+            if (server.nickClaim.stage === "sending")
+              return { ...server, nickClaim: undefined };
+            if (server.nickClaim.stage === "verifying")
+              return {
+                ...server,
+                nickClaim: { ...server.nickClaim, stage: "verify" as const },
+              };
+            return server;
+          }),
+        };
+      });
     }
 
     store.setState((state) => {
@@ -464,21 +487,6 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
         }
       }
 
-      // Re-fetch CHATHISTORY for already-joined channels: ircClient.joinChannel
-      // early-returns for them, so the normal join path doesn't send it.
-      // soju bouncer control sessions have no real channels — skip.
-      setTimeout(() => {
-        const reconnectedServer = store
-          .getState()
-          .servers.find((s) => s.id === serverId);
-        if (!reconnectedServer) return;
-        if (reconnectedServer.isBouncerControl) return;
-        for (const ch of reconnectedServer.channels) {
-          if (!ch.chathistoryRequested && !ch.needsKey && !ch.leftReason)
-            ircClient.loadLatestHistory(serverId, ch.name);
-        }
-      }, 50);
-
       // Only auto-select welcome page for NEW servers (no saved channels)
       // Existing servers with channels should not auto-select (preserves user's view)
       const isNewServer = savedServer.channels.length === 0;
@@ -626,6 +634,20 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
     } else {
     }
 
+    // Automatic joins and rejoined channels leave their history to us, so we fetch the open chat first and pace the rest.
+    setTimeout(() => {
+      const state = store.getState();
+      const reconnectedServer = state.servers.find((s) => s.id === serverId);
+      if (!reconnectedServer) return;
+      if (reconnectedServer.isBouncerControl) return;
+      for (const ch of reconnectedServer.channels) {
+        if (!ch.chathistoryRequested && !ch.needsKey && !ch.leftReason)
+          sendOpenChatFirst(state, serverId, ch.name, () =>
+            ircClient.loadLatestHistory(serverId, ch.name),
+          );
+      }
+    }, 50);
+
     // Restore pinned private chats for this server
     const pinnedChats = storage.pinnedChats.load();
     const serverPinnedChats = pinnedChats[serverId] || [];
@@ -699,8 +721,11 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
 
       // Request chathistory for each pinned PM
       setTimeout(() => {
+        const state = store.getState();
         for (const { username } of sortedPinnedChats) {
-          ircClient.requestChathistoryLatest(serverId, username);
+          sendOpenChatFirst(state, serverId, username, () =>
+            ircClient.requestChathistoryLatest(serverId, username),
+          );
         }
       }, 50);
 

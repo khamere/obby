@@ -8,6 +8,7 @@ import { classifyChannelName } from "../lib/channelMentions";
 import { DEFAULT_CHAT_LOOK } from "../lib/chatLook";
 import type { E2EEScheme, E2EESessionState } from "../lib/e2ee/session";
 import { e2eeSessionKey } from "../lib/e2ee/session";
+import { ConnectionClosedError } from "../lib/irc/IRCClient";
 import ircClient from "../lib/ircClient";
 import { makeLabel } from "../lib/labeledResponse";
 import {
@@ -16,6 +17,7 @@ import {
   saveLeftReason,
 } from "../lib/leftChannels";
 import type { MediaType } from "../lib/mediaUtils";
+import { encodeStoredSaslPassword } from "../lib/sasl/storedPassword";
 import { recordPlace, recordSearch } from "../lib/search/recents";
 import { serializeSearchQuery } from "../lib/search/searchQuery";
 import type { SearchQuery, SearchScope } from "../lib/search/searchTypes";
@@ -87,6 +89,7 @@ import {
 } from "./mentionLog";
 import { enqueueMetadataList } from "./metadataLazyQueue";
 import { runPendingMigrations } from "./migrations";
+import { dropPacedRequest, sendNowIfQueued } from "./pacedRequests";
 import {
   markKeyedJoin,
   markPendingJoin,
@@ -284,6 +287,20 @@ const resolveReplyMessage = (
 
 // Servers
 export const loadSavedServers = storage.servers.load;
+
+function bouncerNetworkIds(servers: Server[], serverId: string): string[] {
+  const isBouncer = servers.find((s) => s.id === serverId)?.isBouncerControl;
+  if (!isBouncer) return [];
+  return servers.filter((s) => s.bouncerServerId === serverId).map((s) => s.id);
+}
+
+function closeServerConnections(serverIds: Iterable<string>): void {
+  for (const id of serverIds) {
+    clearServerConnectionTimeout(id);
+    releaseServerVoiceClients(id);
+    ircClient.removeServer(id);
+  }
+}
 export const saveServersToLocalStorage = storage.servers.save;
 export const loadSavedMetadata = storage.metadata.load;
 const saveMetadataToLocalStorage = storage.metadata.save;
@@ -876,6 +893,15 @@ export interface AppState {
     password: string,
   ) => void;
   verifyAccount: (serverId: string, account: string, code: string) => void;
+  // Registers the nick we use. Returns false when we cannot store the password.
+  claimNick: (
+    serverId: string,
+    account: string,
+    email: string,
+    password: string,
+  ) => boolean;
+  verifyNickClaim: (serverId: string, code: string) => void;
+  hideNickPrompt: (serverId: string) => void;
   // 2FA actions
   twofaStatusQuery: (serverId: string) => void;
   twofaListQuery: (serverId: string) => void;
@@ -1053,6 +1079,7 @@ export interface AppState {
   reconnectServer: (serverId: string) => Promise<void>; // Reconnect to an existing server
   deleteServer: (serverId: string) => void; // New action to delete a server
   updateServer: (serverId: string, config: Partial<ServerConfig>) => void; // Update server configuration
+  setServerEnabled: (serverId: string, isEnabled: boolean) => void;
   capAck: (serverId: string, key: string, capabilities: string) => void; // Handle CAP ACK
   // UI actions
   toggleAddServerModal: (
@@ -1594,6 +1621,7 @@ const useStore = create<AppState>((set, get) => ({
         skipLocalhostWarning: savedServer?.skipLocalhostWarning,
         skipLinkSecurityWarning: savedServer?.skipLinkSecurityWarning,
         leftChannels: savedServer?.leftChannels,
+        skipNickPrompt: savedServer?.skipNickPrompt,
         // Preserve existing addedAt timestamp or set current time for new servers
         addedAt: savedServer?.addedAt || Date.now(),
         oauth: mergedOauth ?? savedServer?.oauth,
@@ -1617,6 +1645,7 @@ const useStore = create<AppState>((set, get) => ({
               existingServer.channels,
             ),
             privateChats: existingServer.privateChats,
+            isDisabled: false,
           };
           return {
             servers: updatedServers,
@@ -1668,6 +1697,10 @@ const useStore = create<AppState>((set, get) => ({
 
       return server;
     } catch (error) {
+      if (error instanceof ConnectionClosedError) {
+        set({ isConnecting: false });
+        throw error;
+      }
       // Even if connection fails, add the server to the store as disconnected
       // so it appears in the UI and can be reconnected later
       const disconnectedServer: Server = {
@@ -1812,6 +1845,7 @@ const useStore = create<AppState>((set, get) => ({
     const isReturning = !!leftReasonOf(serverId, joinedName);
     const channel = ircClient.joinChannel(serverId, channelName, key, {
       isReturning,
+      deferHistory: options?.isAutomatic,
     });
     if (channel) {
       if (key) markKeyedJoin(serverId, channel.name);
@@ -1975,6 +2009,12 @@ const useStore = create<AppState>((set, get) => ({
       selectedServerId: get().ui.selectedServerId,
       perServerSelections: get().ui.perServerSelections,
     });
+    dropPacedRequest(serverId, channelName);
+    const nextChannelName = getServerSelection(
+      get(),
+      serverId,
+    ).selectedChannelName;
+    if (nextChannelName) sendNowIfQueued(serverId, nextChannelName);
   },
 
   sendMessage: (serverId, channelId, content) => {
@@ -2043,6 +2083,51 @@ const useStore = create<AppState>((set, get) => ({
 
   verifyAccount: (serverId: string, account: string, code: string) => {
     ircClient.verifyAccount(serverId, account, code);
+  },
+
+  claimNick: (serverId, account, email, password) => {
+    const storedPassword = encodeStoredSaslPassword(password);
+    if (storedPassword === null) return false;
+    if (!ircClient.isSocketOpen(serverId)) return true;
+    set((state) => ({
+      servers: state.servers.map((server) =>
+        server.id === serverId
+          ? {
+              ...server,
+              nickClaim: { account, storedPassword, stage: "sending" },
+            }
+          : server,
+      ),
+    }));
+    ircClient.registerAccount(serverId, account, email, password);
+    return true;
+  },
+
+  verifyNickClaim: (serverId, code) => {
+    const claim = get().servers.find((s) => s.id === serverId)?.nickClaim;
+    if (!claim || !ircClient.isSocketOpen(serverId)) return;
+    set((state) => ({
+      servers: state.servers.map((server) =>
+        server.id === serverId
+          ? {
+              ...server,
+              nickClaim: { ...claim, stage: "verifying", failure: undefined },
+            }
+          : server,
+      ),
+    }));
+    ircClient.verifyAccount(serverId, claim.account, code);
+  },
+
+  hideNickPrompt: (serverId) => {
+    get().updateServer(serverId, { skipNickPrompt: true });
+    set((state) => ({
+      servers: state.servers.map((server) =>
+        server.id === serverId
+          ? { ...server, isNickPromptHidden: true }
+          : server,
+      ),
+    }));
   },
 
   twofaStatusQuery: (serverId) => {
@@ -2167,9 +2252,10 @@ const useStore = create<AppState>((set, get) => ({
       // Already listing, ignore
       return;
     }
-    // Find the server to check for ELIST support
     const server = state.servers.find((s) => s.id === serverId);
-    const elist = server?.elist;
+    // A server ignores LIST before registration, so we would wait forever for its end.
+    if (!server?.isRegistered) return;
+    const elist = server.elist;
 
     // Use provided filters or get stored filters
     const filterSettings = filters || state.channelListFilters[serverId] || {};
@@ -2381,9 +2467,11 @@ const useStore = create<AppState>((set, get) => ({
       };
     });
 
-    ircClient.sendRaw(
+    ircClient.sendPrivmsgLines(
       msg.serverId,
-      `@label=${label} PRIVMSG ${wireTarget} :${msg.content}`,
+      wireTarget,
+      msg.content,
+      `@label=${label} `,
     );
     setTimeout(() => {
       get().failPendingMessage(msg.serverId, msg.channelId, label);
@@ -2688,6 +2776,8 @@ const useStore = create<AppState>((set, get) => ({
         privateChatUsername: null,
       },
     });
+    if (selectedServer && channelObj)
+      sendNowIfQueued(selectedServer.id, channelObj.name);
   },
 
   markChannelAsRead: (serverId, channelId) => {
@@ -2827,6 +2917,8 @@ const useStore = create<AppState>((set, get) => ({
         privateChatUsername: pcObj?.username || null,
       },
     });
+    if (selectedServer && pcObj)
+      sendNowIfQueued(selectedServer.id, pcObj.username);
   },
 
   openPrivateChat: (serverId, username) => {
@@ -2856,7 +2948,8 @@ const useStore = create<AppState>((set, get) => ({
         // Request chathistory for this PM (if server supports it)
         if (server.capabilities?.includes("draft/chathistory")) {
           setTimeout(() => {
-            ircClient.requestChathistoryLatest(serverId, username);
+            if (!sendNowIfQueued(serverId, username))
+              ircClient.requestChathistoryLatest(serverId, username);
           }, 50);
         }
 
@@ -3219,6 +3312,7 @@ const useStore = create<AppState>((set, get) => ({
       const urlHost = ensureUrlFormat(host, port);
 
       const existingServer = get().servers.find((s) => s.id === id);
+      const isDisabled = savedServer.enabled === false;
 
       if (!existingServer) {
         const connectingServer: Server = {
@@ -3229,17 +3323,19 @@ const useStore = create<AppState>((set, get) => ({
           channels: [],
           privateChats: [],
           isConnected: false,
-          connectionState: "connecting",
+          connectionState: isDisabled ? "disconnected" : "connecting",
           users: [],
           bouncerServerId: savedServer.bouncerServerId,
           bouncerNetid: savedServer.bouncerNetid,
           isBouncerControl: savedServer.isBouncerControl,
+          isDisabled,
         };
 
         set((state) => ({
           servers: [...state.servers, connectingServer],
         }));
       }
+      if (isDisabled) continue;
 
       let connectionPromise: Promise<unknown> = connectSavedServer(
         get().connect,
@@ -3273,6 +3369,7 @@ const useStore = create<AppState>((set, get) => ({
       console.error(`Server ${serverId} not found`);
       return;
     }
+    if (server.isDisabled) return;
 
     // We close the live connection and any pending retry, so only the saved credentials log in.
     releaseServerVoiceClients(serverId);
@@ -3333,21 +3430,16 @@ const useStore = create<AppState>((set, get) => ({
     // Cascade: when target is a bouncer control session, also drop every
     // bound child. Each child shares the parent's socket-side identity
     // with soju and has no useful life beyond the control session.
-    const preState = get();
-    const target = preState.servers.find((s) => s.id === serverId);
-    const cascadeIds: string[] = target?.isBouncerControl
-      ? preState.servers
-          .filter((s) => s.bouncerServerId === serverId)
-          .map((s) => s.id)
-      : [];
-    const toRemove = new Set<string>([serverId, ...cascadeIds]);
-
-    for (const id of toRemove) {
-      clearServerConnectionTimeout(id);
-      releaseServerVoiceClients(id);
-      ircClient.removeServer(id);
-      forgetLeftChannels(id);
-    }
+    // A turned-off bouncer's networks live only in the saved list, so we look there too.
+    const toRemove = new Set<string>([
+      serverId,
+      ...bouncerNetworkIds(get().servers, serverId),
+      ...loadSavedServers()
+        .filter((s) => s.bouncerServerId === serverId)
+        .map((s) => s.id),
+    ]);
+    closeServerConnections(toRemove);
+    for (const id of toRemove) forgetLeftChannels(id);
 
     set((state) => {
       const savedServers = loadSavedServers();
@@ -3421,6 +3513,37 @@ const useStore = create<AppState>((set, get) => ({
         };
       });
     }
+  },
+
+  setServerEnabled: (serverId, isEnabled) => {
+    get().updateServer(serverId, { enabled: isEnabled });
+    set((state) => ({
+      servers: state.servers.map((s) =>
+        s.id === serverId
+          ? {
+              ...s,
+              isDisabled: !isEnabled,
+              isConnected: false,
+              connectionState: "disconnected" as const,
+            }
+          : s,
+      ),
+    }));
+    if (isEnabled) {
+      void get().reconnectServer(serverId);
+      return;
+    }
+    // A bouncer's networks bind again on their own once the bouncer reconnects, so we drop them with it.
+    const networkIds = bouncerNetworkIds(get().servers, serverId);
+    // We drop the client's copy too, so waking from sleep has nothing to reconnect.
+    closeServerConnections([serverId, ...networkIds]);
+    const selectedServerId = get().ui.selectedServerId;
+    const isNetworkSelected =
+      !!selectedServerId && networkIds.includes(selectedServerId);
+    set((state) => ({
+      servers: state.servers.filter((s) => !networkIds.includes(s.id)),
+    }));
+    if (isNetworkSelected) get().selectServer(serverId);
   },
 
   // UI actions

@@ -91,15 +91,15 @@ describe("TopicModal with topic formatting disabled", () => {
   });
 });
 
-describe("mircToHtml linkify option", () => {
-  it("emits no anchors when linkify is false", async () => {
+describe("mircToHtml outside a link wrapper", () => {
+  it("emits no anchors when the text is not interactive", async () => {
     const { mircToHtml } = await import("../../src/lib/ircUtils");
     const { renderToStaticMarkup } = await import("react-dom/server");
     const html = renderToStaticMarkup(
-      <>{mircToHtml(RAW_TOPIC, "k-", undefined, { linkify: false })}</>,
+      <>{mircToHtml(RAW_TOPIC, "k-", undefined, false)}</>,
     );
     expect(html).not.toContain("<a");
-    expect(html).toContain("https://idlerpg.orchard.example");
+    expect(html).toContain("idlerpg.orchard.example");
     expect(html).not.toContain("44Check");
   });
 });

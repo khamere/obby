@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { ConnectionClosedError } from "../../src/lib/irc/IRCClient";
 import { IRCClient } from "../../src/lib/ircClient";
 import { parseMessageTags } from "../../src/lib/ircUtils";
 import type { Server } from "../../src/types";
@@ -409,6 +410,29 @@ describe("IRCClient", () => {
     });
   });
 
+  describe("disconnect", () => {
+    test("closes a socket that is still opening without sending QUIT", async () => {
+      Object.assign(MockWebSocketSpy, { CONNECTING: 0, OPEN: 1, CLOSED: 3 });
+      const mockSocket = new MockWebSocket("ws://irc.example.com:443");
+      MockWebSocketSpy.mockImplementation(returnsSocket(mockSocket));
+      const connecting = client.connect(
+        "Test Server",
+        "irc.example.com",
+        443,
+        "testuser",
+      );
+      const [server] = client.getServers();
+      expect(mockSocket.readyState).toBe(WebSocket.CONNECTING);
+
+      client.removeServer(server.id);
+
+      expect(mockSocket.sentMessages).toEqual([]);
+      expect(mockSocket.readyState).toBe(WebSocket.CLOSED);
+      expect(client.getServers()).toHaveLength(0);
+      await expect(connecting).rejects.toBeInstanceOf(ConnectionClosedError);
+    });
+  });
+
   describe("message handling", () => {
     test("should handle PRIVMSG correctly", async () => {
       const mockSocket = new MockWebSocket("ws://irc.example.com:443");
@@ -593,17 +617,18 @@ describe("IRCClient", () => {
       ["a carriage return", "PRIVMSG #a :one\rPRIVMSG #b :two"],
       ["a NUL", "PRIVMSG #a :one\u0000PRIVMSG #b :two"],
       ["a trailing line end", "PRIVMSG #a :one\r\n"],
-    ])("sends one line when a command holds %s", (_, command) => {
+    ])("sends nothing when a command holds %s", (_, command) => {
       const lines: string[] = [];
       client.on("rawLine", ({ direction, line }) => {
         if (direction === "tx") lines.push(line);
       });
+      const before = mockSocket.sentMessages.length;
+      vi.spyOn(console, "warn").mockImplementation(() => {});
 
       client.sendRaw(server.id, command);
 
-      expect(mockSocket.sentMessages.at(-1)).toBe("PRIVMSG #a :one");
-      expect(lines.at(-1)).toBe("PRIVMSG #a :one");
-      expect(mockSocket.sentMessages.join("")).not.toContain("#b");
+      expect(mockSocket.sentMessages).toHaveLength(before);
+      expect(lines).toEqual([]);
     });
 
     test("keeps a channel name inside the whisper tags", () => {
@@ -658,6 +683,18 @@ describe("IRCClient", () => {
             "+reply": "id;1 x",
             "+draft/reply": "id;1 x",
           });
+      });
+
+      test("reads a carriage return as a line break like any other", () => {
+        const sent = sentBy(() =>
+          client.sendText(server.id, "#a", "one\rtwo\r\nthree"),
+        );
+
+        expect(sent).toEqual([
+          "PRIVMSG #a :one",
+          "PRIVMSG #a :two",
+          "PRIVMSG #a :three",
+        ]);
       });
 
       test("goes out as one line when the lines are joined", () => {

@@ -257,6 +257,11 @@ msgstr "{sender} 님이 암호화를 다시 시작했습니다. 잠시 기다린
 msgid "{sender} sent you a message: {body}"
 msgstr "{sender}님이 메시지를 보냈습니다: {body}"
 
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/ServerList.tsx
+msgid "{serverName}, turned off"
+msgstr "{serverName}, 꺼짐"
+
 #: src/components/layout/ProfilePane.tsx
 msgid "{sessionCount} sessions connected. Sign in as this account or ask an IRC operator to see their details."
 msgstr "{sessionCount}개의 세션이 연결되어 있습니다. 이 계정으로 로그인하거나 IRC 운영자에게 세부 정보를 요청하세요."
@@ -273,7 +278,7 @@ msgstr "{stepCount, plural, other {# 단계}}"
 msgid "{title} Client"
 msgstr "{title} 클라이언트"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "{total, plural, one {# channel} other {# channels}}"
 msgstr "{total, plural, one {채널 #개} other {채널 #개}}"
 
@@ -293,11 +298,11 @@ msgstr "사용자 {userCount}명"
 msgid "{userCount} watching"
 msgstr "시청 중 {userCount}명"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "*channel*"
 msgstr "*channel*"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "*spam*"
 msgstr "*spam*"
 
@@ -354,6 +359,14 @@ msgstr "<0>{0}</0>님, <1>{1}</1>님, <2>{2}</2>님이 입력 중..."
 #: src/components/ui/TypingIndicator.tsx
 msgid "<0>{0}</0>, <1>{1}</1>, <2>{2}</2> and {3} others are typing..."
 msgstr "<0>{0}</0>님, <1>{1}</1>님, <2>{2}</2>님 외 {3}명이 입력 중..."
+
+#: src/components/layout/NickClaimStrip.tsx
+msgid "<0>{nick}</0> is not registered. Register it to keep it"
+msgstr "<0>{nick}</0>은(는) 등록되지 않았습니다. 계속 쓰려면 등록하세요"
+
+#: src/components/layout/NickClaimStrip.tsx
+msgid "<0>{nick}</0> is registered. Log in to use it"
+msgstr "<0>{nick}</0>은(는) 등록된 닉네임입니다. 사용하려면 로그인하세요"
 
 #: src/components/ui/ExternalLinkWarningModal.tsx
 msgid "<0>⚠️ Be careful!</0> Only open links from trusted sources. Malicious links can compromise your security or privacy."
@@ -769,7 +782,7 @@ msgstr "앱"
 msgid "Appearance"
 msgstr "모양"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Apply and refresh"
 msgstr "적용하고 새로 고침"
 
@@ -1102,6 +1115,10 @@ msgstr "이 채널의 봇"
 msgid "Bots"
 msgstr "봇"
 
+#: src/components/layout/BouncerServerGroup.tsx
+msgid "Bouncer: {networkName}"
+msgstr "Bouncer: {networkName}"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Bridge rules"
 msgstr "브리지 규칙"
@@ -1238,6 +1255,10 @@ msgstr "비밀번호 변경"
 msgid "Change the channel name (operators only)"
 msgstr "채널 이름 변경 (운영자 전용)"
 
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Change your nick to register, this one is not allowed"
+msgstr "등록하려면 닉네임을 변경하세요. 이 닉네임은 허용되지 않습니다"
+
 #: src/lib/clientCommands.ts
 msgid "Change your nickname on this server"
 msgstr "이 서버에서 닉네임 변경"
@@ -1312,7 +1333,7 @@ msgstr "채널 링크 (+L)"
 msgid "Channel name"
 msgstr "채널 이름"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Channel name mask"
 msgstr "채널 이름 마스크"
 
@@ -1363,6 +1384,7 @@ msgstr "채널 전용"
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/ProfilePane.tsx
+#: src/components/ui/BlankPage.tsx
 #: src/components/ui/HomeScreen.tsx
 #: src/components/ui/QuickActions/resultMeta.tsx
 msgid "Channels"
@@ -1400,6 +1422,10 @@ msgstr "새 릴리스 확인"
 msgid "Check now"
 msgstr "지금 확인"
 
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Check the code and try again"
+msgstr "코드를 확인하고 다시 시도하세요"
+
 #: src/components/ui/UpdateSheet.tsx
 msgid "Checking the download"
 msgstr "다운로드 확인 중"
@@ -1419,6 +1445,10 @@ msgstr "{limit} 이하의 파일을 선택하세요. 파일 호스트가 허용�
 #: src/lib/mediaUpload.ts
 msgid "Choose a file with an extension. The file host does not accept files without one."
 msgstr "확장자가 있는 파일을 선택하세요. 파일 호스트는 확장자가 없는 파일을 허용하지 않습니다."
+
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Choose a longer password"
+msgstr "더 긴 비밀번호를 선택하세요"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Choose a predefined flood protection profile for common use cases."
@@ -1452,7 +1482,7 @@ msgstr "이미지 선택…"
 msgid "Choose microphone and camera"
 msgstr "마이크와 카메라 선택"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Choose sort order"
 msgstr "정렬 순서 선택"
 
@@ -1493,6 +1523,7 @@ msgstr "저장된 기록을 모두 지우시겠습니까?"
 msgid "Clear history"
 msgstr "기록 지우기"
 
+#: src/components/layout/MemberList.tsx
 #: src/components/layout/MemberList.tsx
 msgid "Clear search"
 msgstr "검색 지우기"
@@ -1536,6 +1567,8 @@ msgstr "클라이언트 제한 (+l)"
 
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/BotPane.tsx
+#: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 #: src/components/layout/ProfilePane.tsx
 #: src/components/layout/ProfilePane.tsx
 #: src/components/message/ServerNoticesPopup.tsx
@@ -1578,6 +1611,11 @@ msgstr "뷰어 닫기"
 #: src/components/ui/BotToolsCard.tsx
 msgid "Close workflow"
 msgstr "워크플로우 닫기"
+
+#: src/components/pages/RegisterAccountSection.tsx
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Code"
+msgstr "코드"
 
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Code accepted."
@@ -1695,6 +1733,8 @@ msgstr "삭제 확인"
 msgid "Confirm?"
 msgstr "확인하시겠습니까?"
 
+#: src/components/pages/ServerSettingsPage.tsx
+#: src/components/pages/ServerSettingsPage.tsx
 #: src/components/ui/AddServerModal.tsx
 #: src/components/ui/BouncerNetworksPanel.tsx
 msgid "Connect"
@@ -1712,6 +1752,10 @@ msgstr "말하려면 마이크를 연결하세요"
 msgid "Connect to a server to manage operator settings."
 msgstr "운영자 설정을 관리하려면 서버에 연결하세요."
 
+#: src/components/pages/ChannelBrowser.tsx
+msgid "Connect to the server to list its channels."
+msgstr "서버에 연결해 채널 목록을 확인하세요."
+
 #: src/components/pages/ServerSettingsPage.tsx
 msgid "Connected as a guest"
 msgstr "게스트로 연결됨"
@@ -1720,6 +1764,8 @@ msgstr "게스트로 연결됨"
 msgid "Connected to"
 msgstr "연결된 서버"
 
+#: src/components/layout/ChannelList.tsx
+#: src/components/layout/ChannelList.tsx
 #: src/components/layout/UserPanel.tsx
 #: src/components/ui/MiniMediaPlayer.tsx
 msgid "Connecting"
@@ -1907,6 +1953,10 @@ msgstr "이 링크를 불러올 수 없습니다. 원본 .json 파일을 가리�
 msgid "Could not reach the file host. Check your connection and try again."
 msgstr "파일 호스트에 연결할 수 없습니다. 연결을 확인하고 다시 시도하세요."
 
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Could not register. Try again"
+msgstr "등록하지 못했습니다. 다시 시도하세요"
+
 #: src/components/layout/ChatArea.tsx
 msgid "Could not remove the metadata from this image, so it was not uploaded."
 msgstr "이 이미지의 메타데이터를 제거할 수 없어 업로드되지 않았습니다."
@@ -1920,6 +1970,10 @@ msgstr "새 비밀번호를 설정하지 못했습니다: {0}"
 #: src/components/ui/ChangePasswordModal.tsx
 msgid "Could not update password: {0}"
 msgstr "비밀번호를 업데이트할 수 없습니다: {0}"
+
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Could not verify. Try again"
+msgstr "확인하지 못했습니다. 다시 시도하세요"
 
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Couldn't set up encryption with {nick}."
@@ -1951,11 +2005,11 @@ msgstr "폴더 생성"
 msgid "Create pack"
 msgstr "팩 만들기"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Created after (min ago)"
 msgstr "생성 시각 이후 (분 전)"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Created before (min ago)"
 msgstr "생성 시각 이전 (분 전)"
 
@@ -2287,6 +2341,11 @@ msgstr "사용자가 채널에 입장하거나 퇴장할 때 표시"
 msgid "Do you want to open this link in a new tab?"
 msgstr "이 링크를 새 탭에서 여시겠습니까?"
 
+#: src/components/layout/NickClaimStrip.tsx
+#: src/components/layout/NickClaimStrip.tsx
+msgid "Don't show again for this server"
+msgstr "이 서버에서 다시 표시하지 않기"
+
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "Don't warn me about low link security for this server"
 msgstr "이 서버의 낮은 링크 보안에 대해 다시 경고하지 않음"
@@ -2396,6 +2455,11 @@ msgstr "프로필 편집"
 #: src/components/mobile/ServerBottomSheet.tsx
 msgid "Edit Server"
 msgstr "서버 편집"
+
+#: src/components/pages/RegisterAccountSection.tsx
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Email"
+msgstr "이메일"
 
 #: src/components/pages/SettingsPage.tsx
 msgid "Email:"
@@ -2555,6 +2619,10 @@ msgstr "{0}에 숫자를 입력하세요"
 msgid "Enter a URL. Use {sizeToken} in the URL for dynamic sizing. Example: https://example.com/avatar/{sizeToken}/channel.jpg"
 msgstr "URL을 입력하세요. 크기를 동적으로 지정하려면 URL에 {sizeToken}를 사용하세요. 예: https://example.com/avatar/{sizeToken}/channel.jpg"
 
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Enter a valid email address"
+msgstr "올바른 이메일 주소를 입력하세요"
+
 #. placeholder {0}: e.name
 #: src/components/chat/CommandArgHint.tsx
 msgid "Enter a whole number for {0}"
@@ -2579,6 +2647,10 @@ msgstr ".json 파일에 대한 http(s) 링크를 입력하세요."
 #: src/components/ui/settings/ThemeLinkField.tsx
 msgid "Enter an http(s) link to a theme .json file."
 msgstr "테마 .json 파일의 http(s) 링크를 입력하세요."
+
+#: src/components/layout/NickClaimStrip.tsx
+msgid "Enter code"
+msgstr "코드 입력"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Enter default nickname..."
@@ -2646,6 +2718,14 @@ msgstr "이메일로 받은 6자리 코드를 입력하세요."
 msgid "Enter the account name you want to recover."
 msgstr "복구할 계정 이름을 입력하세요."
 
+#: src/components/layout/NickClaimStrip.tsx
+msgid "Enter the code sent to your email"
+msgstr "이메일로 받은 코드를 입력하세요"
+
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Enter the code sent to your email."
+msgstr "이메일로 받은 코드를 입력하세요."
+
 #: src/components/ui/settings/UserFilehostField.tsx
 msgid "Enter the http(s) address of your Zipline, like https://img.example.com"
 msgstr "Zipline의 http(s) 주소를 입력하세요. 예: https://img.example.com"
@@ -2695,7 +2775,7 @@ msgstr "예시네트워크"
 msgid "Exceptions"
 msgstr "예외"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Exclude channel name mask"
 msgstr "제외할 채널 이름 마스크"
 
@@ -2813,11 +2893,11 @@ msgstr "비속어 필터링 (+G)"
 msgid "Filter members…"
 msgstr "멤버 필터링…"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Filters"
 msgstr "필터"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Filters are unavailable on this server"
 msgstr "이 서버에서는 필터를 사용할 수 없습니다"
 
@@ -3275,7 +3355,7 @@ msgid "JetBrains Mono"
 msgstr "JetBrains Mono"
 
 #: src/components/message/JsonLogMessage.tsx
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 #: src/components/ui/ChannelKeyModal.tsx
 msgid "Join"
 msgstr "참여"
@@ -3283,7 +3363,7 @@ msgstr "참여"
 #. placeholder {0}: channel.channel
 #. placeholder {0}: message.inviteChannel
 #: src/components/message/InviteMessage.tsx
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Join {0}"
 msgstr "{0} 참가"
 
@@ -3321,7 +3401,7 @@ msgid "Join voice channel {channelName}"
 msgstr "음성 채널 {channelName} 참가"
 
 #: src/components/layout/ProfilePane.tsx
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Joined"
 msgstr "가입"
 
@@ -3579,6 +3659,8 @@ msgstr "위치"
 msgid "Location access was denied. Allow location access in your browser or system settings, then try again."
 msgstr "위치 액세스가 거부되었습니다. 브라우저 또는 시스템 설정에서 위치 액세스를 허용한 후 다시 시도하세요."
 
+#: src/components/layout/NickClaimStrip.tsx
+#: src/components/layout/NickClaimStrip.tsx
 #: src/components/pages/ServerSettingsPage.tsx
 msgid "Log in"
 msgstr "로그인"
@@ -3693,7 +3775,7 @@ msgstr "Obby를 이 시간 동안 사용하지 않으면 자리 비움으로 표
 msgid "Mark yourself back"
 msgstr "복귀로 표시"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Max users"
 msgstr "최대 사용자 수"
 
@@ -3736,8 +3818,8 @@ msgstr "멤버"
 msgid "Members — {0}"
 msgstr "멤버 — {0}명"
 
-#. placeholder {0}: shownUsers?.length || 0
-#. placeholder {1}: sortedUsers?.length || 0
+#. placeholder {0}: shownUsers?.length ?? 0
+#. placeholder {1}: sortedUsers?.length ?? 0
 #: src/components/layout/MemberList.tsx
 msgid "Members — {0} of {1}"
 msgstr "멤버 — {1}명 중 {0}명"
@@ -3861,7 +3943,7 @@ msgstr "마이크 {0}"
 msgid "Microphone level"
 msgstr "마이크 수준"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Min users"
 msgstr "최소 사용자 수"
 
@@ -4134,7 +4216,7 @@ msgstr "카메라가 감지되지 않았습니다."
 msgid "No Central Server:"
 msgstr "중앙 서버 없음:"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "No channels found. Change the search or filters."
 msgstr "채널을 찾을 수 없습니다. 검색어나 필터를 변경하세요."
 
@@ -4211,8 +4293,8 @@ msgid "No media in this channel"
 msgstr "이 채널에 미디어가 없습니다"
 
 #: src/components/layout/MemberList.tsx
-msgid "No members match"
-msgstr "일치하는 멤버가 없습니다"
+msgid "No members match. Clear the search to see everyone"
+msgstr "일치하는 멤버가 없습니다. 검색을 지우면 모두 표시됩니다"
 
 #: src/components/layout/ProfilePane.tsx
 msgid "no message"
@@ -4278,7 +4360,7 @@ msgstr "누군가 나를 언급하더라도 이 채널에서 소리, 알림, 빨
 msgid "No speaker detected."
 msgstr "스피커가 감지되지 않았습니다."
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "No topic"
 msgstr "주제 없음"
 
@@ -4477,7 +4559,7 @@ msgid "Open"
 msgstr "열기"
 
 #. placeholder {0}: channel.channel
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Open {0}"
 msgstr "{0} 열기"
 
@@ -4632,6 +4714,8 @@ msgstr "팩"
 msgid "Pages"
 msgstr "페이지"
 
+#: src/components/pages/RegisterAccountSection.tsx
+#: src/components/pages/RegisterAccountSection.tsx
 #: src/components/pages/ServerSettingsPage.tsx
 #: src/components/pages/ServerSettingsPage.tsx
 #: src/components/ui/AddServerModal.tsx
@@ -5106,6 +5190,16 @@ msgstr "새로 고침"
 msgid "Refresh WHOIS"
 msgstr "WHOIS 새로고침"
 
+#: src/components/layout/NickClaimStrip.tsx
+#: src/components/pages/RegisterAccountSection.tsx
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Register"
+msgstr "등록"
+
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Register {nick} as your account on this server."
+msgstr "이 서버에서 {nick}을(를) 계정으로 등록하세요."
+
 #: src/components/ui/AddServerModal.tsx
 msgid "Register for an account"
 msgstr "계정 등록"
@@ -5459,7 +5553,7 @@ msgstr "검색"
 msgid "Search again"
 msgstr "다시 검색"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Search channels..."
 msgstr "채널 검색..."
 
@@ -5481,12 +5575,9 @@ msgid "Search GIFs..."
 msgstr "GIF 검색..."
 
 #: src/components/layout/MemberList.tsx
+#: src/components/layout/MemberList.tsx
 msgid "Search members"
 msgstr "멤버 검색"
-
-#: src/components/layout/MemberList.tsx
-msgid "Search members…"
-msgstr "멤버 검색…"
 
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/SearchPane.tsx
@@ -5682,11 +5773,6 @@ msgstr "파일이 너무 커서 암호화할 수 없으므로 암호화 없이 �
 #: src/components/layout/BotPane.tsx
 msgid "server"
 msgstr "서버"
-
-#: src/components/ui/BlankPage.tsx
-#: src/components/ui/BlankPage.tsx
-msgid "Server Channels"
-msgstr "서버 채널"
 
 #: src/components/pages/TwoFactorPage.tsx
 msgid "Server does not advertise WebAuthn support"
@@ -6044,11 +6130,11 @@ msgstr "soju bouncer (제어)"
 msgid "someone"
 msgstr "누군가"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Sort by name"
 msgstr "이름순 정렬"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Sort by users"
 msgstr "사용자순 정렬"
 
@@ -6316,6 +6402,10 @@ msgstr "bouncer가 네트워크를 유지했습니다."
 #: src/lib/voiceErrors.ts
 msgid "The call server refused the request. Try again in a moment."
 msgstr "통화 서버가 요청을 거부했습니다. 잠시 후 다시 시도하세요."
+
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "The code expired. Ask the server operators for help"
+msgstr "코드가 만료되었습니다. 서버 운영자에게 도움을 요청하세요"
 
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
@@ -6595,11 +6685,11 @@ msgstr "도구"
 msgid "Topic"
 msgstr "주제"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Topic set after (min ago)"
 msgstr "주제 설정 시각 이후 (분 전)"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Topic set before (min ago)"
 msgstr "주제 설정 시각 이전 (분 전)"
 
@@ -6837,6 +6927,7 @@ msgstr "더 작은 스타일시트를 사용하세요. 이 스타일시트는 �
 msgid "Use at least {PASSWORD_MIN_LENGTH} characters."
 msgstr "최소 {PASSWORD_MIN_LENGTH}자를 사용하세요."
 
+#: src/components/pages/RegisterAccountSection.tsx
 #: src/components/pages/ServerSettingsPage.tsx
 msgid "Use only Latin characters in the password"
 msgstr "비밀번호에는 라틴 문자만 사용하세요"
@@ -6942,6 +7033,7 @@ msgstr "올바른 서버 포트가 필요합니다"
 msgid "Verified account"
 msgstr "인증된 계정"
 
+#: src/components/pages/RegisterAccountSection.tsx
 #: src/components/ui/TotpStepUpModal.tsx
 msgid "Verify"
 msgstr "확인"
@@ -7246,6 +7338,10 @@ msgstr "더 이상 이 채널에 있지 않습니다"
 msgid "You are not in this channel"
 msgstr "이 채널에 참여하고 있지 않습니다"
 
+#: src/components/layout/NickClaimStrip.tsx
+msgid "You are not logged in"
+msgstr "로그인하지 않았습니다"
+
 #: src/components/ui/UpdateSheet.tsx
 msgid "You can close this and keep chatting."
 msgstr "이 창을 닫고 계속 채팅할 수 있습니다."
@@ -7286,6 +7382,10 @@ msgstr "이 채널에서 추방되었습니다."
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
 msgid "You're connected to <0>{0}</0>."
 msgstr "<0>{0}</0>에 연결되어 있습니다."
+
+#: src/components/layout/NickClaimStrip.tsx
+msgid "Your account"
+msgstr "내 계정"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your account password for authentication"

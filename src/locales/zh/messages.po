@@ -257,6 +257,11 @@ msgstr "{sender} 已重新启动加密。请稍等片刻再发送消息。"
 msgid "{sender} sent you a message: {body}"
 msgstr "{sender} 给你发了一条消息：{body}"
 
+#: src/components/layout/BouncerServerGroup.tsx
+#: src/components/layout/ServerList.tsx
+msgid "{serverName}, turned off"
+msgstr "{serverName}（已关闭）"
+
 #: src/components/layout/ProfilePane.tsx
 msgid "{sessionCount} sessions connected. Sign in as this account or ask an IRC operator to see their details."
 msgstr "已连接 {sessionCount} 个会话。请以此账户登录，或请 IRC 管理员查看其详细信息。"
@@ -273,7 +278,7 @@ msgstr "{stepCount, plural, other {# 个步骤}}"
 msgid "{title} Client"
 msgstr "{title} 客户端"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "{total, plural, one {# channel} other {# channels}}"
 msgstr "{total, plural, other {# 个频道}}"
 
@@ -293,11 +298,11 @@ msgstr "{userCount} 位用户"
 msgid "{userCount} watching"
 msgstr "{userCount} 人观看中"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "*channel*"
 msgstr "*channel*"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "*spam*"
 msgstr "*spam*"
 
@@ -354,6 +359,14 @@ msgstr "<0>{0}</0>、<1>{1}</1> 和 <2>{2}</2> 正在输入..."
 #: src/components/ui/TypingIndicator.tsx
 msgid "<0>{0}</0>, <1>{1}</1>, <2>{2}</2> and {3} others are typing..."
 msgstr "<0>{0}</0>、<1>{1}</1>、<2>{2}</2> 以及另外 {3} 人正在输入..."
+
+#: src/components/layout/NickClaimStrip.tsx
+msgid "<0>{nick}</0> is not registered. Register it to keep it"
+msgstr "<0>{nick}</0> 尚未注册。注册后即可保留它"
+
+#: src/components/layout/NickClaimStrip.tsx
+msgid "<0>{nick}</0> is registered. Log in to use it"
+msgstr "<0>{nick}</0> 已被注册。请登录后使用"
 
 #: src/components/ui/ExternalLinkWarningModal.tsx
 msgid "<0>⚠️ Be careful!</0> Only open links from trusted sources. Malicious links can compromise your security or privacy."
@@ -769,7 +782,7 @@ msgstr "应用"
 msgid "Appearance"
 msgstr "外观"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Apply and refresh"
 msgstr "应用并刷新"
 
@@ -1102,6 +1115,10 @@ msgstr "此频道中的机器人"
 msgid "Bots"
 msgstr "机器人"
 
+#: src/components/layout/BouncerServerGroup.tsx
+msgid "Bouncer: {networkName}"
+msgstr "Bouncer：{networkName}"
+
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Bridge rules"
 msgstr "桥接规则"
@@ -1238,6 +1255,10 @@ msgstr "更改密码"
 msgid "Change the channel name (operators only)"
 msgstr "更改频道名称（仅限管理员）"
 
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Change your nick to register, this one is not allowed"
+msgstr "请更换昵称后再注册，此昵称不允许使用"
+
 #: src/lib/clientCommands.ts
 msgid "Change your nickname on this server"
 msgstr "更改您在此服务器上的昵称"
@@ -1312,7 +1333,7 @@ msgstr "频道链接 (+L)"
 msgid "Channel name"
 msgstr "频道名称"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Channel name mask"
 msgstr "频道名称掩码"
 
@@ -1363,6 +1384,7 @@ msgstr "频道范围"
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/ProfilePane.tsx
+#: src/components/ui/BlankPage.tsx
 #: src/components/ui/HomeScreen.tsx
 #: src/components/ui/QuickActions/resultMeta.tsx
 msgid "Channels"
@@ -1400,6 +1422,10 @@ msgstr "检查新版本"
 msgid "Check now"
 msgstr "立即检查"
 
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Check the code and try again"
+msgstr "请检查验证码后重试"
+
 #: src/components/ui/UpdateSheet.tsx
 msgid "Checking the download"
 msgstr "正在检查下载内容"
@@ -1419,6 +1445,10 @@ msgstr "请选择小于 {limit} 的文件，这是文件主机接受的上限。
 #: src/lib/mediaUpload.ts
 msgid "Choose a file with an extension. The file host does not accept files without one."
 msgstr "请选择带扩展名的文件。文件主机不接受没有扩展名的文件。"
+
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Choose a longer password"
+msgstr "请选择更长的密码"
 
 #: src/components/ui/FloodSettingsModal.tsx
 msgid "Choose a predefined flood protection profile for common use cases."
@@ -1452,7 +1482,7 @@ msgstr "选择图片…"
 msgid "Choose microphone and camera"
 msgstr "选择麦克风和摄像头"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Choose sort order"
 msgstr "选择排序方式"
 
@@ -1493,6 +1523,7 @@ msgstr "清除所有已保存的历史？"
 msgid "Clear history"
 msgstr "清除历史"
 
+#: src/components/layout/MemberList.tsx
 #: src/components/layout/MemberList.tsx
 msgid "Clear search"
 msgstr "清除搜索"
@@ -1536,6 +1567,8 @@ msgstr "客户端上限 (+l)"
 
 #: src/components/layout/BotPane.tsx
 #: src/components/layout/BotPane.tsx
+#: src/components/layout/ConnectionStrip.tsx
+#: src/components/layout/ConnectionStrip.tsx
 #: src/components/layout/ProfilePane.tsx
 #: src/components/layout/ProfilePane.tsx
 #: src/components/message/ServerNoticesPopup.tsx
@@ -1578,6 +1611,11 @@ msgstr "关闭查看器"
 #: src/components/ui/BotToolsCard.tsx
 msgid "Close workflow"
 msgstr "关闭工作流"
+
+#: src/components/pages/RegisterAccountSection.tsx
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Code"
+msgstr "验证码"
 
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Code accepted."
@@ -1695,6 +1733,8 @@ msgstr "确认删除"
 msgid "Confirm?"
 msgstr "确认？"
 
+#: src/components/pages/ServerSettingsPage.tsx
+#: src/components/pages/ServerSettingsPage.tsx
 #: src/components/ui/AddServerModal.tsx
 #: src/components/ui/BouncerNetworksPanel.tsx
 msgid "Connect"
@@ -1712,6 +1752,10 @@ msgstr "连接麦克风以讲话"
 msgid "Connect to a server to manage operator settings."
 msgstr "连接到服务器以管理操作员设置。"
 
+#: src/components/pages/ChannelBrowser.tsx
+msgid "Connect to the server to list its channels."
+msgstr "连接到服务器以列出其频道。"
+
 #: src/components/pages/ServerSettingsPage.tsx
 msgid "Connected as a guest"
 msgstr "以访客身份连接"
@@ -1720,6 +1764,8 @@ msgstr "以访客身份连接"
 msgid "Connected to"
 msgstr "已连接到"
 
+#: src/components/layout/ChannelList.tsx
+#: src/components/layout/ChannelList.tsx
 #: src/components/layout/UserPanel.tsx
 #: src/components/ui/MiniMediaPlayer.tsx
 msgid "Connecting"
@@ -1907,6 +1953,10 @@ msgstr "无法加载此链接。它必须指向原始 .json 文件。"
 msgid "Could not reach the file host. Check your connection and try again."
 msgstr "无法连接文件主机。请检查网络连接后重试。"
 
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Could not register. Try again"
+msgstr "注册失败，请重试"
+
 #: src/components/layout/ChatArea.tsx
 msgid "Could not remove the metadata from this image, so it was not uploaded."
 msgstr "无法移除此图片的元数据，因此未上传。"
@@ -1920,6 +1970,10 @@ msgstr "无法设置新密码：{0}"
 #: src/components/ui/ChangePasswordModal.tsx
 msgid "Could not update password: {0}"
 msgstr "无法更新密码：{0}"
+
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Could not verify. Try again"
+msgstr "验证失败，请重试"
 
 #: src/components/ui/E2EERequestBanner.tsx
 msgid "Couldn't set up encryption with {nick}."
@@ -1951,11 +2005,11 @@ msgstr "创建文件夹"
 msgid "Create pack"
 msgstr "创建表情包"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Created after (min ago)"
 msgstr "创建时间晚于（分钟前）"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Created before (min ago)"
 msgstr "创建时间早于（分钟前）"
 
@@ -2287,6 +2341,11 @@ msgstr "显示用户加入或离开频道的事件"
 msgid "Do you want to open this link in a new tab?"
 msgstr "是否在新标签页中打开此链接？"
 
+#: src/components/layout/NickClaimStrip.tsx
+#: src/components/layout/NickClaimStrip.tsx
+msgid "Don't show again for this server"
+msgstr "此服务器不再显示"
+
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "Don't warn me about low link security for this server"
 msgstr "不再提醒我此服务器的低链路安全问题"
@@ -2396,6 +2455,11 @@ msgstr "编辑个人资料"
 #: src/components/mobile/ServerBottomSheet.tsx
 msgid "Edit Server"
 msgstr "编辑服务器"
+
+#: src/components/pages/RegisterAccountSection.tsx
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Email"
+msgstr "邮箱"
 
 #: src/components/pages/SettingsPage.tsx
 msgid "Email:"
@@ -2555,6 +2619,10 @@ msgstr "请为 {0} 输入数字"
 msgid "Enter a URL. Use {sizeToken} in the URL for dynamic sizing. Example: https://example.com/avatar/{sizeToken}/channel.jpg"
 msgstr "输入 URL。在 URL 中使用 {sizeToken} 可动态调整尺寸。示例：https://example.com/avatar/{sizeToken}/channel.jpg"
 
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Enter a valid email address"
+msgstr "请输入有效的邮箱地址"
+
 #. placeholder {0}: e.name
 #: src/components/chat/CommandArgHint.tsx
 msgid "Enter a whole number for {0}"
@@ -2579,6 +2647,10 @@ msgstr "请输入指向 .json 文件的 http(s) 链接。"
 #: src/components/ui/settings/ThemeLinkField.tsx
 msgid "Enter an http(s) link to a theme .json file."
 msgstr "请输入主题 .json 文件的 http(s) 链接。"
+
+#: src/components/layout/NickClaimStrip.tsx
+msgid "Enter code"
+msgstr "输入验证码"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Enter default nickname..."
@@ -2646,6 +2718,14 @@ msgstr "输入邮件中的 6 位验证码。"
 msgid "Enter the account name you want to recover."
 msgstr "输入你要找回的账户名称。"
 
+#: src/components/layout/NickClaimStrip.tsx
+msgid "Enter the code sent to your email"
+msgstr "请输入发送到你邮箱的验证码"
+
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Enter the code sent to your email."
+msgstr "输入发送到你邮箱的验证码。"
+
 #: src/components/ui/settings/UserFilehostField.tsx
 msgid "Enter the http(s) address of your Zipline, like https://img.example.com"
 msgstr "输入你的 Zipline 的 http(s) 地址，例如 https://img.example.com"
@@ -2695,7 +2775,7 @@ msgstr "示例网络"
 msgid "Exceptions"
 msgstr "例外"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Exclude channel name mask"
 msgstr "排除频道名称掩码"
 
@@ -2813,11 +2893,11 @@ msgstr "过滤不良词语 (+G)"
 msgid "Filter members…"
 msgstr "筛选成员…"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Filters"
 msgstr "过滤器"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Filters are unavailable on this server"
 msgstr "此服务器不支持过滤器"
 
@@ -3275,7 +3355,7 @@ msgid "JetBrains Mono"
 msgstr "JetBrains Mono"
 
 #: src/components/message/JsonLogMessage.tsx
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 #: src/components/ui/ChannelKeyModal.tsx
 msgid "Join"
 msgstr "加入"
@@ -3283,7 +3363,7 @@ msgstr "加入"
 #. placeholder {0}: channel.channel
 #. placeholder {0}: message.inviteChannel
 #: src/components/message/InviteMessage.tsx
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Join {0}"
 msgstr "加入 {0}"
 
@@ -3321,7 +3401,7 @@ msgid "Join voice channel {channelName}"
 msgstr "加入语音频道 {channelName}"
 
 #: src/components/layout/ProfilePane.tsx
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Joined"
 msgstr "已加入"
 
@@ -3579,6 +3659,8 @@ msgstr "位置"
 msgid "Location access was denied. Allow location access in your browser or system settings, then try again."
 msgstr "位置访问被拒绝。请在浏览器或系统设置中允许位置访问，然后重试。"
 
+#: src/components/layout/NickClaimStrip.tsx
+#: src/components/layout/NickClaimStrip.tsx
 #: src/components/pages/ServerSettingsPage.tsx
 msgid "Log in"
 msgstr "登录"
@@ -3693,7 +3775,7 @@ msgstr "在这段时间未使用 Obby 后将你标记为离开，回来时恢复
 msgid "Mark yourself back"
 msgstr "标记为已回来"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Max users"
 msgstr "最大用户数"
 
@@ -3736,8 +3818,8 @@ msgstr "成员"
 msgid "Members — {0}"
 msgstr "成员 — {0}"
 
-#. placeholder {0}: shownUsers?.length || 0
-#. placeholder {1}: sortedUsers?.length || 0
+#. placeholder {0}: shownUsers?.length ?? 0
+#. placeholder {1}: sortedUsers?.length ?? 0
 #: src/components/layout/MemberList.tsx
 msgid "Members — {0} of {1}"
 msgstr "成员 — {0} / {1}"
@@ -3861,7 +3943,7 @@ msgstr "麦克风 {0}"
 msgid "Microphone level"
 msgstr "麦克风音量"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Min users"
 msgstr "最少用户数"
 
@@ -4134,7 +4216,7 @@ msgstr "未检测到摄像头。"
 msgid "No Central Server:"
 msgstr "无中央服务器："
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "No channels found. Change the search or filters."
 msgstr "未找到频道。请更改搜索或筛选条件。"
 
@@ -4211,8 +4293,8 @@ msgid "No media in this channel"
 msgstr "此频道没有媒体"
 
 #: src/components/layout/MemberList.tsx
-msgid "No members match"
-msgstr "没有匹配的成员"
+msgid "No members match. Clear the search to see everyone"
+msgstr "没有匹配的成员。清除搜索以查看所有人"
 
 #: src/components/layout/ProfilePane.tsx
 msgid "no message"
@@ -4278,7 +4360,7 @@ msgstr "此频道不再发出声音、通知或显示红点，即使有人提及
 msgid "No speaker detected."
 msgstr "未检测到扬声器。"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "No topic"
 msgstr "无主题"
 
@@ -4477,7 +4559,7 @@ msgid "Open"
 msgstr "打开"
 
 #. placeholder {0}: channel.channel
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Open {0}"
 msgstr "打开{0}"
 
@@ -4632,6 +4714,8 @@ msgstr "表情包"
 msgid "Pages"
 msgstr "页面"
 
+#: src/components/pages/RegisterAccountSection.tsx
+#: src/components/pages/RegisterAccountSection.tsx
 #: src/components/pages/ServerSettingsPage.tsx
 #: src/components/pages/ServerSettingsPage.tsx
 #: src/components/ui/AddServerModal.tsx
@@ -5106,6 +5190,16 @@ msgstr "刷新"
 msgid "Refresh WHOIS"
 msgstr "刷新 WHOIS"
 
+#: src/components/layout/NickClaimStrip.tsx
+#: src/components/pages/RegisterAccountSection.tsx
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Register"
+msgstr "注册"
+
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "Register {nick} as your account on this server."
+msgstr "在此服务器上将 {nick} 注册为你的账户。"
+
 #: src/components/ui/AddServerModal.tsx
 msgid "Register for an account"
 msgstr "注册账户"
@@ -5459,7 +5553,7 @@ msgstr "搜索"
 msgid "Search again"
 msgstr "重新搜索"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Search channels..."
 msgstr "搜索频道..."
 
@@ -5481,12 +5575,9 @@ msgid "Search GIFs..."
 msgstr "搜索 GIF..."
 
 #: src/components/layout/MemberList.tsx
+#: src/components/layout/MemberList.tsx
 msgid "Search members"
 msgstr "搜索成员"
-
-#: src/components/layout/MemberList.tsx
-msgid "Search members…"
-msgstr "搜索成员…"
 
 #: src/components/layout/ChatHeader.tsx
 #: src/components/layout/SearchPane.tsx
@@ -5682,11 +5773,6 @@ msgstr "未加密发送，因为文件太大无法加密"
 #: src/components/layout/BotPane.tsx
 msgid "server"
 msgstr "服务器"
-
-#: src/components/ui/BlankPage.tsx
-#: src/components/ui/BlankPage.tsx
-msgid "Server Channels"
-msgstr "服务器频道"
 
 #: src/components/pages/TwoFactorPage.tsx
 msgid "Server does not advertise WebAuthn support"
@@ -6044,11 +6130,11 @@ msgstr "soju bouncer（控制）"
 msgid "someone"
 msgstr "某人"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Sort by name"
 msgstr "按名称排序"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Sort by users"
 msgstr "按用户数排序"
 
@@ -6316,6 +6402,10 @@ msgstr "bouncer 保留了该网络。"
 #: src/lib/voiceErrors.ts
 msgid "The call server refused the request. Try again in a moment."
 msgstr "通话服务器拒绝了请求。请稍后重试。"
+
+#: src/components/pages/RegisterAccountSection.tsx
+msgid "The code expired. Ask the server operators for help"
+msgstr "验证码已过期。请向服务器管理员求助"
 
 #: src/components/ui/LinkSecurityWarningModal.tsx
 msgid "The connection to <0>{serverName}</0> has the following security concerns:"
@@ -6595,11 +6685,11 @@ msgstr "工具"
 msgid "Topic"
 msgstr "主题"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Topic set after (min ago)"
 msgstr "主题设置时间晚于（分钟前）"
 
-#: src/components/pages/ChannelBrowserPage.tsx
+#: src/components/pages/ChannelBrowser.tsx
 msgid "Topic set before (min ago)"
 msgstr "主题设置时间早于（分钟前）"
 
@@ -6837,6 +6927,7 @@ msgstr "请使用较小的样式表。此样式表超出了此浏览器的存储
 msgid "Use at least {PASSWORD_MIN_LENGTH} characters."
 msgstr "请至少使用 {PASSWORD_MIN_LENGTH} 个字符。"
 
+#: src/components/pages/RegisterAccountSection.tsx
 #: src/components/pages/ServerSettingsPage.tsx
 msgid "Use only Latin characters in the password"
 msgstr "密码中只能使用拉丁字符"
@@ -6942,6 +7033,7 @@ msgstr "需要有效的服务器端口"
 msgid "Verified account"
 msgstr "已验证账户"
 
+#: src/components/pages/RegisterAccountSection.tsx
 #: src/components/ui/TotpStepUpModal.tsx
 msgid "Verify"
 msgstr "验证"
@@ -7246,6 +7338,10 @@ msgstr "你已不在此频道中"
 msgid "You are not in this channel"
 msgstr "你不在此频道中"
 
+#: src/components/layout/NickClaimStrip.tsx
+msgid "You are not logged in"
+msgstr "你尚未登录"
+
 #: src/components/ui/UpdateSheet.tsx
 msgid "You can close this and keep chatting."
 msgstr "你可以关闭此窗口，继续聊天。"
@@ -7286,6 +7382,10 @@ msgstr "你已被踢出此频道。"
 #: src/components/ui/BouncerDisconnectConfirmModal.tsx
 msgid "You're connected to <0>{0}</0>."
 msgstr "您已连接到 <0>{0}</0>。"
+
+#: src/components/layout/NickClaimStrip.tsx
+msgid "Your account"
+msgstr "你的账户"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Your account password for authentication"
