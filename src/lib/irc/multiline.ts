@@ -45,9 +45,17 @@ export function fitsOneBatch(
 
 const FENCE_OPEN = /^ {0,3}(`{3,}|~{3,})(.*)$/;
 const FENCE_CLOSE = /^ {0,3}(`{3,}|~{3,})[ \t]*$/;
+const MAX_FENCE_MARKER = 32;
+const MAX_FENCE_WORD = 32;
 
 function closingFence(open: string): string {
   return /^(`+|~+)/.exec(open)?.[1] ?? "```";
+}
+
+// We repeat a fence at the top of every later batch, so we keep its marker and language word and leave the rest of its line behind.
+function reopeningFence(marker: string, info: string): string {
+  const word = [...(info.trim().split(/\s/, 1)[0] ?? "")];
+  return marker + word.slice(0, MAX_FENCE_WORD).join("");
 }
 
 // Returns the fence still open after `text`, given the one open before it.
@@ -57,8 +65,10 @@ function fenceAfter(text: string, open: string | null): string | null {
   if (!open) {
     const opener = FENCE_OPEN.exec(text);
     const isFence =
-      opener && (opener[1][0] === "~" || !opener[2].includes("`"));
-    return isFence ? text.trim() : null;
+      opener &&
+      opener[1].length <= MAX_FENCE_MARKER &&
+      (opener[1][0] === "~" || !opener[2].includes("`"));
+    return isFence ? reopeningFence(opener[1], opener[2]) : null;
   }
   const marker = FENCE_CLOSE.exec(text)?.[1];
   const closer = closingFence(open);
@@ -66,6 +76,9 @@ function fenceAfter(text: string, open: string | null): string | null {
     marker && marker[0] === closer[0] && marker.length >= closer.length;
   return closes ? null : open;
 }
+
+const bytesOf = (parts: readonly string[]) =>
+  parts.reduce((n, part) => n + byteLength(part), 0);
 
 // `lines` holds one entry per logical line, already split into the parts that
 // fit a single PRIVMSG. A logical line's parts stay in one batch: the receiver
@@ -86,59 +99,66 @@ export function chunkForMultiline(
   const carriesFences = limits.maxLines > 2;
 
   const add = (part: readonly string[]) => {
-    byteCount +=
-      part.reduce((n, p) => n + byteLength(p), 0) + (batch.length > 0 ? 1 : 0);
+    byteCount += bytesOf(part) + (batch.length > 0 ? 1 : 0);
     batch.push([...part]);
     lineCount += part.length;
   };
 
-  const flush = () => {
+  const close = (closer?: string) => {
     if (batch.length === 0) return;
-    if (fence && carriesFences) batch.push([closingFence(fence)]);
+    if (closer) batch.push([closer]);
     batches.push(batch);
     batch = [];
     lineCount = 0;
     byteCount = 0;
-    if (fence && carriesFences) add([fence]);
   };
 
   for (const line of lines) {
     const next = fenceAfter(line.join(""), fence);
-    const reserve =
-      next && carriesFences
-        ? { lines: 1, bytes: closingFence(next).length + 1 }
-        : null;
-    const openFence = fence ?? next;
+    const before = carriesFences ? fence : null;
+    const after = carriesFences ? next : null;
+    const around = before ?? after;
     // A reopened fence and its closer share the batch with each piece.
-    const pieceLimits =
-      openFence && carriesFences
-        ? {
-            maxLines: limits.maxLines - 2,
-            maxBytes: Math.max(
-              1,
-              limits.maxBytes -
-                byteLength(openFence) -
-                byteLength(closingFence(openFence)) -
-                2,
-            ),
-          }
-        : limits;
-    for (const part of splitToFit(line, pieceLimits)) {
-      const parts = part.length;
-      const bytes = part.reduce((n, p) => n + byteLength(p), 0);
-      if (
-        batch.length > 0 &&
-        (lineCount + parts + (reserve?.lines ?? 0) > limits.maxLines ||
-          byteCount + 1 + bytes + (reserve?.bytes ?? 0) > limits.maxBytes)
-      ) {
-        flush();
+    const pieceLimits = around
+      ? {
+          maxLines: limits.maxLines - 2,
+          maxBytes: Math.max(
+            1,
+            limits.maxBytes -
+              byteLength(around) -
+              byteLength(closingFence(around)) -
+              2,
+          ),
+        }
+      : limits;
+    const pieces = splitToFit(line, pieceLimits);
+    pieces.forEach((piece, index) => {
+      // The fence that is open right after this piece needs room for its closing line in the same batch.
+      const stillOpen = index === pieces.length - 1 ? after : before;
+      const closer = stillOpen ? closingFence(stillOpen) : null;
+      const neededLines = piece.length + (closer ? 1 : 0);
+      const neededBytes =
+        bytesOf(piece) + (closer ? byteLength(closer) + 1 : 0);
+      const fitsBehind = (usedLines: number, usedBytes: number) =>
+        usedLines + neededLines <= limits.maxLines &&
+        usedBytes + (usedLines > 0 ? 1 : 0) + neededBytes <= limits.maxBytes;
+
+      if (batch.length > 0 && !fitsBehind(lineCount, byteCount))
+        close(before ? closingFence(before) : undefined);
+      if (batch.length === 0) {
+        const opener = before ? [before] : [];
+        if (!fitsBehind(opener.length, bytesOf(opener))) {
+          // A piece that leaves no room for the fence lines goes out as a batch of its own, since a batch past the limits reaches nobody.
+          batches.push([[...piece]]);
+          return;
+        }
+        if (before) add(opener);
       }
-      add(part);
-    }
+      add(piece);
+    });
     fence = next;
   }
-  fence = null;
-  flush();
+  close();
   return batches;
 }
 
