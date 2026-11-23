@@ -56,6 +56,9 @@ describe("ExternalLinkGuard", () => {
     const open = screen.getByText("Open Link").closest("a");
     expect(open?.getAttribute("href")).toBe(new URL(url).href);
     expect(open?.getAttribute("href")).not.toMatch(/[\u{202a}-\u{202e}]/u);
+
+    fireEvent.click(screen.getByText("Open Link"));
+    expect(screen.queryByText("Open Link")).toBeNull();
   });
 
   it("leaves links inside a link wrapper to the wrapper", () => {

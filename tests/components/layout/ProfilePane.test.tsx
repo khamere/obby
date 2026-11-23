@@ -155,6 +155,8 @@ describe("ProfilePane", () => {
         screen.getByText("Open Link").closest("a")?.getAttribute("href"),
       ).toBe(new URL(homepage).href),
     );
+    fireEvent.click(screen.getByText("Open Link"));
+    await waitFor(() => expect(screen.queryByText("Open Link")).toBeNull());
     expect(openExternalUrl).not.toHaveBeenCalled();
   });
 });
