@@ -9,6 +9,7 @@ import { base64EncodeUtf8 } from "../lib/base64";
 import { botPriority } from "../lib/botPriority";
 import { slapAction } from "../lib/clientCommands";
 import { coerceOptionValue } from "../lib/commandInvocation";
+import { LINE_BREAK } from "../lib/irc/IRCClient";
 import ircClient from "../lib/ircClient";
 import { parseJoinCommand, replyTags } from "../lib/ircUtils";
 import {
@@ -753,7 +754,7 @@ export function useMessageSending({
         if (routed === "sent") return;
       }
 
-      const lines = cleanedText.split("\n");
+      const lines = cleanedText.split(LINE_BREAK);
       const supportsMultiline = serverSupportsMultiline(selectedServerId);
       const hasMultipleLines = lines.length > 1;
 

@@ -238,6 +238,18 @@ describe("a reply to a message whose id needs escaping", () => {
     for (const line of lines) expectReplyTo(line);
   });
 
+  it("reads a carriage return as a line break like any other", () => {
+    withJoining(false);
+    const lines = reply("one\rtwo\r\nthree");
+    withJoining(true);
+
+    expect(lines.map((line) => line.slice(line.indexOf(" ") + 1))).toEqual([
+      "PRIVMSG #lobby :one",
+      "PRIVMSG #lobby :two",
+      "PRIVMSG #lobby :three",
+    ]);
+  });
+
   it("names it on the one line that joins the lines", () => {
     withJoining(true);
     const lines = reply("one\ntwo");

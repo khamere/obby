@@ -685,6 +685,18 @@ describe("IRCClient", () => {
           });
       });
 
+      test("reads a carriage return as a line break like any other", () => {
+        const sent = sentBy(() =>
+          client.sendText(server.id, "#a", "one\rtwo\r\nthree"),
+        );
+
+        expect(sent).toEqual([
+          "PRIVMSG #a :one",
+          "PRIVMSG #a :two",
+          "PRIVMSG #a :three",
+        ]);
+      });
+
       test("goes out as one line when the lines are joined", () => {
         const sent = sentBy(() =>
           client.sendText(server.id, "#a", text, { joinLines: true }),

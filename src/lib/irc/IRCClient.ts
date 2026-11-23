@@ -59,6 +59,8 @@ function generateDeterministicId(serverId: string, name: string): string {
 const CHATHISTORY_PAGE_SIZE = 50;
 // Servers throttle CHATHISTORY, so pages we only save cover several steps each.
 const CHATHISTORY_DISK_PAGE_SIZE = 200;
+// A lone carriage return ends a line for the server too, so text we send is cut at every kind of break.
+export const LINE_BREAK = /\r\n?|\n/;
 const PING_INTERVAL_MS = 30_000;
 const PONG_TIMEOUT_MS = 10_000;
 const WAKE_PONG_TIMEOUT_MS = 5_000;
@@ -1806,7 +1808,7 @@ export class IRCClient implements IRCClientContext {
 
     // Check if server supports multiline and message has newlines
     // Note: We'll check server capabilities from the store later via helper function
-    const lines = content.split("\n");
+    const lines = content.split(LINE_BREAK);
 
     if (lines.length > 1 && this.hasCapability(serverId, "draft/multiline")) {
       this.sendMultiline(serverId, channel.name, lines);
@@ -1876,7 +1878,7 @@ export class IRCClient implements IRCClientContext {
   ): void {
     const replyTo = options.replyTo ? escapeTagValue(options.replyTo) : "";
     const tags = replyTo ? `@+reply=${replyTo};+draft/reply=${replyTo} ` : "";
-    const lines = text.split(/\r?\n/);
+    const lines = text.split(LINE_BREAK);
     if (lines.length > 1 && this.hasCapability(serverId, "draft/multiline")) {
       this.sendMultiline(serverId, target, lines, tags);
       return;
