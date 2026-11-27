@@ -12,9 +12,20 @@
 //   2. add the matching `lowerName === "..."` branch to handleCommand
 //      in src/hooks/useMessageSending.ts
 //   3. that's it — the popover and param hint pick it up automatically
+//
+// The commands in APP_COMMAND_NAMES open or change something in the app
+// itself. runAppCommand in src/hooks/useMessageSending.ts handles those, and
+// answers in the chat where the command was typed.
 
 import { t } from "@lingui/core/macro";
 import type { BotCommandOption } from "../types";
+
+export function formatOptions(options: BotCommandOption[] | undefined): string {
+  if (!options || options.length === 0) return "";
+  return options
+    .map((o) => (o.required ? `<${o.name}>` : `[${o.name}]`))
+    .join(" ");
+}
 
 export interface ClientCommand {
   name: string;
@@ -30,7 +41,7 @@ export interface ClientCommand {
 // module-level `t\`...\`` would freeze in the source-locale string.
 // Callers re-invoke this on every render anyway (it's the popover/dispatcher
 // reading the live list), so the per-call allocation is fine.
-export function getClientCommands(): ClientCommand[] {
+export function getClientCommands(inChannel = true): ClientCommand[] {
   return [
     {
       name: "rainbow",
@@ -154,8 +165,51 @@ export function getClientCommands(): ClientCommand[] {
       name: "back",
       description: t`Mark yourself as back`,
     },
+    {
+      name: "query",
+      description: t`Open private chat`,
+      options: [{ name: "user", type: "user", required: true }],
+    },
+    {
+      name: "whois",
+      description: t`View profile`,
+      options: [{ name: "user", type: "user", required: false }],
+    },
+    {
+      name: "ignore",
+      description: t`Ignore user`,
+      options: [{ name: "user", type: "user", required: false }],
+    },
+    {
+      name: "unignore",
+      description: t`Unignore user`,
+      options: [{ name: "user", type: "user", required: false }],
+    },
+    {
+      name: "list",
+      description: t`Find channels`,
+    },
+    {
+      name: "close",
+      description: inChannel ? t`Leave channel` : t`Close conversation`,
+    },
+    {
+      name: "raw",
+      description: t`Send a raw line to the IRC server`,
+      options: [{ name: "line", type: "string", required: true }],
+    },
   ];
 }
+
+export const APP_COMMAND_NAMES: ReadonlySet<string> = new Set([
+  "query",
+  "whois",
+  "ignore",
+  "unignore",
+  "list",
+  "close",
+  "raw",
+]);
 
 // Name set is locale-independent so it can stay module-scope.
 export const CLIENT_COMMAND_NAMES: ReadonlySet<string> = new Set([
@@ -170,7 +224,41 @@ export const CLIENT_COMMAND_NAMES: ReadonlySet<string> = new Set([
   "topic",
   "away",
   "back",
+  ...APP_COMMAND_NAMES,
 ]);
+
+export interface TypedAppCommand {
+  name: string;
+  /** Everything after the name, as typed. */
+  argumentText: string;
+}
+
+// The name ends at the first whitespace, so "/list@bot" and "//list" stay
+// what they are: a bot's command and a literal slash.
+export function typedAppCommand(text: string): TypedAppCommand | null {
+  const match = /^\/([^\s/@]+)(\s[\s\S]*)?$/.exec(text);
+  if (!match) return null;
+  const name = match[1].toLowerCase();
+  if (!APP_COMMAND_NAMES.has(name)) return null;
+  return { name, argumentText: match[2] ?? "" };
+}
+
+export const isAppCommand = (text: string): boolean =>
+  typedAppCommand(text) !== null;
+
+export function clientCommandUsage(name: string): string {
+  const signature = formatOptions(
+    getClientCommands().find((c) => c.name === name)?.options,
+  );
+  return signature ? `/${name} ${signature}` : `/${name}`;
+}
+
+// A nick, as opposed to a list of them or a nick!user@host mask. The ignore
+// list matches nicks with wildcards, so its commands take those too.
+export function isNickWord(word: string, allowWildcards = false): boolean {
+  if (!word || word.startsWith(":") || /[\s,!@]/.test(word)) return false;
+  return allowWildcards || !/[*?]/.test(word);
+}
 
 // The classic mIRC /slap. The text goes out on the wire as an ACTION, so it
 // stays in English for everyone, like the original.

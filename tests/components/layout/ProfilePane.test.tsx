@@ -120,6 +120,29 @@ describe("ProfilePane", () => {
     expect(screen.getByText("198.51.100.7")).toBeTruthy();
   });
 
+  it("shows the WHOIS the server stored under its own spelling of the nick", () => {
+    const whois = vi.spyOn(ircClient, "whois").mockImplementation(() => {});
+    setupStore({ isNarrowView: false });
+    useStore.setState({
+      whoisData: {
+        server1: {
+          Alice: {
+            nick: "Alice",
+            username: "al",
+            host: "host.example",
+            isComplete: true,
+            timestamp: Date.now(),
+          },
+        },
+      },
+    } as never);
+
+    render(<ProfilePane target={target} />);
+
+    expect(screen.getByText("al@host.example")).toBeTruthy();
+    expect(whois).not.toHaveBeenCalled();
+  });
+
   it("reveals bidi controls in the homepage and opens the exact URL", async () => {
     vi.spyOn(ircClient, "whois").mockImplementation(() => {});
     setupStore({ isNarrowView: false });

@@ -1589,6 +1589,7 @@ msgid "Close comments"
 msgstr "Yorumları kapat"
 
 #: src/components/layout/ChannelList.tsx
+#: src/lib/clientCommands.ts
 msgid "Close conversation"
 msgstr "Konuşmayı kapat"
 
@@ -2902,6 +2903,7 @@ msgid "Filters are unavailable on this server"
 msgstr "Filtreler bu sunucuda kullanılamıyor"
 
 #: src/components/layout/NetworkMenu.tsx
+#: src/lib/clientCommands.ts
 msgid "Find channels"
 msgstr "Kanal bul"
 
@@ -3193,6 +3195,7 @@ msgid "Ignore List"
 msgstr "Engelleme Listesi"
 
 #: src/components/layout/ProfilePane.tsx
+#: src/lib/clientCommands.ts
 msgid "Ignore user"
 msgstr "Kullanıcıyı yoksay"
 
@@ -3203,6 +3206,11 @@ msgstr "Kullanıcıyı Engelle"
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Ignored patterns:"
 msgstr "Engellenen desenler:"
+
+#. placeholder {0}: stored ?? pattern
+#: src/hooks/useMessageSending.ts
+msgid "Ignoring {0}"
+msgstr "{0} yoksayılıyor"
 
 #: src/components/ui/MediaCommentsSidebar.tsx
 msgid "Image"
@@ -3505,6 +3513,7 @@ msgid "Leave call"
 msgstr "Aramadan ayrıl"
 
 #: src/components/layout/ChannelContextMenu.tsx
+#: src/lib/clientCommands.ts
 msgid "Leave channel"
 msgstr "Kanaldan ayrıl"
 
@@ -4288,6 +4297,11 @@ msgstr "Kapı çalma yok (+K)"
 msgid "No limit"
 msgstr "Sınır yok"
 
+#. placeholder {0}: removed.join(", ")
+#: src/hooks/useMessageSending.ts
+msgid "No longer ignoring {0}"
+msgstr "{0} artık yoksayılmıyor"
+
 #: src/components/ui/MediaViewerModal.tsx
 msgid "No media in this channel"
 msgstr "Bu kanalda medya yok"
@@ -4405,7 +4419,12 @@ msgstr "Normal"
 msgid "Normal - Standard protection"
 msgstr "Normal - Standart koruma"
 
+#: src/hooks/useMessageSending.ts
+msgid "Not closed. Unpin this conversation first"
+msgstr "Kapatılmadı. Önce bu konuşmanın sabitlemesini kaldırın"
+
 #: src/components/pages/ServerSettingsPage.tsx
+#: src/hooks/useMessageSending.ts
 msgid "Not connected"
 msgstr "Bağlı değil"
 
@@ -4432,6 +4451,21 @@ msgstr "Bu kanalda değilsin"
 msgid "Not now"
 msgstr "Şimdi değil"
 
+#. placeholder {0}: words[0]
+#: src/hooks/useMessageSending.ts
+#: src/hooks/useMessageSending.ts
+msgid "Not run. {0} matches your own nick"
+msgstr "Çalıştırılmadı. {0} kendi takma adınızla eşleşiyor"
+
+#. placeholder {0}: clientCommandUsage(name)
+#: src/hooks/useMessageSending.ts
+msgid "Not run. Type it as {0}"
+msgstr "Çalıştırılmadı. Şu biçimde yazın: {0}"
+
+#: src/hooks/useMessageSending.ts
+msgid "Not sent. Put the command on one line"
+msgstr "Gönderilmedi. Komutu tek satıra yazın"
+
 #: src/components/chat/CommandArgHint.tsx
 msgid "Not sent. Reconnect, or use a chat where the bot offers this command"
 msgstr "Gönderilmedi. Yeniden bağlanın veya botun bu komutu sunduğu bir sohbeti kullanın"
@@ -4443,6 +4477,11 @@ msgstr "Not: Kanal meta verilerini değiştirmek için operatör (@) veya daha y
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Note: the server returns the same response whether or not the account has a verified email, so a typo will not be flagged here. If no code arrives within a couple of minutes, double-check the account name."
 msgstr "Not: sunucu, hesabın doğrulanmış bir e-postası olsun ya da olmasın aynı yanıtı verir, bu yüzden yazım hatası burada belirtilmez. Birkaç dakika içinde kod gelmezse hesap adını tekrar kontrol edin."
+
+#. placeholder {0}: words[0]
+#: src/hooks/useMessageSending.ts
+msgid "Nothing on the ignore list matches {0}. Type /ignore to see the list"
+msgstr "Engelleme listesinde {0} ile eşleşen bir şey yok. Listeyi görmek için /ignore yazın"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Notification Sound"
@@ -4612,6 +4651,7 @@ msgid "Open network options"
 msgstr "Ağ seçeneklerini aç"
 
 #: src/components/layout/StartPrivateChatRow.tsx
+#: src/lib/clientCommands.ts
 msgid "Open private chat"
 msgstr "Özel sohbet aç"
 
@@ -5709,6 +5749,10 @@ msgstr "GIF gönder"
 msgid "Send a message in rainbow colors"
 msgstr "Gökkuşağı renklerinde bir mesaj gönder"
 
+#: src/lib/clientCommands.ts
+msgid "Send a raw line to the IRC server"
+msgstr "IRC sunucusuna ham bir satır gönder"
+
 #: src/components/ui/ModerationModal.tsx
 msgid "Send a warning message to {username}"
 msgstr "{username} kullanıcısına uyarı mesajı gönder"
@@ -5768,6 +5812,10 @@ msgstr "Şifresiz gönderildi çünkü OTR yalnızca metni şifreler"
 #: src/components/ui/UploadProgressBar.tsx
 msgid "Sent unencrypted because the file is too large to encrypt"
 msgstr "Şifresiz gönderildi çünkü dosya şifrelenemeyecek kadar büyük"
+
+#: src/hooks/useMessageSending.ts
+msgid "Sent. The raw log shows the reply"
+msgstr "Gönderildi. Yanıt ham günlükte görünür"
 
 #: src/components/chat/completionProviders.tsx
 #: src/components/layout/BotPane.tsx
@@ -6777,6 +6825,7 @@ msgid "Undeafen"
 msgstr "Sesi aç"
 
 #: src/components/layout/ProfilePane.tsx
+#: src/lib/clientCommands.ts
 msgid "Unignore user"
 msgstr "Kullanıcıyı yoksaymayı bırak"
 
@@ -7106,6 +7155,7 @@ msgid "View our privacy policy and data practices"
 msgstr "Gizlilik politikamızı ve veri uygulamalarımızı görüntüleyin"
 
 #: src/components/pages/SettingsPage.tsx
+#: src/lib/clientCommands.ts
 msgid "View profile"
 msgstr "Profili görüntüle"
 

@@ -1589,6 +1589,7 @@ msgid "Close comments"
 msgstr "Закрити коментарі"
 
 #: src/components/layout/ChannelList.tsx
+#: src/lib/clientCommands.ts
 msgid "Close conversation"
 msgstr "Закрити розмову"
 
@@ -2902,6 +2903,7 @@ msgid "Filters are unavailable on this server"
 msgstr "Фільтри недоступні на цьому сервері"
 
 #: src/components/layout/NetworkMenu.tsx
+#: src/lib/clientCommands.ts
 msgid "Find channels"
 msgstr "Знайти канали"
 
@@ -3193,6 +3195,7 @@ msgid "Ignore List"
 msgstr "Список ігнорування"
 
 #: src/components/layout/ProfilePane.tsx
+#: src/lib/clientCommands.ts
 msgid "Ignore user"
 msgstr "Ігнорувати користувача"
 
@@ -3203,6 +3206,11 @@ msgstr "Ігнорувати користувача"
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Ignored patterns:"
 msgstr "Ігноровані шаблони:"
+
+#. placeholder {0}: stored ?? pattern
+#: src/hooks/useMessageSending.ts
+msgid "Ignoring {0}"
+msgstr "Ігнорується: {0}"
 
 #: src/components/ui/MediaCommentsSidebar.tsx
 msgid "Image"
@@ -3505,6 +3513,7 @@ msgid "Leave call"
 msgstr "Покинути дзвінок"
 
 #: src/components/layout/ChannelContextMenu.tsx
+#: src/lib/clientCommands.ts
 msgid "Leave channel"
 msgstr "Покинути канал"
 
@@ -4288,6 +4297,11 @@ msgstr "Без стуків (+K)"
 msgid "No limit"
 msgstr "Без обмежень"
 
+#. placeholder {0}: removed.join(", ")
+#: src/hooks/useMessageSending.ts
+msgid "No longer ignoring {0}"
+msgstr "Більше не ігнорується: {0}"
+
 #: src/components/ui/MediaViewerModal.tsx
 msgid "No media in this channel"
 msgstr "Немає медіа у цьому каналі"
@@ -4405,7 +4419,12 @@ msgstr "Нормальний"
 msgid "Normal - Standard protection"
 msgstr "Нормальний - стандартний захист"
 
+#: src/hooks/useMessageSending.ts
+msgid "Not closed. Unpin this conversation first"
+msgstr "Не закрито. Спершу відкріпіть цю розмову"
+
 #: src/components/pages/ServerSettingsPage.tsx
+#: src/hooks/useMessageSending.ts
 msgid "Not connected"
 msgstr "Не підключено"
 
@@ -4432,6 +4451,21 @@ msgstr "Ви не в цьому каналі"
 msgid "Not now"
 msgstr "Не зараз"
 
+#. placeholder {0}: words[0]
+#: src/hooks/useMessageSending.ts
+#: src/hooks/useMessageSending.ts
+msgid "Not run. {0} matches your own nick"
+msgstr "Не виконано. {0} збігається з вашим нікнеймом"
+
+#. placeholder {0}: clientCommandUsage(name)
+#: src/hooks/useMessageSending.ts
+msgid "Not run. Type it as {0}"
+msgstr "Не виконано. Введіть команду так: {0}"
+
+#: src/hooks/useMessageSending.ts
+msgid "Not sent. Put the command on one line"
+msgstr "Не надіслано. Запишіть команду в один рядок"
+
 #: src/components/chat/CommandArgHint.tsx
 msgid "Not sent. Reconnect, or use a chat where the bot offers this command"
 msgstr "Не надіслано. Перепідключіться або скористайтеся чатом, де бот пропонує цю команду"
@@ -4443,6 +4477,11 @@ msgstr "Примітка: для зміни метаданих каналу по
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Note: the server returns the same response whether or not the account has a verified email, so a typo will not be flagged here. If no code arrives within a couple of minutes, double-check the account name."
 msgstr "Примітка: сервер повертає однакову відповідь незалежно від того, чи має акаунт підтверджену пошту, тому помилку в написанні тут не буде позначено. Якщо код не надійшов за кілька хвилин, перевірте назву акаунта."
+
+#. placeholder {0}: words[0]
+#: src/hooks/useMessageSending.ts
+msgid "Nothing on the ignore list matches {0}. Type /ignore to see the list"
+msgstr "У списку ігнорування немає записів, що відповідають {0}. Введіть /ignore, щоб побачити список"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Notification Sound"
@@ -4612,6 +4651,7 @@ msgid "Open network options"
 msgstr "Відкрити параметри мережі"
 
 #: src/components/layout/StartPrivateChatRow.tsx
+#: src/lib/clientCommands.ts
 msgid "Open private chat"
 msgstr "Відкрити особистий чат"
 
@@ -5709,6 +5749,10 @@ msgstr "Надіслати GIF"
 msgid "Send a message in rainbow colors"
 msgstr "Надіслати повідомлення в кольорах веселки"
 
+#: src/lib/clientCommands.ts
+msgid "Send a raw line to the IRC server"
+msgstr "Надіслати необроблений рядок серверу IRC"
+
 #: src/components/ui/ModerationModal.tsx
 msgid "Send a warning message to {username}"
 msgstr "Надіслати попереджувальне повідомлення {username}"
@@ -5768,6 +5812,10 @@ msgstr "Надіслано без шифрування, бо OTR шифрує л
 #: src/components/ui/UploadProgressBar.tsx
 msgid "Sent unencrypted because the file is too large to encrypt"
 msgstr "Надіслано без шифрування, бо файл завеликий для шифрування"
+
+#: src/hooks/useMessageSending.ts
+msgid "Sent. The raw log shows the reply"
+msgstr "Надіслано. Відповідь видно в необробленому журналі"
 
 #: src/components/chat/completionProviders.tsx
 #: src/components/layout/BotPane.tsx
@@ -6777,6 +6825,7 @@ msgid "Undeafen"
 msgstr "Увімкнути звук"
 
 #: src/components/layout/ProfilePane.tsx
+#: src/lib/clientCommands.ts
 msgid "Unignore user"
 msgstr "Перестати ігнорувати користувача"
 
@@ -7106,6 +7155,7 @@ msgid "View our privacy policy and data practices"
 msgstr "Переглянути нашу політику конфіденційності та практики роботи з даними"
 
 #: src/components/pages/SettingsPage.tsx
+#: src/lib/clientCommands.ts
 msgid "View profile"
 msgstr "Переглянути профіль"
 

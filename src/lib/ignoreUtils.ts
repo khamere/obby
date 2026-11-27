@@ -123,3 +123,10 @@ export function createIgnorePattern(
 ): string {
   return `${nick || "*"}!${user || "*"}@${host || "*"}`;
 }
+
+/** The ignore list entries that hide this nick. */
+export function ignoreEntriesFor(nick: string, ignoreList: string[]): string[] {
+  return ignoreList.filter((pattern) =>
+    isUserIgnored(nick, undefined, undefined, [pattern]),
+  );
+}

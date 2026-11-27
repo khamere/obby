@@ -3,7 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ChatArea } from "../../src/components/layout/ChatArea";
 import ircClient from "../../src/lib/ircClient";
 import { parseMessageTags } from "../../src/lib/ircUtils";
-import { setUserFilehost } from "../../src/lib/userFilehost";
+import {
+  setUserFilehost,
+  uploadToUserFilehost,
+} from "../../src/lib/userFilehost";
 import useStore from "../../src/store";
 import type { Channel, Message, Server } from "../../src/types";
 import { defaultUIExtensions } from "../fixtures/uiState";
@@ -153,5 +156,24 @@ describe("a file sent from the composer", () => {
         autoFallbackToSingleLine: true,
       },
     }));
+  });
+
+  it("runs a typed command on its text alone and keeps the file attached", () => {
+    vi.spyOn(ircClient, "isSocketOpen").mockReturnValue(true);
+    vi.mocked(uploadToUserFilehost).mockClear();
+    render(<ChatArea onToggleChanList={() => {}} isChanListVisible={true} />);
+    const input = screen.getByPlaceholderText(/Message #general/i);
+    fireEvent.paste(input, {
+      clipboardData: {
+        files: [new File(["hello"], "note.txt", { type: "text/plain" })],
+      },
+    });
+    fireEvent.change(input, { target: { value: "/raw PING x" } });
+    fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
+
+    expect(sent).toEqual(["PING x"]);
+    expect(uploadToUserFilehost).not.toHaveBeenCalled();
+    expect(screen.getByTestId("attachment-tray")).toBeInTheDocument();
+    expect(input).toHaveValue("");
   });
 });

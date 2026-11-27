@@ -1589,6 +1589,7 @@ msgid "Close comments"
 msgstr "Zavřít komentáře"
 
 #: src/components/layout/ChannelList.tsx
+#: src/lib/clientCommands.ts
 msgid "Close conversation"
 msgstr "Zavřít konverzaci"
 
@@ -2902,6 +2903,7 @@ msgid "Filters are unavailable on this server"
 msgstr "Filtry na tomto serveru nejsou dostupné"
 
 #: src/components/layout/NetworkMenu.tsx
+#: src/lib/clientCommands.ts
 msgid "Find channels"
 msgstr "Najít kanály"
 
@@ -3193,6 +3195,7 @@ msgid "Ignore List"
 msgstr "Seznam ignorovaných"
 
 #: src/components/layout/ProfilePane.tsx
+#: src/lib/clientCommands.ts
 msgid "Ignore user"
 msgstr "Ignorovat uživatele"
 
@@ -3203,6 +3206,11 @@ msgstr "Ignorovat uživatele"
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Ignored patterns:"
 msgstr "Ignorované vzory:"
+
+#. placeholder {0}: stored ?? pattern
+#: src/hooks/useMessageSending.ts
+msgid "Ignoring {0}"
+msgstr "Ignoruje se {0}"
 
 #: src/components/ui/MediaCommentsSidebar.tsx
 msgid "Image"
@@ -3505,6 +3513,7 @@ msgid "Leave call"
 msgstr "Opustit hovor"
 
 #: src/components/layout/ChannelContextMenu.tsx
+#: src/lib/clientCommands.ts
 msgid "Leave channel"
 msgstr "Opustit kanál"
 
@@ -4288,6 +4297,11 @@ msgstr "Bez KNOCK (+K)"
 msgid "No limit"
 msgstr "Bez omezení"
 
+#. placeholder {0}: removed.join(", ")
+#: src/hooks/useMessageSending.ts
+msgid "No longer ignoring {0}"
+msgstr "Už se neignoruje {0}"
+
 #: src/components/ui/MediaViewerModal.tsx
 msgid "No media in this channel"
 msgstr "V tomto kanálu nejsou žádná média"
@@ -4405,7 +4419,12 @@ msgstr "Normální"
 msgid "Normal - Standard protection"
 msgstr "Normální - standardní ochrana"
 
+#: src/hooks/useMessageSending.ts
+msgid "Not closed. Unpin this conversation first"
+msgstr "Nezavřeno. Nejprve tuto konverzaci odepněte"
+
 #: src/components/pages/ServerSettingsPage.tsx
+#: src/hooks/useMessageSending.ts
 msgid "Not connected"
 msgstr "Nepřipojeno"
 
@@ -4432,6 +4451,21 @@ msgstr "Nejste v tomto kanálu"
 msgid "Not now"
 msgstr "Teď ne"
 
+#. placeholder {0}: words[0]
+#: src/hooks/useMessageSending.ts
+#: src/hooks/useMessageSending.ts
+msgid "Not run. {0} matches your own nick"
+msgstr "Neprovedeno. {0} odpovídá vaší vlastní přezdívce"
+
+#. placeholder {0}: clientCommandUsage(name)
+#: src/hooks/useMessageSending.ts
+msgid "Not run. Type it as {0}"
+msgstr "Neprovedeno. Napište to jako {0}"
+
+#: src/hooks/useMessageSending.ts
+msgid "Not sent. Put the command on one line"
+msgstr "Neodesláno. Napište příkaz na jeden řádek"
+
 #: src/components/chat/CommandArgHint.tsx
 msgid "Not sent. Reconnect, or use a chat where the bot offers this command"
 msgstr "Neodesláno. Připojte se znovu nebo použijte chat, kde bot tento příkaz nabízí"
@@ -4443,6 +4477,11 @@ msgstr "Poznámka: Úprava metadat kanálu vyžaduje oprávnění operátora (@)
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Note: the server returns the same response whether or not the account has a verified email, so a typo will not be flagged here. If no code arrives within a couple of minutes, double-check the account name."
 msgstr "Poznámka: server vrací stejnou odpověď bez ohledu na to, zda má účet ověřený e-mail, takže překlep se zde neohlásí. Pokud kód nedorazí do několika minut, zkontrolujte název účtu."
+
+#. placeholder {0}: words[0]
+#: src/hooks/useMessageSending.ts
+msgid "Nothing on the ignore list matches {0}. Type /ignore to see the list"
+msgstr "Na seznamu ignorovaných nic neodpovídá {0}. Seznam zobrazíte příkazem /ignore"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Notification Sound"
@@ -4612,6 +4651,7 @@ msgid "Open network options"
 msgstr "Otevřít možnosti sítě"
 
 #: src/components/layout/StartPrivateChatRow.tsx
+#: src/lib/clientCommands.ts
 msgid "Open private chat"
 msgstr "Otevřít soukromý chat"
 
@@ -5709,6 +5749,10 @@ msgstr "Odeslat GIF"
 msgid "Send a message in rainbow colors"
 msgstr "Odeslat zprávu v barvách duhy"
 
+#: src/lib/clientCommands.ts
+msgid "Send a raw line to the IRC server"
+msgstr "Odeslat nezpracovaný řádek IRC serveru"
+
 #: src/components/ui/ModerationModal.tsx
 msgid "Send a warning message to {username}"
 msgstr "Odeslat varovnou zprávu uživateli {username}"
@@ -5768,6 +5812,10 @@ msgstr "Odesláno nešifrovaně, protože OTR šifruje jen text"
 #: src/components/ui/UploadProgressBar.tsx
 msgid "Sent unencrypted because the file is too large to encrypt"
 msgstr "Odesláno nešifrovaně, protože soubor je příliš velký na šifrování"
+
+#: src/hooks/useMessageSending.ts
+msgid "Sent. The raw log shows the reply"
+msgstr "Odesláno. Odpověď najdete v nezpracovaném logu"
 
 #: src/components/chat/completionProviders.tsx
 #: src/components/layout/BotPane.tsx
@@ -6777,6 +6825,7 @@ msgid "Undeafen"
 msgstr "Zapnout poslech"
 
 #: src/components/layout/ProfilePane.tsx
+#: src/lib/clientCommands.ts
 msgid "Unignore user"
 msgstr "Přestat ignorovat uživatele"
 
@@ -7106,6 +7155,7 @@ msgid "View our privacy policy and data practices"
 msgstr "Zobrazit naše zásady ochrany soukromí a práci s daty"
 
 #: src/components/pages/SettingsPage.tsx
+#: src/lib/clientCommands.ts
 msgid "View profile"
 msgstr "Zobrazit profil"
 

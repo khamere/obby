@@ -1589,6 +1589,7 @@ msgid "Close comments"
 msgstr "Stäng kommentarer"
 
 #: src/components/layout/ChannelList.tsx
+#: src/lib/clientCommands.ts
 msgid "Close conversation"
 msgstr "Stäng konversationen"
 
@@ -2902,6 +2903,7 @@ msgid "Filters are unavailable on this server"
 msgstr "Filter är inte tillgängliga på den här servern"
 
 #: src/components/layout/NetworkMenu.tsx
+#: src/lib/clientCommands.ts
 msgid "Find channels"
 msgstr "Hitta kanaler"
 
@@ -3193,6 +3195,7 @@ msgid "Ignore List"
 msgstr "Ignorera-lista"
 
 #: src/components/layout/ProfilePane.tsx
+#: src/lib/clientCommands.ts
 msgid "Ignore user"
 msgstr "Ignorera användare"
 
@@ -3203,6 +3206,11 @@ msgstr "Ignorera användare"
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Ignored patterns:"
 msgstr "Ignorerade mönster:"
+
+#. placeholder {0}: stored ?? pattern
+#: src/hooks/useMessageSending.ts
+msgid "Ignoring {0}"
+msgstr "Ignorerar {0}"
 
 #: src/components/ui/MediaCommentsSidebar.tsx
 msgid "Image"
@@ -3505,6 +3513,7 @@ msgid "Leave call"
 msgstr "Lämna samtalet"
 
 #: src/components/layout/ChannelContextMenu.tsx
+#: src/lib/clientCommands.ts
 msgid "Leave channel"
 msgstr "Lämna kanal"
 
@@ -4288,6 +4297,11 @@ msgstr "Inga knackningar (+K)"
 msgid "No limit"
 msgstr "Ingen gräns"
 
+#. placeholder {0}: removed.join(", ")
+#: src/hooks/useMessageSending.ts
+msgid "No longer ignoring {0}"
+msgstr "Ignorerar inte längre {0}"
+
 #: src/components/ui/MediaViewerModal.tsx
 msgid "No media in this channel"
 msgstr "Inget media i den här kanalen"
@@ -4405,7 +4419,12 @@ msgstr "Normal"
 msgid "Normal - Standard protection"
 msgstr "Normal – standardskydd"
 
+#: src/hooks/useMessageSending.ts
+msgid "Not closed. Unpin this conversation first"
+msgstr "Stängdes inte. Lossa konversationen först"
+
 #: src/components/pages/ServerSettingsPage.tsx
+#: src/hooks/useMessageSending.ts
 msgid "Not connected"
 msgstr "Inte ansluten"
 
@@ -4432,6 +4451,21 @@ msgstr "Inte i den här kanalen"
 msgid "Not now"
 msgstr "Inte nu"
 
+#. placeholder {0}: words[0]
+#: src/hooks/useMessageSending.ts
+#: src/hooks/useMessageSending.ts
+msgid "Not run. {0} matches your own nick"
+msgstr "Kördes inte. {0} matchar ditt eget smeknamn"
+
+#. placeholder {0}: clientCommandUsage(name)
+#: src/hooks/useMessageSending.ts
+msgid "Not run. Type it as {0}"
+msgstr "Kördes inte. Skriv det som {0}"
+
+#: src/hooks/useMessageSending.ts
+msgid "Not sent. Put the command on one line"
+msgstr "Skickades inte. Skriv kommandot på en rad"
+
 #: src/components/chat/CommandArgHint.tsx
 msgid "Not sent. Reconnect, or use a chat where the bot offers this command"
 msgstr "Inte skickat. Anslut igen eller använd en chatt där boten erbjuder kommandot"
@@ -4443,6 +4477,11 @@ msgstr "Obs: Ändring av kanalmetadata kräver operatörsbehörighet (@) eller h
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Note: the server returns the same response whether or not the account has a verified email, so a typo will not be flagged here. If no code arrives within a couple of minutes, double-check the account name."
 msgstr "Observera: servern ger samma svar oavsett om kontot har en verifierad e-postadress, så ett stavfel flaggas inte här. Om ingen kod kommer inom ett par minuter, kontrollera kontonamnet."
+
+#. placeholder {0}: words[0]
+#: src/hooks/useMessageSending.ts
+msgid "Nothing on the ignore list matches {0}. Type /ignore to see the list"
+msgstr "Inget i ignorera-listan matchar {0}. Skriv /ignore för att se listan"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Notification Sound"
@@ -4612,6 +4651,7 @@ msgid "Open network options"
 msgstr "Öppna nätverksalternativ"
 
 #: src/components/layout/StartPrivateChatRow.tsx
+#: src/lib/clientCommands.ts
 msgid "Open private chat"
 msgstr "Öppna privat chatt"
 
@@ -5709,6 +5749,10 @@ msgstr "Skicka en GIF"
 msgid "Send a message in rainbow colors"
 msgstr "Skicka ett meddelande i regnbågens färger"
 
+#: src/lib/clientCommands.ts
+msgid "Send a raw line to the IRC server"
+msgstr "Skicka en rå rad till IRC-servern"
+
 #: src/components/ui/ModerationModal.tsx
 msgid "Send a warning message to {username}"
 msgstr "Skicka ett varningsmeddelande till {username}"
@@ -5768,6 +5812,10 @@ msgstr "Skickades okrypterat eftersom OTR bara krypterar text"
 #: src/components/ui/UploadProgressBar.tsx
 msgid "Sent unencrypted because the file is too large to encrypt"
 msgstr "Skickades okrypterat eftersom filen är för stor för att krypteras"
+
+#: src/hooks/useMessageSending.ts
+msgid "Sent. The raw log shows the reply"
+msgstr "Skickat. Råloggen visar svaret"
 
 #: src/components/chat/completionProviders.tsx
 #: src/components/layout/BotPane.tsx
@@ -6777,6 +6825,7 @@ msgid "Undeafen"
 msgstr "Avdöva"
 
 #: src/components/layout/ProfilePane.tsx
+#: src/lib/clientCommands.ts
 msgid "Unignore user"
 msgstr "Sluta ignorera användare"
 
@@ -7106,6 +7155,7 @@ msgid "View our privacy policy and data practices"
 msgstr "Visa vår integritetspolicy och datapraxis"
 
 #: src/components/pages/SettingsPage.tsx
+#: src/lib/clientCommands.ts
 msgid "View profile"
 msgstr "Visa profil"
 

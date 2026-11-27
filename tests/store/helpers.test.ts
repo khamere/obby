@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   dialsSavedAddress,
+  findWhois,
   resolveUserMetadata,
   withoutReaction,
   withReaction,
@@ -170,5 +171,25 @@ describe("a connection dialling the address a login is saved for", () => {
     ).toBe(false);
     expect(dialsSavedAddress({ ...saved, port: 8443 }, saved)).toBe(false);
     expect(dialsSavedAddress(undefined, saved)).toBe(false);
+  });
+});
+
+describe("findWhois", () => {
+  const asServerSpells = { nick: "Alice" };
+  const asTyped = { nick: "alice" };
+
+  it("finds the entry the server stored in its own spelling", () => {
+    expect(findWhois({ Alice: asServerSpells }, "alice")).toBe(asServerSpells);
+  });
+
+  it("prefers the entry spelled as asked", () => {
+    expect(findWhois({ Alice: asServerSpells, alice: asTyped }, "alice")).toBe(
+      asTyped,
+    );
+  });
+
+  it("finds nothing before any WHOIS arrived", () => {
+    expect(findWhois(undefined, "alice")).toBeUndefined();
+    expect(findWhois({}, "alice")).toBeUndefined();
   });
 });

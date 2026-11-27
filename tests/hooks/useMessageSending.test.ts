@@ -34,7 +34,7 @@ const server = {
   privateChats: [],
   botCommands: {
     _cloudbot: [
-      { name: "whois", options: [{ name: "domain", type: "string" }] },
+      { name: "stats", options: [{ name: "domain", type: "string" }] },
       { name: "pkg" },
     ],
     netbot: [{ name: "pkg" }],
@@ -43,7 +43,7 @@ const server = {
     _cloudbot: { bot_id: "draft-bot-cmds:_cloudbot", scope: "channel" },
     netbot: { bot_id: "4", scope: "server" },
   },
-  cmdsAvailable: ["whois"],
+  cmdsAvailable: ["stats"],
 } as unknown as Server;
 
 const me = { id: "me", username: "me", isOnline: true };
@@ -96,15 +96,29 @@ describe("slash commands shared by the server and bots", () => {
 
   it("runs a bare name on the server", () => {
     const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
-    runCommand("/whois Valware");
-    expect(sendRaw).toHaveBeenCalledWith("s1", "whois Valware");
+    runCommand("/stats Valware");
+    expect(sendRaw).toHaveBeenCalledWith("s1", "stats Valware");
+  });
+
+  it("opens the profile on /whois even where the server lists whois", () => {
+    const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    const openProfile = vi.fn();
+    const realOpenProfile = useStore.getState().openProfile;
+    useStore.setState({
+      servers: [{ ...server, cmdsAvailable: ["whois"] }],
+      openProfile,
+    });
+    runCommand("/whois alice");
+    useStore.setState({ openProfile: realOpenProfile });
+    expect(openProfile).toHaveBeenCalledWith("s1", "alice");
+    expect(sendRaw).not.toHaveBeenCalled();
   });
 
   it("sends the name to the bot it is addressed to", () => {
     const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
-    runCommand("/whois@_cloudbot example.com");
+    runCommand("/stats@_cloudbot example.com");
     expect(sentBotCommand(sendRaw)).toMatchObject({
-      name: "whois",
+      name: "stats",
       bot: "_cloudbot",
     });
   });
