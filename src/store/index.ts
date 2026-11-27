@@ -1874,8 +1874,13 @@ const useStore = create<AppState>((set, get) => ({
 
   joinChannel: (serverId, channelName, key, options) => {
     const joinedName = ircClient.withChannelPrefix(serverId, channelName);
-    // A channel the user was removed from or left stays theirs to rejoin, so a join nobody asked for passes it by.
-    if (options?.isAutomatic && leftReasonOf(serverId, joinedName)) return;
+    // A channel the user was removed from or left stays theirs to rejoin, so a join nobody asked for passes it by, under the name as saved too because the server names its channel prefixes only after it greets us.
+    if (
+      options?.isAutomatic &&
+      (leftReasonOf(serverId, channelName) ||
+        leftReasonOf(serverId, joinedName))
+    )
+      return;
     const isReturning = !!leftReasonOf(serverId, joinedName);
     const channel = ircClient.joinChannel(serverId, channelName, key, {
       isReturning,

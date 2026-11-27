@@ -500,9 +500,15 @@ describe("read markers", () => {
       state("disconnected");
       state("reconnecting");
     };
-    const welcome = () => {
+    const open = () => {
       state("connecting");
       state("connected");
+    };
+    const register = () => {
+      ircClient.triggerEvent("CAP ACK", {
+        serverId: SERVER,
+        cliCaps: "draft/read-marker",
+      });
       ircClient.triggerEvent("ready", {
         serverId: SERVER,
         serverName: "irc.test",
@@ -517,6 +523,10 @@ describe("read markers", () => {
         mtags: undefined,
       });
     };
+    const welcome = () => {
+      open();
+      register();
+    };
     const answer = (target: string, timestamp: string | null) =>
       ircClient.triggerEvent("MARKREAD", {
         serverId: SERVER,
@@ -524,7 +534,16 @@ describe("read markers", () => {
         timestamp,
       } as never);
     const service = () => useStore.getState().servers[0].privateChats?.[0];
-    return { ...booted, markreadGet, drop, welcome, answer, service };
+    return {
+      ...booted,
+      markreadGet,
+      drop,
+      open,
+      register,
+      welcome,
+      answer,
+      service,
+    };
   };
   const STORED = new Date(BASE + 1000).toISOString();
   const READ = new Date(BASE + 3000).toISOString();
@@ -596,6 +615,23 @@ describe("read markers", () => {
     const { markreadGet, welcome } = await markReadWhileAway("one");
     welcome();
     expect(markreadGet).toHaveBeenCalledWith(SERVER, "#chan");
+  });
+
+  it("keeps a chat marked read while the new connection has yet to acknowledge its capabilities", async () => {
+    const { useStore, markreadSet, channel, drop, open, register, answer } =
+      await bootBoundNetwork();
+    drop();
+    open();
+    expect(useStore.getState().servers[0].capabilities).toEqual([]);
+    useStore.getState().markChannelAsRead(SERVER, "chan-1");
+    expect(markreadSet).not.toHaveBeenCalled();
+    expect(channel()).toMatchObject({ unreadCount: 0, readMarker: READ });
+
+    register();
+    answer("#chan", STORED);
+
+    expect(markreadSet.mock.calls).toEqual([[SERVER, "#chan", READ]]);
+    expect(channel()).toMatchObject({ unreadCount: 0, readMarker: READ });
   });
 
   it("keeps a chat read when the server stores no marker for it", async () => {

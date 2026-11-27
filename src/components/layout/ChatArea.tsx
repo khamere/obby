@@ -189,6 +189,14 @@ function previewable(file: File): boolean {
   );
 }
 
+// We measure a row from the top of its list, so a bar that opens or closes above the list leaves the value as it is.
+function topInList(row: HTMLElement): number {
+  const list = row.closest(".obby-chat-area");
+  return (
+    row.getBoundingClientRect().top - (list?.getBoundingClientRect().top ?? 0)
+  );
+}
+
 function releasePreview(attachment: PendingAttachment): void {
   if (attachment.kind === "file" && attachment.previewUrl) {
     URL.revokeObjectURL(attachment.previewUrl);
@@ -213,6 +221,8 @@ export const ChatArea: React.FC<{
   // Used to restore auto-scroll after nav ends without corrupting wasAtBottomRef.
   const navWasActiveRef = useRef(false);
   const wasAtBottomBeforeNavRef = useRef(false);
+  // Where keyboard nav last put its highlighted row in the list, so we can tell its own scrolling from the reader's.
+  const navPlacedRowRef = useRef<{ id: string; top: number } | null>(null);
   // messageText is NOT React state — stored in a ref to avoid re-renders on every keystroke.
   // hasText tracks the empty↔non-empty boundary for send-button rendering (rare transitions).
   // completionInput mirrors the text only while a completion can be open.
@@ -1090,9 +1100,21 @@ export const ChatArea: React.FC<{
       }
       const el = findMessageRow(document, navHighlightedMsgId);
       el?.scrollIntoView({ block: "nearest", behavior: "instant" });
+      navPlacedRowRef.current = el && {
+        id: navHighlightedMsgId,
+        top: topInList(el),
+      };
     } else if (navWasActiveRef.current) {
-      if (wasAtBottomBeforeNavRef.current) {
-        channelListRefs.current.get(channelKey)?.scrollToBottom();
+      const list = channelListRefs.current.get(channelKey);
+      const placed = navPlacedRowRef.current;
+      const row = placed && findMessageRow(document, placed.id);
+      // A reader who scrolled or jumped away during the navigation keeps their place, so we restore the bottom only while the list is still there or the highlighted row sits where the navigation put it.
+      if (
+        wasAtBottomBeforeNavRef.current &&
+        (list?.getScrollState().isAtBottom ||
+          (placed && row && Math.abs(topInList(row) - placed.top) <= 1))
+      ) {
+        list?.scrollToBottom();
       }
       navWasActiveRef.current = false;
       wasAtBottomBeforeNavRef.current = false;
@@ -1110,10 +1132,12 @@ export const ChatArea: React.FC<{
             .isAtBottom ?? false;
       }
     } else if (!navWasActiveRef.current && wasAtBottomBeforeNavRef.current) {
-      // rAF lets the banner-removal relayout settle before scrollTop can reach the new maximum
-      requestAnimationFrame(() => {
-        channelListRefs.current.get(channelKey)?.scrollToBottom();
-      });
+      // A reader who scrolled or jumped away during the reply keeps their place, so we restore the bottom only while the list is still there.
+      if (channelListRefs.current.get(channelKey)?.getScrollState().isAtBottom)
+        // rAF lets the banner-removal relayout settle before scrollTop can reach the new maximum
+        requestAnimationFrame(() => {
+          channelListRefs.current.get(channelKey)?.scrollToBottom();
+        });
       wasAtBottomBeforeNavRef.current = false;
     }
   }, [localReplyTo]);

@@ -515,6 +515,43 @@ describe("deleting a bouncer network", () => {
     expect(listRequest).toHaveBeenCalledExactlyOnceWith(PARENT);
   });
 
+  const logInAcknowledging = (...capabilities: string[]) => {
+    ircClient.triggerEvent("connectionStateChange", {
+      serverId: PARENT,
+      connectionState: "connected",
+    });
+    for (const key of capabilities)
+      ircClient.triggerEvent("CAP_ACKNOWLEDGED", {
+        serverId: PARENT,
+        key,
+        capabilities: "",
+      });
+    ircClient.triggerEvent("ready", {
+      serverId: PARENT,
+      serverName: "bouncer.example",
+      nickname: "me",
+    });
+  };
+
+  test("asks for the list after a login on which the bouncer acknowledged the notify capability no more", () => {
+    seed(true);
+    dropControl();
+    logInAcknowledging("soju.im/bouncer-networks");
+
+    expect(listRequest).toHaveBeenCalledExactlyOnceWith(PARENT);
+  });
+
+  test("asks for no list after a login on which the bouncer acknowledged the notify capability again", () => {
+    seed(true);
+    dropControl();
+    logInAcknowledging(
+      "soju.im/bouncer-networks",
+      "soju.im/bouncer-networks-notify",
+    );
+
+    expect(listRequest).not.toHaveBeenCalled();
+  });
+
   test("asks for no list after a login without an open delete", () => {
     seed(true);
     useStore.setState((state) => ({
