@@ -177,6 +177,7 @@ describe("JOIN, PART and QUIT replayed from chathistory", () => {
         showEvents: true,
         showJoinsParts: true,
         showQuits: true,
+        showNickChanges: true,
       },
     } as unknown as Partial<AppState>);
     ircClient.nicks.set(serverId, "me");
@@ -314,5 +315,68 @@ describe("JOIN, PART and QUIT replayed from chathistory", () => {
     ).handleMessage(":me!~u@host NICK elsewhere\r\n", serverId);
 
     expect(ircClient.getNick(serverId)).toBe("elsewhere");
+  });
+
+  test("a live PART, QUIT and NICK are shown once when the server replays them", () => {
+    const times = {
+      nick: "2026-10-20T07:21:00.000Z",
+      part: "2026-10-20T07:22:00.000Z",
+      quit: "2026-10-20T07:23:00.000Z",
+    };
+    const deliver = (batch?: string) => {
+      ircClient.triggerEvent("NICK", {
+        serverId,
+        mtags: batch ? { batch, time: times.nick } : { time: times.nick },
+        oldNick: "op",
+        newNick: "op2",
+        batchTag: batch,
+      });
+      ircClient.triggerEvent("PART", {
+        serverId,
+        username: "brindle",
+        channelName: "#help",
+        reason: "",
+        batchTag: batch,
+        time: times.part,
+      });
+      ircClient.triggerEvent("QUIT", {
+        serverId,
+        username: "op2",
+        reason: "bye",
+        batchTag: batch,
+        time: times.quit,
+      });
+    };
+
+    useStore.setState((s) => ({
+      servers: s.servers.map((srv) => ({
+        ...srv,
+        privateChats: [
+          {
+            id: "pm-op",
+            username: "op",
+            serverId,
+            unreadCount: 0,
+            isMentioned: false,
+          },
+        ],
+      })),
+    }));
+
+    deliver();
+    expect(members()).toEqual([]);
+    deliver("hist1");
+
+    const inPm = useStore.getState().messages[`${serverId}-pm-op`] ?? [];
+    expect(inPm.map((m) => new Date(m.timestamp).toISOString())).toEqual([
+      times.nick,
+    ]);
+
+    for (const type of ["nick", "part", "quit"] as const) {
+      expect(lines(type)).toHaveLength(1);
+      expect(new Date(lines(type)[0].timestamp).toISOString()).toBe(
+        times[type],
+      );
+    }
   });
 });

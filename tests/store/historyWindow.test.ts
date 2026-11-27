@@ -24,6 +24,8 @@ const ids = (from: number, to: number) =>
 const plain = (index: number, batch?: string) =>
   `@${batch ? `batch=${batch};` : ""}time=${new Date(timeOf(index)).toISOString()} :bob!u@h PRIVMSG #chan :plain ${index}`;
 const texts = (messages: Message[] = []) => messages.map((m) => m.content);
+const said = (index: number, nick: string, text: string) =>
+  `@time=${new Date(timeOf(index)).toISOString()} :${nick}!u@h PRIVMSG #chan :${text}`;
 
 async function boot(caps = ["message-tags"]) {
   globalThis.indexedDB = new IDBFactory();
@@ -395,6 +397,36 @@ describe("history windows", { timeout: 2 * WRITE_TIMEOUT_MS }, () => {
       "line 1002",
       "plain 1003",
     ]);
+  });
+
+  it("keeps rows without a message id that differ in sender, time or text alone", async () => {
+    const w = await boot();
+    await w.save(300);
+    await w.showNewest();
+    await w.jumpTo(50);
+    const rows = [
+      ["bob", 1000, "ok"],
+      ["bob", 1001, "ok"],
+      ["bob", 1002, "first"],
+      ["bob", 1002, "second"],
+      ["bob", 1003, "hi"],
+      ["carol", 1003, "hi"],
+    ] as const;
+    const told = (messages: Message[] = []) =>
+      messages
+        .slice(-rows.length)
+        .map((m) => [m.userId, new Date(m.timestamp).getTime(), m.content]);
+    const expected = rows.map(([nick, index, text]) => [
+      nick,
+      timeOf(index),
+      text,
+    ]);
+
+    for (const [nick, index, text] of rows) w.feed(said(index, nick, text));
+
+    expect(told(w.window()?.present)).toEqual(expected);
+    w.history.showPresent(w.useStore, SERVER, "#chan");
+    expect(told(w.useStore.getState().messages[KEY])).toEqual(expected);
   });
 
   it("keeps one copy of a message the server replays while it waits in the present", async () => {

@@ -553,6 +553,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
       const nickContent = isOurNickChange
         ? t`are now known as **${newNick}**`
         : t`is now known as **${newNick}**`;
+      const nickTime = mtags?.time ? new Date(mtags.time) : new Date();
 
       server.channels.forEach((channel) => {
         const userWasInChannel = channel.users.some(
@@ -569,7 +570,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
               oldNick, // userId is old nick so the message avatar/link resolves correctly
               channel.id,
               serverId,
-              new Date(),
+              nickTime,
             ),
           );
         }
@@ -589,7 +590,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
             oldNick,
             privateChat.id,
             serverId,
-            new Date(),
+            nickTime,
           ),
         );
       }
@@ -694,7 +695,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
                 username,
                 channel.id,
                 serverId,
-                new Date(),
+                time ? new Date(time) : new Date(),
               ),
             );
           }
@@ -816,7 +817,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
                 username,
                 channel.id,
                 serverId,
-                new Date(),
+                time ? new Date(time) : new Date(),
               ),
             );
           }
