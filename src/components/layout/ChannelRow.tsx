@@ -6,12 +6,14 @@ import {
   FaEllipsisH,
   FaHashtag,
   FaLock,
+  FaPencilAlt,
   FaSignOutAlt,
   FaSpinner,
   FaVolumeUp,
 } from "react-icons/fa";
 import { useLongPress } from "../../hooks/useLongPress";
 import { getChannelKind } from "../../lib/channelFolders";
+import { useHasDraft } from "../../lib/drafts";
 import {
   getChannelAvatarUrl,
   getChannelDisplayName,
@@ -154,6 +156,14 @@ export const ChannelRow: React.FC<ChannelRowProps> = ({
     !avatarFailed &&
     canShowAvatarUrl(avatarUrl, serverFilehosts(server), mediaSettings);
   const mentionCount = channel.mentionCount ?? 0;
+  const hasDraft = useHasDraft(serverId, channel.name);
+  const isNarrowView = useStore((s) => s.ui.isNarrowView);
+  // The mark is for text that is out of sight, in a chat that has a message box to return to.
+  const showDraftMark =
+    hasDraft &&
+    (isNarrowView || !isSelected) &&
+    !channel.needsKey &&
+    !channel.leftReason;
 
   const stopDrag = (e: React.PointerEvent) => e.stopPropagation();
 
@@ -228,6 +238,15 @@ export const ChannelRow: React.FC<ChannelRowProps> = ({
         </div>
       </div>
       <div className="flex items-center gap-1 flex-shrink-0">
+        {showDraftMark && (
+          <span
+            role="img"
+            title={t`Select to continue your draft`}
+            aria-label={t`Select to continue your draft`}
+          >
+            <FaPencilAlt className="w-3 h-3 text-discord-text-dim" />
+          </span>
+        )}
         {channel.needsKey ? (
           <span
             role="img"

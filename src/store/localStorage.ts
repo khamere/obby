@@ -7,6 +7,7 @@ import type {
   ClosedPrivateChatsMap,
   GlobalSettings,
   PinnedPrivateChatsMap,
+  SavedDrafts,
   SavedMetadata,
   UISelections,
 } from "./types";
@@ -23,6 +24,7 @@ const KEYS = {
   MIGRATION_VERSION: "migrationVersion",
   BOUNCER_GROUP_ACCENTS: "bouncerGroupAccents",
   MENTION_LOG: "mentionLog",
+  DRAFTS: "drafts",
 } as const;
 
 export const mentionLog = {
@@ -215,6 +217,50 @@ export const closedChats = {
   },
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+// Unsent message text per chat. Anything else found under the key reads as no drafts.
+export const drafts = {
+  load: (): SavedDrafts => {
+    try {
+      const data: unknown = JSON.parse(
+        localStorage.getItem(KEYS.DRAFTS) || "{}",
+      );
+      if (!isRecord(data)) return {};
+      const servers = Object.entries(data).flatMap(([serverId, chats]) => {
+        if (!isRecord(chats)) return [];
+        const entries = Object.entries(chats).flatMap(([name, entry]) =>
+          isRecord(entry) &&
+          typeof entry.text === "string" &&
+          entry.text !== "" &&
+          typeof entry.at === "number" &&
+          Number.isFinite(entry.at)
+            ? [[name, { text: entry.text, at: entry.at }] as const]
+            : [],
+        );
+        return entries.length > 0
+          ? [[serverId, Object.fromEntries(entries)] as const]
+          : [];
+      });
+      return Object.fromEntries(servers);
+    } catch {
+      return {};
+    }
+  },
+
+  /** False when the browser refused the write, which leaves storage as it was. */
+  save: (data: SavedDrafts): boolean => {
+    try {
+      if (Object.keys(data).length === 0) localStorage.removeItem(KEYS.DRAFTS);
+      else localStorage.setItem(KEYS.DRAFTS, JSON.stringify(data));
+      return true;
+    } catch {
+      return false;
+    }
+  },
+};
+
 // Opening a voice or stream channel joins its call, so we never restore one at
 // startup; the app opens on the server instead.
 function withoutLiveChannels(selections: UISelections): UISelections {
@@ -272,6 +318,7 @@ export type {
   ChannelOrderMap,
   GlobalSettings,
   PinnedPrivateChatsMap,
+  SavedDrafts,
   SavedMetadata,
   UISelections,
 };

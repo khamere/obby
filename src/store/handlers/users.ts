@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import type { StoreApi } from "zustand";
 import { releaseAutoAway } from "../../lib/autoAway";
 import { voiceDisplayName } from "../../lib/channelMentions";
+import { moveDraft } from "../../lib/drafts";
 import ircClient from "../../lib/ircClient";
 import { saveLeftReason } from "../../lib/leftChannels";
 import { moveChatMute } from "../../lib/mutes";
@@ -488,6 +489,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
     saveConfirmedNick(store, serverId, newNick);
     noteMemberRenamed(serverId, oldNick, newNick);
     moveChatMute(serverId, "dm", oldNick, newNick);
+    moveDraft(serverId, oldNick, newNick);
     store.setState((state) => {
       const updatedServers = state.servers.map((server) => {
         if (server.id === serverId) {

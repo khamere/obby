@@ -1,6 +1,8 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { PrivateChatRow } from "../../../src/components/layout/PrivateChatRow";
+import { resetDraftsForTests, setDraft } from "../../../src/lib/drafts";
+import useStore from "../../../src/store";
 import type { PrivateChat } from "../../../src/types";
 
 vi.mock("@tauri-apps/plugin-os", () => ({
@@ -62,5 +64,46 @@ describe("PrivateChatRow", () => {
     fireEvent.click(screen.getByLabelText("Open chat options"));
     expect(onOpenMenu).toHaveBeenCalledTimes(1);
     expect(onSelect).not.toHaveBeenCalled();
+  });
+});
+
+describe("PrivateChatRow draft mark", () => {
+  const mark = () => screen.queryByLabelText("Select to continue your draft");
+  const setNarrow = (isNarrowView: boolean) =>
+    useStore.setState((state) => ({ ui: { ...state.ui, isNarrowView } }));
+
+  afterEach(() => {
+    act(() => {
+      resetDraftsForTests();
+      setNarrow(false);
+    });
+  });
+
+  it("marks a chat that holds unsent text, in any letter case", () => {
+    renderRow({});
+    expect(mark()).toBeNull();
+    act(() => setDraft("server1", "ALICE", "hi"));
+    expect(mark()).toHaveAttribute("title", "Select to continue your draft");
+    act(() => setDraft("server1", "alice", ""));
+    expect(mark()).toBeNull();
+  });
+
+  it("leaves the open chat unmarked while its message box is on screen", () => {
+    setDraft("server1", "alice", "hi");
+    renderRow({ isSelected: true });
+    expect(mark()).toBeNull();
+  });
+
+  it("marks the open chat in the narrow layout, where the list hides the message box", () => {
+    setDraft("server1", "alice", "hi");
+    setNarrow(true);
+    renderRow({ isSelected: true });
+    expect(mark()).not.toBeNull();
+  });
+
+  it("leaves a chat of the same name on another server unmarked", () => {
+    setDraft("server2", "alice", "hi");
+    renderRow({});
+    expect(mark()).toBeNull();
   });
 });

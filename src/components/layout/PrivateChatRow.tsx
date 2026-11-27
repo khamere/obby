@@ -1,11 +1,17 @@
 import { t } from "@lingui/core/macro";
 import type * as React from "react";
 import { useRef } from "react";
-import { FaCheckCircle, FaEllipsisH, FaUser } from "react-icons/fa";
+import {
+  FaCheckCircle,
+  FaEllipsisH,
+  FaPencilAlt,
+  FaUser,
+} from "react-icons/fa";
 import { useLongPress } from "../../hooks/useLongPress";
+import { useHasDraft } from "../../lib/drafts";
 import { processMarkdownInText, serverFilehosts } from "../../lib/ircUtils";
 import { canShowAvatarUrl, type MediaSettings } from "../../lib/mediaUtils";
-import { loadSavedMetadata } from "../../store";
+import useStore, { loadSavedMetadata } from "../../store";
 import type { PrivateChat, Server, User } from "../../types";
 import OperatorKey from "../ui/OperatorKey";
 import type { DragRowProps } from "./ChannelRow";
@@ -117,6 +123,9 @@ export const PrivateChatRow: React.FC<PrivateChatRowProps> = ({
   const longPress = useLongPress({
     onLongPress: () => rowRef.current && onOpenMenu(rowRef.current),
   });
+
+  const hasDraft = useHasDraft(privateChat.serverId, privateChat.username);
+  const isNarrowView = useStore((s) => s.ui.isNarrowView);
 
   const userMetadata = getUserMetadata(server, privateChat.username);
   const avatarUrl = userMetadata?.avatar?.value;
@@ -320,6 +329,16 @@ export const PrivateChatRow: React.FC<PrivateChatRowProps> = ({
         </div>
       </div>
       <div className="flex items-center gap-2">
+        {/* The mark is for text that is out of sight */}
+        {hasDraft && (isNarrowView || !isSelected) && (
+          <span
+            role="img"
+            title={t`Select to continue your draft`}
+            aria-label={t`Select to continue your draft`}
+          >
+            <FaPencilAlt className="w-3 h-3 text-discord-text-dim" />
+          </span>
+        )}
         {/* Unread/Mention indicators */}
         {!isSelected &&
           (privateChat.isMentioned && (privateChat.mentionCount ?? 0) > 0 ? (

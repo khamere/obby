@@ -98,12 +98,18 @@ export function useCommandInvocation({
     [serverId, channel, textRef, inputRef, applyText, onBegin],
   );
 
+  // While a command is filled in, the field holds an argument and the stash holds what the user had typed.
+  const draftText = useCallback(
+    () => stashedDraft.current ?? textRef.current,
+    [textRef],
+  );
+
   const leave = useCallback(() => {
-    const draft = stashedDraft.current ?? textRef.current;
+    const draft = draftText();
     stashedDraft.current = null;
     setInvocation(null);
     return draft;
-  }, [textRef]);
+  }, [draftText]);
 
   const onInput = (text: string) => {
     if (!activeParam || !invocation) return;
@@ -238,6 +244,7 @@ export function useCommandInvocation({
     pickChoice,
     begin,
     leave,
+    draftText,
     onInput,
     select,
     run,

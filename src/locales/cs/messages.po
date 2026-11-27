@@ -5697,6 +5697,13 @@ msgstr "Vyberte nebo přidejte kanál pro začátek."
 
 #: src/components/layout/ChannelRow.tsx
 #: src/components/layout/ChannelRow.tsx
+#: src/components/layout/PrivateChatRow.tsx
+#: src/components/layout/PrivateChatRow.tsx
+msgid "Select to continue your draft"
+msgstr "Vyberte pro pokračování v konceptu"
+
+#: src/components/layout/ChannelRow.tsx
+#: src/components/layout/ChannelRow.tsx
 msgid "Select to enter the channel key"
 msgstr "Vyberte pro zadání klíče kanálu"
 
