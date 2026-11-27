@@ -364,6 +364,27 @@ describe("read markers", () => {
     expect(markreadSet).toHaveBeenCalledTimes(1);
   });
 
+  it("marks the chat read when the user sends a line that has to wait", async () => {
+    const { ircClient, markreadSet } = await boot({ selected: true });
+    const queue = (line: string) =>
+      ircClient.triggerEvent("lineQueued", { serverId: SERVER, line });
+
+    queue("PRIVMSG #chan :typed behind a paste");
+    expect(markreadSet).toHaveBeenCalledTimes(1);
+  });
+
+  it("marks the chat read once the whole of a batch has joined the wait", async () => {
+    const { ircClient, markreadSet } = await boot({ selected: true });
+    const queue = (line: string) =>
+      ircClient.triggerEvent("lineQueued", { serverId: SERVER, line });
+
+    queue("BATCH +ml3 draft/multiline #chan");
+    queue("@batch=ml3 PRIVMSG #chan :one");
+    expect(markreadSet).not.toHaveBeenCalled();
+    queue("BATCH -ml3");
+    expect(markreadSet).toHaveBeenCalledTimes(1);
+  });
+
   it("marks our own line read at the time the server stored it, never at the time we sent it", async () => {
     const { useStore, ircClient, markreadSet } = await boot({
       selected: true,

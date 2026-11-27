@@ -4,6 +4,7 @@ import {
   chargeSend,
   sendLaneKind,
   sendWaitMs,
+  withReceiverRenamed,
 } from "../../../src/lib/irc/sendPace";
 
 describe("the send clock", () => {
@@ -65,5 +66,29 @@ describe("which lines wait for their turn", () => {
     "PRIVMSG bob :?OTR:AAAA.",
   ])("never holds %j", (line) => {
     expect(sendLaneKind(line)).toBe("free");
+  });
+});
+
+describe("a waiting line whose receiver changes nick", () => {
+  it.each([
+    ["PRIVMSG Bob :hi", "PRIVMSG Robert :hi"],
+    ["@label=l1 PRIVMSG bob :hi", "@label=l1 PRIVMSG Robert :hi"],
+    [
+      "@+draft/channel-context=#a PRIVMSG BOB :psst",
+      "@+draft/channel-context=#a PRIVMSG Robert :psst",
+    ],
+    ["BATCH +b draft/multiline Bob", "BATCH +b draft/multiline Robert"],
+    ["@batch=b PRIVMSG Bob :x", "@batch=b PRIVMSG Robert :x"],
+  ])("sends %j to the new nick", (line, renamed) => {
+    expect(withReceiverRenamed(line, "Bob", "Robert")).toBe(renamed);
+  });
+
+  it.each([
+    "PRIVMSG #a :Bob said hi",
+    "PRIVMSG Bobby :hi Bob",
+    "BATCH -Bob",
+    "BATCH +Bob draft/multiline #a",
+  ])("leaves %j, which is for someone else, as it is", (line) => {
+    expect(withReceiverRenamed(line, "Bob", "Robert")).toBe(line);
   });
 });

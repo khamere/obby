@@ -1124,6 +1124,12 @@ export function registerHistoryHandlers(store: StoreApi<AppState>): void {
     if (isEnabled(store)) trackOutgoing(store, serverId, line);
   });
 
+  // A line that has to wait is sent from the chat the user is in now, so that chat returns to the present as for a line that leaves at once.
+  ircClient.on("lineQueued", ({ serverId, line }) => {
+    const said = /^(?:@\S+ )?PRIVMSG (\S+) :/.exec(line);
+    if (said) showPresent(store, serverId, said[1]);
+  });
+
   ircClient.on("BATCH_START", ({ serverId, batchId, type, parameters }) => {
     const target = parameters?.[0];
     if (type !== "chathistory" || !target) return;

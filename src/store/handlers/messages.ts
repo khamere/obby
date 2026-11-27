@@ -184,11 +184,17 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
     if (!ircClient.takeRecentSend(serverId, target)) return;
     const content = t`Not delivered: ${reason}`;
     // A server refuses every line of a long send with the same words, and one
-    // row says it. Pending lines sort below every row, so we look above them.
+    // row says it while the rest of that send waits. A later send gets a row
+    // of its own. Pending lines sort below every row, so we look above them.
     const last = [...(actions.messages[`${serverId}-${bufferId}`] ?? [])]
       .reverse()
       .find((m) => m.status !== "pending");
-    if (last?.type === "error" && last.content === content) return;
+    if (
+      ircClient.hasWaitingLines(serverId) &&
+      last?.type === "error" &&
+      last.content === content
+    )
+      return;
     actions.addMessage(notDeliveredRow(serverId, bufferId, content));
   });
 

@@ -43,3 +43,16 @@ export function sendLaneKind(line: string): "paced" | "batch" | "free" {
     ? "paced"
     : "free";
 }
+
+const LINE_RECEIVER = /^((?:@\S+ )?(?:PRIVMSG|BATCH \+\S+ \S+) )(\S+)/i;
+
+// A line names its receiver by nick, so one that waits has to follow a receiver who changes nick.
+export function withReceiverRenamed(
+  line: string,
+  oldNick: string,
+  newNick: string,
+): string {
+  return line.replace(LINE_RECEIVER, (whole, head: string, receiver: string) =>
+    receiver.toLowerCase() === oldNick.toLowerCase() ? head + newNick : whole,
+  );
+}

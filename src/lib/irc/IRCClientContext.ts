@@ -54,6 +54,12 @@ export interface IRCClientContext {
   takeMotdRequest(serverId: string): boolean;
   // The registration burst ended: ISUPPORT is known, queued MONITORs go out.
   finishRegistration(serverId: string): void;
+  // Someone changed nick, so the lines that wait for them follow.
+  renameWaitingReceiver(
+    serverId: string,
+    oldNick: string,
+    newNick: string,
+  ): void;
   // The server answered TAGMSG with "Unknown command"; no more go out.
   noteTagmsgRefused(serverId: string): void;
   hasLineServerTime: boolean;

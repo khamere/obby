@@ -458,4 +458,10 @@ export function registerReadMarkerHandlers(store: StoreApi<AppState>): void {
     const chat = target && findConversation(store, serverId, target);
     if (chat) markChatRead(store, serverId, chat.channelId);
   });
+  // The user has read the chat when they send, also when the line has to wait before it leaves.
+  ircClient.on("lineQueued", ({ serverId, line }) => {
+    const target = sentMessageTarget(serverId, line);
+    const chat = target && findConversation(store, serverId, target);
+    if (chat) markChatRead(store, serverId, chat.channelId);
+  });
 }

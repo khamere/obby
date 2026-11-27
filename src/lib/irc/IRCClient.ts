@@ -47,6 +47,7 @@ import {
   SEND_PACE_MS,
   sendLaneKind,
   sendWaitMs,
+  withReceiverRenamed,
 } from "./sendPace";
 import { nextMemberRequestNumber, parseServerTime } from "./utils";
 
@@ -689,6 +690,8 @@ export interface EventMap {
     afterWaiting?: boolean;
   };
   sendQueue: { serverId: string };
+  // A line the user sent now that leaves later.
+  lineQueued: { serverId: string; line: string };
   linesNotSent: { serverId: string; lines: string[] };
   parsedLine: ParsedLine & { serverId: string };
 }
@@ -1493,6 +1496,7 @@ export class IRCClient implements IRCClientContext {
     const waiting = this.sendLanes.get(socket)?.waiting;
     if (kind === "batch" && waiting?.length) {
       waiting.push(command);
+      this.triggerEvent("lineQueued", { serverId, line: command });
       return;
     }
     if (kind !== "paced") {
@@ -1522,6 +1526,7 @@ export class IRCClient implements IRCClientContext {
       waitMs || SEND_PACE_MS,
     );
     this.triggerEvent("sendQueue", { serverId });
+    this.triggerEvent("lineQueued", { serverId, line: command });
   }
 
   private writeLine(
@@ -1622,6 +1627,19 @@ export class IRCClient implements IRCClientContext {
   cancelWaitingLines(serverId: string): void {
     const socket = this.sockets.get(serverId);
     if (socket) this.abandonLane(serverId, socket);
+  }
+
+  // The open chat follows a person to their new nick, and the lines that wait for them go there too, since the old nick may soon be someone else's.
+  renameWaitingReceiver(
+    serverId: string,
+    oldNick: string,
+    newNick: string,
+  ): void {
+    const socket = this.sockets.get(serverId);
+    const waiting = socket && this.sendLanes.get(socket)?.waiting;
+    waiting?.forEach((line, at) => {
+      waiting[at] = withReceiverRenamed(line, oldNick, newNick);
+    });
   }
 
   startWebSocketPing(serverId: string): void {

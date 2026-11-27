@@ -228,6 +228,21 @@ describe("history windows", { timeout: 2 * WRITE_TIMEOUT_MS }, () => {
     expect(w.window()).toBeUndefined();
   });
 
+  it("returns to the present when the user sends a line that has to wait", async () => {
+    const w = await boot();
+    const { default: ircClient } = await import("../../src/lib/ircClient");
+    await w.save(400);
+    await w.showNewest();
+    await w.jumpTo(100);
+    expect(w.window()).toBeDefined();
+
+    ircClient.triggerEvent("lineQueued", {
+      serverId: SERVER,
+      line: "PRIVMSG #chan :typed behind a paste",
+    });
+    expect(w.window()).toBeUndefined();
+  });
+
   it("drops the last saved page when it answers after the chat returned to the present", async () => {
     const w = await boot();
     await w.save(380);

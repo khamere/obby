@@ -20,6 +20,9 @@ class FakeWebSocket {
   send(raw: string) {
     this.sent.push(raw);
   }
+  receive(raw: string) {
+    this.onmessage?.({ data: `${raw}\r\n` });
+  }
   // The lines of the test itself, without the handshake the client writes when the socket opens.
   said() {
     return this.sent.filter((line) => !/^(?:CAP|QUIT) /.test(line));
@@ -400,5 +403,74 @@ describe("what the rest of the app is told", () => {
     expect(vi.getTimerCount()).toBe(timers);
     expect(client.waitingLines(SERVER)).toEqual({ waiting: 0, total: 0 });
     expect(socket.said()).toEqual([]);
+  });
+});
+
+describe("a line the user sends while others wait", () => {
+  it("is announced when it joins the wait, since it leaves later", () => {
+    const { client } = connectedClient();
+    const queued: string[] = [];
+    client.on("lineQueued", ({ line: waiting }) => queued.push(waiting));
+    say(client, 5);
+    client.sendRaw(SERVER, "JOIN #b");
+    expect(queued).toEqual([]);
+    say(client, 2, 6);
+    expect(queued).toEqual(lines(6, 7));
+    vi.advanceTimersByTime(4000);
+    expect(queued).toEqual(lines(6, 7));
+  });
+
+  it("is announced for every line of a batch that waits behind others", () => {
+    const { client } = connectedClient();
+    const server = client.servers.get(SERVER);
+    if (!server) throw new Error("no server");
+    server.capabilities = ["draft/multiline"];
+    server.capabilityValues = {
+      "draft/multiline": "max-bytes=40000,max-lines=100",
+    };
+    const queued: string[] = [];
+    say(client, 6);
+    client.on("lineQueued", ({ line: waiting }) => queued.push(waiting));
+    client.sendMultiline(SERVER, "#c", ["m1", "m2"]);
+    expect(queued).toEqual([
+      expect.stringMatching(/^BATCH \+\S+ draft\/multiline #c$/),
+      expect.stringMatching(/^@batch=\S+ PRIVMSG #c :m1$/),
+      expect.stringMatching(/^@batch=\S+ PRIVMSG #c :m2$/),
+      expect.stringMatching(/^BATCH -\S+$/),
+    ]);
+  });
+});
+
+describe("lines that wait for someone who changes nick", () => {
+  it("leave for the new nick, and the other lines keep their receiver", () => {
+    const { client, socket } = connectedClient();
+    say(client, 5);
+    const waiting = [line(6, "Bob"), line(7, "#c"), line(8, "bob")];
+    for (const each of waiting) client.sendRaw(SERVER, each);
+    socket.receive(":Bob!u@h NICK Robert");
+    vi.advanceTimersByTime(6000);
+    expect(socket.said().slice(5)).toEqual([
+      line(6, "Robert"),
+      line(7, "#c"),
+      line(8, "Robert"),
+    ]);
+  });
+
+  it("keep their receiver when the nick change is one replayed from history", () => {
+    const { client, socket } = connectedClient();
+    say(client, 5);
+    client.sendRaw(SERVER, line(6, "Bob"));
+    socket.receive("@batch=hist :Bob!u@h NICK Robert");
+    vi.advanceTimersByTime(2000);
+    expect(socket.said().at(-1)).toBe(line(6, "Bob"));
+  });
+
+  it("are reported under the new nick when they are dropped", () => {
+    const { client, socket, notSent } = connectedClient();
+    say(client, 5);
+    client.sendRaw(SERVER, line(6, "Bob"));
+    socket.receive(":Bob!u@h NICK Robert");
+    client.cancelWaitingLines(SERVER);
+    expect(notSent).toEqual([[line(6, "Robert")]]);
   });
 });

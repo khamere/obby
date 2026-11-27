@@ -138,11 +138,22 @@ describe("a refused send", () => {
       vi.useRealTimers();
     });
 
-    it("is said once", () => {
+    it("is said once while the rest of the send waits", () => {
+      vi.spyOn(ircClient, "hasWaitingLines").mockReturnValue(true);
       refuse();
       refuse();
       refuse();
       expect(lines().map((m) => m.type)).toEqual(["error"]);
+    });
+
+    it("is said again for a later send that the server refuses with the same words", () => {
+      vi.spyOn(ircClient, "hasWaitingLines").mockReturnValue(true);
+      refuse();
+      refuse();
+      vi.spyOn(ircClient, "hasWaitingLines").mockReturnValue(false);
+      vi.advanceTimersByTime(3_600_000);
+      refuse();
+      expect(lines().map((m) => m.type)).toEqual(["error", "error"]);
     });
 
     it("is said once while a typed line waits below it", () => {
@@ -157,6 +168,7 @@ describe("a refused send", () => {
     });
 
     it("is said again after another line came in between", () => {
+      vi.spyOn(ircClient, "hasWaitingLines").mockReturnValue(true);
       refuse();
       vi.advanceTimersByTime(2000);
       useStore.getState().addMessage(said("someone else spoke"));
