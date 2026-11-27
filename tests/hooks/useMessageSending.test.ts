@@ -146,6 +146,36 @@ describe("our own line on a server that echoes it", () => {
     expect(ownLines()).toMatchObject([{ content: "hello", status: "failed" }]);
   });
 
+  it("keeps it pending while it waits behind other lines", () => {
+    withCaps("labeled-response", "echo-message", "batch");
+    const hasWaitingLines = vi
+      .spyOn(ircClient, "hasWaitingLines")
+      .mockReturnValue(true);
+    runCommand("hello", me);
+    vi.advanceTimersByTime(30_000);
+    expect(ownLines()).toMatchObject([{ content: "hello", status: "pending" }]);
+
+    hasWaitingLines.mockReturnValue(false);
+    vi.advanceTimersByTime(30_000);
+    expect(ownLines()).toMatchObject([{ content: "hello", status: "pending" }]);
+    vi.advanceTimersByTime(30_000);
+    expect(ownLines()).toMatchObject([{ content: "hello", status: "failed" }]);
+  });
+
+  it("asks whether lines wait only once its own line is handed over", () => {
+    withCaps("labeled-response", "echo-message", "batch");
+    const calls: string[] = [];
+    vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {
+      calls.push("sendRaw");
+    });
+    vi.spyOn(ircClient, "hasWaitingLines").mockImplementation(() => {
+      calls.push("hasWaitingLines");
+      return false;
+    });
+    runCommand("hello", me);
+    expect(calls).toEqual(["sendRaw", "hasWaitingLines"]);
+  });
+
   it("waits for the echo before it shows the line", () => {
     withCaps("echo-message");
     runCommand("hello", me);

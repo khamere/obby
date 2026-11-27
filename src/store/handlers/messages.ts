@@ -1,4 +1,4 @@
-import { t } from "@lingui/core/macro";
+import { plural, t } from "@lingui/core/macro";
 import { v4 as uuidv4 } from "uuid";
 import type { StoreApi } from "zustand";
 import {
@@ -12,6 +12,7 @@ import {
 import { e2eeSessionKey, expectsProtection } from "../../lib/e2ee/session";
 import { isLocalReplay } from "../../lib/history/historyLines";
 import { isUserIgnored } from "../../lib/ignoreUtils";
+import { readUnsent } from "../../lib/irc/unsentLines";
 import ircClient from "../../lib/ircClient";
 import { isSilenced } from "../../lib/mutes";
 import { upstreamHostForServer } from "../../lib/networkHost";
@@ -127,6 +128,25 @@ function answerCtcp(
   else if (request.name === "TIME") reply(`TIME ${new Date().toUTCString()}`);
 }
 
+function notDeliveredRow(
+  serverId: string,
+  bufferId: string,
+  content: string,
+): Message {
+  return {
+    id: uuidv4(),
+    type: "error",
+    content,
+    timestamp: new Date(),
+    userId: "system",
+    channelId: bufferId,
+    serverId,
+    reactions: [],
+    replyMessage: null,
+    mentioned: [],
+  };
+}
+
 export function registerMessageHandlers(store: StoreApi<AppState>): void {
   // A refused send: the pending line it belongs to turns failed with the
   // server's reason under it; without a pending line (no labeled-response)
@@ -153,23 +173,55 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
         return;
       }
     }
-    if (actions.failLatestPendingMessage(serverId, bufferId, reason)) {
+    // While messages wait, the newest pending line may not have left yet, so a refusal without a label is not about it.
+    if (
+      !ircClient.hasWaitingLines(serverId) &&
+      actions.failLatestPendingMessage(serverId, bufferId, reason)
+    ) {
       ircClient.takeRecentSend(serverId, target);
       return;
     }
     if (!ircClient.takeRecentSend(serverId, target)) return;
-    actions.addMessage({
-      id: uuidv4(),
-      type: "error",
-      content: t`Not delivered: ${reason}`,
-      timestamp: new Date(),
-      userId: "system",
-      channelId: bufferId,
-      serverId,
-      reactions: [],
-      replyMessage: null,
-      mentioned: [],
-    });
+    const content = t`Not delivered: ${reason}`;
+    // A server refuses every line of a long send with the same words, and one
+    // row says it. Pending lines sort below every row, so we look above them.
+    const last = [...(actions.messages[`${serverId}-${bufferId}`] ?? [])]
+      .reverse()
+      .find((m) => m.status !== "pending");
+    if (last?.type === "error" && last.content === content) return;
+    actions.addMessage(notDeliveredRow(serverId, bufferId, content));
+  });
+
+  // Lines dropped before they left: a pending line turns failed, and the rest
+  // are counted per chat, since their text was never drawn.
+  ircClient.on("linesNotSent", ({ serverId, lines }) => {
+    const server = store.getState().servers.find((s) => s.id === serverId);
+    if (!server) return;
+    const bufferOf = (name?: string) => {
+      const lower = name?.toLowerCase();
+      return (
+        server.channels.find((c) => c.name.toLowerCase() === lower)?.id ??
+        server.privateChats?.find((p) => p.username.toLowerCase() === lower)?.id
+      );
+    };
+    const lost = new Map<string, number>();
+    for (const { target, context, label } of readUnsent(lines)) {
+      const bufferId = bufferOf(target) ?? bufferOf(context);
+      if (!bufferId) continue;
+      const actions = store.getState();
+      const rows = actions.messages[`${serverId}-${bufferId}`] ?? [];
+      if (label && rows.some((m) => m.pendingLabel === label))
+        actions.failPendingMessage(serverId, bufferId, label);
+      else lost.set(bufferId, (lost.get(bufferId) ?? 0) + 1);
+    }
+    for (const [bufferId, totalLines] of lost) {
+      const reason = plural(totalLines, { one: "# line", other: "# lines" });
+      store
+        .getState()
+        .addMessage(
+          notDeliveredRow(serverId, bufferId, t`Not delivered: ${reason}`),
+        );
+    }
   });
 
   ircClient.on("CHANMSG", (response) => {

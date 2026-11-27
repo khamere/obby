@@ -98,6 +98,73 @@ describe("a refused send", () => {
     ]);
   });
 
+  it("leaves the newest pending line alone while lines still wait to leave", () => {
+    vi.spyOn(ircClient, "hasWaitingLines").mockReturnValue(true);
+    vi.spyOn(ircClient, "takeRecentSend").mockReturnValue(true);
+    useStore.getState().addMessage(pending("typed", "l1"));
+    ircClient.triggerEvent("SEND_REFUSED", {
+      serverId: "s1",
+      target: "#chan",
+      reason: "Cannot send to channel",
+    });
+    expect(lines().map((m) => [m.type, m.content, m.status])).toEqual([
+      ["error", "Not delivered: Cannot send to channel", undefined],
+      ["message", "typed", "pending"],
+    ]);
+  });
+
+  describe("repeated for every line of a long send", () => {
+    const refuse = () => {
+      vi.advanceTimersByTime(2000);
+      ircClient.triggerEvent("SEND_REFUSED", {
+        serverId: "s1",
+        target: "#chan",
+        reason: "Cannot send to channel",
+      });
+    };
+    const said = (content: string): Message => ({
+      ...pending(content, "unused"),
+      pendingLabel: undefined,
+      status: undefined,
+    });
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(0);
+      vi.spyOn(ircClient, "takeRecentSend").mockReturnValue(true);
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("is said once", () => {
+      refuse();
+      refuse();
+      refuse();
+      expect(lines().map((m) => m.type)).toEqual(["error"]);
+    });
+
+    it("is said once while a typed line waits below it", () => {
+      vi.spyOn(ircClient, "hasWaitingLines").mockReturnValue(true);
+      refuse();
+      useStore.getState().addMessage(pending("typed", "l1"));
+      refuse();
+      expect(lines().map((m) => [m.type, m.status])).toEqual([
+        ["error", undefined],
+        ["message", "pending"],
+      ]);
+    });
+
+    it("is said again after another line came in between", () => {
+      refuse();
+      vi.advanceTimersByTime(2000);
+      useStore.getState().addMessage(said("someone else spoke"));
+      refuse();
+      expect(lines().map((m) => m.type)).toEqual(["error", "message", "error"]);
+    });
+  });
+
   it("ignores a refusal of something that was not a message, such as a typing notice", () => {
     ircClient.triggerEvent("SEND_REFUSED", {
       serverId: "s1",

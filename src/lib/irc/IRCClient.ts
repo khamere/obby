@@ -41,6 +41,13 @@ import {
   type MultilineLimits,
   parseMultilineLimits,
 } from "./multiline";
+import {
+  capPaidUntil,
+  chargeSend,
+  SEND_PACE_MS,
+  sendLaneKind,
+  sendWaitMs,
+} from "./sendPace";
 import { nextMemberRequestNumber, parseServerTime } from "./utils";
 
 // Namespace UUID for generating deterministic channel/chat IDs
@@ -678,7 +685,11 @@ export interface EventMap {
     serverId: string;
     direction: "tx" | "rx" | "info";
     line: string;
+    // Set on a line that left later than the user sent it.
+    afterWaiting?: boolean;
   };
+  sendQueue: { serverId: string };
+  linesNotSent: { serverId: string; lines: string[] };
   parsedLine: ParsedLine & { serverId: string };
 }
 
@@ -712,8 +723,18 @@ export class ConnectionClosedError extends Error {
   }
 }
 
+// The messages of one connection that wait for their turn, in the order they were sent.
+interface SendLane {
+  paidUntil: number;
+  waiting: string[];
+  held: number;
+  total: number;
+  timer?: ReturnType<typeof setTimeout>;
+}
+
 export class IRCClient implements IRCClientContext {
   private sockets: Map<string, ISocket> = new Map();
+  private sendLanes = new WeakMap<ISocket, SendLane>();
   private memberRequestNumbers = new WeakMap<ISocket, number>();
   servers: Map<string, Server> = new Map();
   nicks: Map<string, string> = new Map();
@@ -1084,6 +1105,7 @@ export class IRCClient implements IRCClientContext {
           }
 
           this.stopWebSocketPing(server.id);
+          this.abandonLane(server.id, socket);
           this.sockets.delete(server.id);
           this.isupportValues.delete(server.id);
           this.motdLines.delete(server.id);
@@ -1180,6 +1202,7 @@ export class IRCClient implements IRCClientContext {
       socket.onerror = null;
       socket.onclose = null;
       this.sockets.delete(serverId);
+      this.abandonLane(serverId, socket);
       // send() throws while the socket is still connecting; QUIT only means
       // something on an open connection anyway.
       if (socket.readyState === 1) {
@@ -1456,28 +1479,149 @@ export class IRCClient implements IRCClientContext {
     }
     if (this.tagmsgRefused.has(serverId) && /^(?:@\S+ )?TAGMSG /i.test(command))
       return;
-    const privmsg = /^(?:@\S+ )?PRIVMSG (\S+) /i.exec(command);
-    if (privmsg) {
-      const byTarget = this.recentSends.get(serverId) ?? new Map();
-      byTarget.set(privmsg[1].toLowerCase(), Date.now());
-      this.recentSends.set(serverId, byTarget);
-    }
     const socket = this.sockets.get(serverId);
-    if (socket && socket.readyState === WebSocket.OPEN) {
-      socket.send(command);
-      this.triggerEvent("rawLine", {
-        serverId,
-        direction: "tx",
-        line: command,
-      });
-    } else {
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
       console.error(`Socket for server ${serverId} is not open`);
       this.triggerEvent("rawLine", {
         serverId,
         direction: "info",
         line: `** dropped TX (socket not open): ${command}`,
       });
+      return;
     }
+    const kind = sendLaneKind(command);
+    const waiting = this.sendLanes.get(socket)?.waiting;
+    if (kind === "batch" && waiting?.length) {
+      waiting.push(command);
+      return;
+    }
+    if (kind !== "paced") {
+      this.writeLine(serverId, socket, command, false);
+      return;
+    }
+    const lane = this.sendLanes.get(socket) ?? {
+      paidUntil: 0,
+      waiting: [],
+      held: 0,
+      total: 0,
+    };
+    this.sendLanes.set(socket, lane);
+    const now = Date.now();
+    lane.paidUntil = capPaidUntil(lane.paidUntil, now);
+    const waitMs = sendWaitMs(lane.paidUntil, now);
+    if (!lane.waiting.length && waitMs === 0) {
+      lane.paidUntil = chargeSend(lane.paidUntil, now);
+      this.writeLine(serverId, socket, command, false);
+      return;
+    }
+    lane.waiting.push(command);
+    lane.held++;
+    lane.total++;
+    lane.timer ??= setTimeout(
+      () => this.sendWaitingLines(serverId, socket, lane),
+      waitMs || SEND_PACE_MS,
+    );
+    this.triggerEvent("sendQueue", { serverId });
+  }
+
+  private writeLine(
+    serverId: string,
+    socket: ISocket,
+    line: string,
+    afterWaiting: boolean,
+  ): void {
+    const privmsg = /^(?:@\S+ )?PRIVMSG (\S+) /i.exec(line);
+    if (privmsg) {
+      const byTarget = this.recentSends.get(serverId) ?? new Map();
+      byTarget.set(privmsg[1].toLowerCase(), Date.now());
+      this.recentSends.set(serverId, byTarget);
+    }
+    socket.send(line);
+    this.triggerEvent("rawLine", {
+      serverId,
+      direction: "tx",
+      line,
+      ...(afterWaiting && { afterWaiting }),
+    });
+  }
+
+  // A listener or a socket that throws on one line still leaves the timer armed for the lines behind it.
+  private sendWaitingLines(
+    serverId: string,
+    socket: ISocket,
+    lane: SendLane,
+  ): void {
+    clearTimeout(lane.timer);
+    lane.timer = undefined;
+    try {
+      while (lane.waiting.length) {
+        if (
+          this.sockets.get(serverId) !== socket ||
+          socket.readyState !== WebSocket.OPEN
+        ) {
+          this.abandonLane(serverId, socket);
+          return;
+        }
+        const head = lane.waiting[0];
+        const isPaced = sendLaneKind(head) === "paced";
+        const now = Date.now();
+        lane.paidUntil = capPaidUntil(lane.paidUntil, now);
+        if (isPaced && sendWaitMs(lane.paidUntil, now) > 0) break;
+        lane.waiting.shift();
+        if (isPaced) {
+          lane.paidUntil = chargeSend(lane.paidUntil, now);
+          lane.held--;
+        }
+        this.writeLine(serverId, socket, head, true);
+      }
+    } finally {
+      clearTimeout(lane.timer);
+      lane.timer = undefined;
+      if (lane.waiting.length)
+        lane.timer = setTimeout(
+          () => this.sendWaitingLines(serverId, socket, lane),
+          sendWaitMs(lane.paidUntil, Date.now()) || SEND_PACE_MS,
+        );
+      else lane.total = 0;
+      this.triggerEvent("sendQueue", { serverId });
+    }
+  }
+
+  // A closed connection never gets the lines that still wait, so we say which ones were lost.
+  private abandonLane(serverId: string, socket: ISocket): void {
+    const lane = this.sendLanes.get(socket);
+    if (!lane?.waiting.length) return;
+    clearTimeout(lane.timer);
+    lane.timer = undefined;
+    const lines = lane.waiting;
+    lane.waiting = [];
+    lane.held = 0;
+    lane.total = 0;
+    if (this.servers.has(serverId))
+      for (const line of lines)
+        this.triggerEvent("rawLine", {
+          serverId,
+          direction: "info",
+          line: `** dropped TX (not sent): ${line}`,
+        });
+    this.triggerEvent("linesNotSent", { serverId, lines });
+    this.triggerEvent("sendQueue", { serverId });
+  }
+
+  hasWaitingLines(serverId: string): boolean {
+    const socket = this.sockets.get(serverId);
+    return !!socket && !!this.sendLanes.get(socket)?.waiting.length;
+  }
+
+  waitingLines(serverId: string): { waiting: number; total: number } {
+    const socket = this.sockets.get(serverId);
+    const lane = socket && this.sendLanes.get(socket);
+    return { waiting: lane?.held ?? 0, total: lane?.total ?? 0 };
+  }
+
+  cancelWaitingLines(serverId: string): void {
+    const socket = this.sockets.get(serverId);
+    if (socket) this.abandonLane(serverId, socket);
   }
 
   startWebSocketPing(serverId: string): void {
@@ -1515,6 +1659,7 @@ export class IRCClient implements IRCClientContext {
     old.onmessage = null;
     old.onerror = null;
     old.onclose = null;
+    this.abandonLane(serverId, old);
     old.close();
   }
 
@@ -1955,6 +2100,8 @@ export class IRCClient implements IRCClientContext {
   }
 
   sendTyping(serverId: string, target: string, isActive: boolean): void {
+    // A typing notice costs the server as much as a message, so we send none while messages wait.
+    if (isActive && this.hasWaitingLines(serverId)) return;
     const typingState = isActive ? "active" : "done";
     this.sendRaw(serverId, `@+typing=${typingState} TAGMSG ${target}`);
   }

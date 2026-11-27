@@ -283,6 +283,8 @@ msgid "{total, plural, one {# channel} other {# channels}}"
 msgstr "{total, plural, one {채널 #개} other {채널 #개}}"
 
 #: src/components/message/CollapsibleMessage.tsx
+#: src/components/ui/SendQueueBar.tsx
+#: src/store/handlers/messages.ts
 msgid "{totalLines, plural, one {# line} other {# lines}}"
 msgstr "{totalLines, plural, other {# 줄}}"
 
@@ -1189,6 +1191,7 @@ msgstr "마지막 2FA 인증 수단은 삭제할 수 없습니다"
 #: src/components/ui/ModerationModal.tsx
 #: src/components/ui/RegionSelectOverlay.tsx
 #: src/components/ui/RemoveServerConfirmModal.tsx
+#: src/components/ui/SendQueueBar.tsx
 #: src/components/ui/settings/BackupField.tsx
 #: src/components/ui/settings/HistoryUsageField.tsx
 #: src/components/ui/TotpStepUpModal.tsx
@@ -4415,6 +4418,7 @@ msgstr "전달되지 않음"
 
 #: src/components/message/MessageStatusIndicator.tsx
 #: src/store/handlers/messages.ts
+#: src/store/handlers/messages.ts
 msgid "Not delivered: {reason}"
 msgstr "전달되지 않음: {reason}"
 
@@ -5754,6 +5758,7 @@ msgid "Send unencrypted"
 msgstr "암호화하지 않고 보내기"
 
 #: src/components/message/MessageStatusIndicator.tsx
+#: src/components/ui/SendQueueBar.tsx
 msgid "Sending"
 msgstr "보내는 중"
 

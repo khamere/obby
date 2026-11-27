@@ -132,6 +132,38 @@ describe("pending messages", () => {
     vi.useRealTimers();
   });
 
+  it("keeps a retried message pending while lines still wait to leave", () => {
+    vi.useFakeTimers();
+    vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    const hasWaitingLines = vi
+      .spyOn(ircClient, "hasWaitingLines")
+      .mockReturnValue(true);
+    useStore.setState({
+      servers: [
+        {
+          id: "s1",
+          channels: [{ id: "c1", name: "#lobby" }],
+          privateChats: [],
+        } as unknown as Server,
+      ],
+    });
+    useStore
+      .getState()
+      .addMessage({ ...message("f1", 1000), status: "failed" });
+    const status = () => useStore.getState().messages["s1-c1"]?.[0].status;
+
+    useStore.getState().resendFailedMessage("f1");
+    vi.advanceTimersByTime(30_000);
+    expect(status()).toBe("pending");
+    hasWaitingLines.mockReturnValue(false);
+    vi.advanceTimersByTime(30_000);
+    expect(status()).toBe("pending");
+    vi.advanceTimersByTime(30_000);
+    expect(status()).toBe("failed");
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
   it.each([
     ["ASCII words", "the quick brown fox ".repeat(30).trim(), " "],
     ["CJK", "漢字仮名".repeat(75), ""],

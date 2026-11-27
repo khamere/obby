@@ -10,7 +10,7 @@ import type { E2EEScheme, E2EESessionState } from "../lib/e2ee/session";
 import { e2eeSessionKey } from "../lib/e2ee/session";
 import { ConnectionClosedError } from "../lib/irc/IRCClient";
 import ircClient from "../lib/ircClient";
-import { makeLabel } from "../lib/labeledResponse";
+import { failWhenUnanswered, makeLabel } from "../lib/labeledResponse";
 import {
   forgetLeftChannels,
   leftReasonOf,
@@ -2473,9 +2473,9 @@ const useStore = create<AppState>((set, get) => ({
       msg.content,
       `@label=${label} `,
     );
-    setTimeout(() => {
-      get().failPendingMessage(msg.serverId, msg.channelId, label);
-    }, 30_000);
+    failWhenUnanswered(msg.serverId, () =>
+      get().failPendingMessage(msg.serverId, msg.channelId, label),
+    );
   },
 
   addGlobalNotification: (notification) => {

@@ -1116,10 +1116,11 @@ export function registerHistoryHandlers(store: StoreApi<AppState>): void {
       forgetRemovedReadBacks(state);
   });
 
-  ircClient.on("rawLine", ({ serverId, direction, line }) => {
+  ircClient.on("rawLine", ({ serverId, direction, line, afterWaiting }) => {
     if (direction !== "tx") return;
     const said = /^(?:@\S+ )?PRIVMSG (\S+) :/.exec(line);
-    if (said) showPresent(store, serverId, said[1]);
+    // A line that waited leaves long after the user sent it, so it leaves the view where they have moved since.
+    if (said && !afterWaiting) showPresent(store, serverId, said[1]);
     if (isEnabled(store)) trackOutgoing(store, serverId, line);
   });
 

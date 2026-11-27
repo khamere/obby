@@ -145,6 +145,7 @@ import {
   type RecordingFailure,
   RegionRecordingBar,
 } from "../ui/RegionRecordingBar";
+import { SendQueueBar } from "../ui/SendQueueBar";
 import SuggestionList from "../ui/SuggestionList";
 import { TextArea } from "../ui/TextInput";
 import { TopicMediaStrip } from "../ui/TopicMediaStrip";
@@ -2269,6 +2270,7 @@ export const ChatArea: React.FC<{
       <TopicMediaStrip />
       <MiniMediaPlayer />
       <UploadProgressBar jobs={uploadJobs} onCancel={cancelUploadJob} />
+      <SendQueueBar serverId={selectedServerId} />
       {/* Member list overlay replaces messages when desktop is too narrow for sidebar */}
       {showMemberListOverlay && (
         <div

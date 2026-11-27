@@ -19,6 +19,8 @@ vi.mock("../../src/lib/ircClient", () => ({
     on: vi.fn(),
     getCurrentUser: vi.fn(() => ({ id: "test-user", username: "tester" })),
     getNick: vi.fn(() => "tester"),
+    waitingLines: vi.fn(() => ({ waiting: 0, total: 0 })),
+    deleteHook: vi.fn(),
     version: "1.0.0",
   },
 }));

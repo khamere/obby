@@ -13,6 +13,7 @@ import { LINE_BREAK } from "../lib/irc/IRCClient";
 import ircClient from "../lib/ircClient";
 import { parseJoinCommand, replyTags } from "../lib/ircUtils";
 import {
+  failWhenUnanswered,
   makeLabel,
   shouldUseLabeledResponse,
   withLabel,
@@ -206,19 +207,6 @@ export function sendBotCommand(
     return true;
   }
   return false;
-}
-
-/** How long to wait before flipping a pending message to "failed". */
-const PENDING_TIMEOUT_MS = 30_000;
-
-function arm_pending_timeout(
-  serverId: string,
-  bufferId: string,
-  label: string,
-) {
-  setTimeout(() => {
-    useStore.getState().failPendingMessage(serverId, bufferId, label);
-  }, PENDING_TIMEOUT_MS);
 }
 
 interface UseMessageSendingOptions {
@@ -670,7 +658,6 @@ export function useMessageSending({
           status: "pending",
         };
         useStore.getState().addMessage(placeholder);
-        arm_pending_timeout(selectedServerId, bufferId, label);
       }
 
       const replyPrefix = replyTags(localReplyTo?.msgid);
@@ -698,6 +685,12 @@ export function useMessageSending({
           },
         );
       }
+      if (label && bufferId && currentUser)
+        failWhenUnanswered(selectedServerId, () =>
+          useStore
+            .getState()
+            .failPendingMessage(selectedServerId, bufferId, label),
+        );
     },
     [
       selectedServerId,

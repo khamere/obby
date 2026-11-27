@@ -283,6 +283,8 @@ msgid "{total, plural, one {# channel} other {# channels}}"
 msgstr "{total, plural, one {# canale} other {# canali}}"
 
 #: src/components/message/CollapsibleMessage.tsx
+#: src/components/ui/SendQueueBar.tsx
+#: src/store/handlers/messages.ts
 msgid "{totalLines, plural, one {# line} other {# lines}}"
 msgstr "{totalLines, plural, one {# riga} other {# righe}}"
 
@@ -1189,6 +1191,7 @@ msgstr "Impossibile rimuovere l'ultima credenziale 2FA"
 #: src/components/ui/ModerationModal.tsx
 #: src/components/ui/RegionSelectOverlay.tsx
 #: src/components/ui/RemoveServerConfirmModal.tsx
+#: src/components/ui/SendQueueBar.tsx
 #: src/components/ui/settings/BackupField.tsx
 #: src/components/ui/settings/HistoryUsageField.tsx
 #: src/components/ui/TotpStepUpModal.tsx
@@ -4415,6 +4418,7 @@ msgstr "Non consegnato"
 
 #: src/components/message/MessageStatusIndicator.tsx
 #: src/store/handlers/messages.ts
+#: src/store/handlers/messages.ts
 msgid "Not delivered: {reason}"
 msgstr "Non consegnato: {reason}"
 
@@ -5754,6 +5758,7 @@ msgid "Send unencrypted"
 msgstr "Invia senza crittografia"
 
 #: src/components/message/MessageStatusIndicator.tsx
+#: src/components/ui/SendQueueBar.tsx
 msgid "Sending"
 msgstr "Invio in corso"
 

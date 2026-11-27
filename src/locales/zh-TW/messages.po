@@ -283,6 +283,8 @@ msgid "{total, plural, one {# channel} other {# channels}}"
 msgstr "{total, plural, other {# 個頻道}}"
 
 #: src/components/message/CollapsibleMessage.tsx
+#: src/components/ui/SendQueueBar.tsx
+#: src/store/handlers/messages.ts
 msgid "{totalLines, plural, one {# line} other {# lines}}"
 msgstr "{totalLines, plural, other {# 行}}"
 
@@ -1189,6 +1191,7 @@ msgstr "無法移除你的最後一個 2FA 憑證"
 #: src/components/ui/ModerationModal.tsx
 #: src/components/ui/RegionSelectOverlay.tsx
 #: src/components/ui/RemoveServerConfirmModal.tsx
+#: src/components/ui/SendQueueBar.tsx
 #: src/components/ui/settings/BackupField.tsx
 #: src/components/ui/settings/HistoryUsageField.tsx
 #: src/components/ui/TotpStepUpModal.tsx
@@ -4415,6 +4418,7 @@ msgstr "未送達"
 
 #: src/components/message/MessageStatusIndicator.tsx
 #: src/store/handlers/messages.ts
+#: src/store/handlers/messages.ts
 msgid "Not delivered: {reason}"
 msgstr "未送達：{reason}"
 
@@ -5754,6 +5758,7 @@ msgid "Send unencrypted"
 msgstr "未加密傳送"
 
 #: src/components/message/MessageStatusIndicator.tsx
+#: src/components/ui/SendQueueBar.tsx
 msgid "Sending"
 msgstr "傳送中"
 
