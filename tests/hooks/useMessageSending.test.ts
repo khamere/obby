@@ -855,3 +855,136 @@ describe("a command whose text is longer in bytes than one message carries", () 
     ]);
   });
 });
+
+describe("a long message with a colour and a style", () => {
+  // A line to #lobby carries 377 bytes and a line to bob 380.
+  const toLobby = 377;
+  const toBob = 380;
+  const red = "#FF0000";
+  const words = "the quick brown fox ".repeat(40).trim();
+  const utf8 = new TextEncoder();
+  const bytes = (text: string) => utf8.encode(text).length;
+  const payload = (line: string) => line.slice(line.indexOf(" :") + 2);
+  const whisper = {
+    id: "w1",
+    msgid: "w1",
+    userId: "bob",
+    tags: { "+channel-context": "#lobby" },
+  } as unknown as Message;
+
+  function send(
+    text: string,
+    caps: string[],
+    picked: { color: string | null; formatting: "bold"[] },
+    localReplyTo: Message | null = null,
+  ) {
+    useStore.setState({
+      servers: [{ ...server, capabilities: caps }],
+      messages: {},
+    });
+    vi.spyOn(ircClient, "hasCapability").mockImplementation((_, cap) =>
+      caps.includes(cap),
+    );
+    vi.spyOn(ircClient, "multilineLimits").mockReturnValue(
+      parseMultilineLimits(undefined),
+    );
+    const lines: string[] = [];
+    vi.spyOn(ircClient, "sendRaw").mockImplementation((_, line) => {
+      lines.push(line);
+    });
+    const { result } = renderHook(() =>
+      useMessageSending({
+        selectedServerId: "s1",
+        ...inLobby,
+        currentUser: me,
+        selectedColor: picked.color,
+        selectedFormatting: picked.formatting,
+        localReplyTo,
+      }),
+    );
+    result.current.sendMessage(text);
+    return lines;
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    useStore.setState({ servers: [server], messages: {} });
+  });
+
+  it("opens the colour and the style in every message on a server without batches", () => {
+    const lines = send(words, [], { color: red, formatting: ["bold"] });
+
+    expect(lines.length).toBeGreaterThan(1);
+    for (const line of lines) {
+      expect(payload(line).startsWith("\x0304\x02")).toBe(true);
+      expect(bytes(payload(line))).toBeLessThanOrEqual(toLobby);
+    }
+    expect(
+      lines
+        .map((line) =>
+          payload(line).replaceAll("\x0304", "").replaceAll("\x02", ""),
+        )
+        .join(" "),
+    ).toBe(words);
+  });
+
+  it("resets and opens them again in every concat line of a batch", () => {
+    const lines = send(words, ["draft/multiline", "batch"], {
+      color: red,
+      formatting: ["bold"],
+    });
+
+    const parts = lines.slice(1, -1);
+    expect(lines[0]).toMatch(/^BATCH \+\S+ draft\/multiline #lobby$/);
+    expect(parts.length).toBeGreaterThan(1);
+    expect(payload(parts[0]).startsWith("\x0304\x02the ")).toBe(true);
+    for (const part of parts.slice(1)) {
+      expect(part).toContain(";draft/multiline-concat PRIVMSG #lobby :");
+      expect(payload(part).startsWith("\x0F\x0304\x02")).toBe(true);
+    }
+    for (const part of parts)
+      expect(bytes(payload(part))).toBeLessThanOrEqual(toLobby);
+  });
+
+  it("opens them in every part of a typed reply to a whisper", () => {
+    const lines = send(
+      words,
+      [],
+      { color: red, formatting: ["bold"] },
+      whisper,
+    );
+
+    expect(lines.length).toBeGreaterThan(1);
+    for (const line of lines) {
+      expect(line).toContain(" PRIVMSG bob :\x0304\x02");
+      expect(bytes(payload(line))).toBeLessThanOrEqual(toBob);
+    }
+  });
+
+  it("opens a style typed into /me in every action", () => {
+    const lines = send(`/me \x1D${words}\x1D`, [], {
+      color: null,
+      formatting: [],
+    });
+
+    expect(lines.length).toBeGreaterThan(1);
+    for (const line of lines) {
+      expect(line.startsWith("PRIVMSG #lobby :\u0001ACTION \x1D")).toBe(true);
+      expect(line.endsWith("\u0001")).toBe(true);
+      expect(bytes(payload(line))).toBeLessThanOrEqual(toLobby);
+    }
+  });
+
+  it("opens a style typed into /msg in every part", () => {
+    const lines = send(`/msg bob \x1F${words}\x1F`, [], {
+      color: null,
+      formatting: [],
+    });
+
+    expect(lines.length).toBeGreaterThan(1);
+    for (const line of lines) {
+      expect(line.startsWith("PRIVMSG bob :\x1F")).toBe(true);
+      expect(bytes(payload(line))).toBeLessThanOrEqual(toBob);
+    }
+  });
+});
