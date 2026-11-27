@@ -805,6 +805,24 @@ function onlyChatAwaiting(
   return waiting.length === 1 ? waiting[0] : undefined;
 }
 
+// A chat can wait for a page whose request we do not track, and only a reply ends its loading, so we settle each such chat on a refusal we can match to none.
+function chatsLoadingUntracked(
+  store: StoreApi<AppState>,
+  serverId: string,
+): string[] {
+  const server = store.getState().servers.find((s) => s.id === serverId);
+  return [
+    ...(server?.channels ?? [])
+      .filter((channel) => channel.isLoadingHistory)
+      .map((channel) => channel.name),
+    ...(server?.privateChats ?? [])
+      .filter((chat) => chat.isLoadingHistory)
+      .map((chat) => chat.username),
+  ].filter(
+    (name) => !pendingRequests.get(conversationKey(serverId, name))?.length,
+  );
+}
+
 // A final refusal ends the offer of older history, apart from pages we can
 // still read from disk. After any other refusal the offer stands as it was,
 // and a refused older page is marked so the list can ask for it again.
@@ -1232,7 +1250,11 @@ export function registerHistoryHandlers(store: StoreApi<AppState>): void {
       askAgainByTime(serverId, target, request, request.msgidTime)
     )
       return;
-    if (refused) settleRefusedOffer(store, serverId, refused, code, subcommand);
+    const settled = refused
+      ? [refused]
+      : chatsLoadingUntracked(store, serverId);
+    for (const chat of settled)
+      settleRefusedOffer(store, serverId, chat, code, subcommand);
     if (request && request.kind !== "latest") request.fill?.onSettled?.(false);
   });
 

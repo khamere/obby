@@ -722,6 +722,7 @@ describe("local history with a chathistory server", () => {
       );
       await w.drain();
 
+      expect(w.channel()?.isLoadingHistory).toBe(true);
       expect(w.channel()?.historyRefusedAt).toBeUndefined();
       expect(w.channel()?.hasMoreHistory).toBe(true);
     });
@@ -1452,6 +1453,134 @@ describe("keepHistory off", () => {
 
     expect(w.channelMessages().some((m) => m.content === "one")).toBe(true);
     expect(await w.stored()).toEqual([]);
+  });
+
+  describe("a refused older page", () => {
+    const request = `CHATHISTORY BEFORE #chan timestamp=${at(1)} 50`;
+    let w: World;
+    const offerMore = () =>
+      w.useStore.setState((state) => ({
+        servers: state.servers.map((server) => ({
+          ...server,
+          channels: server.channels.map((c) => ({
+            ...c,
+            hasMoreHistory: true,
+          })),
+          privateChats: server.privateChats?.map((pc) => ({
+            ...pc,
+            hasMoreHistory: true,
+          })),
+        })),
+      }));
+
+    beforeEach(async () => {
+      w = await boot(FULL_CAPS);
+      w.useStore.getState().updateGlobalSettings({ keepHistory: false });
+      w.feed(privmsg("m1", 1, "one"), privmsg("m2", 2, "two"));
+      w.addPrivateChat("carol");
+      offerMore();
+    });
+
+    const askForOlderPage = async () => {
+      expect(await w.loadOlder(BASE + 1000)).toBe(true);
+      expect(w.chathistoryRequests()).toEqual([request]);
+      expect(w.channel()?.isLoadingHistory).toBe(true);
+    };
+
+    it.each([
+      [
+        "an error that names the chat",
+        `MESSAGE_ERROR BEFORE #chan timestamp=${at(1)} 50 :Messages could not be retrieved`,
+      ],
+      [
+        "an error that names only the subcommand",
+        "MESSAGE_ERROR BEFORE :Messages could not be retrieved",
+      ],
+      ["an error that names nothing", "MESSAGE_ERROR :Try again later"],
+    ])(
+      "stops loading after %s, and the same page can be asked for again",
+      async (_name, refusal) => {
+        await askForOlderPage();
+
+        w.feed(`:irc.test FAIL CHATHISTORY ${refusal}`);
+        await w.drain();
+
+        expect(w.channel()?.isLoadingHistory).toBe(false);
+        expect(w.channel()?.hasMoreHistory).toBe(true);
+        w.sent.length = 0;
+        expect(await w.loadOlder(BASE + 1000)).toBe(true);
+        expect(w.chathistoryRequests()).toEqual([request]);
+        w.feed(...inBatch("r1", "#chan", [privmsg("m0", 0, "zero")]));
+        await vi.waitFor(() =>
+          expect(w.channelMessages()[0]?.content).toBe("zero"),
+        );
+        expect(w.channel()?.isLoadingHistory).toBe(false);
+      },
+    );
+
+    it("marks the page refused after an error that names only the subcommand", async () => {
+      await askForOlderPage();
+
+      w.feed(
+        ":irc.test FAIL CHATHISTORY MESSAGE_ERROR BEFORE :Messages could not be retrieved",
+      );
+      await w.drain();
+
+      expect(w.channel()?.historyRefusedAt).toEqual(expect.any(Number));
+    });
+
+    it.each([
+      "INVALID_TARGET #chan :Messages could not be retrieved",
+      "INVALID_PARAMS BEFORE :Invalid parameters",
+      "UNKNOWN_COMMAND BEFORE :Unknown command",
+    ])("is no longer on offer after the final refusal %s", async (refusal) => {
+      await askForOlderPage();
+
+      w.feed(`:irc.test FAIL CHATHISTORY ${refusal}`);
+      await w.drain();
+
+      expect(w.channel()?.isLoadingHistory).toBe(false);
+      expect(w.channel()?.hasMoreHistory).toBe(false);
+      expect(w.channel()?.historyRefusedAt).toBeUndefined();
+    });
+
+    it("stops a private chat loading after an error that names only the subcommand", async () => {
+      expect(await w.loadOlderFor(SERVER, BASE + 1000, "carol")).toBe(true);
+      expect(w.privateChat("carol")?.isLoadingHistory).toBe(true);
+
+      w.feed(
+        ":irc.test FAIL CHATHISTORY MESSAGE_ERROR BEFORE :Messages could not be retrieved",
+      );
+      await w.drain();
+
+      expect(w.privateChat("carol")?.isLoadingHistory).toBe(false);
+      expect(w.privateChat("carol")?.hasMoreHistory).toBe(true);
+    });
+
+    it("leaves a chat that is not loading as it was", async () => {
+      w.feed(
+        ":irc.test FAIL CHATHISTORY INVALID_PARAMS BEFORE :Invalid parameters",
+        ":irc.test FAIL CHATHISTORY MESSAGE_ERROR BEFORE :Messages could not be retrieved",
+      );
+      await w.drain();
+
+      expect(w.channel()?.hasMoreHistory).toBe(true);
+      expect(w.channel()?.historyRefusedAt).toBeUndefined();
+      expect(w.privateChat("carol")?.hasMoreHistory).toBe(true);
+      expect(w.privateChat("carol")?.historyRefusedAt).toBeUndefined();
+    });
+
+    it("leaves a loading chat alone when the refusal names another chat", async () => {
+      await askForOlderPage();
+
+      w.feed(
+        ":irc.test FAIL CHATHISTORY MESSAGE_ERROR BEFORE carol :Messages could not be retrieved",
+      );
+      await w.drain();
+
+      expect(w.channel()?.isLoadingHistory).toBe(true);
+      expect(w.channel()?.historyRefusedAt).toBeUndefined();
+    });
   });
 });
 
