@@ -133,13 +133,19 @@ export function compareMessageOrder(a: Message, b: Message): number {
   return messageTime(a) - messageTime(b);
 }
 
+// Where a history page lies against the lines we hold, as its request tells:
+// right before the line the request named, or behind every line we hold.
+export type HistoryPagePlace = { before: string } | "newest";
+
 // A history page holds the server's lines in the server's order, which their
 // times cannot give back once several lines share a millisecond. So the page
 // keeps its own order, and a line we hold that the page leaves out goes ahead
-// of it or behind it by where its time falls against the page's edges.
+// of it or behind it by where the page lies, or by where the line's time falls
+// against the page's edges when the request does not tell.
 export function mergeHistoryPage(
   existing: Message[],
   page: Message[],
+  place?: HistoryPagePlace,
 ): { merged: Message[]; added: Message[] } {
   const byMsgid = new Map(
     existing.flatMap((m) => (m.msgid ? [[m.msgid, m] as const] : [])),
@@ -168,10 +174,17 @@ export function mergeHistoryPage(
   const oldest = Math.min(...times);
   const newest = Math.max(...times);
   const others = existing.filter((m) => !held.has(m));
-  // A page inside one millisecond has a single edge time, so a line we hold there counts as older when we hold lines before that time.
+  const anchor = typeof place === "object" ? place.before : undefined;
+  const anchorAt = anchor ? existing.findIndex((m) => hasMsgid(m, anchor)) : -1;
+  const aheadOfAnchor = new Set(existing.slice(0, Math.max(anchorAt, 0)));
+  // A page inside one millisecond has a single edge time, so without its place a line we hold there counts as older when we hold messages before that time.
+  // We count messages only, since the joins and parts a page carries reach the chat ahead of it.
   const isOlderAtEdge =
-    oldest === newest && others.some((m) => messageTime(m) < newest);
+    oldest === newest &&
+    (place === "newest" ||
+      others.some((m) => isChatMessage(m) && messageTime(m) < newest));
   const isBeforePage = (m: Message) => {
+    if (anchorAt >= 0) return aheadOfAnchor.has(m);
     const time = messageTime(m);
     return time < newest || (time === newest && isOlderAtEdge);
   };
@@ -401,8 +414,11 @@ export function capMergedMessages(
   merged: Message[],
   window: HistoryWindow | undefined,
 ): { messages: Message[]; window?: HistoryWindow } {
+  // A page can put older lines ahead of ours inside our oldest millisecond, so we tell an older page by the line it puts first.
   const isOlder =
-    existing.length > 0 && messageTime(merged[0]) < messageTime(existing[0]);
+    existing.length > 0 &&
+    merged[0] !== existing[0] &&
+    messageTime(merged[0]) <= messageTime(existing[0]);
   if (merged.length <= MAX_MESSAGES_PER_CHANNEL || (!isOlder && window))
     return { messages: merged };
   if (!isOlder) return { messages: merged.slice(-MAX_MESSAGES_PER_CHANNEL) };

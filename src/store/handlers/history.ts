@@ -62,6 +62,7 @@ import type {
 import type { Channel, Message, Server } from "../../types";
 import {
   compareMessageOrder,
+  type HistoryPagePlace,
   MAX_MESSAGES_PER_CHANNEL,
   messageTime,
   normalizeHost,
@@ -87,13 +88,14 @@ type GapFill = {
   onSettled?: (isSaved: boolean, page?: HistoryPage) => void;
 };
 
-// `msgidTime` is the time of the line a request named by its msgid, and
-// `before` the time an older page was asked from.
+// `msgid` is the line a request named and `msgidTime` its time, and `before`
+// the time an older page was asked from.
 type PendingRequest =
   | { kind: "latest"; newestStored: Promise<HistoryRow | undefined> }
   | {
       kind: "before" | "after" | "around";
       fill?: GapFill;
+      msgid?: string;
       msgidTime?: number;
       before?: number;
     };
@@ -114,6 +116,8 @@ const MAX_HIDDEN_PAGES_IN_A_ROW = 10;
 let nextGapFill: GapFill | undefined;
 let nextMsgidTime: number | undefined;
 let nextBefore: number | undefined;
+// Where the rows being replayed lie against the chat, while their lines pass through the handlers.
+let replayPlace: HistoryPagePlace | undefined;
 
 // Two requests for the same gap ask for the same page, and the second reply,
 // all duplicates, would close the gap, so we keep one request per gap.
@@ -127,6 +131,24 @@ export function isServerPageComing(serverId: string, target: string): boolean {
   return (pendingRequests.get(conversationKey(serverId, target)) ?? []).some(
     (request) => request.kind === "latest" || !request.fill?.isDiskOnly,
   );
+}
+
+// Where the page a batch carries lies against the lines the chat holds. The
+// newest page of the server, like saved rows we replay as a newer page, lies
+// behind every line it leaves out, and an older page asked from a line ends
+// right before that line.
+export function historyPagePlace(
+  serverId: string,
+  target: string,
+  batchId: string,
+): HistoryPagePlace | undefined {
+  if (batchId.startsWith(LOCAL_BATCH_PREFIX)) return replayPlace;
+  const [request] =
+    pendingRequests.get(conversationKey(serverId, target)) ?? [];
+  if (request?.kind === "latest") return "newest";
+  return request?.kind === "before" && request.msgid
+    ? { before: request.msgid }
+    : undefined;
 }
 
 function requestPageBefore(
@@ -519,12 +541,23 @@ async function saveHistoryPage(
   const inserted = rows.length ? await saveRows(store, rows) : [];
   if (page.oldest !== undefined && inserted.some((wasNew) => wasNew)) {
     const { oldest, newest = oldest, msgids } = page;
-    // A page inside one millisecond tells its place only when it was asked as the next older page of the chat.
+    const anchor =
+      (request?.kind === "before" || request?.kind === "after") &&
+      request.msgid !== undefined
+        ? { msgid: request.msgid, kind: request.kind }
+        : undefined;
+    // A page inside one millisecond tells its place by the line it was asked from, or by being asked as the next older page of the chat.
     const isBeforeAllHeld = request?.kind === "before" && !request.fill?.gap;
     if (oldest !== newest)
-      await orderRowsAtPageEdge(key, target, oldest, msgids, "oldest");
-    if (oldest !== newest || isBeforeAllHeld)
-      await orderRowsAtPageEdge(key, target, newest, msgids, "newest");
+      await orderRowsAtPageEdge(key, target, oldest, msgids, "ahead", anchor);
+    await orderRowsAtPageEdge(
+      key,
+      target,
+      newest,
+      msgids,
+      oldest !== newest || isBeforeAllHeld ? "behind" : undefined,
+      anchor,
+    );
   }
   const canPageByMsgid = ircClient.canPageByMsgid(serverId);
   if (page.size > 0) {
@@ -832,24 +865,26 @@ function readBackEdge(
 }
 
 // Where the next older page starts. Messages can share a millisecond, so we
-// read past the rows already read there and skip them.
+// read past its rows that are on screen or were read back already, and skip
+// them.
 function olderEdge(
   store: StoreApi<AppState>,
   key: string,
 ): OlderEdge | undefined {
   const readBack = readBackEdge(store, key);
-  if (readBack) return readBack;
   const messages = store.getState().messages[key] ?? [];
-  if (messages.length === 0) return undefined;
+  if (messages.length === 0) return readBack;
   const oldest = messageTime(messages[0]);
+  if (readBack && readBack.time < oldest) return readBack;
   const sameMs = messages.filter((m) => messageTime(m) === oldest);
   const shown = new Set(
     sameMs.flatMap((m) => [m.msgid, ...(m.multilineMessageIds ?? [])]),
   );
   return {
     time: oldest,
-    readCount: sameMs.length,
-    isRead: (row) => !!row.msgid && shown.has(row.msgid),
+    readCount: sameMs.length + (readBack?.readCount ?? 0),
+    isRead: (row) =>
+      (!!row.msgid && shown.has(row.msgid)) || !!readBack?.isRead(row),
   };
 }
 
@@ -1071,7 +1106,7 @@ function trackOutgoing(
     const target = request[2].toLowerCase();
     const queue = pendingRequests.get(conversationKey(serverId, target)) ?? [];
     const kind = request[1].toLowerCase() as "before" | "after" | "around";
-    const isByMsgid = /^CHATHISTORY \S+ \S+ msgid=/.test(line);
+    const [, msgid] = /^CHATHISTORY \S+ \S+ msgid=(\S+)/.exec(line) ?? [];
     queue.push(
       request[1] === "LATEST"
         ? {
@@ -1083,7 +1118,7 @@ function trackOutgoing(
         : {
             kind,
             fill: nextGapFill,
-            ...(isByMsgid ? { msgidTime: nextMsgidTime } : {}),
+            ...(msgid ? { msgid, msgidTime: nextMsgidTime } : {}),
             ...(kind === "before" ? { before: nextBefore } : {}),
           },
     );
@@ -1439,6 +1474,7 @@ async function replayRows(
   target: string,
   rows: HistoryRow[],
   beforeReplay: () => boolean = () => true,
+  place?: HistoryPagePlace,
 ) {
   const msgids = rows.flatMap((row) => (row.msgid ? [row.msgid] : []));
   const reactions = msgids.length ? await refRowsFor(serverId, msgids) : [];
@@ -1446,15 +1482,20 @@ async function replayRows(
   const ordered = [...rows, ...reactions].sort((a, b) => a.time - b.time);
   replayCounter += 1;
   const nick = ircClient.getNick(serverId);
-  ircClient.replayLines(
-    serverId,
-    buildReplayLines(
-      target,
-      ordered,
-      `${LOCAL_BATCH_PREFIX}${replayCounter}`,
-      nick ? `${nick}!${nick}@local` : undefined,
-    ),
-  );
+  replayPlace = place;
+  try {
+    ircClient.replayLines(
+      serverId,
+      buildReplayLines(
+        target,
+        ordered,
+        `${LOCAL_BATCH_PREFIX}${replayCounter}`,
+        nick ? `${nick}!${nick}@local` : undefined,
+      ),
+    );
+  } finally {
+    replayPlace = undefined;
+  }
   if (rows.length) {
     const oldest = rows[0].time;
     const newest = rows[rows.length - 1].time;
@@ -1788,7 +1829,7 @@ export async function loadNewerMessages(
     if (!isSameWindow()) return;
     // The last saved rows land while the window still stands, so the reader keeps their place when it joins the present.
     if (newest) {
-      await replayRows(store, serverId, target, rows, showInWindow);
+      await replayRows(store, serverId, target, rows, showInWindow, "newest");
       const current = store.getState().historyWindows[conversation.key];
       if (
         !isShown ||
@@ -1802,7 +1843,7 @@ export async function loadNewerMessages(
       ircClient.requestChathistoryLatest(serverId, target);
     return;
   }
-  await replayRows(store, serverId, target, rows, showInWindow);
+  await replayRows(store, serverId, target, rows, showInWindow, "newest");
   if (dropOldestInWindow(store, conversation.key))
     await refreshHasMore(store, serverId, target, false);
   if (isShown && hole)

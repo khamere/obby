@@ -17,7 +17,7 @@ import {
 import { type AppState, rememberMsgIds } from "../index";
 import type { MentionEntry } from "../mentionLog";
 import { noteMemberLeft } from "../whoReplyBatcher";
-import { isServerPageComing } from "./history";
+import { historyPagePlace, isServerPageComing } from "./history";
 
 // Chathistory messages are buffered here (outside the store) to avoid one
 // store.setState per incoming PRIVMSG.  Only flushed at BATCH_END.
@@ -402,6 +402,7 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
           const { merged: withPage, added: newMessages } = mergeHistoryPage(
             existing,
             pending,
+            historyPagePlace(serverId, channelName, batchId),
           );
 
           const capped = capMergedMessages(
@@ -474,6 +475,7 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
           const { merged: withPage, added: newMessages } = mergeHistoryPage(
             existing,
             pending,
+            historyPagePlace(serverId, channelName, batchId),
           );
 
           const capped = capMergedMessages(

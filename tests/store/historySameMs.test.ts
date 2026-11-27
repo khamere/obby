@@ -18,7 +18,9 @@ const PAGE = 50;
 // Seven lines share each millisecond, so every page of 50 ends inside a run.
 const RUN = 7;
 
-const timeOf = (index: number) => BASE + Math.floor(index / RUN) * 1000;
+const inRuns = (index: number) => BASE + Math.floor(index / RUN) * 1000;
+// The time the server gives each line, which a test can change after boot.
+let timeOf = inRuns;
 const iso = (index: number) => new Date(timeOf(index)).toISOString();
 const line = (index: number, target: string) =>
   target === "#chan"
@@ -40,6 +42,7 @@ type World = {
 };
 
 async function boot(refs?: string, { keepHistory = true } = {}) {
+  timeOf = inRuns;
   globalThis.indexedDB = new IDBFactory();
   vi.resetModules();
   const { default: useStore } = await import("../../src/store");
@@ -329,6 +332,23 @@ describe("history pages that end inside a millisecond", {
       expect(w.shown()).toEqual(ids(0, 299));
     });
 
+    it("reads a run longer than several pages back from disk in the server's order", async () => {
+      const w = await boot("msgid,timestamp");
+      // m100 to m299 share one millisecond.
+      timeOf = (index) => (index < 100 ? BASE : BASE + 1000);
+      w.world.has = range(0, 299);
+      await w.loadLatest();
+      await w.scrollToTop();
+      expect(w.shown()).toEqual(ids(0, 299));
+      expect(await w.saved()).toEqual(ids(0, 299));
+
+      w.useStore.setState({ messages: {} });
+      await w.loadLatest();
+      await w.scrollToTop();
+
+      expect(w.shown()).toEqual(ids(0, 299));
+    });
+
     it("asks again by time when the server no longer knows the line at the edge", async () => {
       const w = await boot("msgid,timestamp");
       w.world.has = range(0, 299);
@@ -463,6 +483,49 @@ describe("history pages that end inside a millisecond", {
       expect(w.requests("AFTER")[0]).toBe(
         `CHATHISTORY AFTER #chan msgid=m102 ${PAGE}`,
       );
+    });
+
+    it("keeps the server's order on screen and on disk when the gap lies inside a run longer than a page", async () => {
+      const w = await boot("msgid,timestamp");
+      // m0 came earlier, and m1 to m130 share one millisecond.
+      timeOf = (index) => (index === 0 ? BASE : BASE + 1000);
+      await w.receiveLive(1);
+      w.world.has = range(0, 130);
+
+      await w.loadLatest();
+      await vi.waitFor(
+        async () => {
+          expect(await w.saved()).toHaveLength(131);
+          expect(await w.db.gapsFor(SERVER, "#chan")).toEqual([]);
+        },
+        { timeout: WRITE_TIMEOUT_MS },
+      );
+      await w.db.whenHistoryIdle();
+
+      expect(w.requests("BEFORE")).toEqual([
+        `CHATHISTORY BEFORE #chan msgid=m81 ${PAGE}`,
+        `CHATHISTORY BEFORE #chan msgid=m31 ${PAGE}`,
+      ]);
+      expect(w.shown()).toEqual(ids(0, 130));
+      expect(await w.saved()).toEqual(ids(0, 130));
+
+      w.useStore.setState({ messages: {} });
+      await w.loadLatest();
+      await w.scrollToTop();
+
+      expect(w.shown()).toEqual(ids(0, 130));
+    });
+
+    it("puts a newest page behind the one line we hold when all of them share a millisecond", async () => {
+      const w = await boot("msgid,timestamp");
+      timeOf = () => BASE + 1000;
+      await w.receiveLive(1);
+      w.world.has = range(0, 50);
+
+      await w.loadLatest();
+
+      expect(w.shown()).toEqual(ids(0, 50));
+      expect(await w.saved()).toEqual(ids(0, 50));
     });
 
     it("pages a gap by time on a server without msgid references", async () => {

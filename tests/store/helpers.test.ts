@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  capMergedMessages,
   dialsSavedAddress,
+  MAX_MESSAGES_PER_CHANNEL,
   mergeHistoryPage,
   resolveUserMetadata,
   withoutReaction,
@@ -239,9 +241,97 @@ describe("mergeHistoryPage", () => {
     expect(order(existing, page)).toEqual(["m0", "m1", "m2", "m3"]);
   });
 
+  it("puts a page of one millisecond ahead of our lines there when all we hold from before is a join", () => {
+    const joined = { ...said("j0", 400), type: "join" } as Message;
+    const existing = [joined, said("m1", 1000), said("m2", 1000)];
+    const page = [said("m0", 1000)];
+
+    expect(order(existing, page)).toEqual(["j0", "m0", "m1", "m2"]);
+  });
+
   it("returns what we hold, in order, for an empty page", () => {
     const existing = [said("m1", 2000), said("m0", 1000)];
 
     expect(order(existing, [])).toEqual(["m0", "m1"]);
+  });
+
+  it("puts a newest page of one millisecond behind the only line we hold there", () => {
+    const existing = [said("m1", 1000)];
+    const page = [said("m2", 1000), said("m3", 1000), said("m4", 1000)];
+
+    expect(
+      mergeHistoryPage(existing, page, "newest").merged.map((m) => m.msgid),
+    ).toEqual(["m1", "m2", "m3", "m4"]);
+  });
+
+  it("puts rows read from the newer side behind our lines when all of them share one millisecond", () => {
+    const existing = [said("m1", 1000), said("m2", 1000)];
+    const page = [said("m3", 1000), said("m4", 1000)];
+
+    expect(
+      mergeHistoryPage(existing, page, "newest").merged.map((m) => m.msgid),
+    ).toEqual(["m1", "m2", "m3", "m4"]);
+  });
+
+  it("puts a page of one millisecond right ahead of the line it was asked from, between the lines we hold there", () => {
+    const existing = [
+      said("m0", 500),
+      said("m1", 1000),
+      said("m4", 1000),
+      said("m5", 1000),
+      said("m6", 2000),
+    ];
+    const page = [said("m2", 1000), said("m3", 1000)];
+
+    expect(
+      mergeHistoryPage(existing, page, { before: "m4" }).merged.map(
+        (m) => m.msgid,
+      ),
+    ).toEqual(["m0", "m1", "m2", "m3", "m4", "m5", "m6"]);
+  });
+
+  it("places a page by its times when we do not hold the line it was asked from", () => {
+    const existing = [said("m3", 1000), said("m4", 2000)];
+    const page = [said("m0", 500), said("m1", 1000), said("m2", 1000)];
+
+    expect(
+      mergeHistoryPage(existing, page, { before: "gone" }).merged.map(
+        (m) => m.msgid,
+      ),
+    ).toEqual(["m0", "m1", "m2", "m3", "m4"]);
+  });
+});
+
+describe("capMergedMessages", () => {
+  const said = (index: number, time: number): Message =>
+    ({
+      id: `id-${index}`,
+      msgid: `m${index}`,
+      content: `line ${index}`,
+      userId: "alice",
+      timestamp: new Date(time),
+    }) as Message;
+  const full = Array.from({ length: MAX_MESSAGES_PER_CHANNEL }, (_, index) =>
+    said(index + 1, 1000 + Math.floor(index / 10)),
+  );
+
+  it("keeps an older line that shares the millisecond of the oldest line we hold at the cap", () => {
+    const older = said(0, 1000);
+
+    const capped = capMergedMessages(full, [older, ...full], undefined);
+
+    expect(capped.messages).toHaveLength(MAX_MESSAGES_PER_CHANNEL);
+    expect(capped.messages[0]).toBe(older);
+    expect(capped.window?.present).toBe(full);
+  });
+
+  it("drops the oldest end when a newer line arrives at the cap", () => {
+    const newer = said(MAX_MESSAGES_PER_CHANNEL + 1, 9000);
+
+    const capped = capMergedMessages(full, [...full, newer], undefined);
+
+    expect(capped.messages.at(-1)).toBe(newer);
+    expect(capped.messages[0]).toBe(full[1]);
+    expect(capped.window).toBeUndefined();
   });
 });

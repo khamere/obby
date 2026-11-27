@@ -608,21 +608,20 @@ async function deleteWithReactions(
   await deleteRows(tx, [...doomed.values()]);
 }
 
-// Rows sharing a millisecond are read back in id order. A server page lies
-// after the rows we held at its oldest time and before the ones we held at its
-// newest time, so at that edge we give new ids to the rows that sit out of
-// that order.
+// Rows sharing a millisecond are read back in id order, so where a server page
+// meets rows we held at one of its edge times we give new ids to the rows that
+// sit out of the server's order. A page asked from a line we hold at that time
+// lies on that line's side, and `held` places our rows when it was not. Each
+// moved row keeps its search terms, and a failed step undoes the whole move.
 export function orderRowsAtPageEdge(
   server: string,
   target: string,
   time: number,
   pageMsgids: string[],
-  edge: "oldest" | "newest",
+  held: "ahead" | "behind" | undefined,
+  anchor?: { msgid: string; kind: "before" | "after" },
 ): Promise<void> {
   const rank = new Map(pageMsgids.map((msgid, index) => [msgid, index]));
-  const outside = edge === "oldest" ? -1 : pageMsgids.length;
-  const rankOf = (row: HistoryRow) =>
-    (row.msgid ? rank.get(row.msgid) : undefined) ?? outside;
   return enqueue(undefined, (db) =>
     inTx(db, [ROWS, TERMS], "readwrite", async (tx) => {
       const store = tx.objectStore(ROWS);
@@ -631,25 +630,55 @@ export function orderRowsAtPageEdge(
           store.index("conv").getAll(IDBKeyRange.only([server, target, time])),
         )
       ).filter((row) => row.ref === undefined);
-      const ordered = [...rows].sort((a, b) => rankOf(a) - rankOf(b));
+      const anchorAt = anchor
+        ? rows.findIndex((row) => row.msgid === anchor.msgid)
+        : -1;
+      if (anchorAt < 0 && !held) return;
+      const firstBehind =
+        anchorAt < 0
+          ? held === "ahead"
+            ? rows.length
+            : 0
+          : anchorAt + (anchor?.kind === "after" ? 1 : 0);
+      const places = new Map(
+        rows.map((row, index) => [
+          row,
+          (row.msgid ? rank.get(row.msgid) : undefined) ??
+            (index < firstBehind ? -1 : pageMsgids.length),
+        ]),
+      );
+      const ordered = [...rows].sort(
+        (a, b) => (places.get(a) ?? 0) - (places.get(b) ?? 0),
+      );
       const firstMoved = ordered.findIndex((row, index) => row !== rows[index]);
       if (firstMoved < 0) return;
-      const moved = ordered.slice(firstMoved);
-      for (const row of moved) {
-        store.delete(row.id);
-        unindexRow(tx, row);
-      }
-      for (const { id: _, ...record } of moved) {
-        const id = await awaitRequest<IDBValidKey>(store.add(record));
-        await indexRow(
-          tx,
-          record,
-          id as number,
-          record.text === undefined ? [] : termsOf(record.text),
-        );
+      const moved = ordered.slice(firstMoved).map((row) => ({
+        row,
+        terms: row.text === undefined ? [] : termsOf(row.text),
+      }));
+      try {
+        for (const { row } of moved) {
+          store.delete(row.id);
+          unindexRow(tx, row);
+        }
+        for (const { row, terms } of moved) {
+          const { id: _, ...record } = row;
+          const id = await awaitRequest<IDBValidKey>(store.add(record));
+          await indexRow(tx, record, id as number, terms);
+        }
+      } catch (error) {
+        abortQuietly(tx);
+        throw error;
       }
     }),
   );
+}
+
+// A transaction that already ended refuses to abort, and by then it kept or undid everything on its own.
+function abortQuietly(tx: IDBTransaction) {
+  try {
+    tx.abort();
+  } catch {}
 }
 
 export function gapsFor(server: string, target: string): Promise<HistoryGap[]> {
