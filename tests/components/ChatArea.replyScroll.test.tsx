@@ -64,6 +64,8 @@ const makeMsg = (id: string): Message => ({
 const LIST_HEIGHT = 600;
 const CONTENT_HEIGHT = 5000;
 const BOTTOM = CONTENT_HEIGHT - LIST_HEIGHT;
+const MESSAGE_COUNT = 40;
+const ROW_HEIGHT = CONTENT_HEIGHT / MESSAGE_COUNT;
 
 describe("ChatArea scroll position when a reply is cancelled", () => {
   let frames: Map<number, FrameRequestCallback>;
@@ -96,6 +98,23 @@ describe("ChatArea scroll position when a reply is cancelled", () => {
     return { list, view };
   };
 
+  // Rows sit one under another and move with the scroll position, as a browser lays them out.
+  const placeRows = (list: HTMLElement, view: { scrollTop: number }) => {
+    list
+      .querySelectorAll<HTMLElement>("[data-message-id]")
+      .forEach((row, index) => {
+        row.getBoundingClientRect = () =>
+          new DOMRect(0, index * ROW_HEIGHT - view.scrollTop, 800, ROW_HEIGHT);
+      });
+  };
+
+  const composer = () => screen.getByPlaceholderText(/Message #general/i);
+
+  const startKeyboardReply = () => {
+    fireEvent.keyDown(composer(), { key: "ArrowUp", ctrlKey: true });
+    expect(screen.getByTitle("Cancel reply")).toBeInTheDocument();
+  };
+
   const startReplyToNewest = () => {
     const replyButtons = screen.getAllByTitle("Reply");
     fireEvent.click(replyButtons[replyButtons.length - 1]);
@@ -122,7 +141,7 @@ describe("ChatArea scroll position when a reply is cancelled", () => {
       servers: [server],
       currentUser: { id: "user1", username: "testuser", isOnline: true },
       messages: {
-        "server1-channel1": Array.from({ length: 40 }, (_, i) =>
+        "server1-channel1": Array.from({ length: MESSAGE_COUNT }, (_, i) =>
           makeMsg(`msg-${i}`),
         ),
       },
@@ -168,6 +187,7 @@ describe("ChatArea scroll position when a reply is cancelled", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.mocked(HTMLElement.prototype.scrollIntoView).mockReset();
   });
 
   it("keeps the reader's place after they scrolled up during a reply started at the bottom", () => {
@@ -226,5 +246,57 @@ describe("ChatArea scroll position when a reply is cancelled", () => {
     cancelReply();
 
     expect(view.scrollTop).toBe(1000);
+  });
+
+  it.each([
+    [
+      "the cancel button",
+      () => fireEvent.click(screen.getByTitle("Cancel reply")),
+    ],
+    ["Escape", () => fireEvent.keyDown(composer(), { key: "Escape" })],
+  ])(
+    "keeps the reader's place after they scrolled up during a reply picked with the keyboard and left with %s",
+    (_name, leaveReply) => {
+      const { list, view } = renderAtBottom();
+      placeRows(list, view);
+      startKeyboardReply();
+
+      view.scrollTop = 1000;
+      fireEvent.scroll(list);
+      leaveReply();
+      expect(screen.queryByTitle("Cancel reply")).toBeNull();
+      runFrames();
+
+      expect(view.scrollTop).toBe(1000);
+    },
+  );
+
+  it("keeps the reader's place after a jump to an older message during a reply picked with the keyboard", () => {
+    const { list, view } = renderAtBottom();
+    placeRows(list, view);
+    startKeyboardReply();
+
+    act(() => useStore.getState().revealMessage("msg-2"));
+    view.scrollTop = 200;
+    cancelReply();
+
+    expect(view.scrollTop).toBe(200);
+  });
+
+  it("returns to the newest message when only the keyboard navigation scrolled the list", () => {
+    const { list, view } = renderAtBottom();
+    placeRows(list, view);
+    vi.mocked(HTMLElement.prototype.scrollIntoView).mockImplementation(() => {
+      view.scrollTop = 3000;
+      fireEvent.scroll(list);
+    });
+    startKeyboardReply();
+    expect(view.scrollTop).toBe(3000);
+
+    fireEvent.keyDown(composer(), { key: "Escape" });
+    expect(screen.queryByTitle("Cancel reply")).toBeNull();
+    runFrames();
+
+    expect(view.scrollTop).toBe(BOTTOM);
   });
 });

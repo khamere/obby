@@ -212,6 +212,8 @@ export const ChatArea: React.FC<{
   // Used to restore auto-scroll after nav ends without corrupting wasAtBottomRef.
   const navWasActiveRef = useRef(false);
   const wasAtBottomBeforeNavRef = useRef(false);
+  // Where keyboard nav last put its highlighted row on screen, so we can tell its own scrolling from the reader's.
+  const navPlacedRowRef = useRef<{ id: string; top: number } | null>(null);
   // messageText is NOT React state — stored in a ref to avoid re-renders on every keystroke.
   // hasText tracks the empty↔non-empty boundary for send-button rendering (rare transitions).
   // completionInput mirrors the text only while a completion can be open.
@@ -1089,9 +1091,23 @@ export const ChatArea: React.FC<{
       }
       const el = findMessageRow(document, navHighlightedMsgId);
       el?.scrollIntoView({ block: "nearest", behavior: "instant" });
+      navPlacedRowRef.current = el && {
+        id: navHighlightedMsgId,
+        top: el.getBoundingClientRect().top,
+      };
     } else if (navWasActiveRef.current) {
-      if (wasAtBottomBeforeNavRef.current) {
-        channelListRefs.current.get(channelKey)?.scrollToBottom();
+      const list = channelListRefs.current.get(channelKey);
+      const placed = navPlacedRowRef.current;
+      const top =
+        placed &&
+        findMessageRow(document, placed.id)?.getBoundingClientRect().top;
+      // A reader who scrolled or jumped away during the navigation keeps their place, so we restore the bottom only while the list is still there or the highlighted row sits where the navigation put it.
+      if (
+        wasAtBottomBeforeNavRef.current &&
+        (list?.getScrollState().isAtBottom ||
+          (placed && top != null && Math.abs(top - placed.top) <= 1))
+      ) {
+        list?.scrollToBottom();
       }
       navWasActiveRef.current = false;
       wasAtBottomBeforeNavRef.current = false;
