@@ -477,7 +477,7 @@ async function addIslandGaps(
   target: string,
   page: HistoryPage,
   inserted: boolean[],
-) {
+): Promise<HistoryGap | undefined> {
   if (page.oldest === undefined || page.newest === undefined) return;
   for (const gap of await gapsFor(server, target))
     if (gap.from < page.newest && gap.to > page.oldest) await deleteGap(gap.id);
@@ -501,6 +501,35 @@ async function addIslandGaps(
       lost: false,
       ...(page.newestMsgid ? { fromMsgid: page.newestMsgid } : {}),
     });
+  // Rows we hold can share the millisecond the page ends in, with lines missing between them that no time can name, so we record that gap where the server pages from a msgid.
+  const { newest, newestMsgid } = page;
+  if (newer || !inserted[inserted.length - 1] || !newestMsgid) return;
+  if (!ircClient.canPageByMsgid(server)) return;
+  if (!(await holdsLineBesidePage(server, target, newest, page.msgids))) return;
+  await addGap({
+    server,
+    target,
+    from: newest,
+    to: newest,
+    lost: false,
+    fromMsgid: newestMsgid,
+  });
+  return (await gapsFor(server, target)).find(
+    (gap) => !gap.lost && gap.from === newest && gap.to === newest,
+  );
+}
+
+async function holdsLineBesidePage(
+  server: string,
+  target: string,
+  time: number,
+  pageMsgids: string[],
+): Promise<boolean> {
+  const inPage = new Set(pageMsgids);
+  const rows = await eventRowsAfter(server, target, time, inPage.size + 1);
+  return rows.some(
+    (row) => row.time === time && !(row.msgid && inPage.has(row.msgid)),
+  );
 }
 
 // Records for one stretch merge into a single one, so the record a fill
@@ -622,7 +651,10 @@ async function saveHistoryPage(
       if (gap) settleGap(store, serverId, target, gap, MAX_AUTO_FILL_PAGES);
     }
   } else if (request?.kind === "around") {
-    await addIslandGaps(key, target, page, inserted);
+    const gap = await addIslandGaps(key, target, page, inserted);
+    const fill = gap && request.fill && { ...request.fill, gap };
+    if (fill && askForRestOfMillisecond(serverId, target, gap, "from", fill))
+      return;
     request.fill?.onSettled?.(true);
   } else if (request?.kind === "after" && request.fill) {
     const filled = findFilledGap(await gapsFor(key, target), request.fill.gap);
