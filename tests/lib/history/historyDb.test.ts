@@ -940,6 +940,51 @@ describe("orderRowsAtPageEdge", () => {
     expect(await db.newestEventRows("s1", "#a", 50)).toEqual(before);
   });
 
+  it("puts a newer page of one millisecond ahead of the rows it leaves out when it was asked from a line at an earlier time", async () => {
+    await db.appendRows([said("m0", 500), said("m3"), said("m4")]);
+    await db.appendRows([said("m1"), said("m2")]);
+    expect(await msgidsAt(1000)).toEqual(["m3", "m4", "m1", "m2"]);
+
+    await db.orderRowsAtPageEdge("s1", "#a", 1000, ["m1", "m2"], "behind", {
+      msgid: "m0",
+      kind: "after",
+    });
+
+    expect(await msgidsAt(1000)).toEqual(["m1", "m2", "m3", "m4"]);
+  });
+
+  it("puts an older page of one millisecond behind the rows it leaves out when it was asked from a line at a later time", async () => {
+    await db.appendRows([said("m1"), said("m4"), said("m5", 2000)]);
+    await db.appendRows([said("m2"), said("m3")]);
+    expect(await msgidsAt(1000)).toEqual(["m1", "m4", "m2", "m3"]);
+
+    await db.orderRowsAtPageEdge(
+      "s1",
+      "#a",
+      1000,
+      ["m2", "m3", "m4"],
+      "ahead",
+      { msgid: "m5", kind: "before" },
+    );
+
+    expect(await msgidsAt(1000)).toEqual(["m1", "m2", "m3", "m4"]);
+  });
+
+  it("leaves a reaction as it was saved when the rows around it move", async () => {
+    await db.appendRows([
+      said("m3"),
+      row({ key: "r1", time: 1000, ref: "m3", raw: "reaction" }),
+    ]);
+    await db.appendRows([said("m1")]);
+    const reactions = await db.refRowsFor("s1", ["m3"]);
+    expect(reactions).toHaveLength(1);
+
+    await db.orderRowsAtPageEdge("s1", "#a", 1000, ["m1"], "behind");
+
+    expect(await msgidsAt(1000)).toEqual(["m1", "m3"]);
+    expect(await db.refRowsFor("s1", ["m3"])).toEqual(reactions);
+  });
+
   it("leaves a row without a msgid where it is when the page was asked from no line", async () => {
     await db.appendRows([
       row({ key: "own", raw: ":me!u@h PRIVMSG #a :sent without an echo" }),

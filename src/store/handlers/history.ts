@@ -556,17 +556,27 @@ async function saveHistoryPage(
         .map((row) => row.time)
         .filter((time) => time > oldest && time < newest),
     );
+    // A page inside one millisecond has no second edge to tell its side, so we place it by the line it was asked from: asked from an earlier time the page starts that millisecond, and asked from a later time it ends it.
+    const askedFrom =
+      request?.kind === "latest" ? undefined : request?.msgidTime;
+    const heldInOneMs =
+      request?.kind === "after" && askedFrom !== undefined && askedFrom < oldest
+        ? "behind"
+        : request?.kind === "before" &&
+            askedFrom !== undefined &&
+            askedFrom > newest
+          ? "ahead"
+          : undefined;
     // A move that fails leaves every row as it was saved, so the page goes on to settle its gaps and its request.
     try {
       for (const time of oldest === newest ? [] : [oldest, ...metInside])
         await orderRowsAtPageEdge(key, target, time, msgids, "ahead", anchor);
-      // A page inside one millisecond has no second edge to tell its side, so only the line it was asked from places it.
       await orderRowsAtPageEdge(
         key,
         target,
         newest,
         msgids,
-        oldest !== newest ? "behind" : undefined,
+        oldest !== newest ? "behind" : heldInOneMs,
         anchor,
       );
     } catch (error) {

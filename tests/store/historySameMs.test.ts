@@ -658,6 +658,94 @@ describe("history pages that end inside a millisecond", {
       expect(w.shown()).toEqual(ids(0, 130));
     });
 
+    it("puts a page fetched forward ahead of the newest page when both lie in one millisecond behind the line it was asked from", async () => {
+      const w = await boot("msgid,timestamp");
+      // m0 to m99 came a second apart, and m100 to m219 share one millisecond.
+      timeOf = (index) => BASE + Math.min(index, 100) * 1000;
+      await w.receiveLive(100);
+      w.world.has = range(0, 219);
+      w.useStore.setState({ messages: {} });
+      await w.loadLatest();
+      await vi.waitFor(
+        async () => expect(await w.db.gapsFor(SERVER, "#chan")).toHaveLength(1),
+        { timeout: WRITE_TIMEOUT_MS },
+      );
+      await w.openOnMarker(60);
+      const first = Number(w.shown()[0].slice(1));
+
+      const seen = await w.pageToPresent();
+
+      expect(w.requests("AFTER")).toEqual([
+        `CHATHISTORY AFTER #chan msgid=m99 ${PAGE}`,
+        `CHATHISTORY AFTER #chan msgid=m149 ${PAGE}`,
+      ]);
+      expect(seen).toEqual(ids(first, 219));
+      expect(await w.db.gapsFor(SERVER, "#chan")).toEqual([]);
+      const index = await w.savedIndex();
+      expect(index.rows).toEqual(
+        range(0, 219).map((line) =>
+          line < 10 ? `m${line} line` : `m${line} ${line} line`,
+        ),
+      );
+      expect(index.orphans).toBe(0);
+      expect(index.bytes).toBe(await w.db.usageBytes());
+
+      w.useStore.setState({ messages: {} });
+      await w.loadLatest();
+      await w.scrollToTop();
+
+      expect(w.shown()).toEqual(ids(0, 219));
+    });
+
+    it("puts an older page behind the lines it leaves out when it lies in one millisecond ahead of the line it was asked from", async () => {
+      const w = await boot("msgid,timestamp");
+      // m0 to m119 share one millisecond, and each later line has its own.
+      timeOf = (index) => BASE + 1000 + Math.max(index - 119, 0) * 1000;
+      // We saw two lines of that millisecond live, m5 and then m110.
+      w.feed(line(5, "#chan"), line(110, "#chan"));
+      await vi.waitFor(async () => expect(await w.saved()).toHaveLength(2), {
+        timeout: WRITE_TIMEOUT_MS,
+      });
+      w.world.has = range(0, 169);
+
+      await w.loadLatest();
+      // The page before m120, m70 to m119, repeats m110 and so closes the gap.
+      await vi.waitFor(
+        async () => {
+          expect(await w.saved()).toHaveLength(101);
+          expect(await w.db.gapsFor(SERVER, "#chan")).toEqual([]);
+        },
+        { timeout: WRITE_TIMEOUT_MS },
+      );
+      await sleep(50);
+      await w.db.whenHistoryIdle();
+
+      expect(w.requests("BEFORE")).toEqual([
+        `CHATHISTORY BEFORE #chan msgid=m120 ${PAGE}`,
+      ]);
+      expect(w.shown()).toEqual(["m5", ...ids(70, 169)]);
+      expect(await w.saved()).toEqual(["m5", ...ids(70, 169)]);
+    });
+
+    it("leaves the saved rows alone when a page repeats lines we hold", async () => {
+      const w = await boot("msgid,timestamp");
+      w.world.has = range(0, 299);
+      await w.loadLatest();
+      const move = vi.spyOn(w.db, "orderRowsAtPageEdge");
+
+      try {
+        w.ircClient.requestChathistoryLatest(SERVER, "#chan");
+        await vi.waitFor(() => expect(w.requests("LATEST")).toHaveLength(2));
+        await sleep(50);
+        await w.db.whenHistoryIdle();
+
+        expect(move).not.toHaveBeenCalled();
+        expect(await w.saved()).toEqual(ids(250, 299));
+      } finally {
+        move.mockRestore();
+      }
+    });
+
     it("puts a newest page behind the one line we hold when all of them share a millisecond", async () => {
       const w = await boot("msgid,timestamp");
       timeOf = () => BASE + 1000;
