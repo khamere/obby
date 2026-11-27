@@ -190,9 +190,9 @@ describe("useUnreadTitle", () => {
   });
 
   it("ignores a refused badge", async () => {
-    defineBadge(
-      "setAppBadge",
-      vi.fn(() => Promise.reject(new DOMException("x", "NotAllowedError"))),
+    // A spy would handle the rejection itself, so the refusal is a plain function.
+    defineBadge("setAppBadge", () =>
+      Promise.reject(new DOMException("x", "NotAllowedError")),
     );
     mount(mentionsAndPrivate());
     await Promise.resolve();
@@ -250,6 +250,27 @@ describe("useUnreadTitle", () => {
     expect(shownIcon(link)).toContain("rgb(242,63,67)");
     expect(setAppBadge).toHaveBeenCalledTimes(2);
     expect(setAppBadge).toHaveBeenLastCalledWith(3);
+  });
+
+  it("stays cleared when the store changes after the page went away", () => {
+    mount(mentionsAndPrivate());
+    window.dispatchEvent(new Event("pagehide"));
+    useStore.setState((state) => ({
+      ui: { ...state.ui, isAppFocused: !state.ui.isAppFocused },
+    }));
+    useStore.setState({ servers: mentionsAndPrivate(2) });
+
+    expect(document.title).toBe("Obby");
+    expect(link.getAttribute("href")).toBe("/images/obby.png");
+    expect(link.getAttribute("type")).toBe("image/x-icon");
+    expect(setAppBadge).toHaveBeenCalledTimes(1);
+    expect(clearAppBadge).toHaveBeenCalledTimes(1);
+
+    window.dispatchEvent(new Event("pageshow"));
+
+    expect(document.title).toBe("(4) Obby");
+    expect(shownIcon(link)).toContain("rgb(242,63,67)");
+    expect(setAppBadge).toHaveBeenLastCalledWith(4);
   });
 
   it("paints nothing on a page show with the counts already shown", () => {

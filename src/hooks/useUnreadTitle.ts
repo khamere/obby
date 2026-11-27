@@ -26,6 +26,7 @@ export function useUnreadTitle(): void {
     };
     let shownKey = "";
     let shownLevel: UnreadLevel = "none";
+    let pageGone = false;
 
     const setOrRemove = (name: string, value: string | null) => {
       if (value === null) link?.removeAttribute(name);
@@ -47,6 +48,7 @@ export function useUnreadTitle(): void {
         ).catch(() => {});
     };
     const update = (state: AppState) => {
+      if (pageGone) return;
       const { unread, mentions } = unreadTotals(state.servers);
       const level = unreadLevel(unread, mentions);
       const key = `${level}:${mentions}`;
@@ -59,16 +61,24 @@ export function useUnreadTitle(): void {
       shownKey = "";
       paint("none", 0);
     };
+    // The store still changes while the page unloads, so we stay cleared until it shows again.
+    const leave = () => {
+      pageGone = true;
+      clear();
+    };
     // A page restored from the back/forward cache gets its counts back here.
-    const repaint = () => update(useStore.getState());
+    const repaint = () => {
+      pageGone = false;
+      update(useStore.getState());
+    };
 
     update(useStore.getState());
     const unsubscribe = useStore.subscribe(update);
-    window.addEventListener("pagehide", clear);
+    window.addEventListener("pagehide", leave);
     window.addEventListener("pageshow", repaint);
     return () => {
       unsubscribe();
-      window.removeEventListener("pagehide", clear);
+      window.removeEventListener("pagehide", leave);
       window.removeEventListener("pageshow", repaint);
       clear();
     };
