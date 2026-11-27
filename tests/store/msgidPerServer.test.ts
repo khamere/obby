@@ -141,20 +141,29 @@ describe("the same msgid on two connections to one network", () => {
     expect(shown(DIRECT)).toEqual(["from bob"]);
   });
 
-  it("shows a multiline message in both server entries, the sender's echo included", () => {
-    const batch = [
-      "@time=2026-10-10T12:00:02.000Z;msgid=ml1 :alice!u@h BATCH +b1 draft/multiline #room",
-      "@batch=b1 :alice!u@h PRIVMSG #room :one",
-      "@batch=b1 :alice!u@h PRIVMSG #room :two",
-      ":alice!u@h BATCH -b1",
-    ];
-    feed(BOUNCER, ...batch);
-    feed(DIRECT, ...batch);
-    feed(DIRECT, ...batch);
+  // A server puts the msgid on the batch or on each of its lines.
+  it.each([
+    ["the batch", "msgid=ml1;", "", ""],
+    ["each line", "", "msgid=ml1;", "msgid=ml2;"],
+  ])(
+    "shows a multiline message with a msgid on %s in both server entries, the sender's echo included",
+    (_name, onBatch, onFirst, onSecond) => {
+      // The second delivery carries a later time, so only its msgids tell us we have it.
+      const batch = (second: number) => [
+        `@${onBatch}time=2026-10-10T12:00:0${second}.000Z :alice!u@h BATCH +b1 draft/multiline #room`,
+        `@${onFirst}batch=b1 :alice!u@h PRIVMSG #room :one`,
+        `@${onSecond}batch=b1 :alice!u@h PRIVMSG #room :two`,
+        ":alice!u@h BATCH -b1",
+      ];
+      feed(BOUNCER, ...batch(2));
+      feed(DIRECT, ...batch(2));
+      feed(DIRECT, ...batch(3));
+      feed(BOUNCER, ...batch(3));
 
-    expect(shown(BOUNCER)).toEqual(["one\ntwo"]);
-    expect(shown(DIRECT)).toEqual(["one\ntwo"]);
-  });
+      expect(shown(BOUNCER)).toEqual(["one\ntwo"]);
+      expect(shown(DIRECT)).toEqual(["one\ntwo"]);
+    },
+  );
 
   it("shows a private message in both entries of one nick", () => {
     setNick(BOUNCER, NICKS[DIRECT]);

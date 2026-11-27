@@ -265,8 +265,10 @@ export function mentionsAmong(
     const timestamp = result.timestamp.toISOString();
     const msgid = result.mtags?.msgid;
     mentions.push({
-      messageId:
-        msgid ?? `search-${channel.id}-${timestamp}-${sender}-${content}`,
+      // Every connection we hold to a network finds the line under the same msgid, so the id names the server too.
+      messageId: msgid
+        ? `search-${serverId}-${msgid}`
+        : `search-${channel.id}-${timestamp}-${sender}-${content}`,
       msgid,
       serverId,
       channelId: channel.id,
