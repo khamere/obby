@@ -14,6 +14,9 @@ const SECRET_INPUT =
   /^\/(?:oper|pass|password|identify|register|ghost|recover|regain|setpass|sendpass|resetpass|login|auth|sasl|quote|raw|ns|nickserv)\b|^\/msg\s+\S*serv\b|^\/msg\s+\S+\s+(?:identify|register|ghost|recover|regain|setpass|login|auth|pass|password)\b/i;
 const SERVICE_NICK = /serv$/i;
 
+export const canCarryPassword = (line: string): boolean =>
+  SECRET_INPUT.test(line);
+
 const isSecretRun = (run: BotCommandRun): boolean =>
   SECRET_INPUT.test(`/${run.command.name}`) ||
   !!run.command.options?.some((option) => option.type === "password");

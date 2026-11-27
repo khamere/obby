@@ -3,6 +3,34 @@ import useStore from "../store";
 import type { Message, PrivateChat, User } from "../types";
 import ircClient from "./ircClient";
 
+// We keep a private chat for a nick only, so these match the other targets a
+// message takes: a channel behind a status prefix, a list, a mask, a nick@server.
+const NOT_A_NICK = /[\s,*?!@.$:]/;
+
+// We list the private chat of a nick we message from another buffer, so the
+// server's echo or our own copy of the message has a place to show.
+export function privateChatForOwnMessage(
+  serverId: string,
+  target: string,
+): PrivateChat | undefined {
+  if (
+    !target ||
+    NOT_A_NICK.test(target) ||
+    ircClient.isChannel(serverId, target) ||
+    ircClient.isChannel(serverId, target.slice(1))
+  )
+    return undefined;
+  const findChat = () =>
+    useStore
+      .getState()
+      .servers.find((s) => s.id === serverId)
+      ?.privateChats?.find(
+        (pc) => pc.username.toLowerCase() === target.toLowerCase(),
+      );
+  if (!findChat()) useStore.getState().openPrivateChat(serverId, target);
+  return findChat();
+}
+
 // With echo-message the server sends our private message back and that echo
 // is the copy we show, so we only place one ourselves when nothing comes back.
 export function showOwnPrivateMessage(
