@@ -35,6 +35,39 @@ describe("IRCClient line safety", () => {
     ]);
   });
 
+  it("sends a whisper longer than a line in parts that each carry the tags", () => {
+    const text = "aé漢\u{1F600}\u{1F600}".repeat(45);
+    const prefix =
+      "@+channel-context=#c;+draft/channel-context=#c PRIVMSG bob :";
+
+    client.sendWhisper("s1", "bob", "#c", text);
+
+    const lines: string[] = send.mock.calls.map(([line]) => line);
+    expect(lines.length).toBeGreaterThan(1);
+    for (const line of lines) {
+      expect(line.startsWith(prefix)).toBe(true);
+      // A line to bob carries 380 bytes, and the tags have a budget of their own.
+      expect(
+        new TextEncoder().encode(line.slice(prefix.length)).length,
+      ).toBeLessThanOrEqual(380);
+    }
+    expect(lines.map((line) => line.slice(prefix.length)).join("")).toBe(text);
+  });
+
+  it("ends a part before a character that would cross the limit", () => {
+    // A line to bob carries 380 bytes.
+    client.sendPrivmsgLines(
+      "s1",
+      "bob",
+      `${"a".repeat(379)}\u{1F600}b`,
+      "@label=x ",
+    );
+    expect(send.mock.calls).toEqual([
+      [`@label=x PRIVMSG bob :${"a".repeat(379)}`],
+      ["@label=x PRIVMSG bob :\u{1F600}b"],
+    ]);
+  });
+
   it("joins the lines of a topic into one", () => {
     client.setTopic("s1", "#c", "one\ntwo");
     expect(send.mock.calls).toEqual([["TOPIC #c :one two"]]);

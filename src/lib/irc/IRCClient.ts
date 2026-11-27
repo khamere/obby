@@ -1842,9 +1842,8 @@ export class IRCClient implements IRCClientContext {
     text: string,
     tags = "",
   ): void {
-    for (const line of text.split(/[\r\n]+/)) {
-      if (line) this.sendRaw(serverId, `${tags}PRIVMSG ${target} :${line}`);
-    }
+    for (const line of text.split(/[\r\n]+/))
+      this.sendSeparately(serverId, target, line, tags, splitToBytes);
   }
 
   setTopic(serverId: string, channelName: string, topic: string): void {

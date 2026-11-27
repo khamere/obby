@@ -21,7 +21,11 @@ import {
   type FormattingType,
   formatMessageForIrc,
 } from "../lib/messageFormatter";
-import { exceedsLineLimit, splitLongMessage } from "../lib/messageProtocol";
+import {
+  exceedsLineLimit,
+  splitAction,
+  splitLongMessage,
+} from "../lib/messageProtocol";
 import { showOwnPrivateMessage } from "../lib/ownPrivateMessage";
 import { PRIVILEGED_COMMANDS } from "../lib/privilegedCommands";
 import {
@@ -387,7 +391,9 @@ export function useMessageSending({
         const actionLines = actionMessage
           .split(/[\r\n]+/)
           .filter(Boolean)
-          .map((line) => `\u0001ACTION ${line}\u0001`)
+          .flatMap((line) =>
+            splitAction(line, whisperContext?.targetUser ?? target),
+          )
           .join("\n");
         if (whisperContext) {
           ircClient.sendWhisper(
