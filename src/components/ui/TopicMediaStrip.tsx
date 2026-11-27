@@ -54,9 +54,10 @@ export const TopicMediaStrip: React.FC = () => {
 
   useEffect(() => {
     let cancelled = false;
+    const probeServerId = selectedServerId ?? undefined;
     for (const entry of candidates) {
       if (entry.type !== null) continue;
-      const cached = getCachedProbeResult(entry.url);
+      const cached = getCachedProbeResult(entry.url, probeServerId);
       if (cached !== undefined) {
         if (!cancelled) {
           setResolvedTypes((prev) =>
@@ -65,7 +66,7 @@ export const TopicMediaStrip: React.FC = () => {
         }
         continue;
       }
-      probeMediaUrl(entry.url).then((result) => {
+      probeMediaUrl(entry.url, probeServerId).then((result) => {
         if (!cancelled) {
           setResolvedTypes((prev) =>
             new Map(prev).set(entry.url, result?.type ?? null),
@@ -76,7 +77,7 @@ export const TopicMediaStrip: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [candidates]);
+  }, [candidates, selectedServerId]);
 
   // Only show entries with a confirmed media type — skip anything still probing (undefined) or
   // confirmed non-media (null). Tiles appear after probe succeeds, never as a loading skeleton.

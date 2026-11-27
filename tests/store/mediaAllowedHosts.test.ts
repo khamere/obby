@@ -88,12 +88,12 @@ describe("the store tells the probe which links are allowed-site only", () => {
   const fresh = (origin: string) => `${origin}/probe-${++n}.png`;
 
   // The probe refuses redirects exactly when the registered check says yes.
-  async function redirectModeFor(url: string) {
+  async function redirectModeFor(url: string, serverId?: string) {
     const fetchMock = vi.fn(async () => {
       throw new TypeError("blocked");
     });
     vi.stubGlobal("fetch", fetchMock);
-    await probeMediaUrl(url);
+    await probeMediaUrl(url, serverId);
     const init = (fetchMock.mock.calls[0] as unknown[] | undefined)?.[1] as
       | RequestInit
       | undefined;
@@ -109,6 +109,7 @@ describe("the store tells the probe which links are allowed-site only", () => {
           channels: [],
           privateChats: [],
         } as unknown as Server,
+        { id: "s2", channels: [], privateChats: [] } as unknown as Server,
       ],
     });
   });
@@ -135,10 +136,20 @@ describe("the store tells the probe which links are allowed-site only", () => {
     );
   });
 
-  test("a connected server's file host is not guarded, listed or not", async () => {
+  test("a listed host that is the file host of the link's own server is not guarded", async () => {
     setMedia(1, ["files.example"]);
-    expect(await redirectModeFor(fresh("https://files.example"))).toBe(
+    expect(await redirectModeFor(fresh("https://files.example"), "s1")).toBe(
       "follow",
+    );
+  });
+
+  test("a listed host that is only another server's file host is guarded", async () => {
+    setMedia(1, ["files.example"]);
+    expect(await redirectModeFor(fresh("https://files.example"), "s2")).toBe(
+      "manual",
+    );
+    expect(await redirectModeFor(fresh("https://files.example"))).toBe(
+      "manual",
     );
   });
 });

@@ -259,6 +259,7 @@ describe("MediaViewerModal — the user's allowed sites", () => {
     await waitFor(() =>
       expect(vi.mocked(mediaProbe.probeMediaUrl)).toHaveBeenCalledWith(
         FILEHOST_A,
+        "s1",
       ),
     );
     expect(probedHosts()).not.toContain("other.example");
@@ -400,6 +401,25 @@ describe("MediaViewerModal — the user's allowed sites", () => {
     );
     expect(document.querySelector(`img[src="${listedTopic}"]`)).not.toBeNull();
     expect(document.querySelector(`img[src="${unlistedTopic}"]`)).toBeNull();
+  });
+
+  test("every probe and cache lookup names the server the viewer was opened on", async () => {
+    const extensionless = "https://files.example/radio";
+    mock.topic = `now playing ${extensionless}`;
+    mock.messages = [message(extensionless), message(LISTED)];
+    render(viewer(extensionless));
+
+    await waitFor(() =>
+      expect(screen.getByAltText("Image preview").getAttribute("src")).toBe(
+        extensionless,
+      ),
+    );
+    const probes = vi.mocked(mediaProbe.probeMediaUrl).mock.calls;
+    const lookups = vi.mocked(mediaProbe.getCachedProbeResult).mock.calls;
+    expect(probes.length).toBeGreaterThan(0);
+    expect(lookups.length).toBeGreaterThan(0);
+    expect(probes.filter(([, serverId]) => serverId !== "s1")).toEqual([]);
+    expect(lookups.filter(([, serverId]) => serverId !== "s1")).toEqual([]);
   });
 
   describe("a click on a comment's image", () => {

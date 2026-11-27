@@ -140,6 +140,7 @@ describe("MessageItem — the user's allowed sites", () => {
       expect(container.querySelector(`img[src="${LISTED}"]`)).toBeTruthy(),
     );
     expect(probedUrls()).toEqual([LISTED]);
+    expect(probeMediaUrl).toHaveBeenCalledWith(LISTED, "server1");
     expect(container.querySelector(`img[src="${OTHER}"]`)).toBeNull();
   });
 

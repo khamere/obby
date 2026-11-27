@@ -735,7 +735,7 @@ export function MediaViewerModal({
           .map((e, i) => {
             let type = e.type;
             if (type === null) {
-              const cached = getCachedProbeResult(e.url);
+              const cached = getCachedProbeResult(e.url, serverId);
               if (cached != null && !cached.skipped) type = cached.type;
             }
             return {
@@ -759,7 +759,7 @@ export function MediaViewerModal({
           // avoiding a flash of music-note icons for already-visited URLs.
           let type = e.type;
           if (type === null) {
-            const cached = getCachedProbeResult(e.url);
+            const cached = getCachedProbeResult(e.url, serverId);
             if (cached != null && !cached.skipped) type = cached.type;
           }
           return {
@@ -792,7 +792,7 @@ export function MediaViewerModal({
             // this condition is false and the URL is excluded immediately — no FaMusic.
             (filehost != null &&
               isUrlFromFilehost(e.url, filehost) &&
-              getCachedProbeResult(e.url) === undefined) ||
+              getCachedProbeResult(e.url, serverId) === undefined) ||
             (e.url === url && (!sourceMsgId || e.msg.msgid === sourceMsgId))) &&
           canShowMedia(e.url, mediaSettings, filehost),
       );
@@ -862,7 +862,7 @@ export function MediaViewerModal({
       ...new Set(entries.filter((e) => e.type === null).map((e) => e.url)),
     ];
     for (const probeUrl of urlsToProbe) {
-      probeMediaUrl(probeUrl).then((result) => {
+      probeMediaUrl(probeUrl, serverId).then((result) => {
         if (cancelled) return;
         if (result && !result.skipped && result.type !== null) {
           setMediaEntries((prev) =>
@@ -941,7 +941,7 @@ export function MediaViewerModal({
     }
     let cancelled = false;
     setProbedType("probing");
-    probeMediaUrl(currentUrl).then((result) => {
+    probeMediaUrl(currentUrl, serverId).then((result) => {
       if (!cancelled) {
         const resolved = result && !result.skipped ? result.type : null;
         setProbedType(resolved ?? "failed");
@@ -959,7 +959,7 @@ export function MediaViewerModal({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, currentUrl, currentEntry, isCurrentRefused]);
+  }, [isOpen, currentUrl, currentEntry, isCurrentRefused, serverId]);
 
   // Swap a ciphertext URL for its plaintext blob, but only for the entry the
   // user is actually looking at. Resolving the whole list up front would

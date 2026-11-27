@@ -1,7 +1,7 @@
 import { act, cleanup, render, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TopicMediaStrip } from "../../src/components/ui/TopicMediaStrip";
-import { probeMediaUrl } from "../../src/lib/mediaProbe";
+import { getCachedProbeResult, probeMediaUrl } from "../../src/lib/mediaProbe";
 import type { MediaVisibilityLevel } from "../../src/lib/mediaUtils";
 import useStore from "../../src/store";
 import type { Channel, Server } from "../../src/types";
@@ -18,14 +18,19 @@ vi.mock("../../src/lib/ircClient", () => ({
 
 // The store registers its allowed-site check on the real module, so only the
 // probe itself is replaced: a call to it stands for a request to that host.
-vi.mock("../../src/lib/mediaProbe", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../../src/lib/mediaProbe")>()),
-  probeMediaUrl: vi.fn(async () => ({
-    type: "image",
-    streamable: false,
-    skipped: false,
-  })),
-}));
+vi.mock("../../src/lib/mediaProbe", async (importOriginal) => {
+  const real =
+    await importOriginal<typeof import("../../src/lib/mediaProbe")>();
+  return {
+    ...real,
+    getCachedProbeResult: vi.fn(real.getCachedProbeResult),
+    probeMediaUrl: vi.fn(async () => ({
+      type: "image",
+      streamable: false,
+      skipped: false,
+    })),
+  };
+});
 
 const LISTED = "https://img.example/topic-a";
 const OTHER = "https://other.example/topic-b";
@@ -93,6 +98,16 @@ describe("TopicMediaStrip — the user's allowed sites", () => {
     );
     expect(probedUrls()).toEqual([LISTED]);
     expect(container.querySelector(`img[src="${OTHER}"]`)).toBeNull();
+  });
+
+  it("probes and looks up a topic link for the server the channel is on", async () => {
+    setMedia(1, ["img.example"]);
+    render(<TopicMediaStrip />);
+
+    await waitFor(() =>
+      expect(probeMediaUrl).toHaveBeenCalledWith(LISTED, "server1"),
+    );
+    expect(getCachedProbeResult).toHaveBeenCalledWith(LISTED, "server1");
   });
 
   it("drops the tile when the site is removed", async () => {

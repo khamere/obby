@@ -4935,7 +4935,7 @@ useStore.subscribe((state, prev) => {
 registerAllHandlers(useStore);
 setVoiceStore(useStore);
 
-setAllowedSiteCheck((url) => {
+setAllowedSiteCheck((url, serverId) => {
   const { globalSettings, servers } = useStore.getState();
   return isAllowedSiteOnly(
     url,
@@ -4943,7 +4943,7 @@ setAllowedSiteCheck((url) => {
       globalSettings.mediaVisibilityLevel,
       globalSettings.mediaAllowedHosts,
     ),
-    servers.flatMap(serverFilehosts),
+    serverFilehosts(servers.find((s) => s.id === serverId)),
   );
 });
 

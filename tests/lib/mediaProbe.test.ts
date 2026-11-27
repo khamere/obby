@@ -556,14 +556,70 @@ describe("guarded probe for a link only the user's allowed sites admit", () => {
     expect(await probeMediaUrl(mislabelled)).toBeNull();
   });
 
-  test("a host that fails both requests is still asked once only", async () => {
+  test("a link that fails both requests leaves the host's other links asked", async () => {
+    setAllowedSiteCheck(() => true);
+    const failing = uniqueUrl("/missing");
+    const redirecting = new URL("/r/x.jpg", failing).href;
+    const extensionless = new URL("/noext", failing).href;
+
+    vi.mocked(fetch).mockRejectedValue(new TypeError("CORS"));
+    expect(await probeMediaUrl(failing)).toBeNull();
+
+    vi.mocked(fetch).mockReset().mockImplementation(redirectingFetch);
+    expect(await probeMediaUrl(redirecting)).toBeNull();
+    expect(vi.mocked(fetch).mock.calls.map(([, init]) => init?.method)).toEqual(
+      ["HEAD"],
+    );
+
+    vi.mocked(fetch).mockImplementation(() =>
+      Promise.resolve(makeResponse({ "Content-Type": "image/png" })),
+    );
+    expect((await probeMediaUrl(extensionless))?.type).toBe("image");
+  });
+
+  test("a host the plain probe stopped asking is still asked about a guarded link", async () => {
+    const plain = uniqueUrl("/a.jpg");
+    const redirecting = new URL("/r/x.jpg", plain).href;
+
+    setAllowedSiteCheck(() => false);
+    vi.mocked(fetch).mockRejectedValue(new TypeError("CORS"));
+    expect((await probeMediaUrl(plain))?.type).toBe("image");
+
+    setAllowedSiteCheck(() => true);
+    vi.mocked(fetch).mockReset().mockImplementation(redirectingFetch);
+    expect(await probeMediaUrl(redirecting)).toBeNull();
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
+  });
+
+  test("a failed guarded link leaves the plain probe asking the host", async () => {
+    const guardedLink = uniqueUrl("/missing");
+    const plain = new URL("/noext", guardedLink).href;
+
+    setAllowedSiteCheck(() => true);
+    vi.mocked(fetch).mockRejectedValue(new TypeError("CORS"));
+    expect(await probeMediaUrl(guardedLink)).toBeNull();
+
+    setAllowedSiteCheck(() => false);
+    vi.mocked(fetch)
+      .mockReset()
+      .mockResolvedValue(makeResponse({ "Content-Type": "image/png" }));
+    expect((await probeMediaUrl(plain))?.type).toBe("image");
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
+  });
+
+  test("each link on a host that fails both requests costs those two requests, once", async () => {
     setAllowedSiteCheck(() => true);
     const first = uniqueUrl("/a.jpg");
     const second = new URL("/b.jpg", first).href;
     vi.mocked(fetch).mockRejectedValue(new TypeError("CORS"));
     expect((await probeMediaUrl(first))?.type).toBe("image");
     expect((await probeMediaUrl(second))?.type).toBe("image");
-    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(fetch).mock.calls.map(([, init]) => init?.method)).toEqual(
+      ["HEAD", "GET", "HEAD", "GET"],
+    );
+    expect((await probeMediaUrl(first))?.type).toBe("image");
+    expect((await probeMediaUrl(second))?.type).toBe("image");
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(4);
   });
 
   test("follows redirects for any other link", async () => {
@@ -630,6 +686,27 @@ describe("guarded probe for a link only the user's allowed sites admit", () => {
     vi.mocked(fetch).mockRejectedValue(new TypeError("CORS"));
     expect(await probeMediaUrl(uniqueUrl())).toBeNull();
     expect(mediaElementsCreated().length).toBeGreaterThan(0);
+  });
+
+  test("the server a link was posted on decides its mode and its cached result", async () => {
+    setAllowedSiteCheck((_url, serverId) => serverId !== "home");
+    const url = uniqueUrl();
+
+    vi.mocked(fetch).mockResolvedValue(
+      makeResponse({ "Content-Type": "image/png" }),
+    );
+    expect((await probeMediaUrl(url, "home"))?.type).toBe("image");
+    expect(vi.mocked(fetch).mock.calls[0][1]?.redirect).toBe("follow");
+    expect(getCachedProbeResult(url, "home")?.type).toBe("image");
+    expect(getCachedProbeResult(url, "elsewhere")).toBeUndefined();
+
+    vi.mocked(fetch).mockResolvedValue(
+      makeResponse({ "Content-Type": "text/html" }),
+    );
+    expect(await probeMediaUrl(url, "elsewhere")).toBeNull();
+    expect(vi.mocked(fetch).mock.calls[1][1]?.redirect).toBe("manual");
+    expect(getCachedProbeResult(url, "elsewhere")).toBeNull();
+    expect(getCachedProbeResult(url, "home")?.type).toBe("image");
   });
 
   test("a result from one mode is never reused in the other", async () => {

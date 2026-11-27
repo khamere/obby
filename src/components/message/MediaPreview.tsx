@@ -1223,7 +1223,7 @@ const ProbeablePreview: React.FC<{
       (entries) => {
         if (!entries[0].isIntersecting) return;
         observer.disconnect();
-        probeMediaUrl(url).then((result) => {
+        probeMediaUrl(url, serverId).then((result) => {
           if (!cancelled && result && !result.skipped) {
             setResolvedType(result.type);
             onTypeResolved?.(url, result.type);
@@ -1237,7 +1237,7 @@ const ProbeablePreview: React.FC<{
       cancelled = true;
       observer.disconnect();
     };
-  }, [url, onTypeResolved]);
+  }, [url, serverId, onTypeResolved]);
 
   let preview: React.ReactNode = null;
   if (resolvedType === "image") {

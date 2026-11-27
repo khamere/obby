@@ -23,10 +23,13 @@ function cacheSet(url: string, result: ProbeResult | null): void {
 
 // A link that only the user's allowed sites admit gets a guarded probe: we
 // refuse redirects and never load it into a hidden media element, so the
-// request stays on the site the user named.
-let isAllowedSiteUrl: (url: string) => boolean = () => false;
+// request stays on the site the user named. The answer depends on the server
+// the link was posted on, since a file host is trusted on its own server only.
+type AllowedSiteCheck = (url: string, serverId?: string) => boolean;
 
-export function setAllowedSiteCheck(check: (url: string) => boolean): void {
+let isAllowedSiteUrl: AllowedSiteCheck = () => false;
+
+export function setAllowedSiteCheck(check: AllowedSiteCheck): void {
   isAllowedSiteUrl = check;
 }
 
@@ -52,8 +55,9 @@ export function shouldProbeUrl(url: string): boolean {
  */
 export function getCachedProbeResult(
   url: string,
+  serverId?: string,
 ): ProbeResult | null | undefined {
-  const key = probeKey(url, isAllowedSiteUrl(url));
+  const key = probeKey(url, isAllowedSiteUrl(url, serverId));
   if (!cache.has(key)) return undefined;
   return cache.get(key) ?? null;
 }
@@ -181,8 +185,11 @@ const inFlight = new Map<string, Promise<ProbeResult | null>>();
 
 // Every caller of a URL shares one probe: each one opens hidden media elements,
 // and WebKit can deadlock while it cancels many of those at once.
-export function probeMediaUrl(url: string): Promise<ProbeResult | null> {
-  const guarded = isAllowedSiteUrl(url);
+export function probeMediaUrl(
+  url: string,
+  serverId?: string,
+): Promise<ProbeResult | null> {
+  const guarded = isAllowedSiteUrl(url, serverId);
   const key = probeKey(url, guarded);
   if (cache.has(key)) return Promise.resolve(cache.get(key) ?? null);
   let probe = inFlight.get(key);
@@ -216,11 +223,13 @@ async function probeUncached(
 
   // Primary path: HTTP Content-Type is the single source of truth.
   // HEAD is tried first; GET fallback covers servers that reject HEAD (e.g. Icecast).
-  const host = extractHostname(url);
+  // The guarded probe asks about every link and keeps no host-wide refusal,
+  // since only the site's own answer shows us a redirect we must refuse.
+  const stopAskingHost = guarded ? null : extractHostname(url);
   const fetched =
-    host !== null && fetchBlockedHosts.has(host)
+    stopAskingHost !== null && fetchBlockedHosts.has(stopAskingHost)
       ? null
-      : await fetchContentType(url, host, guarded);
+      : await fetchContentType(url, stopAskingHost, guarded);
   if (fetched) {
     const result = classifyContentType(
       fetched.contentType,
