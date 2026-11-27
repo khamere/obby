@@ -175,6 +175,14 @@ async function boot(refs: string) {
     });
   };
 
+  // We saved one line live on this device and none around it.
+  const receiveLine = async (index: number) => {
+    feed(line(index));
+    await vi.waitFor(async () => expect(await saved()).toContain(`m${index}`), {
+      timeout: WRITE_TIMEOUT_MS,
+    });
+  };
+
   // The reader comes back the way a reload does: the chat is empty, the
   // newest page loads, and the chat opens on the read marker.
   const comeBack = async () => {
@@ -210,6 +218,7 @@ async function boot(refs: string) {
     gaps,
     requests,
     receiveLive,
+    receiveLine,
     comeBack,
     pageToPresent,
   };
@@ -266,6 +275,22 @@ describe("a page around the read marker that ends in the millisecond the newest 
     const w = await boot("msgid,timestamp");
     // The newest page starts at m210, so 125 lines sit between the pages.
     w.world.has = range(0, 259);
+
+    expect(await w.comeBack()).toBe(true);
+
+    expect(await w.saved()).toEqual(ids(35, 259));
+    expect(await w.gaps()).toEqual([]);
+    expect(w.requests("AFTER")).toEqual(
+      [84, 134, 184].map(
+        (edge) => `CHATHISTORY AFTER #chan msgid=m${edge} ${PAGE}`,
+      ),
+    );
+  });
+
+  it("keeps asking past a single line it holds between the two pages", async () => {
+    const w = await boot("msgid,timestamp");
+    w.world.has = range(0, 259);
+    await w.receiveLine(90);
 
     expect(await w.comeBack()).toBe(true);
 

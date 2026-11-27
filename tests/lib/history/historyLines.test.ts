@@ -1499,6 +1499,13 @@ describe("decideAfterForwardFill", () => {
       expect(resume(900, 900, [true, false])).toEqual({ kind: "close" });
     });
 
+    it("keeps the gap open on a page inside that millisecond that passes a row we had and ends on a new one", () => {
+      expect(resume(900, 900, [true, false, true])).toEqual({
+        kind: "shrink",
+        from: 900,
+      });
+    });
+
     it("closes on a page that runs past the gap", () => {
       expect(resume(310, 901, [true, true])).toEqual({ kind: "close" });
     });

@@ -532,7 +532,7 @@ export function decideAfterLatest(input: {
 }
 
 // After a page fetched forward into a gap from its older edge: it closes once
-// the page reaches rows we already had, otherwise its older edge moves up.
+// the page ends on a row we already had, otherwise its older edge moves up.
 // A page that stops inside the millisecond of the gap's newer edge can leave
 // lines of that millisecond behind, so the gap stays open when the next page
 // can start from the line this one ended on (`canResumeFromEdge`).
@@ -543,10 +543,11 @@ export function decideAfterForwardFill(input: {
   canResumeFromEdge?: boolean;
 }): { kind: "close" } | { kind: "keep" } | { kind: "shrink"; from: number } {
   const { gap, page, inserted, canResumeFromEdge } = input;
-  const hasDuplicate = inserted.some((wasNew) => !wasNew);
+  // A row we hold can stand alone with lines missing after it, so only a page that ends on one has reached the rows on the far side.
+  const endsOnHeldRow = inserted[inserted.length - 1] === false;
   if (page.newest === undefined || page.newest > gap.to)
     return { kind: "close" };
-  if (page.newest === gap.to && (!canResumeFromEdge || hasDuplicate))
+  if (page.newest === gap.to && (!canResumeFromEdge || endsOnHeldRow))
     return { kind: "close" };
   // A page asked from an edge the gap has moved past starts with rows we hold, which says nothing about the far side.
   const startsBeforeGap =
@@ -557,7 +558,7 @@ export function decideAfterForwardFill(input: {
   const canMoveWithinEdge = canResumeFromEdge && page.newest === gap.from;
   if (startsBeforeGap && page.newest <= gap.from && !canMoveWithinEdge)
     return { kind: "keep" };
-  if (!startsBeforeGap && hasDuplicate) return { kind: "close" };
+  if (!startsBeforeGap && endsOnHeldRow) return { kind: "close" };
   return { kind: "shrink", from: page.newest };
 }
 
