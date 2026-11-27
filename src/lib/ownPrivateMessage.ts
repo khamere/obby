@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import useStore from "../store";
+import { showSavedHistory } from "../store/handlers/history";
 import type { Message, PrivateChat, User } from "../types";
 import ircClient from "./ircClient";
 
@@ -28,7 +29,11 @@ export function privateChatForOwnMessage(
         (pc) => pc.username.toLowerCase() === target.toLowerCase(),
       );
   if (!findChat()) useStore.getState().openPrivateChat(serverId, target);
-  return findChat();
+  const chat = findChat();
+  // Without an echo our own copy and its saved row carry different times, so we show the saved history before the copy goes in and the two never meet.
+  if (chat && !ircClient.hasCapability(serverId, "echo-message"))
+    showSavedHistory(useStore, serverId, chat.username);
+  return chat;
 }
 
 // With echo-message the server sends our private message back and that echo

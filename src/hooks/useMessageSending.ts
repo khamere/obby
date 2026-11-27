@@ -9,6 +9,10 @@ import { base64EncodeUtf8 } from "../lib/base64";
 import { botPriority } from "../lib/botPriority";
 import { slapAction } from "../lib/clientCommands";
 import { coerceOptionValue } from "../lib/commandInvocation";
+import {
+  CREDENTIAL_COMMAND,
+  isServicesNick,
+} from "../lib/history/historyLines";
 import { LINE_BREAK } from "../lib/irc/IRCClient";
 import ircClient from "../lib/ircClient";
 import { parseJoinCommand, replyTags } from "../lib/ircUtils";
@@ -353,12 +357,17 @@ export function useMessageSending({
         const routed = routeOutgoingPM(selectedServerId, target, message);
         if (routed === "withheld") return "withheld" as const;
         if (routed === "sent") return;
-        // A line that can carry a password gets no chat and no copy from us, so we never put it on screen ourselves.
+        // A message to a service or a line that can carry a password gets no chat and no copy from us, so we never put it on screen ourselves.
         const chat =
           message &&
+          !isServicesNick(target) &&
           !message
             .split(LINE_BREAK)
-            .some((line) => canCarryPassword(`/msg ${target} ${line}`))
+            .some(
+              (line) =>
+                CREDENTIAL_COMMAND.test(line.trim()) ||
+                canCarryPassword(`/msg ${target} ${line}`),
+            )
             ? privateChatForOwnMessage(selectedServerId, target)
             : undefined;
         ircClient.sendPrivmsgLines(selectedServerId, target, message);

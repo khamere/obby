@@ -495,6 +495,13 @@ describe("/msg typed in another buffer", () => {
     "/msg Q@CServe.example.org AUTH me hunter2",
     "/msg Q SET PASSWORD hunter2",
     "/msg Q NEWPASS old hunter2 hunter2",
+    "/msg Q EMAIL hunter2 me@example.org me@example.org",
+    "/msg x hunter2",
+    "/msg GLOBAL hunter2",
+    "/msg bob setpass hunter2",
+    "/msg bob release me hunter2",
+    "/msg bob authenticate hunter2",
+    "/msg bob  oper me hunter2",
   ])("sends %j and puts it in no chat", (text) => {
     const sendRaw = start(false);
     runCommand(text, me);
@@ -508,11 +515,11 @@ describe("/msg typed in another buffer", () => {
     "lists no chat when a later line can carry a password (echo-message %s)",
     (echoes) => {
       const sendRaw = start(echoes);
-      runCommand("/msg Q hello\nAUTH me hunter2", me);
+      runCommand("/msg bob hello\nAUTH me hunter2", me);
 
       expect(privmsgs(sendRaw)).toEqual([
-        "PRIVMSG Q :hello",
-        "PRIVMSG Q :AUTH me hunter2",
+        "PRIVMSG bob :hello",
+        "PRIVMSG bob :AUTH me hunter2",
       ]);
       expect(chats()).toEqual([]);
       expect(rows()).toEqual([]);
@@ -527,11 +534,37 @@ describe("/msg typed in another buffer", () => {
     expect(rows()).toEqual([]);
   });
 
+  it("adds no copy of a line to a service chat already listed", () => {
+    const sendRaw = start(false, [{ ...bob, id: "pm-q", username: "Q" }]);
+    runCommand("/msg q EMAIL hunter2 me@example.org me@example.org", me);
+
+    expect(privmsgs(sendRaw)).toHaveLength(1);
+    expect(rows()).toEqual([]);
+  });
+
+  it("lists no chat for the server's echo of a message to a service", () => {
+    start(true);
+    runCommand("/msg Q EMAIL hunter2 me@example.org me@example.org", me);
+    ircClient.triggerEvent("USERMSG", {
+      serverId: "s1",
+      mtags: { msgid: "echo-1" },
+      sender: "me",
+      target: "Q",
+      message: "EMAIL hunter2 me@example.org me@example.org",
+      timestamp: new Date("2026-01-01T12:00:00Z"),
+    });
+
+    expect(chats()).toEqual([]);
+    expect(rows()).toEqual([]);
+  });
+
   it.each([
     "#lobby",
     "#elsewhere",
     "@#lobby",
     "+#lobby",
+    "%#lobby",
+    "~#lobby",
     "bob,mara",
     "bob@irc.example.org",
     "$*.example.org",
@@ -542,6 +575,16 @@ describe("/msg typed in another buffer", () => {
     runCommand(`/msg ${target} hello`, me);
 
     expect(privmsgs(sendRaw)).toEqual([`PRIVMSG ${target} :hello`]);
+    expect(chats()).toEqual([]);
+    expect(rows()).toEqual([]);
+  });
+
+  it("lists no private chat for a channel behind a status prefix that is no channel type", () => {
+    const sendRaw = start(false);
+    vi.spyOn(ircClient, "chantypes").mockReturnValue("#");
+    runCommand("/msg +#lobby hello", me);
+
+    expect(privmsgs(sendRaw)).toEqual(["PRIVMSG +#lobby :hello"]);
     expect(chats()).toEqual([]);
     expect(rows()).toEqual([]);
   });

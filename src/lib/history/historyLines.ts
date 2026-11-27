@@ -44,7 +44,7 @@ const REACTION_TAGS = ["+draft/react", "+draft/unreact", "+react", "+unreact"];
 const DROPPED_TAGS = ["batch", "label"];
 const WHISPER_TAGS = ["+channel-context", "+draft/channel-context"];
 const SERVICES_NICKS = new Set(["q", "x", "global"]);
-const CREDENTIAL_COMMAND =
+export const CREDENTIAL_COMMAND =
   /^(identify|register|ghost|recover|regain|release|login|auth|authenticate|pass|oper|set\s+pass(word)?)\b/i;
 
 // Services and server PMs carry passwords and account traffic, so they are

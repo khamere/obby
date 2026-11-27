@@ -1393,6 +1393,70 @@ describe("local history without chathistory", () => {
     ).toEqual(["one", "two"]);
   });
 
+  const ownPrivateMessage = () => import("../../src/lib/ownPrivateMessage");
+  const bobMessages = () =>
+    (w.useStore.getState().messages[`${SERVER}-pm-bob`] ?? []).map(
+      (m) => m.content,
+    );
+
+  it.each(["hello", "one\ntwo"])(
+    "shows %j once when we sent it to a private chat that opens afterwards",
+    async (text) => {
+      const { privateChatForOwnMessage, showOwnPrivateMessage } =
+        await ownPrivateMessage();
+      w.addPrivateChat("bob");
+      const chat = privateChatForOwnMessage(SERVER, "bob");
+      const sendTime = vi.spyOn(Date, "now").mockReturnValue(BASE);
+      w.ircClient.sendPrivmsgLines(SERVER, "bob", text);
+      sendTime.mockRestore();
+      showOwnPrivateMessage(
+        SERVER,
+        chat as NonNullable<typeof chat>,
+        w.user(OWN_NICK),
+        text,
+        null,
+      );
+      await vi.waitFor(async () =>
+        expect(await w.stored("bob")).toHaveLength(text.split("\n").length),
+      );
+
+      w.showSaved(SERVER, "bob");
+      await w.drain();
+
+      expect(bobMessages()).toEqual([text]);
+    },
+  );
+
+  it("shows the saved history of a private chat before our message to it from another buffer", async () => {
+    const { privateChatForOwnMessage } = await ownPrivateMessage();
+    w.addPrivateChat("bob");
+    w.feed(`@time=${at(1)} :bob!u@h PRIVMSG ${OWN_NICK} :earlier`);
+    await vi.waitFor(async () => expect(await w.stored("bob")).toHaveLength(1));
+    w.restart();
+    const unread = w.privateChat("bob")?.unreadCount;
+
+    privateChatForOwnMessage(SERVER, "bob");
+
+    await vi.waitFor(() => expect(bobMessages()).toEqual(["earlier"]));
+    expect(w.privateChat("bob")?.unreadCount).toBe(unread);
+  });
+
+  it("leaves the saved history to the first showing of the chat when the server echoes", async () => {
+    w = await boot(["echo-message", "message-tags"]);
+    const { privateChatForOwnMessage } = await ownPrivateMessage();
+    w.addPrivateChat("bob");
+    w.feed(`@time=${at(1)} :bob!u@h PRIVMSG ${OWN_NICK} :earlier`);
+    await vi.waitFor(async () => expect(await w.stored("bob")).toHaveLength(1));
+    w.restart();
+
+    privateChatForOwnMessage(SERVER, "bob");
+    await w.drain();
+    expect(bobMessages()).toEqual([]);
+
+    w.showSaved(SERVER, "bob");
+    await vi.waitFor(() => expect(bobMessages()).toEqual(["earlier"]));
+  });
+
   it("records our own PRIVMSG on send because the server never echoes it", async () => {
     w.ircClient.sendRaw(SERVER, "PRIVMSG #chan :hello there");
 
