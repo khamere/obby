@@ -1109,10 +1109,12 @@ export const ChatArea: React.FC<{
             .isAtBottom ?? false;
       }
     } else if (!navWasActiveRef.current && wasAtBottomBeforeNavRef.current) {
-      // rAF lets the banner-removal relayout settle before scrollTop can reach the new maximum
-      requestAnimationFrame(() => {
-        channelListRefs.current.get(channelKey)?.scrollToBottom();
-      });
+      // A reader who scrolled or jumped away during the reply keeps their place, so we restore the bottom only while the list is still there.
+      if (channelListRefs.current.get(channelKey)?.getScrollState().isAtBottom)
+        // rAF lets the banner-removal relayout settle before scrollTop can reach the new maximum
+        requestAnimationFrame(() => {
+          channelListRefs.current.get(channelKey)?.scrollToBottom();
+        });
       wasAtBottomBeforeNavRef.current = false;
     }
   }, [localReplyTo]);
