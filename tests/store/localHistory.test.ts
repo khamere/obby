@@ -1518,16 +1518,23 @@ describe("keepHistory off", () => {
       },
     );
 
-    it("marks the page refused after an error that names only the subcommand", async () => {
-      await askForOlderPage();
+    it.each([
+      [
+        "only the subcommand",
+        "MESSAGE_ERROR BEFORE :Messages could not be retrieved",
+      ],
+      ["nothing", "MESSAGE_ERROR :Try again later"],
+    ])(
+      "marks the page refused after an error that names %s",
+      async (_name, refusal) => {
+        await askForOlderPage();
 
-      w.feed(
-        ":irc.test FAIL CHATHISTORY MESSAGE_ERROR BEFORE :Messages could not be retrieved",
-      );
-      await w.drain();
+        w.feed(`:irc.test FAIL CHATHISTORY ${refusal}`);
+        await w.drain();
 
-      expect(w.channel()?.historyRefusedAt).toEqual(expect.any(Number));
-    });
+        expect(w.channel()?.historyRefusedAt).toEqual(expect.any(Number));
+      },
+    );
 
     it.each([
       "INVALID_TARGET #chan :Messages could not be retrieved",
@@ -1580,6 +1587,45 @@ describe("keepHistory off", () => {
 
       expect(w.channel()?.isLoadingHistory).toBe(true);
       expect(w.channel()?.historyRefusedAt).toBeUndefined();
+    });
+
+    it("stops two loading chats and keeps both offers after a final refusal that could be for either", async () => {
+      await askForOlderPage();
+      expect(w.ircClient.loadLatestHistory(SERVER, "carol")).toBe(true);
+      expect(w.privateChat("carol")?.isLoadingHistory).toBe(true);
+
+      w.feed(
+        ":irc.test FAIL CHATHISTORY INVALID_PARAMS BEFORE :Invalid parameters",
+      );
+      await w.drain();
+
+      expect(w.channel()?.isLoadingHistory).toBe(false);
+      expect(w.privateChat("carol")?.isLoadingHistory).toBe(false);
+      expect(w.channel()?.hasMoreHistory).toBe(true);
+      expect(w.privateChat("carol")?.hasMoreHistory).toBe(true);
+      expect(w.channel()?.historyRefusedAt).toEqual(expect.any(Number));
+    });
+
+    it("is no longer on offer after a final refusal while rows saved earlier lie above the chat", async () => {
+      await w.db.appendRows([
+        {
+          server: SERVER,
+          target: "#chan",
+          time: BASE - 5000,
+          key: "old",
+          msgid: "old",
+          raw: privmsg("old", -5, "saved earlier"),
+        },
+      ]);
+      await askForOlderPage();
+
+      w.feed(
+        ":irc.test FAIL CHATHISTORY INVALID_PARAMS BEFORE :Invalid parameters",
+      );
+      await w.drain();
+
+      expect(w.channel()?.isLoadingHistory).toBe(false);
+      expect(w.channel()?.hasMoreHistory).toBe(false);
     });
   });
 });

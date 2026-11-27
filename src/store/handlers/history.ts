@@ -742,13 +742,15 @@ async function refreshHasMore(
   const oldest = store.getState().messages[conversation.key]?.[0];
   const isOlderThanOldestShown = (gap: HistoryGap) =>
     !oldest || gap.from < messageTime(oldest);
+  // With local history off we load older pages from the server alone, so saved rows and gaps offer nothing.
   const hasMore =
     serverMayHaveMore ||
-    (await olderDiskRows(store, serverId, target, 1)).length > 0 ||
-    (canServerFillGaps &&
-      (await gapsServerCanFill(store, serverId, target)).some(
-        isOlderThanOldestShown,
-      ));
+    (isEnabled(store) &&
+      ((await olderDiskRows(store, serverId, target, 1)).length > 0 ||
+        (canServerFillGaps &&
+          (await gapsServerCanFill(store, serverId, target)).some(
+            isOlderThanOldestShown,
+          ))));
   updateChat(store, serverId, conversation.channelId, {
     hasMoreHistory: hasMore,
   });
@@ -825,18 +827,19 @@ function chatsLoadingUntracked(
 
 // A final refusal ends the offer of older history, apart from pages we can
 // still read from disk. After any other refusal the offer stands as it was,
-// and a refused older page is marked so the list can ask for it again.
+// and a refusal that can be for an older page is marked so the list can ask
+// for that page again.
 function settleRefusedOffer(
   store: StoreApi<AppState>,
   serverId: string,
   target: string,
-  code: string,
+  isFinal: boolean,
   subcommand: string | undefined,
 ) {
   const conversation = findConversation(store, serverId, target);
   if (!conversation) return;
   setLoading(serverId, target, false);
-  if (FINAL_REFUSALS.has(code)) {
+  if (isFinal) {
     void refreshHasMore(store, serverId, target, false, false);
     return;
   }
@@ -844,7 +847,7 @@ function settleRefusedOffer(
   const chat =
     server?.channels.find((c) => c.id === conversation.channelId) ??
     server?.privateChats?.find((pc) => pc.id === conversation.channelId);
-  if (subcommand?.toUpperCase() === "BEFORE")
+  if (!subcommand || subcommand.toUpperCase() === "BEFORE")
     updateChat(store, serverId, conversation.channelId, {
       historyRefusedAt: Date.now(),
     });
@@ -1253,8 +1256,10 @@ export function registerHistoryHandlers(store: StoreApi<AppState>): void {
     const settled = refused
       ? [refused]
       : chatsLoadingUntracked(store, serverId);
+    // We cannot tell which of several chats a refusal is for, so each keeps its offer and can ask again.
+    const isFinal = FINAL_REFUSALS.has(code) && settled.length === 1;
     for (const chat of settled)
-      settleRefusedOffer(store, serverId, chat, code, subcommand);
+      settleRefusedOffer(store, serverId, chat, isFinal, subcommand);
     if (request && request.kind !== "latest") request.fill?.onSettled?.(false);
   });
 
