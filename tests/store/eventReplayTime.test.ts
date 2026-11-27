@@ -270,4 +270,36 @@ describe("JOIN, PART and QUIT replayed from chathistory", () => {
     expect(lines("join")).toHaveLength(0);
     expect(lines("quit").map((m) => m.userId)).toEqual(["bob"]);
   });
+
+  // The nick we hold now may have belonged to someone who renamed away from
+  // it. Their replayed NICK is about them, so it must leave our nick alone
+  // and their later QUIT must still be told apart from ours.
+  test("a NICK replayed from history leaves our own nick as it is", () => {
+    useStore.setState({ activeBatches: {} });
+    const page = [
+      ":irc.test BATCH +8 chathistory #help",
+      "@batch=8;msgid=e;time=2026-10-20T07:20:00.000Z :me!~u@host NICK elsewhere",
+      "@batch=8;msgid=f;time=2026-10-20T07:21:00.000Z :elsewhere!~u@host QUIT :Quit: bye",
+      "@batch=8;msgid=g;time=2026-10-20T07:22:00.000Z :me!~u@host QUIT :Quit: bye",
+      ":irc.test BATCH -8",
+    ];
+    (
+      ircClient as unknown as {
+        handleMessage(data: string, serverId: string): void;
+      }
+    ).handleMessage(`${page.join("\r\n")}\r\n`, serverId);
+
+    expect(ircClient.getNick(serverId)).toBe("me");
+    expect(lines("quit").map((m) => m.userId)).toEqual(["elsewhere"]);
+  });
+
+  test("a NICK that arrives live still changes our own nick", () => {
+    (
+      ircClient as unknown as {
+        handleMessage(data: string, serverId: string): void;
+      }
+    ).handleMessage(":me!~u@host NICK elsewhere\r\n", serverId);
+
+    expect(ircClient.getNick(serverId)).toBe("elsewhere");
+  });
 });
