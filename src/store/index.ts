@@ -3138,6 +3138,8 @@ const useStore = create<AppState>((set, get) => ({
   },
 
   deletePrivateChat: (serverId, privateChatId) => {
+    const wasSelected =
+      getCurrentSelection(get()).selectedPrivateChatId === privateChatId;
     set((state) => {
       const server = state.servers.find((s) => s.id === serverId);
       if (!server) return {};
@@ -3196,6 +3198,19 @@ const useStore = create<AppState>((set, get) => ({
 
       return newState;
     });
+    // The next start reopens the chat the saved selection names, so we save that none is selected.
+    if (wasSelected) {
+      const { ui, servers } = get();
+      patchUISelections({
+        selectedServerId: ui.selectedServerId,
+        perServerSelections: ui.perServerSelections,
+        lastSelection: {
+          serverHost: servers.find((s) => s.id === serverId)?.host || "",
+          channelName: null,
+          privateChatUsername: null,
+        },
+      });
+    }
   },
 
   pinPrivateChat: (serverId, privateChatId) => {
