@@ -754,6 +754,25 @@ describe("a command whose text is longer in bytes than one message carries", () 
     expect(lines.map(actionText).join("")).toBe(text);
   });
 
+  it("sizes a /me in a whisper reply for the user when their nick is longer than the channel name", () => {
+    const longNick = "bartholomew-the-long";
+    const fromLongNick = { ...whisper, userId: longNick } as Message;
+    const text = "aé漢\u{1F600}\u{1F600}".repeat(45);
+
+    const lines = send(`/me ${text}`, inLobby, fromLongNick);
+
+    expect(lines.length).toBeGreaterThan(1);
+    for (const line of lines) {
+      expect(
+        line.startsWith(`${whisperTags}PRIVMSG ${longNick} :\u0001ACTION `),
+      ).toBe(true);
+      expect(bytes(payload(line))).toBeLessThanOrEqual(
+        toBob + "bob".length - longNick.length,
+      );
+    }
+    expect(lines.map(actionText).join("")).toBe(text);
+  });
+
   it.each(texts)("sends /msg with %s in parts", (_, text, joint) => {
     const lines = send(`/msg bob ${text}`);
 

@@ -68,6 +68,14 @@ describe("IRCClient line safety", () => {
     ]);
   });
 
+  it.each([
+    ["empty text", ""],
+    ["a leading line break", "\nhi"],
+  ])("sends no empty PRIVMSG for %s", (_, text) => {
+    client.sendPrivmsgLines("s1", "bob", text);
+    expect(send.mock.calls).toEqual(text ? [["PRIVMSG bob :hi"]] : []);
+  });
+
   it("joins the lines of a topic into one", () => {
     client.setTopic("s1", "#c", "one\ntwo");
     expect(send.mock.calls).toEqual([["TOPIC #c :one two"]]);
