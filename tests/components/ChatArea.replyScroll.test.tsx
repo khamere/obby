@@ -84,7 +84,7 @@ describe("ChatArea scroll position when a reply is cancelled", () => {
       <ChatArea onToggleChanList={() => {}} isChanListVisible={true} />,
     );
     const list = container.querySelector(".obby-chat-area") as HTMLElement;
-    const view = { scrollTop: BOTTOM };
+    const view = { scrollTop: BOTTOM, listTop: 0 };
     Object.defineProperty(list, "clientHeight", { value: LIST_HEIGHT });
     Object.defineProperty(list, "scrollHeight", { value: CONTENT_HEIGHT });
     Object.defineProperty(list, "scrollTop", {
@@ -98,13 +98,23 @@ describe("ChatArea scroll position when a reply is cancelled", () => {
     return { list, view };
   };
 
-  // Rows sit one under another and move with the scroll position, as a browser lays them out.
-  const placeRows = (list: HTMLElement, view: { scrollTop: number }) => {
+  // Rows sit one under another from the top of the list and move with the scroll position, as a browser lays them out.
+  const placeRows = (
+    list: HTMLElement,
+    view: { scrollTop: number; listTop: number },
+  ) => {
+    list.getBoundingClientRect = () =>
+      new DOMRect(0, view.listTop, 800, LIST_HEIGHT);
     list
       .querySelectorAll<HTMLElement>("[data-message-id]")
       .forEach((row, index) => {
         row.getBoundingClientRect = () =>
-          new DOMRect(0, index * ROW_HEIGHT - view.scrollTop, 800, ROW_HEIGHT);
+          new DOMRect(
+            0,
+            view.listTop + index * ROW_HEIGHT - view.scrollTop,
+            800,
+            ROW_HEIGHT,
+          );
       });
   };
 
@@ -298,5 +308,41 @@ describe("ChatArea scroll position when a reply is cancelled", () => {
     runFrames();
 
     expect(view.scrollTop).toBe(BOTTOM);
+  });
+
+  it("returns to the newest message when a bar opened above the list after the keyboard navigation scrolled it", () => {
+    const { list, view } = renderAtBottom();
+    placeRows(list, view);
+    vi.mocked(HTMLElement.prototype.scrollIntoView).mockImplementation(() => {
+      view.scrollTop = 3000;
+      fireEvent.scroll(list);
+    });
+    startKeyboardReply();
+
+    view.listTop = 40;
+    fireEvent.keyDown(composer(), { key: "Escape" });
+    expect(screen.queryByTitle("Cancel reply")).toBeNull();
+    runFrames();
+
+    expect(view.scrollTop).toBe(BOTTOM);
+  });
+
+  it("keeps the reader's place when they scrolled as far as a bar above the list moved it", () => {
+    const { list, view } = renderAtBottom();
+    placeRows(list, view);
+    vi.mocked(HTMLElement.prototype.scrollIntoView).mockImplementation(() => {
+      view.scrollTop = 3000;
+      fireEvent.scroll(list);
+    });
+    startKeyboardReply();
+
+    view.listTop = 40;
+    view.scrollTop = 3040;
+    fireEvent.scroll(list);
+    fireEvent.keyDown(composer(), { key: "Escape" });
+    expect(screen.queryByTitle("Cancel reply")).toBeNull();
+    runFrames();
+
+    expect(view.scrollTop).toBe(3040);
   });
 });
