@@ -1169,7 +1169,9 @@ export const ChannelMessageList = forwardRef<
       if (
         container.scrollTop < LOAD_AHEAD_PX &&
         (!isScrolledToBottom(container) ||
-          container.scrollHeight <= container.clientHeight)
+          container.scrollHeight <= container.clientHeight ||
+          // A chat barely taller than the list shows its top placeholders at the bottom too, so we fill them.
+          isTopSkeletonInView(container))
       )
         loadOlder(isReaderScrolling);
     };

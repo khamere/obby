@@ -671,6 +671,33 @@ describe("a list a page covered while the chat came to offer older history", () 
     uncover();
     expect(requests()).toBe(0);
   });
+
+  // The placeholders above the first message are 150px tall and scroll with the rows.
+  const scrollPlaceholdersBy = (scrolledPx: number) => {
+    const placeholders = document.querySelector(
+      '.obby-chat-area [aria-hidden="true"]',
+    ) as HTMLElement;
+    placeholders.getBoundingClientRect = () =>
+      ({ bottom: 150 - scrolledPx }) as DOMRect;
+  };
+
+  it("asks for the older page when the list is shown again at the bottom with the top placeholders still in view", () => {
+    const { offerOlderHistory, uncover } = renderCoveredList(620, 20);
+    offerOlderHistory();
+    scrollPlaceholdersBy(20);
+
+    uncover();
+    expect(requests()).toBe(1);
+  });
+
+  it("asks nothing when the list is shown again at the bottom with the top placeholders scrolled out of view", () => {
+    const { offerOlderHistory, uncover } = renderCoveredList(900, 300);
+    offerOlderHistory();
+    scrollPlaceholdersBy(300);
+
+    uncover();
+    expect(requests()).toBe(0);
+  });
 });
 
 describe("ChannelMessageList highlight", () => {
