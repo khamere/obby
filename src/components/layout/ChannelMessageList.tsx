@@ -1087,6 +1087,8 @@ export const ChannelMessageList = forwardRef<
         return true;
       }
       if (!serverHasMore || !historyTarget) return false;
+      // A closed connection answers nothing, so we ask on our own account only while connected.
+      if (!isReaderScrolling && !isServerConnected) return false;
       // An empty chat has no oldest message, so the compare is on null: the
       // undefined-vs-null mismatch here used to ask again on every render.
       if ((oldest?.id ?? null) === emptyOlderPageAtRef.current) return false;

@@ -595,8 +595,15 @@ describe("a list a page covered while the chat came to offer older history", () 
       for (const { callback, target } of observed)
         if (target === area) act(() => callback([], {} as ResizeObserver));
     };
-    return { offerOlderHistory, uncover };
+    return { area, offerOlderHistory, uncover };
   };
+
+  const connect = (isConnected: boolean) =>
+    act(() => {
+      useStore.setState((state) => ({
+        servers: state.servers.map((server) => ({ ...server, isConnected })),
+      }));
+    });
 
   beforeEach(() => {
     observed.length = 0;
@@ -670,6 +677,28 @@ describe("a list a page covered while the chat came to offer older history", () 
 
     uncover();
     expect(requests()).toBe(0);
+  });
+
+  it("asks nothing on its own when the list is shown again while the connection is down", () => {
+    const { offerOlderHistory, uncover } = renderCoveredList(300, 0);
+    offerOlderHistory();
+    connect(false);
+
+    uncover();
+    expect(requests()).toBe(0);
+  });
+
+  it("asks for the older page when the reader turns the wheel once the connection is back", () => {
+    const { area, offerOlderHistory, uncover } = renderCoveredList(300, 0);
+    offerOlderHistory();
+    connect(false);
+    uncover();
+    connect(true);
+
+    act(() => {
+      fireEvent.wheel(area);
+    });
+    expect(requests()).toBe(1);
   });
 
   // The placeholders above the first message are 150px tall and scroll with the rows.

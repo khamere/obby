@@ -1553,8 +1553,11 @@ export async function loadOlderMessages(
     store.getState(),
     serverId,
   );
+  // Nothing ends a load asked of a closed connection, so we ask the server only while connected.
+  const isConnected = () =>
+    store.getState().servers.some((s) => s.id === serverId && s.isConnected);
   if (!isEnabled(store)) {
-    if (!serverHasChathistory) return false;
+    if (!serverHasChathistory || !isConnected()) return false;
     ircClient.requestChathistoryBefore(
       serverId,
       target,
@@ -1584,17 +1587,19 @@ export async function loadOlderMessages(
       const msgid = plan.gap
         ? gapEdgeMsgid(plan.gap, "to", plan.before)
         : await heldMsgidAt(store, serverId, target, plan.before);
-      const isSent = requestPageBefore(
-        serverId,
-        target,
-        plan.before,
-        ircClient.isChannel(serverId, target) &&
-          !historyWithoutMsgids.has(serverId)
-          ? diskFirstFill(store, serverId, target, before, plan.gap)
-          : plan.gap && { gap: plan.gap },
-        true,
-        msgid,
-      );
+      const isSent =
+        isConnected() &&
+        requestPageBefore(
+          serverId,
+          target,
+          plan.before,
+          ircClient.isChannel(serverId, target) &&
+            !historyWithoutMsgids.has(serverId)
+            ? diskFirstFill(store, serverId, target, before, plan.gap)
+            : plan.gap && { gap: plan.gap },
+          true,
+          msgid,
+        );
       if (!isSent) setLoading(serverId, target, false);
       return isSent;
     }
