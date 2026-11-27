@@ -126,6 +126,39 @@ describe("compileTemplate", () => {
     });
   });
 
+  it("keeps a joiner that shapes an emoji or a script's letters", () => {
+    for (const nick of [
+      "\u{1F469}\u200D\u{1F4BB}",
+      "\u{1F3F3}\uFE0F\u200D\u{1F308}",
+      "\u0639\u0644\u06CC\u200C\u0631\u0636\u0627",
+      "mara\u{1F469}\u200D\u{1F4BB}",
+    ]) {
+      expect(m("[{nick}] {text}", `[${nick}] hi`)).toEqual({
+        nick,
+        text: "hi",
+      });
+    }
+    expect(
+      m("[{nick}] {text}", "[\u{1F469}\u200B\u200D\u{1F4BB}\uFEFF] hi"),
+    ).toEqual({ nick: "\u{1F469}\u200D\u{1F4BB}", text: "hi" });
+  });
+
+  it("leaves out a joiner that touches an ASCII character, an end of the name or another joiner", () => {
+    for (const [written, nick] of [
+      ["m\u200D\u{1F4BB}", "m\u{1F4BB}"],
+      ["\u{1F469}\u200Cx", "\u{1F469}x"],
+      ["\u200D\u{1F469}", "\u{1F469}"],
+      ["\u{1F469}\u200D", "\u{1F469}"],
+      ["\u{1F469}\u200D\u200D\u{1F4BB}", "\u{1F469}\u{1F4BB}"],
+      ["\u{1F469}\u200C\u200D\u200C\u{1F4BB}", "\u{1F469}\u{1F4BB}"],
+    ]) {
+      expect(m("[{nick}] {text}", `[${written}] hi`)).toEqual({
+        nick,
+        text: "hi",
+      });
+    }
+  });
+
   it("keeps invisible characters in the text", () => {
     const text =
       "\u{1F468}\u200D\u{1F469}\u200D\u{1F467} zw\u200Bsp \u2060\uFEFFx";

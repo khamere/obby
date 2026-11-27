@@ -3,8 +3,10 @@ import {
   type BridgeMatch,
   compileTemplate,
   matchTemplate,
+  stripNamePadding,
 } from "./bridgeTemplates";
 import { isValidCssLink, type LinkStatus } from "./customCss";
+import { isUserIgnored } from "./ignoreUtils";
 import { stripIrcFormatting } from "./messageFormatter";
 
 // Bridge rules say which bot relays a tracker's shoutbox into which IRC
@@ -227,6 +229,22 @@ export function applyBridgeRules(
     if (found) return { kind: "nick", displayNick: found.nick, via: rule.via };
   }
   return null;
+}
+
+/**
+ * Whether the user ignores a bridged person. An entry may hold the invisible
+ * characters a bridge wrote into the name, and it names that person too.
+ */
+export function isBridgedNameIgnored(
+  nick: string,
+  ignoreList: string[],
+): boolean {
+  return isUserIgnored(
+    nick,
+    undefined,
+    undefined,
+    ignoreList.map(stripNamePadding),
+  );
 }
 
 // ---- store ------------------------------------------------------------------

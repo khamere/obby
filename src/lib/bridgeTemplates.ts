@@ -18,7 +18,24 @@ const MAX_NICK_CHARS = 32;
 // the person. We read past them and leave them out of the name, so one person
 // keeps one name however the bridge wrote it.
 const INVISIBLE = "\\u200B\\u200C\\u200D\\u2060\\uFEFF";
-const INVISIBLE_CHARS = new RegExp(`[${INVISIBLE}]`, "gu");
+const FILLERS = new Set(["\u200B", "\u2060", "\uFEFF"]);
+const JOINERS = new Set(["\u200C", "\u200D"]);
+
+const shapesWithJoiner = (ch: string | undefined): boolean =>
+  ch !== undefined && ch > "\x7F" && !JOINERS.has(ch);
+
+// A single joiner between two characters outside ASCII shapes an emoji or a
+// script's letters, so it belongs to the name and we keep it.
+export function stripNamePadding(name: string): string {
+  const chars = Array.from(name).filter((ch) => !FILLERS.has(ch));
+  return chars
+    .filter(
+      (ch, i) =>
+        !JOINERS.has(ch) ||
+        (shapesWithJoiner(chars[i - 1]) && shapesWithJoiner(chars[i + 1])),
+    )
+    .join("");
+}
 
 function escapeRegex(literal: string): string {
   return literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -81,7 +98,7 @@ export function matchTemplate(re: RegExp, input: string): BridgeMatch | null {
   const found = re.exec(input);
   if (!found) return null;
   return {
-    nick: found[1].replace(INVISIBLE_CHARS, ""),
+    nick: stripNamePadding(found[1]),
     text: found[2] ?? "",
   };
 }

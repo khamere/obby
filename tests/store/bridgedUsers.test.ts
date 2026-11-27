@@ -154,6 +154,42 @@ describe("bridged users in CHANMSG", () => {
     expect(shown).toMatchObject({ userId: "nilo", content: "kept" });
   });
 
+  test("an ignore entry saved with the invisible characters covers the person", () => {
+    const { ignoreList } = useStore.getState().globalSettings;
+    useStore.setState((state) => ({
+      globalSettings: {
+        ...state.globalSettings,
+        ignoreList: ["m\u200Bara!*@*"],
+      },
+    }));
+    emit("Bot", "[nilo] kept");
+    emit("Bot", "[m\u200Bara] dropped");
+    emit("Bot", "[mara] dropped");
+    emit("Bot", "[ma\u200Cra] dropped");
+    const shown = last();
+    useStore.setState((state) => ({
+      globalSettings: { ...state.globalSettings, ignoreList },
+    }));
+    expect(shown).toMatchObject({ userId: "nilo", content: "kept" });
+  });
+
+  test("an ignore entry with invisible characters leaves a person on IRC alone", () => {
+    const { ignoreList } = useStore.getState().globalSettings;
+    useStore.setState((state) => ({
+      globalSettings: {
+        ...state.globalSettings,
+        ignoreList: ["m\u200Bara!*@*"],
+      },
+    }));
+    emit("mara", "from IRC");
+    const shown = last();
+    useStore.setState((state) => ({
+      globalSettings: { ...state.globalSettings, ignoreList },
+    }));
+    expect(shown).toMatchObject({ userId: "mara", content: "from IRC" });
+    expect(shown?.bridgedVia).toBeUndefined();
+  });
+
   test("my own nick with invisible characters through the bridge is not a mention", () => {
     emit("Bot", "[m\u200Be] me: test");
     expect(last()).toMatchObject({
