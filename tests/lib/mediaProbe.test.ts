@@ -486,13 +486,84 @@ describe("guarded probe for a link only the user's allowed sites admit", () => {
       );
   }
 
+  // What a browser gives for a redirect from a host that sends CORS headers:
+  // an opaque response when the redirect is handed back, a failed request
+  // when it is refused outright.
+  function redirectingFetch(_url: unknown, init?: RequestInit) {
+    if (init?.redirect !== "manual")
+      return Promise.reject(new TypeError("Failed to fetch"));
+    return Promise.resolve({
+      headers: makeHeaders({}),
+      ok: false,
+      status: 0,
+      type: "opaqueredirect",
+    } as unknown as Response);
+  }
+
   test("refuses redirects on both requests", async () => {
     setAllowedSiteCheck(() => true);
-    vi.mocked(fetch).mockRejectedValue(new TypeError("redirect"));
+    vi.mocked(fetch).mockRejectedValue(new TypeError("CORS"));
     await probeMediaUrl(uniqueUrl());
     const calls = vi.mocked(fetch).mock.calls;
     expect(calls.map(([, init]) => init?.method)).toEqual(["HEAD", "GET"]);
-    for (const [, init] of calls) expect(init?.redirect).toBe("error");
+    for (const [, init] of calls) expect(init?.redirect).toBe("manual");
+  });
+
+  test("a redirect gives that link no preview after one request, media extension or not", async () => {
+    setAllowedSiteCheck(() => true);
+    const ImageSpy = vi.fn();
+    vi.stubGlobal("Image", ImageSpy);
+    vi.mocked(fetch).mockImplementation(redirectingFetch);
+    const url = uniqueUrl("/r/x.jpg");
+    expect(await probeMediaUrl(url)).toBeNull();
+    expect(vi.mocked(fetch).mock.calls.map(([, init]) => init?.method)).toEqual(
+      ["HEAD"],
+    );
+    expect(getCachedProbeResult(url)).toBeNull();
+    expect(mediaElementsCreated()).toHaveLength(0);
+    expect(ImageSpy).not.toHaveBeenCalled();
+  });
+
+  test("a redirect answered to the GET retry gives that link no preview", async () => {
+    setAllowedSiteCheck(() => true);
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(makeErrorResponse(405))
+      .mockImplementation(redirectingFetch);
+    expect(await probeMediaUrl(uniqueUrl("/r/x.jpg"))).toBeNull();
+    expect(vi.mocked(fetch).mock.calls.map(([, init]) => init?.method)).toEqual(
+      ["HEAD", "GET"],
+    );
+    expect(mediaElementsCreated()).toHaveLength(0);
+  });
+
+  test("a redirecting link leaves the host's other links probed by Content-Type", async () => {
+    setAllowedSiteCheck(() => true);
+    const redirecting = uniqueUrl("/login");
+    const extensionless = new URL("/noext", redirecting).href;
+    const mislabelled = new URL("/page.jpg", redirecting).href;
+
+    vi.mocked(fetch).mockImplementation(redirectingFetch);
+    expect(await probeMediaUrl(redirecting)).toBeNull();
+
+    vi.mocked(fetch).mockImplementation(() =>
+      Promise.resolve(makeResponse({ "Content-Type": "image/png" })),
+    );
+    expect((await probeMediaUrl(extensionless))?.type).toBe("image");
+
+    vi.mocked(fetch).mockImplementation(() =>
+      Promise.resolve(makeResponse({ "Content-Type": "text/html" })),
+    );
+    expect(await probeMediaUrl(mislabelled)).toBeNull();
+  });
+
+  test("a host that fails both requests is still asked once only", async () => {
+    setAllowedSiteCheck(() => true);
+    const first = uniqueUrl("/a.jpg");
+    const second = new URL("/b.jpg", first).href;
+    vi.mocked(fetch).mockRejectedValue(new TypeError("CORS"));
+    expect((await probeMediaUrl(first))?.type).toBe("image");
+    expect((await probeMediaUrl(second))?.type).toBe("image");
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2);
   });
 
   test("follows redirects for any other link", async () => {
@@ -580,7 +651,7 @@ describe("guarded probe for a link only the user's allowed sites admit", () => {
     );
     expect(await probeMediaUrl(url)).toBeNull();
     expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2);
-    expect(vi.mocked(fetch).mock.calls[1][1]?.redirect).toBe("error");
+    expect(vi.mocked(fetch).mock.calls[1][1]?.redirect).toBe("manual");
     expect(getCachedProbeResult(url)).toBeNull();
 
     setAllowedSiteCheck(() => false);

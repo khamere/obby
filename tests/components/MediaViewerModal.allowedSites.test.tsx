@@ -1,6 +1,14 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  onTestFinished,
+  test,
+  vi,
+} from "vitest";
 import { MediaViewerModal } from "../../src/components/ui/MediaViewerModal";
 import { encodeMediaDescriptor } from "../../src/lib/e2ee/media";
 import { E2EE_MEDIA_TAG } from "../../src/lib/e2ee/messageFlags";
@@ -29,6 +37,31 @@ const mock = vi.hoisted(() => ({
     mediaAllowedHosts: ["img.example"],
   } as { mediaVisibilityLevel: number; mediaAllowedHosts?: string[] },
   messages: [] as unknown[],
+  topic: null as string | null,
+  commentImage: "",
+}));
+
+const DECRYPTED_BLOB = "blob:http://localhost/decrypted";
+
+vi.mock("../../src/lib/e2ee/decryptedMediaCache", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("../../src/lib/e2ee/decryptedMediaCache")
+  >()),
+  getDecryptedObjectUrl: vi.fn(() => Promise.resolve(DECRYPTED_BLOB)),
+}));
+
+// The sidebar reports a click on a comment's image; one button stands in for it.
+vi.mock("../../src/components/ui/MediaCommentsSidebar", () => ({
+  MediaCommentsSidebar: ({
+    onImageClick,
+  }: {
+    onImageClick: (url: string) => void;
+  }) =>
+    React.createElement(
+      "button",
+      { type: "button", onClick: () => onImageClick(mock.commentImage) },
+      "comment image",
+    ),
 }));
 
 vi.mock("../../src/store", () => ({
@@ -46,7 +79,7 @@ vi.mock("../../src/store", () => ({
           {
             id: "s1",
             filehost: "https://files.example",
-            channels: [{ id: "c1", topic: null }],
+            channels: [{ id: "c1", topic: mock.topic }],
           },
         ],
       })),
@@ -114,6 +147,8 @@ beforeEach(() => {
     mediaAllowedHosts: ["img.example"],
   };
   mock.messages = [];
+  mock.topic = null;
+  mock.commentImage = "";
 });
 
 afterEach(() => {
@@ -216,6 +251,138 @@ describe("MediaViewerModal — the user's allowed sites", () => {
     );
     expect(screen.queryByRole("button", { name: /of 3/i })).toBeNull();
   });
+
+  test("a link the server's rules refuse is neither probed nor shown when the viewer opens on it", async () => {
+    mock.messages = [message(FILEHOST_A), message(UNLISTED)];
+    render(viewer(UNLISTED));
+
+    await waitFor(() =>
+      expect(vi.mocked(mediaProbe.probeMediaUrl)).toHaveBeenCalledWith(
+        FILEHOST_A,
+      ),
+    );
+    expect(probedHosts()).not.toContain("other.example");
+    expect(screen.queryByAltText("Image preview")).toBeNull();
+    expect(document.querySelector(`img[src="${UNLISTED}"]`)).toBeNull();
+  });
+
+  test("a refused link opened without a channel is neither probed nor shown", async () => {
+    render(
+      <MediaViewerModal
+        isOpen={true}
+        url={UNLISTED}
+        onClose={vi.fn()}
+        serverId="s1"
+      />,
+    );
+    await Promise.resolve();
+
+    expect(probedHosts()).not.toContain("other.example");
+    expect(document.querySelector(`img[src="${UNLISTED}"]`)).toBeNull();
+  });
+
+  test("an encrypted attachment stays on screen once its link is swapped for the decrypted blob", async () => {
+    const url = "https://files.example/ab12.obb";
+    const tag = encodeMediaDescriptor({
+      url,
+      k: "aaaa",
+      n: "bbbb",
+      mime: "image/png",
+      name: "secret.png",
+      size: 4242,
+    });
+    mock.messages = [
+      message(FILEHOST_A),
+      message("", { [E2EE_MEDIA_TAG]: tag }),
+    ];
+    render(viewer(url));
+
+    await waitFor(() =>
+      expect(screen.getByAltText("Image preview").getAttribute("src")).toBe(
+        DECRYPTED_BLOB,
+      ),
+    );
+  });
+
+  test("the gallery takes a topic image from a listed site and none from any other host", async () => {
+    const listedTopic = "https://img.example/topic.jpg";
+    const unlistedTopic = "https://other.example/topic.jpg";
+    mock.topic = `rules ${listedTopic} ${unlistedTopic}`;
+    mock.messages = [message(FILEHOST_A)];
+    vi.mocked(mediaProbe.getCachedProbeResult).mockImplementation(() => ({
+      type: "image",
+      streamable: false,
+      skipped: false,
+    }));
+    onTestFinished(() => {
+      vi.mocked(mediaProbe.getCachedProbeResult).mockImplementation(
+        () => undefined,
+      );
+    });
+    render(viewer(FILEHOST_A));
+
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole("button", { name: /image \d+ of 2/i }),
+      ).toHaveLength(2),
+    );
+    expect(document.querySelector(`img[src="${listedTopic}"]`)).not.toBeNull();
+    expect(document.querySelector(`img[src="${unlistedTopic}"]`)).toBeNull();
+  });
+
+  describe("a click on a comment's image", () => {
+    // Built-in image hosts carry their type in the link, which is what the
+    // jump needs; only the first one is on the user's list.
+    const LISTED_COMMENT = "https://i.imgur.com/comment.png";
+    const UNLISTED_COMMENT = "https://media.giphy.com/media/comment/giphy.gif";
+
+    async function openComments() {
+      mock.globalSettings = {
+        mediaVisibilityLevel: 1,
+        mediaAllowedHosts: ["img.example", "i.imgur.com"],
+      };
+      mock.messages = [message(FILEHOST_A)];
+      render(viewer(FILEHOST_A));
+      await waitFor(() =>
+        expect(screen.getByAltText("Image preview").getAttribute("src")).toBe(
+          FILEHOST_A,
+        ),
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Show comments" }));
+      // The comments arrive after the viewer built its gallery.
+      mock.messages = [
+        ...mock.messages,
+        message(LISTED_COMMENT),
+        message(UNLISTED_COMMENT),
+      ];
+    }
+
+    test("jumps to an image on a listed site", async () => {
+      await openComments();
+      mock.commentImage = LISTED_COMMENT;
+      fireEvent.click(screen.getByRole("button", { name: "comment image" }));
+
+      await waitFor(() =>
+        expect(screen.getByAltText("Image preview").getAttribute("src")).toBe(
+          LISTED_COMMENT,
+        ),
+      );
+    });
+
+    test("stays put for an image on any other host", async () => {
+      await openComments();
+      mock.commentImage = UNLISTED_COMMENT;
+      fireEvent.click(screen.getByRole("button", { name: "comment image" }));
+
+      await Promise.resolve();
+      expect(screen.getByAltText("Image preview").getAttribute("src")).toBe(
+        FILEHOST_A,
+      );
+      expect(
+        document.querySelector(`img[src="${UNLISTED_COMMENT}"]`),
+      ).toBeNull();
+    });
+  });
 });
 
 describe("MediaViewerModal — PDF that pdf.js cannot load", () => {
@@ -263,6 +430,40 @@ describe("MediaViewerModal — PDF that pdf.js cannot load", () => {
 
     await waitFor(() =>
       expect(document.querySelector("object")?.getAttribute("data")).toBe(url),
+    );
+  });
+
+  test("from a host no rule admits shows the notice and never the native viewer", async () => {
+    render(
+      <MediaViewerModal
+        isOpen={true}
+        url="https://other.example/doc.pdf"
+        onClose={vi.fn()}
+      />,
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("PDF cannot be displayed in browser."),
+      ).toBeTruthy(),
+    );
+    expect(document.querySelector("object")).toBeNull();
+  });
+
+  test("decrypted in this tab still falls back to the native viewer", async () => {
+    render(
+      <MediaViewerModal
+        isOpen={true}
+        url={DECRYPTED_BLOB}
+        onClose={vi.fn()}
+        decryptedType="pdf"
+      />,
+    );
+
+    await waitFor(() =>
+      expect(document.querySelector("object")?.getAttribute("data")).toBe(
+        DECRYPTED_BLOB,
+      ),
     );
   });
 });

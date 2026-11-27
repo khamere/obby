@@ -53,7 +53,6 @@ import {
   extractMediaFromText,
   filenameFromUrl,
   getEmbedThumbnailUrl,
-  isAllowedSiteOnly,
   type MediaEntry,
   type MediaType,
   withoutAllowedSites,
@@ -292,7 +291,8 @@ const PdfUnavailable: React.FC<{ onRequestOpen: () => void }> = ({
 const PdfModalViewer: React.FC<{
   url: string;
   // The native viewer renders whatever the host returns, a web page included,
-  // so callers turn it off for a site that only the user's list admits.
+  // so callers turn it on only for a link the media rules admit without the
+  // user's allowed sites.
   nativeFallback: boolean;
   onRequestOpen: () => void;
 }> = ({ url, nativeFallback, onRequestOpen }) => {
@@ -612,11 +612,10 @@ export function MediaViewerModal({
 
   const mediaSettings = useMediaSettings();
 
-  // A setting can change while the viewer is open, so once the gallery is
-  // built we ask the server's rules about the link on screen each time and
-  // neither probe nor show one they refuse.
+  // A setting can change while the viewer is open, so we ask the server's
+  // rules about the link on screen each time and neither probe nor show one
+  // they refuse.
   const isCurrentRefused =
-    entriesBuilt &&
     !!serverId &&
     !!currentUrl &&
     !isDecryptedView &&
@@ -1625,9 +1624,10 @@ export function MediaViewerModal({
                   key={currentUrl}
                   url={currentUrl}
                   nativeFallback={
-                    !isAllowedSiteOnly(
+                    isDecryptedView ||
+                    canShowMedia(
                       currentUrl,
-                      mediaSettings,
+                      withoutAllowedSites(mediaSettings),
                       serverFilehosts(
                         useStore
                           .getState()

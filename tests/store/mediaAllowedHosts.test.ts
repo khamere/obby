@@ -120,7 +120,7 @@ describe("the store tells the probe which links are allowed-site only", () => {
   test("a listed host at Safe is guarded", async () => {
     setMedia(1, ["listed1.example"]);
     expect(await redirectModeFor(fresh("https://listed1.example"))).toBe(
-      "error",
+      "manual",
     );
   });
 

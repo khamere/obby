@@ -63,7 +63,12 @@ interface HttpProbe {
   contentLength?: number;
   ok: boolean;
   status: number;
+  redirectRefused: boolean;
 }
+
+// A redirect we refused is still the site's answer for that one link, so we
+// report it as an answer with no media type and keep asking the host.
+const NO_MEDIA_TYPE = { contentType: "" };
 
 async function tryHttpFetch(
   url: string,
@@ -79,7 +84,7 @@ async function tryHttpFetch(
     const response = await fetch(url, {
       method,
       headers,
-      redirect: guarded ? "error" : "follow",
+      redirect: guarded ? "manual" : "follow",
       signal: controller.signal,
     });
     clearTimeout(timer);
@@ -95,6 +100,7 @@ async function tryHttpFetch(
       contentLength,
       ok: response.ok,
       status: response.status,
+      redirectRefused: response.type === "opaqueredirect",
     };
   } catch (_err) {
     clearTimeout(timer);
@@ -116,6 +122,7 @@ async function fetchContentType(
   if (head?.ok && head.contentType) {
     return { contentType: head.contentType, contentLength: head.contentLength };
   }
+  if (head?.redirectRefused) return NO_MEDIA_TYPE;
   // Only the GET retry can help when HEAD threw (CORS), was rejected as a method
   // (405/501), or returned 2xx without a type. A 404/410/5xx won't improve on GET.
   if (head !== null && !head.ok && head.status !== 405 && head.status !== 501) {
@@ -127,6 +134,7 @@ async function fetchContentType(
   if (get?.ok && get.contentType) {
     return { contentType: get.contentType, contentLength: get.contentLength };
   }
+  if (get?.redirectRefused) return NO_MEDIA_TYPE;
   return null;
 }
 
