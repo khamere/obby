@@ -549,6 +549,17 @@ describe("a channel we were removed from", () => {
       unloadServer(loaded);
     });
 
+    test("after a page load joins a saved bare name that reads like a property of every object", () => {
+      const loaded = loadSavedServer({
+        channels: ["constructor", "#other"],
+      });
+
+      welcome(loaded);
+
+      expect(sentJoins()).toEqual(["JOIN #constructor", "JOIN #other"]);
+      unloadServer(loaded);
+    });
+
     test("after a page load keeps the saved mark of such a channel when we leave another one", () => {
       const loaded = loadSavedServer({
         channels: ["~Lounge", "#other"],

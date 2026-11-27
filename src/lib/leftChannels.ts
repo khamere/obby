@@ -46,7 +46,11 @@ export function leftReasonOf(
   serverId: string,
   channelName: string,
 ): LeftReason | undefined {
-  return leftChannelsOf(serverId)[savedNameOf(serverId, channelName)];
+  const lowered = channelName.toLowerCase();
+  // A name can spell a property every object carries, so we answer from the entries we saved.
+  return Object.entries(leftChannelsOf(serverId)).find(
+    ([name]) => name.toLowerCase() === lowered,
+  )?.[1];
 }
 
 // Servers compare channel names without case, so we look a channel up under whichever spelling we saved.
