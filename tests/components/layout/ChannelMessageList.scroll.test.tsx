@@ -258,8 +258,11 @@ describe("an older page the server refuses", () => {
     });
   const topPlaceholder = (area: Element) =>
     area.querySelector("[data-message-id]")?.parentElement?.firstElementChild;
-  const isPlaceholderPulsing = (area: Element) =>
-    !!topPlaceholder(area)?.querySelector(".animate-pulse");
+  const isPlaceholderPulsing = (area: Element) => {
+    const placeholder = topPlaceholder(area);
+    expect(placeholder?.getAttribute("aria-hidden")).toBe("true");
+    return !!placeholder?.querySelector(".animate-pulse");
+  };
   const addMessage = (id: string, place: "above" | "below") =>
     act(() => {
       useStore.setState((state) => {
