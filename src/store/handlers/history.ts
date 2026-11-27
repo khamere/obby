@@ -791,8 +791,8 @@ const FINAL_REFUSALS = new Set([
   "UNKNOWN_COMMAND",
 ]);
 
-// Some servers name only the subcommand in a refusal, so we take it for the
-// one chat that waits for a reply to that subcommand.
+// Some servers name only the subcommand in a refusal, or nothing at all, so
+// we take it for the one chat that waits for a reply it can be for.
 function onlyChatAwaiting(
   serverId: string,
   subcommand: string | undefined,
@@ -800,18 +800,32 @@ function onlyChatAwaiting(
   const kind = subcommand?.toLowerCase();
   const waiting = [...pendingRequests]
     .filter(
-      ([key, queue]) =>
-        key.startsWith(`${serverId}\n`) && queue[0]?.kind === kind,
+      ([key, [request]]) =>
+        key.startsWith(`${serverId}\n`) &&
+        request &&
+        (!kind || request.kind === kind),
     )
     .map(([key]) => key.slice(serverId.length + 1));
   return waiting.length === 1 ? waiting[0] : undefined;
 }
 
-// A chat can wait for a page whose request we do not track, and only a reply ends its loading, so we settle each such chat on a refusal we can match to none.
+// We show a chat as loading only while it waits for a LATEST or a BEFORE page, so a refusal of one of these ends no chat's loading.
+const SUBCOMMANDS_WITHOUT_LOADING = new Set([
+  "AFTER",
+  "AROUND",
+  "BETWEEN",
+  "TARGETS",
+]);
+
+// With local history off we track no request and only a reply ends a chat's loading, so a refusal we can match to no chat settles each chat that is loading.
 function chatsLoadingUntracked(
   store: StoreApi<AppState>,
   serverId: string,
+  subcommand: string | undefined,
 ): string[] {
+  if (isEnabled(store)) return [];
+  if (SUBCOMMANDS_WITHOUT_LOADING.has(subcommand?.toUpperCase() ?? ""))
+    return [];
   const server = store.getState().servers.find((s) => s.id === serverId);
   return [
     ...(server?.channels ?? [])
@@ -820,9 +834,7 @@ function chatsLoadingUntracked(
     ...(server?.privateChats ?? [])
       .filter((chat) => chat.isLoadingHistory)
       .map((chat) => chat.username),
-  ].filter(
-    (name) => !pendingRequests.get(conversationKey(serverId, name))?.length,
-  );
+  ];
 }
 
 // A final refusal ends the offer of older history, apart from pages we can
@@ -1232,8 +1244,7 @@ export function registerHistoryHandlers(store: StoreApi<AppState>): void {
 
   // A refused CHATHISTORY opens no batch, so we drop its request here or the
   // next reply would be matched to it.
-  ircClient.on("FAIL", ({ serverId, command, code, context }) => {
-    if (command !== "CHATHISTORY") return;
+  const onRefusal = (serverId: string, code: string, context: string[]) => {
     const [subcommand] = context;
     const target =
       context.find(
@@ -1255,13 +1266,20 @@ export function registerHistoryHandlers(store: StoreApi<AppState>): void {
       return;
     const settled = refused
       ? [refused]
-      : chatsLoadingUntracked(store, serverId);
+      : chatsLoadingUntracked(store, serverId, subcommand);
     // We cannot tell which of several chats a refusal is for, so each keeps its offer and can ask again.
     const isFinal = FINAL_REFUSALS.has(code) && settled.length === 1;
     for (const chat of settled)
       settleRefusedOffer(store, serverId, chat, isFinal, subcommand);
     if (request && request.kind !== "latest") request.fill?.onSettled?.(false);
+  };
+  ircClient.on("FAIL", ({ serverId, command, code, context }) => {
+    if (command === "CHATHISTORY") onRefusal(serverId, code, context);
   });
+  // A server can answer a history request as an unknown command, which we take for a refusal that names no chat.
+  ircClient.on("CHATHISTORY_UNKNOWN", ({ serverId }) =>
+    onRefusal(serverId, "UNKNOWN_COMMAND", []),
+  );
 
   ircClient.on("connectionStateChange", ({ serverId, connectionState }) => {
     if (connectionState === "connected") {
