@@ -1958,12 +1958,20 @@ function joinWindowToPresent(store: StoreApi<AppState>, key: string) {
   });
 }
 
+// Without a message id, the sender, time and text tell us it is the same row.
 function joinPresent(present: Message[], arrived: Message[]): Message[] {
   const known = new Set(present.flatMap((m) => [m.id, m.msgid]));
-  return [
-    ...present,
-    ...arrived.filter((m) => !known.has(m.id) && !known.has(m.msgid)),
-  ]
+  const isKnown = (m: Message) =>
+    known.has(m.id) ||
+    (m.msgid
+      ? known.has(m.msgid)
+      : present.some(
+          (p) =>
+            p.userId === m.userId &&
+            p.content === m.content &&
+            messageTime(p) === messageTime(m),
+        ));
+  return [...present, ...arrived.filter((m) => !isKnown(m))]
     .sort(compareMessageOrder)
     .slice(-MAX_MESSAGES_PER_CHANNEL);
 }

@@ -20,6 +20,10 @@ const line = (index: number, target = "#chan", nick = "alice") =>
   `@msgid=m${index};time=${new Date(timeOf(index)).toISOString()} :${nick}!u@h PRIVMSG ${target} :line ${index}`;
 const ids = (from: number, to: number) =>
   Array.from({ length: to - from + 1 }, (_, index) => `m${from + index}`);
+// A line as a server without message ids sends it.
+const plain = (index: number, batch?: string) =>
+  `@${batch ? `batch=${batch};` : ""}time=${new Date(timeOf(index)).toISOString()} :bob!u@h PRIVMSG #chan :plain ${index}`;
+const texts = (messages: Message[] = []) => messages.map((m) => m.content);
 
 async function boot(caps = ["message-tags"]) {
   globalThis.indexedDB = new IDBFactory();
@@ -365,6 +369,104 @@ describe("history windows", { timeout: 2 * WRITE_TIMEOUT_MS }, () => {
 
     w.history.showPresent(w.useStore, SERVER, "#chan");
     expect(w.shown().at(-1)).toBe("m1000");
+  });
+
+  it("keeps every live message without a message id for the present", async () => {
+    const w = await boot();
+    await w.save(300);
+    await w.showNewest();
+    await w.jumpTo(50);
+    const before = w.shown();
+
+    w.feed(plain(1000), plain(1001), line(1002), plain(1003));
+
+    expect(w.shown()).toEqual(before);
+    expect(texts(w.window()?.present).slice(-4)).toEqual([
+      "plain 1000",
+      "plain 1001",
+      "line 1002",
+      "plain 1003",
+    ]);
+
+    w.history.showPresent(w.useStore, SERVER, "#chan");
+    expect(texts(w.useStore.getState().messages[KEY]).slice(-4)).toEqual([
+      "plain 1000",
+      "plain 1001",
+      "line 1002",
+      "plain 1003",
+    ]);
+  });
+
+  it("keeps one copy of a message the server replays while it waits in the present", async () => {
+    const w = await boot();
+    await w.save(300);
+    await w.showNewest();
+    await w.jumpTo(50);
+    w.feed(line(1000));
+
+    w.feed(
+      ":irc.test BATCH +r1 chathistory #chan",
+      line(299).replace("@", "@batch=r1;"),
+      line(1000).replace("@", "@batch=r1;"),
+      line(1001).replace("@", "@batch=r1;"),
+      ":irc.test BATCH -r1",
+    );
+
+    expect(w.window()?.present.map((m) => m.msgid)).toEqual([
+      ...ids(200, 299),
+      "m1000",
+      "m1001",
+    ]);
+  });
+
+  it("keeps one copy of a message without a message id the server replays while it waits in the present", async () => {
+    const w = await boot();
+    await w.save(300);
+    await w.showNewest();
+    await w.jumpTo(50);
+    w.feed(plain(1000), plain(1001));
+
+    w.feed(
+      ":irc.test BATCH +r1 chathistory #chan",
+      plain(1000, "r1"),
+      plain(1001, "r1"),
+      plain(1002, "r1"),
+      ":irc.test BATCH -r1",
+    );
+
+    expect(texts(w.window()?.present).slice(-4)).toEqual([
+      "line 299",
+      "plain 1000",
+      "plain 1001",
+      "plain 1002",
+    ]);
+  });
+
+  it("keeps one copy of each row without a message id when the window joins the present", async () => {
+    const w = await boot();
+    await w.save(300);
+    w.feed(plain(60));
+    await vi.waitFor(async () =>
+      expect(await w.db.newestEventRows(SERVER, "#chan", 302)).toHaveLength(
+        301,
+      ),
+    );
+    w.useStore.setState({ messages: {} });
+    await w.showNewest();
+    await w.jumpTo(50);
+    expect(texts(w.useStore.getState().messages[KEY])).toContain("plain 60");
+    w.feed(
+      `@time=${new Date(timeOf(999)).toISOString()} :carol!u@h JOIN #chan`,
+      plain(1000),
+    );
+
+    for (let page = 0; page < 8 && w.window(); page++) await w.pageNewer();
+
+    expect(w.window()).toBeUndefined();
+    const joined = w.useStore.getState().messages[KEY];
+    expect(joined.slice(-2).map((m) => m.type)).toEqual(["join", "message"]);
+    for (const text of ["plain 60", "plain 1000"])
+      expect(texts(joined).filter((t) => t === text)).toHaveLength(1);
   });
 
   it("returns to the present before a message we send goes out", async () => {
