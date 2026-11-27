@@ -317,6 +317,44 @@ describe("history pages that end inside a millisecond", {
       );
     });
 
+    it("keeps the order on screen when the newest page comes again with saved history turned off", async () => {
+      const w = await boot("msgid,timestamp", { keepHistory: false });
+      // Every line shares one millisecond.
+      timeOf = () => BASE;
+      w.world.has = range(0, 299);
+      await w.loadLatest();
+      await w.history.loadOlderMessages(w.useStore, SERVER, "#chan", BASE);
+      await vi.waitFor(() => expect(w.shown()).toEqual(ids(200, 299)), {
+        timeout: WRITE_TIMEOUT_MS,
+      });
+
+      w.world.has = range(0, 300);
+      await w.loadLatest();
+
+      expect(w.shown()).toEqual(ids(200, 300));
+    });
+
+    it("settles an older page and keeps its rows when they could not be put in order", async () => {
+      const w = await boot("msgid,timestamp");
+      w.world.has = range(0, 299);
+      await w.loadLatest();
+      const move = vi
+        .spyOn(w.db, "orderRowsAtPageEdge")
+        .mockRejectedValue(new Error("the move failed"));
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+      try {
+        await w.scrollToTop();
+
+        expect(move).toHaveBeenCalled();
+        expect(w.shown()).toEqual(ids(0, 299));
+        expect((await w.saved()).sort()).toEqual(ids(0, 299).sort());
+      } finally {
+        warn.mockRestore();
+        move.mockRestore();
+      }
+    });
+
     it("shows the saved lines in the server's order when they are read back from disk", async () => {
       const w = await boot("msgid,timestamp");
       w.world.has = range(0, 299);

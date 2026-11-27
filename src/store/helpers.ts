@@ -176,7 +176,12 @@ export function mergeHistoryPage(
   const others = existing.filter((m) => !held.has(m));
   const anchor = typeof place === "object" ? place.before : undefined;
   const anchorAt = anchor ? existing.findIndex((m) => hasMsgid(m, anchor)) : -1;
-  const aheadOfAnchor = new Set(existing.slice(0, Math.max(anchorAt, 0)));
+  // A page inside one millisecond that repeats lines we hold starts where the first of them is, so we split our lines there the way we do at the line a request named.
+  const splitAt =
+    anchorAt < 0 && oldest === newest
+      ? existing.findIndex((m) => held.has(m))
+      : anchorAt;
+  const aheadOfSplit = new Set(existing.slice(0, Math.max(splitAt, 0)));
   // A page inside one millisecond has a single edge time, so without its place a line we hold there counts as older when we hold messages before that time.
   // We count messages only, since the joins and parts a page carries reach the chat ahead of it.
   const isOlderAtEdge =
@@ -184,7 +189,7 @@ export function mergeHistoryPage(
     (place === "newest" ||
       others.some((m) => isChatMessage(m) && messageTime(m) < newest));
   const isBeforePage = (m: Message) => {
-    if (anchorAt >= 0) return aheadOfAnchor.has(m);
+    if (splitAt >= 0) return aheadOfSplit.has(m);
     const time = messageTime(m);
     return time < newest || (time === newest && isOlderAtEdge);
   };

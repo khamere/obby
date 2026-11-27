@@ -290,6 +290,22 @@ describe("mergeHistoryPage", () => {
     ).toEqual(["m0", "m1", "m2", "m3", "m4", "m5", "m6"]);
   });
 
+  it("keeps our lines ahead of a page of one millisecond that repeats the lines behind them", () => {
+    const existing = ["m0", "m1", "m2", "m3"].map((msgid) => said(msgid, 1000));
+    const page = [said("m2", 1000), said("m3", 1000), said("m4", 1000)];
+
+    expect(order(existing, page)).toEqual(["m0", "m1", "m2", "m3", "m4"]);
+  });
+
+  it("keeps a line that reached us after a newest page of one millisecond behind that page", () => {
+    const existing = [said("m1", 1000), said("m2", 1000)];
+    const page = [said("m0", 1000), said("m1", 1000)];
+
+    expect(
+      mergeHistoryPage(existing, page, "newest").merged.map((m) => m.msgid),
+    ).toEqual(["m0", "m1", "m2"]);
+  });
+
   it("places a page by its times when we do not hold the line it was asked from", () => {
     const existing = [said("m3", 1000), said("m4", 2000)];
     const page = [said("m0", 500), said("m1", 1000), said("m2", 1000)];
