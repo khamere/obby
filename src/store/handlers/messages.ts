@@ -128,6 +128,14 @@ function answerCtcp(
   else if (request.name === "TIME") reply(`TIME ${new Date().toUTCString()}`);
 }
 
+// A chat that shows the past keeps its newest rows aside, and a line sent before the user went there is among them.
+function hasPendingRow(state: AppState, key: string, label: string): boolean {
+  return [
+    ...(state.messages[key] ?? []),
+    ...(state.historyWindows[key]?.present ?? []),
+  ].some((m) => m.pendingLabel === label);
+}
+
 function notDeliveredRow(
   serverId: string,
   bufferId: string,
@@ -163,11 +171,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
     if (!bufferId) return;
     const actions = store.getState();
     if (label) {
-      const key = `${serverId}-${bufferId}`;
-      const labelled = (actions.messages[key] ?? []).some(
-        (m) => m.pendingLabel === label,
-      );
-      if (labelled) {
+      if (hasPendingRow(actions, `${serverId}-${bufferId}`, label)) {
         actions.failPendingMessage(serverId, bufferId, label, reason);
         ircClient.takeRecentSend(serverId, target);
         return;
@@ -184,13 +188,13 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
     if (!ircClient.takeRecentSend(serverId, target)) return;
     const content = t`Not delivered: ${reason}`;
     // A server refuses every line of a long send with the same words, and one
-    // row says it while the rest of that send waits. A later send gets a row
+    // row says it while more lines wait for that chat. A later send gets a row
     // of its own. Pending lines sort below every row, so we look above them.
     const last = [...(actions.messages[`${serverId}-${bufferId}`] ?? [])]
       .reverse()
       .find((m) => m.status !== "pending");
     if (
-      ircClient.hasWaitingLines(serverId) &&
+      ircClient.hasWaitingLines(serverId, target) &&
       last?.type === "error" &&
       last.content === content
     )
@@ -212,11 +216,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
     };
     const lost = new Map<string, number>();
     for (const { target, context, label } of readUnsent(lines)) {
-      const bufferId = bufferOf(target) ?? bufferOf(context);
+      // A whisper is shown in its channel, so its channel comes before a chat open with that nick.
+      const bufferId = bufferOf(context) ?? bufferOf(target);
       if (!bufferId) continue;
       const actions = store.getState();
-      const rows = actions.messages[`${serverId}-${bufferId}`] ?? [];
-      if (label && rows.some((m) => m.pendingLabel === label))
+      if (label && hasPendingRow(actions, `${serverId}-${bufferId}`, label))
         actions.failPendingMessage(serverId, bufferId, label);
       else lost.set(bufferId, (lost.get(bufferId) ?? 0) + 1);
     }

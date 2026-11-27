@@ -44,6 +44,7 @@ import {
 import {
   capPaidUntil,
   chargeSend,
+  lineReceiver,
   SEND_PACE_MS,
   sendLaneKind,
   sendWaitMs,
@@ -1613,9 +1614,13 @@ export class IRCClient implements IRCClientContext {
     this.triggerEvent("sendQueue", { serverId });
   }
 
-  hasWaitingLines(serverId: string): boolean {
+  // With a receiver we count only the lines that wait for that chat.
+  hasWaitingLines(serverId: string, receiver?: string): boolean {
     const socket = this.sockets.get(serverId);
-    return !!socket && !!this.sendLanes.get(socket)?.waiting.length;
+    const waiting = (socket && this.sendLanes.get(socket)?.waiting) || [];
+    if (receiver === undefined) return waiting.length > 0;
+    const lower = receiver.toLowerCase();
+    return waiting.some((line) => lineReceiver(line)?.toLowerCase() === lower);
   }
 
   waitingLines(serverId: string): { waiting: number; total: number } {
@@ -1951,6 +1956,8 @@ export class IRCClient implements IRCClientContext {
 
   // We send messages and rejoin after a reconnect by the names we hold here, so a renamed channel takes its new name and replaces any entry already under it.
   renameKnownChannel(serverId: string, oldName: string, newName: string): void {
+    // The lines that wait for the channel leave under the name the server knows it by now.
+    this.renameWaitingReceiver(serverId, oldName, newName);
     const server = this.servers.get(serverId);
     if (!server) return;
     const isOld = (name: string) =>

@@ -1253,6 +1253,40 @@ export interface AppState {
   ) => void;
 }
 
+// A chat that shows the past keeps its newest rows aside, and a message that
+// still waits for its answer can be among them, so we change it where it is kept.
+function withPendingRows(
+  state: AppState,
+  channelKey: string,
+  label: string,
+  change: (msg: Message) => Message,
+  arrange: (rows: Message[]) => Message[] = (rows) => rows,
+): Pick<AppState, "messages" | "historyWindows"> | null {
+  let isFound = false;
+  const changed = (rows: Message[]) =>
+    arrange(
+      rows.map((msg) => {
+        if (msg.pendingLabel !== label) return msg;
+        isFound = true;
+        return change(msg);
+      }),
+    );
+  const shown = state.messages[channelKey];
+  const window = state.historyWindows[channelKey];
+  const next = {
+    messages: shown
+      ? { ...state.messages, [channelKey]: changed(shown) }
+      : state.messages,
+    historyWindows: window
+      ? {
+          ...state.historyWindows,
+          [channelKey]: { ...window, present: changed(window.present) },
+        }
+      : state.historyWindows,
+  };
+  return isFound ? next : null;
+}
+
 // Helper functions for per-server tab selections
 const getServerSelection = (state: AppState, serverId: string) => {
   return (
@@ -2348,55 +2382,35 @@ const useStore = create<AppState>((set, get) => ({
   },
 
   confirmPendingMessage: (serverId, bufferId, label, updates) => {
-    const channelKey = `${serverId}-${bufferId}`;
     let matched = false;
     set((state) => {
-      const list = state.messages[channelKey];
-      if (!list) return state;
-      const next = list.map((msg) => {
-        if (msg.pendingLabel !== label) return msg;
-        matched = true;
-        return {
+      const changed = withPendingRows(
+        state,
+        `${serverId}-${bufferId}`,
+        label,
+        (msg) => ({
           ...msg,
           ...updates,
           pendingLabel: undefined,
           status: undefined,
-        };
-      });
-      if (!matched) return state;
-      return {
-        messages: {
-          ...state.messages,
-          [channelKey]: next.sort(compareMessageOrder),
-        },
-      };
+        }),
+        (rows) => rows.sort(compareMessageOrder),
+      );
+      matched = !!changed;
+      return changed ?? state;
     });
     return matched;
   },
 
   failPendingMessage: (serverId, bufferId, label, reason) => {
-    const channelKey = `${serverId}-${bufferId}`;
-    set((state) => {
-      const list = state.messages[channelKey];
-      if (!list) return state;
-      let touched = false;
-      const next = list.map((msg) => {
-        if (msg.pendingLabel !== label) return msg;
-        touched = true;
-        return {
+    set(
+      (state) =>
+        withPendingRows(state, `${serverId}-${bufferId}`, label, (msg) => ({
           ...msg,
           status: "failed" as const,
           failReason: reason ?? msg.failReason,
-        };
-      });
-      if (!touched) return state;
-      return {
-        messages: {
-          ...state.messages,
-          [channelKey]: next,
-        },
-      };
-    });
+        })) ?? state,
+    );
   },
 
   failLatestPendingMessage: (serverId, bufferId, reason) => {

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ircClient from "../../src/lib/ircClient";
 import useStore from "../../src/store";
 import type { Message, Server } from "../../src/types";
@@ -101,6 +101,40 @@ describe("pending messages", () => {
     failPendingMessage("s1", "c1", "mine");
 
     expect(useStore.getState().messages["s1-c1"]?.[0].status).toBe("failed");
+  });
+
+  describe("sent before the chat went back to show the past", () => {
+    const aside = () =>
+      useStore
+        .getState()
+        .historyWindows["s1-c1"]?.present.map((m) => [
+          m.content,
+          m.status,
+          m.msgid,
+        ]);
+
+    beforeEach(() =>
+      useStore.setState({
+        messages: { "s1-c1": [message("old", 500, "them")] },
+        historyWindows: {
+          "s1-c1": { until: 1000, present: [pending("mine", 5_000)] },
+        },
+      }),
+    );
+
+    afterEach(() => useStore.setState({ historyWindows: {} }));
+
+    it("is confirmed where it is kept when its echo arrives", () => {
+      expect(echo("mine", 9_000)).toBe(true);
+      expect(aside()).toEqual([["mine", undefined, "m-mine"]]);
+      expect(shown()).toEqual(["old"]);
+    });
+
+    it("is marked failed where it is kept", () => {
+      useStore.getState().failPendingMessage("s1", "c1", "mine", "refused");
+      expect(aside()).toEqual([["mine", "failed", undefined]]);
+      expect(shown()).toEqual(["old"]);
+    });
   });
 
   it("retries a failed multi-line message as one PRIVMSG per line", () => {

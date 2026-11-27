@@ -35,6 +35,7 @@ describe("a refused send", () => {
     registerMessageHandlers(useStore);
     useStore.setState({
       messages: {},
+      historyWindows: {},
       servers: [
         {
           id: "s1",
@@ -70,6 +71,30 @@ describe("a refused send", () => {
       ["one", "failed", "Cannot send to channel (+m)"],
       ["two", "pending", undefined],
     ]);
+  });
+
+  it("fails the labelled line of a chat that went back to show the past", () => {
+    useStore.setState({
+      messages: { "s1-c1": [] },
+      historyWindows: {
+        "s1-c1": { until: 1000, present: [pending("one", "l1")] },
+      },
+    });
+    ircClient.triggerEvent("SEND_REFUSED", {
+      serverId: "s1",
+      target: "#chan",
+      reason: "Cannot send to channel (+m)",
+      label: "l1",
+    });
+    const { historyWindows } = useStore.getState();
+    expect(
+      historyWindows["s1-c1"]?.present.map((m) => [
+        m.content,
+        m.status,
+        m.failReason,
+      ]),
+    ).toEqual([["one", "failed", "Cannot send to channel (+m)"]]);
+    expect(lines()).toEqual([]);
   });
 
   it("fails the newest pending line when the refusal has no label", () => {
@@ -152,6 +177,15 @@ describe("a refused send", () => {
       refuse();
       vi.spyOn(ircClient, "hasWaitingLines").mockReturnValue(false);
       vi.advanceTimersByTime(3_600_000);
+      refuse();
+      expect(lines().map((m) => m.type)).toEqual(["error", "error"]);
+    });
+
+    it("is said again for a later send while only lines for other chats wait", () => {
+      vi.spyOn(ircClient, "hasWaitingLines").mockImplementation(
+        (_serverId, receiver) => receiver !== "#chan",
+      );
+      refuse();
       refuse();
       expect(lines().map((m) => m.type)).toEqual(["error", "error"]);
     });

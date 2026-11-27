@@ -46,6 +46,10 @@ export function sendLaneKind(line: string): "paced" | "batch" | "free" {
 
 const LINE_RECEIVER = /^((?:@\S+ )?(?:PRIVMSG|BATCH \+\S+ \S+) )(\S+)/i;
 
+export function lineReceiver(line: string): string | undefined {
+  return LINE_RECEIVER.exec(line)?.[2];
+}
+
 // A line names its receiver by nick, so one that waits has to follow a receiver who changes nick.
 export function withReceiverRenamed(
   line: string,

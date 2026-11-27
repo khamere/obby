@@ -43,6 +43,7 @@ describe("lines dropped before they left", () => {
     registerMessageHandlers(useStore);
     useStore.setState({
       messages: {},
+      historyWindows: {},
       servers: [
         {
           id: "s1",
@@ -109,6 +110,27 @@ describe("lines dropped before they left", () => {
   it("reports a whisper in its channel when the nick has no chat open", () => {
     drop(["@+channel-context=#chan PRIVMSG carol :psst"]);
     expect(rows()).toEqual([["error", "Not delivered: 1 line", undefined]]);
+  });
+
+  it("reports a whisper in its channel, where it is shown, when the nick has a chat open too", () => {
+    drop(["@+channel-context=#chan PRIVMSG bob :psst"]);
+    expect(rows()).toEqual([["error", "Not delivered: 1 line", undefined]]);
+    expect(rows("p1")).toEqual([]);
+  });
+
+  it("fails the pending line of a chat that went back to show the past", () => {
+    useStore.setState({
+      messages: { "s1-c1": [] },
+      historyWindows: {
+        "s1-c1": { until: 1000, present: [pending("typed", "l1")] },
+      },
+    });
+    drop(["@label=l1 PRIVMSG #chan :typed"]);
+    const { historyWindows } = useStore.getState();
+    expect(
+      historyWindows["s1-c1"]?.present.map((m) => [m.content, m.status]),
+    ).toEqual([["typed", "failed"]]);
+    expect(rows()).toEqual([]);
   });
 
   it("skips a line for a chat we do not have", () => {

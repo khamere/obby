@@ -371,6 +371,16 @@ describe("what the rest of the app is told", () => {
     expect(queueEvents).toHaveLength(14);
   });
 
+  it("tells whether lines wait for one chat, whatever the case of its name", () => {
+    const { client } = connectedClient();
+    say(client, 5);
+    client.sendRaw(SERVER, line(6, "#Other"));
+    expect(client.hasWaitingLines(SERVER, "#other")).toBe(true);
+    expect(client.hasWaitingLines(SERVER, "#c")).toBe(false);
+    vi.advanceTimersByTime(2000);
+    expect(client.hasWaitingLines(SERVER, "#other")).toBe(false);
+  });
+
   it("drops a message with a NUL as before and queues nothing", () => {
     const { client, socket } = connectedClient();
     vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -472,5 +482,21 @@ describe("lines that wait for someone who changes nick", () => {
     socket.receive(":Bob!u@h NICK Robert");
     client.cancelWaitingLines(SERVER);
     expect(notSent).toEqual([[line(6, "Robert")]]);
+  });
+});
+
+describe("lines that wait for a channel that is renamed", () => {
+  it("leave for the new name, and the other lines keep their receiver", () => {
+    const { client, socket } = connectedClient();
+    say(client, 5);
+    for (const each of [line(6, "#Old"), line(7, "#c"), line(8, "#old")])
+      client.sendRaw(SERVER, each);
+    client.renameKnownChannel(SERVER, "#old", "#new");
+    vi.advanceTimersByTime(6000);
+    expect(socket.said().slice(5)).toEqual([
+      line(6, "#new"),
+      line(7, "#c"),
+      line(8, "#new"),
+    ]);
   });
 });
