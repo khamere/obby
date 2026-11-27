@@ -612,6 +612,22 @@ export function MediaViewerModal({
 
   const mediaSettings = useMediaSettings();
 
+  // A setting can change while the viewer is open, so once the gallery is
+  // built we ask the server's rules about the link on screen each time and
+  // neither probe nor show one they refuse.
+  const isCurrentRefused =
+    entriesBuilt &&
+    !!serverId &&
+    !!currentUrl &&
+    !isDecryptedView &&
+    !canShowMedia(
+      currentUrl,
+      mediaSettings,
+      serverFilehosts(
+        useStore.getState().servers.find((s) => s.id === serverId),
+      ),
+    );
+
   // Map of msgid → reply count, covers both the toolbar button and filmstrip thumbnails
   const commentCountByMsgid = useStore(
     useShallow((state) => {
@@ -904,6 +920,7 @@ export function MediaViewerModal({
     if (
       !isOpen ||
       !currentUrl ||
+      isCurrentRefused ||
       (currentEntry !== null && currentEntry.type !== null)
     ) {
       setProbedType("probing");
@@ -929,7 +946,7 @@ export function MediaViewerModal({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, currentUrl, currentEntry]);
+  }, [isOpen, currentUrl, currentEntry, isCurrentRefused]);
 
   // Swap a ciphertext URL for its plaintext blob, but only for the entry the
   // user is actually looking at. Resolving the whole list up front would
@@ -1290,16 +1307,18 @@ export function MediaViewerModal({
   // When currentEntry has type: null (extension-based URL), use URL extension as an optimistic
   // hint while the HEAD probe is in flight so the UI renders immediately. The probe result
   // takes over once it resolves, allowing the server's Content-Type to correct wrong guesses.
-  const effectiveType: MediaType | null =
-    currentEntry?.type ??
-    (probedType === "probing"
-      ? detectMediaType(currentUrl) // optimistic hint from URL extension while probing
-      : probedType === "failed"
-        ? null
-        : probedType);
+  const effectiveType: MediaType | null = isCurrentRefused
+    ? null
+    : (currentEntry?.type ??
+      (probedType === "probing"
+        ? detectMediaType(currentUrl) // optimistic hint from URL extension while probing
+        : probedType === "failed"
+          ? null
+          : probedType));
   // Only show the spinner when both the probe is still in flight AND the URL extension gives
   // no hint — i.e., we truly don't know the type yet.
   const isViewerProbing =
+    !isCurrentRefused &&
     (currentEntry === null || currentEntry.type === null) &&
     probedType === "probing" &&
     detectMediaType(currentUrl) === null;

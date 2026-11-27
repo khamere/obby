@@ -160,6 +160,28 @@ describe("MediaViewerModal — the user's allowed sites", () => {
     expect(probedHosts()).not.toContain("img.example");
   });
 
+  test("the open listed-site image is neither probed nor shown once its site is removed", async () => {
+    mock.messages = [message(FILEHOST_A), message(LISTED), message(FILEHOST_C)];
+    const { rerender } = render(viewer(LISTED));
+    await waitFor(() =>
+      expect(screen.getByAltText("Image preview").getAttribute("src")).toBe(
+        LISTED,
+      ),
+    );
+
+    vi.mocked(mediaProbe.probeMediaUrl).mockClear();
+    mock.globalSettings = { mediaVisibilityLevel: 1, mediaAllowedHosts: [] };
+    rerender(viewer(LISTED));
+
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole("button", { name: /image \d+ of 2/i }),
+      ).toHaveLength(2),
+    );
+    expect(probedHosts()).not.toContain("img.example");
+    expect(screen.queryByAltText("Image preview")).toBeNull();
+  });
+
   test("settings saved before the list existed build the gallery from the file host alone", async () => {
     mock.globalSettings = { mediaVisibilityLevel: 1 };
     mock.messages = [message(FILEHOST_A), message(LISTED), message(FILEHOST_C)];
@@ -209,6 +231,29 @@ describe("MediaViewerModal — PDF that pdf.js cannot load", () => {
     );
     expect(document.querySelector("object")).toBeNull();
     expect(screen.getAllByText("Open in browser").length).toBeGreaterThan(0);
+  });
+
+  test("from a listed site never reaches the native viewer when its site is removed", async () => {
+    const url = "https://img.example/doc.pdf";
+    mock.messages = [message(url)];
+    const { rerender } = render(viewer(url));
+    await waitFor(() =>
+      expect(
+        screen.getByText("PDF cannot be displayed in browser."),
+      ).toBeTruthy(),
+    );
+
+    vi.mocked(mediaProbe.probeMediaUrl).mockClear();
+    mock.globalSettings = { mediaVisibilityLevel: 1, mediaAllowedHosts: [] };
+    rerender(viewer(url));
+
+    await waitFor(() =>
+      expect(
+        screen.queryByText("PDF cannot be displayed in browser."),
+      ).toBeNull(),
+    );
+    expect(document.querySelector("object")).toBeNull();
+    expect(probedHosts()).not.toContain("img.example");
   });
 
   test("from the server's file host still falls back to the native viewer", async () => {

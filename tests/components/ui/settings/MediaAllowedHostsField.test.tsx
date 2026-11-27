@@ -1,10 +1,15 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MediaAllowedHostsField } from "../../../../src/components/ui/settings/MediaAllowedHostsField";
 import type {
   SettingDefinition,
   SettingValue,
 } from "../../../../src/lib/settings/types";
+
+const env = vi.hoisted(() => ({ touch: false }));
+vi.mock("../../../../src/hooks/useIsTouchInput", () => ({
+  useIsTouchInput: () => env.touch,
+}));
 
 const PLACEHOLDER = "files.example.com or a pasted link";
 const INVALID =
@@ -27,6 +32,10 @@ function setup(value?: SettingValue) {
 }
 
 describe("MediaAllowedHostsField", () => {
+  beforeEach(() => {
+    env.touch = false;
+  });
+
   it("adds a typed site with the button, after the sites already listed", () => {
     const { onChange, addButton, type } = setup(["a.example"]);
     type(" Files.Example.com ");
@@ -117,6 +126,19 @@ describe("MediaAllowedHostsField", () => {
     expect(remove.getAttribute("title")).toBe("Remove example.com");
     fireEvent.click(remove);
     expect(onChange).toHaveBeenCalledWith(["*.cdn.example"]);
+  });
+
+  it("gives Add and Remove a finger-sized target on touch input only", () => {
+    env.touch = true;
+    const touch = setup(["example.com"]);
+    expect(touch.addButton.className).toContain("min-h-11");
+    const remove = screen.getByRole("button", { name: "Remove example.com" });
+    expect(remove.className).toContain("w-11 h-11");
+    cleanup();
+
+    env.touch = false;
+    const mouse = setup(["example.com"]);
+    expect(mouse.addButton.className).not.toContain("min-h-11");
   });
 
   it("renders an empty editor with both hints when no value is stored", () => {

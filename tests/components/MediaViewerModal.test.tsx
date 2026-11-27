@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, describe, expect, onTestFinished, test, vi } from "vitest";
 import {
   clampZoom,
   MediaViewerModal,
@@ -927,7 +927,9 @@ describe("map", () => {
     const getStateFn = (
       store.default as unknown as { getState: ReturnType<typeof vi.fn> }
     ).getState;
-    getStateFn.mockReturnValueOnce({
+    // The viewer reads the server's file host again after the gallery is
+    // built, so the store keeps this state for the whole test.
+    getStateFn.mockReturnValue({
       messages: {},
       servers: [
         {
@@ -937,6 +939,9 @@ describe("map", () => {
           channels: [{ id: "c1", topic: null }],
         },
       ],
+    });
+    onTestFinished(() => {
+      getStateFn.mockReturnValue({ messages: {}, servers: [] });
     });
     vi.mocked(store.default).mockImplementation(((
       selector: (state: unknown) => unknown,

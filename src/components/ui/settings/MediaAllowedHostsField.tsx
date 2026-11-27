@@ -94,7 +94,9 @@ export const MediaAllowedHostsField: React.FC<SettingComponentProps> = ({
             type="button"
             onClick={add}
             disabled={disabled || !draft.trim()}
-            className="rounded bg-discord-button-success-default px-4 py-2 text-white hover:bg-discord-button-success-hover disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`rounded bg-discord-button-success-default px-4 py-2 text-white hover:bg-discord-button-success-hover disabled:opacity-50 disabled:cursor-not-allowed ${
+              isTouch ? "min-h-11" : ""
+            }`}
           >
             {t`Add`}
           </button>
