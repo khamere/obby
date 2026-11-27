@@ -604,7 +604,9 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
       if (batch) {
         if (batch.type === "chathistory") {
           // Historical quit from event-playback — create a message record, skip live mutation.
+          // Our own quit ended a connection we have since replaced, and history leaves out the JOIN that brought us back, so we leave the quit out with it.
           if (
+            !isOwnNick(serverId, username) &&
             state.globalSettings.showEvents &&
             state.globalSettings.showQuits
           ) {

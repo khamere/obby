@@ -215,4 +215,59 @@ describe("JOIN, PART and QUIT replayed from chathistory", () => {
     expect(lines("part")).toHaveLength(1);
     expect(lines("quit")).toHaveLength(1);
   });
+
+  // The history a server keeps holds the QUIT of each connection of ours that
+  // ended and the JOIN of the one that replaced it. The JOIN is left out, so
+  // the QUIT alone would read as if we had gone and never come back.
+  function quit(username: string, batchTag?: string) {
+    ircClient.triggerEvent("QUIT", {
+      serverId,
+      username,
+      reason: "Quit: bye",
+      batchTag,
+      time: "2026-10-20T07:23:00.000Z",
+    });
+  }
+
+  test("our own QUIT from history posts no quit line", () => {
+    quit("me", "hist1");
+    expect(lines("quit")).toHaveLength(0);
+  });
+
+  test("our own QUIT from history is ours in any letter case", () => {
+    quit("ME", "hist1");
+    expect(lines("quit")).toHaveLength(0);
+  });
+
+  test("another user's QUIT beside ours in history is still shown", () => {
+    quit("me", "hist1");
+    quit("brindle", "hist1");
+    expect(lines("quit").map((m) => m.userId)).toEqual(["brindle"]);
+  });
+
+  test("our own QUIT that arrives live is still shown", () => {
+    ircClient.nicks.set(serverId, "brindle");
+    quit("brindle");
+    expect(lines("quit").map((m) => m.userId)).toEqual(["brindle"]);
+  });
+
+  test("a history page that spans our reconnect shows no line about us", () => {
+    useStore.setState({ activeBatches: {} });
+    const page = [
+      ":irc.test BATCH +7 chathistory #help",
+      "@batch=7;msgid=a;time=2026-10-20T07:20:00.000Z :me!~u@host JOIN #help * me",
+      "@batch=7;msgid=b;time=2026-10-20T07:21:00.000Z :me!~u@host QUIT :Quit: bye",
+      "@batch=7;msgid=c;time=2026-10-20T07:21:02.000Z :me!~u@host JOIN #help * me",
+      "@batch=7;msgid=d;time=2026-10-20T07:22:00.000Z :bob!~u@host QUIT :Quit: bye",
+      ":irc.test BATCH -7",
+    ];
+    (
+      ircClient as unknown as {
+        handleMessage(data: string, serverId: string): void;
+      }
+    ).handleMessage(`${page.join("\r\n")}\r\n`, serverId);
+
+    expect(lines("join")).toHaveLength(0);
+    expect(lines("quit").map((m) => m.userId)).toEqual(["bob"]);
+  });
 });
