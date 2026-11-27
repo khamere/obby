@@ -280,9 +280,13 @@ export function registerBouncerHandlers(store: StoreApi<AppState>): void {
     if (connectionState === "connected") return;
     for (const key of snapshots.keys())
       if (key.startsWith(`${serverId}:`)) snapshots.delete(key);
+    // Each session acknowledges the notify capability itself, so we wait for the next one to say it sends its list unasked.
     if (store.getState().bouncers[serverId])
       store.setState((state) => ({
-        bouncers: ensureBouncer(state, serverId, { isListStale: true }),
+        bouncers: ensureBouncer(state, serverId, {
+          isListStale: true,
+          notifyEnabled: false,
+        }),
       }));
     for (const netid of pendingNetids(store.getState(), serverId))
       takePendingDelete(store, serverId, netid);
