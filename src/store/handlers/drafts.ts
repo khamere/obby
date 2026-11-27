@@ -38,6 +38,7 @@ export function registerDraftHandlers(store: StoreApi<AppState>): void {
     )
       flushDrafts();
   });
+  if (typeof window === "undefined") return;
   // The page may be closed or evicted without another chance to write.
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") flushDrafts();
