@@ -109,6 +109,16 @@ const reopenFormat = (
   return codes && joined ? RESET + codes : codes;
 };
 
+const LINK_START = /(?:https?|ircs?):\/\/|www\./i;
+
+// A reader who joins the parts follows a link only while no code interrupts its address.
+const cutsLink = (units: readonly string[], cut: number): boolean => {
+  if (units[cut] === " ") return false;
+  let wordStart = cut;
+  while (wordStart > 0 && units[wordStart - 1] !== " ") wordStart--;
+  return LINK_START.test(units.slice(wordStart, cut).join(""));
+};
+
 /** The number of message bytes one PRIVMSG to `target` can carry. */
 export const maxMessageBytes = (target: string): number =>
   512 - calculateProtocolOverhead(target);
@@ -131,7 +141,9 @@ export type LineSplitter = (
  * message of its own, so the spaces at a split point become the line break.
  * A word that fits a part, a link included, is never cut.
  * Each part is a line of its own to a reader without draft/multiline, so a
- * part starts with the formatting codes that are open where it begins.
+ * part starts with the formatting codes that are open where it begins. A
+ * `keepSpaces` part that begins inside a link starts with the link's own
+ * bytes, so the joined address stays one link.
  */
 export const splitToBytes = (
   line: string,
@@ -154,6 +166,7 @@ const cutToBytes = (
 
   while (start < units.length) {
     let prefix = reopenFormat(open, units[start], keepSpaces);
+    if (prefix && keepSpaces && cutsLink(units, start)) prefix = "";
     let end = start;
     let bytes = prefix.length;
     let lastSpace = -1;

@@ -503,6 +503,33 @@ describe("splitToBytes with formatting codes", () => {
     ]);
   });
 
+  test("re-opens no codes inside a link that is cut across the parts a reader joins", () => {
+    const address = `https://files.example/${"a".repeat(60)}.png`;
+    const text = `\x0304\x02look ${address} then ${"more words ".repeat(6)}\x02`;
+
+    const parts = splitToBytes(text, 40, true);
+
+    expect(parts.join("")).toContain(address);
+    for (const part of parts) expect(bytes(part)).toBeLessThanOrEqual(40);
+    expect(render(parts.join(""), true)).toEqual(render(text, true));
+    // The part that begins after the link opens the codes again.
+    expect(parts.at(-1)?.startsWith("\x0F\x0304\x02")).toBe(true);
+    // Separate messages cut the link anyway, so each one opens the codes.
+    for (const part of splitToBytes(text, 40))
+      expect(part.startsWith("\x0304\x02")).toBe(true);
+  });
+
+  test("re-opens the codes right after a link that ends where a joined part ends", () => {
+    const address = `https://files.example/${"a".repeat(13)}`;
+    expect(bytes(`\x0F\x02${address}`)).toBe(37);
+
+    expect(splitToBytes(`\x02aa ${address} bbbb\x02`, 37, true)).toEqual([
+      "\x02aa ",
+      `\x0F\x02${address}`,
+      "\x0F\x02 bbbb\x02",
+    ]);
+  });
+
   test("sends a character that fills a part without the codes that would push it over", () => {
     expect(bytes(FAMILY)).toBe(25);
     expect(splitToBytes(`\x0304\x02aaaa ${FAMILY} bbbb`, 25)).toEqual([
