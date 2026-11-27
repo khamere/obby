@@ -127,10 +127,26 @@ function generateDeterministicId(serverId: string, name: string): string {
 const MSG_DEDUP_CAP = 10000;
 const MSG_DEDUP_EVICT_BATCH = 1000;
 
-export function rememberMsgId(set: Set<string>, id: string): Set<string> {
-  if (set.has(id)) return set;
+// Every connection we hold to a network receives a line under the same msgid, so we remember it per server.
+const seenMsgKey = (serverId: string, msgid: string) => `${serverId} ${msgid}`;
+
+export function hasSeenMsgId(
+  set: Set<string>,
+  serverId: string,
+  id: string,
+): boolean {
+  return set.has(seenMsgKey(serverId, id));
+}
+
+export function rememberMsgId(
+  set: Set<string>,
+  serverId: string,
+  id: string,
+): Set<string> {
+  const key = seenMsgKey(serverId, id);
+  if (set.has(key)) return set;
   const next = new Set(set);
-  next.add(id);
+  next.add(key);
   if (next.size > MSG_DEDUP_CAP) {
     const evict = next.size - (MSG_DEDUP_CAP - MSG_DEDUP_EVICT_BATCH);
     let dropped = 0;
@@ -143,10 +159,14 @@ export function rememberMsgId(set: Set<string>, id: string): Set<string> {
   return next;
 }
 
-export function rememberMsgIds(set: Set<string>, ids: string[]): Set<string> {
+export function rememberMsgIds(
+  set: Set<string>,
+  serverId: string,
+  ids: string[],
+): Set<string> {
   if (ids.length === 0) return set;
   const next = new Set(set);
-  for (const id of ids) next.add(id);
+  for (const id of ids) next.add(seenMsgKey(serverId, id));
   if (next.size > MSG_DEDUP_CAP) {
     const evict = next.size - (MSG_DEDUP_CAP - MSG_DEDUP_EVICT_BATCH);
     let dropped = 0;
@@ -823,7 +843,7 @@ export interface AppState {
   bouncerGroupAccents: Record<string, string>;
   mentionLog: MentionEntry[];
   // Message deduplication tracking
-  processedMessageIds: Set<string>; // Set of msgid values that have already been processed
+  processedMessageIds: Set<string>; // The msgids each server has already delivered, written through rememberMsgIds
   // Auto-connect prevention
   hasConnectedToSavedServers: boolean;
   // draft/bot-tools workflow state, indexed by serverId then workflow id.

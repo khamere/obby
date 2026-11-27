@@ -439,6 +439,7 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
             historyWindows,
             processedMessageIds: rememberMsgIds(
               state.processedMessageIds,
+              serverId,
               newMsgIds,
             ),
             servers: state.servers.map((s) => {
@@ -503,6 +504,7 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
             historyWindows,
             processedMessageIds: rememberMsgIds(
               state.processedMessageIds,
+              serverId,
               newMsgIds,
             ),
             servers: state.servers.map((s) =>

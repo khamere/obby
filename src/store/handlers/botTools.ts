@@ -9,7 +9,12 @@ import ircClient from "../../lib/ircClient";
 import { extractMentions } from "../../lib/notifications";
 import type { Message } from "../../types";
 import { isHistoryEvent, resolveReplyMessage } from "../helpers";
-import type { AiStep, AiWorkflow, AppState } from "../index";
+import {
+  type AiStep,
+  type AiWorkflow,
+  type AppState,
+  rememberMsgIds,
+} from "../index";
 
 // We date runs by server-time so a run replayed from history keeps its real age.
 function eventTime(mtags: Record<string, string> | undefined): number {
@@ -210,9 +215,11 @@ export function registerBotToolsHandlers(store: StoreApi<AppState>): void {
               ...(mtags?.msgid ? [mtags.msgid] : []),
               ...lineMsgids,
             ];
-            const processedMessageIds = replyMsgids.length
-              ? new Set([...state.processedMessageIds, ...replyMsgids])
-              : state.processedMessageIds;
+            const processedMessageIds = rememberMsgIds(
+              state.processedMessageIds,
+              serverId,
+              replyMsgids,
+            );
             // Resolve reply + mentions the same way the generic CHANMSG
             // handler would, so the morphed row reads identically to a
             // plain bot reply (quote block, ping highlight, etc.) and
