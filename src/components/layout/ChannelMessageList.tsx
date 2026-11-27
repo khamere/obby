@@ -854,6 +854,7 @@ export const ChannelMessageList = forwardRef<
     const historyRefusedAt =
       channel?.historyRefusedAt ?? privateChat?.historyRefusedAt;
     const seenHistoryRefusedAtRef = useRef(historyRefusedAt);
+    const [refusedOldestId, setRefusedOldestId] = useState<string | null>();
     // A refusal says nothing about what the server holds, so the page stays
     // open to another request and never counts as an empty one.
     // biome-ignore lint/correctness/useExhaustiveDependencies: runs once per refusal; the oldest message is read as it stands then
@@ -863,9 +864,17 @@ export const ChannelMessageList = forwardRef<
       if (historyRefusedAt === undefined) return;
       const oldestId = channelMessages[0]?.id ?? null;
       refusedOlderPageRef.current = { oldestId, at: historyRefusedAt };
+      setRefusedOldestId(oldestId);
       if (emptyOlderPageAtRef.current === oldestId)
         emptyOlderPageAtRef.current = undefined;
     }, [historyRefusedAt]);
+    // Nothing is on its way for a refused page until we ask again, so we keep its placeholders still.
+    const isOlderPageRefused =
+      !locallyHidden &&
+      !isFetchingMore &&
+      !isLoadingHistory &&
+      refusedOldestId !== undefined &&
+      refusedOldestId === (channelMessages[0]?.id ?? null);
 
     // Scroll to bottom after initial join history loads; clear fetch spinner at batch end.
     const wasLoadingHistoryRef = useRef(false);
@@ -1306,7 +1315,9 @@ export const ChannelMessageList = forwardRef<
             <MessageSkeletons isFilling />
           ) : (
             <div ref={messagesInnerRef} className="flex-grow flex flex-col">
-              {hasMoreMessages && <MessageSkeletons isFilling />}
+              {hasMoreMessages && (
+                <MessageSkeletons isFilling isIdle={isOlderPageRefused} />
+              )}
               {eventGroups.map((group) => {
                 if (group.type === "eventGroup") {
                   const firstId = group.messages[0]?.id || "";

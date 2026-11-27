@@ -258,6 +258,23 @@ describe("an older page the server refuses", () => {
     });
   const topPlaceholder = (area: Element) =>
     area.querySelector("[data-message-id]")?.parentElement?.firstElementChild;
+  const isPlaceholderPulsing = (area: Element) =>
+    !!topPlaceholder(area)?.querySelector(".animate-pulse");
+  const addMessage = (id: string, place: "above" | "below") =>
+    act(() => {
+      useStore.setState((state) => {
+        const shown = state.messages[defaultProps.channelKey];
+        return {
+          messages: {
+            ...state.messages,
+            [defaultProps.channelKey]:
+              place === "above"
+                ? [makeMsg(id), ...shown]
+                : [...shown, makeMsg(id)],
+          },
+        };
+      });
+    });
 
   const scrollToTopOfChat = () => {
     const { container } = render(<ChannelMessageList {...defaultProps} />);
@@ -407,6 +424,56 @@ describe("an older page the server refuses", () => {
     updateChat({ isLoadingHistory: false, historyRefusedAt: Date.now() });
 
     expect(topPlaceholder(area)?.getAttribute("aria-hidden")).toBe("true");
+  });
+
+  it("pulses the placeholder while the older page is on its way", () => {
+    const area = scrollToTopOfChat();
+
+    expect(isPlaceholderPulsing(area)).toBe(true);
+  });
+
+  it("keeps the placeholder still once the server has refused the page", () => {
+    const area = scrollToTopOfChat();
+    updateChat({ isLoadingHistory: false, historyRefusedAt: Date.now() });
+
+    expect(isPlaceholderPulsing(area)).toBe(false);
+    liveTraffic();
+    addMessage("said-after-the-refusal", "below");
+    expect(isPlaceholderPulsing(area)).toBe(false);
+  });
+
+  it("keeps the placeholder still when the refusal lands after the loading state ends", () => {
+    const area = scrollToTopOfChat();
+    updateChat({ isLoadingHistory: false });
+    updateChat({ historyRefusedAt: Date.now() });
+
+    expect(isPlaceholderPulsing(area)).toBe(false);
+  });
+
+  it("pulses the placeholder again while the refused page is asked for again", () => {
+    const area = scrollToTopOfChat();
+    updateChat({ isLoadingHistory: false, historyRefusedAt: Date.now() });
+    vi.advanceTimersByTime(RETRY_WAIT_MS);
+    act(() => {
+      fireEvent.scroll(area);
+    });
+    expect(requests()).toBe(2);
+
+    expect(isPlaceholderPulsing(area)).toBe(true);
+    updateChat({ isLoadingHistory: true });
+    expect(isPlaceholderPulsing(area)).toBe(true);
+    updateChat({ isLoadingHistory: false, historyRefusedAt: Date.now() });
+    expect(isPlaceholderPulsing(area)).toBe(false);
+  });
+
+  it("pulses the placeholder again once older messages land above the refused page", () => {
+    const area = scrollToTopOfChat();
+    updateChat({ isLoadingHistory: false, historyRefusedAt: Date.now() });
+    expect(isPlaceholderPulsing(area)).toBe(false);
+
+    addMessage("older", "above");
+    expect(topPlaceholder(area)?.getAttribute("aria-hidden")).toBe("true");
+    expect(isPlaceholderPulsing(area)).toBe(true);
   });
 
   it("removes the placeholder when the refusal ends the offer", () => {
