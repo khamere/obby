@@ -53,6 +53,7 @@ import {
   extractMediaFromText,
   filenameFromUrl,
   getEmbedThumbnailUrl,
+  isAllowedSiteOnly,
   type MediaEntry,
   type MediaType,
   withoutAllowedSites,
@@ -620,6 +621,19 @@ export function MediaViewerModal({
     !!currentUrl &&
     !isDecryptedView &&
     !canShowMedia(
+      currentUrl,
+      mediaSettings,
+      serverFilehosts(
+        useStore.getState().servers.find((s) => s.id === serverId),
+      ),
+    );
+
+  // We hold a link that only the user's allowed sites admit until its probe
+  // answers, since a media element started on the file name alone would
+  // follow a redirect the probe refuses.
+  const awaitsProbe =
+    !!currentUrl &&
+    isAllowedSiteOnly(
       currentUrl,
       mediaSettings,
       serverFilehosts(
@@ -1310,7 +1324,9 @@ export function MediaViewerModal({
     ? null
     : (currentEntry?.type ??
       (probedType === "probing"
-        ? detectMediaType(currentUrl) // optimistic hint from URL extension while probing
+        ? awaitsProbe
+          ? null
+          : detectMediaType(currentUrl) // optimistic hint from URL extension while probing
         : probedType === "failed"
           ? null
           : probedType));
@@ -1320,7 +1336,7 @@ export function MediaViewerModal({
     !isCurrentRefused &&
     (currentEntry === null || currentEntry.type === null) &&
     probedType === "probing" &&
-    detectMediaType(currentUrl) === null;
+    (awaitsProbe || detectMediaType(currentUrl) === null);
   // Treat as image only when we know it's an image — never fall back for unknown types
   // (avoids feeding stream URLs into <img> which hangs the browser).
   const isImageEntry = effectiveType === "image";

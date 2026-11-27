@@ -266,6 +266,78 @@ describe("MediaViewerModal — the user's allowed sites", () => {
     expect(document.querySelector(`img[src="${UNLISTED}"]`)).toBeNull();
   });
 
+  describe("while the probe has not answered", () => {
+    type Probed = Awaited<ReturnType<typeof mediaProbe.probeMediaUrl>>;
+
+    function holdProbes() {
+      const answers = new Map<string, (result: Probed) => void>();
+      const probe = vi.mocked(mediaProbe.probeMediaUrl);
+      const answered = probe.getMockImplementation();
+      probe.mockImplementation(
+        (url) => new Promise((resolve) => answers.set(url, resolve)),
+      );
+      onTestFinished(() => {
+        if (answered) probe.mockImplementation(answered);
+      });
+      return answers;
+    }
+
+    const loads = (url: string) =>
+      document.querySelector(`[src="${url}"]`) !== null ||
+      document.querySelector(`[style*="${url}"]`) !== null;
+
+    test.each([
+      ["an image", "https://img.example/r/x.jpg"],
+      ["a video", "https://img.example/r/x.mp4"],
+      ["an audio file", "https://img.example/r/x.mp3"],
+    ])(
+      "a listed-site link named like %s loads nothing, and nothing once the probe refuses it",
+      async (_kind, url) => {
+        const answers = holdProbes();
+        mock.messages = [message(FILEHOST_A), message(url)];
+        render(viewer(url));
+
+        await waitFor(() => expect(answers.has(url)).toBe(true));
+        expect(loads(url)).toBe(false);
+
+        answers.get(url)?.(null);
+        await waitFor(() => expect(screen.queryByText("Loading…")).toBeNull());
+        expect(loads(url)).toBe(false);
+      },
+    );
+
+    test("a listed-site image shows once the probe confirms it", async () => {
+      const answers = holdProbes();
+      mock.messages = [message(FILEHOST_A), message(LISTED)];
+      render(viewer(LISTED));
+
+      await waitFor(() => expect(answers.has(LISTED)).toBe(true));
+      expect(loads(LISTED)).toBe(false);
+
+      answers.get(LISTED)?.({
+        type: "image",
+        streamable: false,
+        skipped: false,
+      });
+      await waitFor(() =>
+        expect(screen.getByAltText("Image preview").getAttribute("src")).toBe(
+          LISTED,
+        ),
+      );
+    });
+
+    test("a file-host image shows straight away", async () => {
+      const answers = holdProbes();
+      mock.messages = [message(FILEHOST_A), message(LISTED)];
+      render(viewer(FILEHOST_A));
+
+      await waitFor(() => expect(answers.has(FILEHOST_A)).toBe(true));
+      expect(screen.getByAltText("Image preview").getAttribute("src")).toBe(
+        FILEHOST_A,
+      );
+    });
+  });
+
   test("a refused link opened without a channel is neither probed nor shown", async () => {
     render(
       <MediaViewerModal
