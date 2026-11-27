@@ -249,6 +249,39 @@ describe("mergeHistoryPage", () => {
     expect(order(existing, page)).toEqual(["j0", "m0", "m1", "m2"]);
   });
 
+  it("keeps two alike lines apart when the server gave them different ids", () => {
+    const twin = (msgid: string): Message => ({
+      ...said(msgid, 1000),
+      content: "ok",
+    });
+    const existing = [twin("m1")];
+
+    const { merged, added } = mergeHistoryPage(existing, [
+      twin("m1"),
+      twin("m2"),
+    ]);
+
+    expect(merged.map((m) => m.msgid)).toEqual(["m1", "m2"]);
+    expect(added.map((m) => m.msgid)).toEqual(["m2"]);
+  });
+
+  it("takes a line without an id for the alike line we hold", () => {
+    const existing = [{ ...said("m1", 1000), content: "ok" }];
+    const echo = { ...said("m1", 1000), content: "ok", msgid: undefined };
+
+    const { merged, added } = mergeHistoryPage(existing, [echo as Message]);
+
+    expect(merged).toEqual(existing);
+    expect(added).toEqual([]);
+  });
+
+  it("leaves a line we hold where it is when a page that leaves it out brings nothing new", () => {
+    const existing = [said("m1", 1000), said("m2", 1000), said("m3", 1000)];
+    const page = [said("m1", 1000), said("m3", 1000)];
+
+    expect(order(existing, page)).toEqual(["m1", "m2", "m3"]);
+  });
+
   it("returns what we hold, in order, for an empty page", () => {
     const existing = [said("m1", 2000), said("m0", 1000)];
 
@@ -339,6 +372,18 @@ describe("capMergedMessages", () => {
     expect(capped.messages).toHaveLength(MAX_MESSAGES_PER_CHANNEL);
     expect(capped.messages[0]).toBe(older);
     expect(capped.window?.present).toBe(full);
+  });
+
+  it("keeps the newest end when the newest page puts a line first at the cap", () => {
+    const first = said(0, 1000);
+    const live = said(MAX_MESSAGES_PER_CHANNEL + 1, 9000);
+    const merged = [first, ...full, live];
+
+    const capped = capMergedMessages(full, merged, undefined, "newest");
+
+    expect(capped.messages).toHaveLength(MAX_MESSAGES_PER_CHANNEL);
+    expect(capped.messages.at(-1)).toBe(live);
+    expect(capped.window).toBeUndefined();
   });
 
   it("drops the oldest end when a newer line arrives at the cap", () => {

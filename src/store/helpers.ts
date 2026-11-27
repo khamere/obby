@@ -154,10 +154,12 @@ export function mergeHistoryPage(
   const added: Message[] = [];
   const run = page.flatMap((m) => {
     const time = messageTime(m);
+    // Two lines the server gave different ids are two lines, however alike they are, so we match by sender, text and time only when one of them has no id.
     const copy =
       (m.msgid ? byMsgid.get(m.msgid) : undefined) ??
       existing.find(
         (e) =>
+          !(e.msgid && m.msgid) &&
           e.content === m.content &&
           e.userId === m.userId &&
           messageTime(e) === time,
@@ -170,6 +172,9 @@ export function mergeHistoryPage(
     held.add(copy);
     return [copy];
   });
+  // A page that brings nothing new tells us nothing about the lines it leaves out, so our lines stay as they are.
+  if (added.length === 0)
+    return { merged: [...existing].sort(compareMessageOrder), added };
   const times = page.map(messageTime);
   const oldest = Math.min(...times);
   const newest = Math.max(...times);
@@ -418,9 +423,11 @@ export function capMergedMessages(
   existing: Message[],
   merged: Message[],
   window: HistoryWindow | undefined,
+  place?: HistoryPagePlace,
 ): { messages: Message[]; window?: HistoryWindow } {
-  // A page can put older lines ahead of ours inside our oldest millisecond, so we tell an older page by the line it puts first.
+  // A page can put older lines ahead of ours inside our oldest millisecond, so we tell an older page by the line it puts first, unless it was asked as the newest page.
   const isOlder =
+    place !== "newest" &&
     existing.length > 0 &&
     merged[0] !== existing[0] &&
     messageTime(merged[0]) <= messageTime(existing[0]);

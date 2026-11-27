@@ -1083,6 +1083,7 @@ describe("orderRowsAtPageEdge", () => {
     it("keeps every row and search term when a step of the move fails", async () => {
       await seed();
       const before = await snapshot();
+      const stored = await readAll();
       const order = await msgidsAt(1000);
       const add = IDBObjectStore.prototype.add;
       let calls = 0;
@@ -1099,6 +1100,7 @@ describe("orderRowsAtPageEdge", () => {
 
       expect(calls).toBeGreaterThanOrEqual(3);
       expect(await snapshot()).toEqual(before);
+      expect(await readAll()).toEqual(stored);
       expect(await msgidsAt(1000)).toEqual(order);
       expect(await db.appendRows([said("m10", 3000)])).toEqual([true]);
     });

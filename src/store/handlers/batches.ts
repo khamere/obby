@@ -399,16 +399,18 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
 
           // Dedup buffered messages against what's already in the store (event messages
           // like JOIN/PART arrive immediately and will already be in existing).
+          const place = historyPagePlace(serverId, channelName, batchId);
           const { merged: withPage, added: newMessages } = mergeHistoryPage(
             existing,
             pending,
-            historyPagePlace(serverId, channelName, batchId),
+            place,
           );
 
           const capped = capMergedMessages(
             existing,
             withPage,
             state.historyWindows[key],
+            place,
           );
           const merged = capped.messages;
           const historyWindows = capped.window
@@ -473,16 +475,18 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
           historyEditBuffers.delete(historyBufferKey(serverId, batchId));
           const existing = state.messages[key] || [];
 
+          const place = historyPagePlace(serverId, channelName, batchId);
           const { merged: withPage, added: newMessages } = mergeHistoryPage(
             existing,
             pending,
-            historyPagePlace(serverId, channelName, batchId),
+            place,
           );
 
           const capped = capMergedMessages(
             existing,
             withPage,
             state.historyWindows[key],
+            place,
           );
           const merged = capped.messages;
           const historyWindows = capped.window
