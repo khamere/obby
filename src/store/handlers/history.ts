@@ -471,14 +471,15 @@ async function saveRows(store: StoreApi<AppState>, rows: NewHistoryRow[]) {
 
 // A page fetched around a time can land apart from the rows we had, or inside
 // a gap, so we replace the gaps it overlaps with one on each side whose edge
-// row is new to us.
+// row is new to us. The result says whether the page ends on a new line
+// beside rows we hold in the same millisecond, which no gap between two times covers.
 async function addIslandGaps(
   server: string,
   target: string,
   page: HistoryPage,
   inserted: boolean[],
-): Promise<HistoryGap | undefined> {
-  if (page.oldest === undefined || page.newest === undefined) return;
+): Promise<boolean> {
+  if (page.oldest === undefined || page.newest === undefined) return false;
   for (const gap of await gapsFor(server, target))
     if (gap.from < page.newest && gap.to > page.oldest) await deleteGap(gap.id);
   const [older] = await eventRowsBefore(server, target, page.oldest - 1, 1);
@@ -501,21 +502,9 @@ async function addIslandGaps(
       lost: false,
       ...(page.newestMsgid ? { fromMsgid: page.newestMsgid } : {}),
     });
-  // Rows we hold can share the millisecond the page ends in, with lines missing between them that no time can name, so we record that gap where the server pages from a msgid.
-  const { newest, newestMsgid } = page;
-  if (newer || !inserted[inserted.length - 1] || !newestMsgid) return;
-  if (!ircClient.canPageByMsgid(server)) return;
-  if (!(await holdsLineBesidePage(server, target, newest, page.msgids))) return;
-  await addGap({
-    server,
-    target,
-    from: newest,
-    to: newest,
-    lost: false,
-    fromMsgid: newestMsgid,
-  });
-  return (await gapsFor(server, target)).find(
-    (gap) => !gap.lost && gap.from === newest && gap.to === newest,
+  return (
+    inserted[inserted.length - 1] === true &&
+    holdsLineBesidePage(server, target, page.newest, page.msgids)
   );
 }
 
@@ -530,6 +519,62 @@ async function holdsLineBesidePage(
   return rows.some(
     (row) => row.time === time && !(row.msgid && inPage.has(row.msgid)),
   );
+}
+
+// Lines can be missing between a page and rows we hold in the millisecond it
+// ends in. Where the server pages from a msgid we record that gap, which joins
+// a wider one starting at the same line, and fill it from the page's last
+// line. A time names the whole millisecond and could never move such a gap's
+// edge, so elsewhere we ask once from the millisecond before and keep no record.
+async function fetchLinesBesidePage(
+  store: StoreApi<AppState>,
+  serverId: string,
+  target: string,
+  page: HistoryPage,
+) {
+  const { newest, newestMsgid } = page;
+  if (newest === undefined) return;
+  if (!newestMsgid || !ircClient.canPageByMsgid(serverId)) {
+    await fetchPageToDisk(serverId, target, "AFTER", newest - 1);
+    return;
+  }
+  await addGap({
+    server: serverId,
+    target,
+    from: newest,
+    to: newest,
+    lost: false,
+    fromMsgid: newestMsgid,
+  });
+  const gap = (await gapsFor(serverId, target)).find(
+    (saved) => !saved.lost && saved.from === newest,
+  );
+  if (gap)
+    await fetchForwardToDisk(store, serverId, target, newest, gap).isSaved;
+}
+
+// No time reads a gap of one millisecond and the request sent on finding it can fail, so we ask for its lines again after each newest page and before a chat opens on its read marker.
+async function askAgainForMillisecondGaps(
+  store: StoreApi<AppState>,
+  serverId: string,
+  target: string,
+) {
+  for (const gap of await gapsFor(serverId, target))
+    if (gap.from === gap.to && gapEdgeMsgid(gap, "from", gap.from) && !gap.lost)
+      await fetchForwardToDisk(store, serverId, target, gap.from, gap).isSaved;
+}
+
+// A refusal that never passes would repeat after every newest page, so we drop the gap of one millisecond it answered.
+async function dropRefusedMillisecondGap(
+  serverId: string,
+  target: string,
+  started: HistoryGap | undefined,
+) {
+  const gap = findFilledGap(
+    await gapsFor(serverId, target.toLowerCase()),
+    started,
+  );
+  if (gap && !gap.lost && gap.from === gap.to) await deleteGap(gap.id);
 }
 
 // Records for one stretch merge into a single one, so the record a fill
@@ -650,11 +695,10 @@ async function saveHistoryPage(
       );
       if (gap) settleGap(store, serverId, target, gap, MAX_AUTO_FILL_PAGES);
     }
+    void askAgainForMillisecondGaps(store, serverId, target);
   } else if (request?.kind === "around") {
-    const gap = await addIslandGaps(key, target, page, inserted);
-    const fill = gap && request.fill && { ...request.fill, gap };
-    if (fill && askForRestOfMillisecond(serverId, target, gap, "from", fill))
-      return;
+    if (await addIslandGaps(key, target, page, inserted))
+      await fetchLinesBesidePage(store, serverId, target, page);
     request.fill?.onSettled?.(true);
   } else if (request?.kind === "after" && request.fill) {
     const filled = findFilledGap(await gapsFor(key, target), request.fill.gap);
@@ -1303,6 +1347,8 @@ export function registerHistoryHandlers(store: StoreApi<AppState>): void {
     const isFinal = FINAL_REFUSALS.has(code) && settled.length === 1;
     for (const chat of settled)
       settleRefusedOffer(store, serverId, chat, isFinal, subcommand);
+    if (target && request?.kind === "after" && FINAL_REFUSALS.has(code))
+      void dropRefusedMillisecondGap(serverId, target, request.fill?.gap);
     if (request && request.kind !== "latest") request.fill?.onSettled?.(false);
   };
   ircClient.on("FAIL", ({ serverId, command, code, context }) => {
@@ -1470,6 +1516,7 @@ export async function showMessagesFromReadMarker(
 ): Promise<boolean> {
   if (!isEnabled(store)) return false;
   const lower = target.toLowerCase();
+  await askAgainForMillisecondGaps(store, serverId, lower);
   const [lastRead] = await eventRowsBefore(serverId, lower, marker + 1, 1);
   const isMarkerInGap = (await gapsFor(serverId, lower)).some(
     (gap) => gap.from < marker && marker < gap.to,

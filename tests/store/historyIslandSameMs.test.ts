@@ -37,6 +37,12 @@ type World = {
   has: number[];
   // The code the server refuses every request by msgid with, and the words after it.
   refusesMsgid?: { code: string; context: string };
+  // The same for every page asked after a line or a time.
+  refusesAfter?: { code: string; context: string };
+  // The server leaves every page asked after a line or a time unanswered.
+  ignoresAfter?: boolean;
+  // How long the server takes to answer a page asked after a line or a time.
+  answersAfterInMs?: number;
 };
 
 async function boot(refs: string) {
@@ -98,8 +104,12 @@ async function boot(refs: string) {
       );
     if (!request) return;
     const [, subcommand, kind, value, asked] = request;
-    if (kind === "msgid" && world.refusesMsgid) {
-      const { code, context } = world.refusesMsgid;
+    if (subcommand === "AFTER" && world.ignoresAfter) return;
+    const refusal =
+      (kind === "msgid" && world.refusesMsgid) ||
+      (subcommand === "AFTER" && world.refusesAfter);
+    if (refusal) {
+      const { code, context } = refusal;
       setTimeout(
         () =>
           feed(
@@ -110,7 +120,8 @@ async function boot(refs: string) {
       return;
     }
     const picked = pick(subcommand, kind, value, Number(asked));
-    setTimeout(() => feed(...page(picked)), 0);
+    const delay = subcommand === "AFTER" ? (world.answersAfterInMs ?? 0) : 0;
+    setTimeout(() => feed(...page(picked)), delay);
   };
   client.sockets.set(SERVER, {
     readyState: WebSocket.OPEN,
@@ -183,23 +194,37 @@ async function boot(refs: string) {
     });
   };
 
-  // The reader comes back the way a reload does: the chat is empty, the
-  // newest page loads, and the chat opens on the read marker.
-  const comeBack = async () => {
+  const askNewest = () => ircClient.requestChathistoryLatest(SERVER, "#chan");
+
+  const loadNewest = async () => {
     useStore.setState({ messages: {} });
     const newest = `m${world.has[world.has.length - 1]}`;
-    ircClient.requestChathistoryLatest(SERVER, "#chan");
+    askNewest();
     await vi.waitFor(() => expect(shown()).toContain(newest), {
       timeout: WRITE_TIMEOUT_MS,
     });
     await db.whenHistoryIdle();
-    return history.showMessagesFromReadMarker(
-      useStore,
-      SERVER,
-      "#chan",
-      timeOf(LAST_READ),
-    );
   };
+
+  const openOnMarker = (marker = timeOf(LAST_READ)) =>
+    history.showMessagesFromReadMarker(useStore, SERVER, "#chan", marker);
+
+  // The reader comes back the way a reload does: the chat is empty, the
+  // newest page loads, and the chat opens on the read marker.
+  const comeBack = async () => {
+    await loadNewest();
+    return openOnMarker();
+  };
+
+  // A page asked around a time with nothing waiting on its answer, the way a jump to a mention asks.
+  const askAround = (time: number) =>
+    ircClient.requestChathistoryAt(SERVER, "#chan", "AROUND", iso(time));
+
+  const dropConnection = () =>
+    ircClient.triggerEvent("connectionStateChange", {
+      serverId: SERVER,
+      connectionState: "disconnected",
+    });
 
   // We page newer until the window joins the present.
   const pageToPresent = async () => {
@@ -219,7 +244,12 @@ async function boot(refs: string) {
     requests,
     receiveLive,
     receiveLine,
+    askNewest,
+    loadNewest,
+    openOnMarker,
     comeBack,
+    askAround,
+    dropConnection,
     pageToPresent,
   };
 }
@@ -318,7 +348,7 @@ describe("a page around the read marker that ends in the millisecond the newest 
     expect(await w.saved()).toEqual([...ids(35, 84), ...ids(100, BURST_END)]);
   });
 
-  it("records no gap inside the millisecond on a server that pages by time only", async () => {
+  it("fetches the lines between the two pages on a server that pages by time only", async () => {
     const w = await boot("timestamp");
     await w.receiveLive(26);
     w.world.has = range(0, BURST_END);
@@ -326,14 +356,230 @@ describe("a page around the read marker that ends in the millisecond the newest 
     expect(await w.comeBack()).toBe(true);
 
     expect(w.sent.filter((raw) => raw.includes("msgid="))).toEqual([]);
-    expect(w.requests("AFTER")).toEqual([]);
+    expect(w.requests("AFTER")).toEqual([
+      `CHATHISTORY AFTER #chan timestamp=${iso(BURST_TIME - 1)} ${PAGE}`,
+    ]);
     expect(await w.gaps()).toMatchObject([
       { from: timeOf(25), to: timeOf(35), lost: false },
     ]);
-    expect(await w.saved()).toEqual([
-      ...ids(0, 25),
-      ...ids(35, 84),
-      ...ids(100, BURST_END),
+    expect(await w.saved()).toEqual([...ids(0, 25), ...ids(35, BURST_END)]);
+
+    await w.pageToPresent();
+
+    expect(byNumber(w.shown())).toEqual(ids(35, BURST_END));
+  });
+
+  it("asks once and records no gap for more lines than one page on a server that pages by time only", async () => {
+    const w = await boot("timestamp");
+    w.world.has = range(0, 259);
+
+    expect(await w.comeBack()).toBe(true);
+    expect(await w.comeBack()).toBe(true);
+
+    expect(w.requests("AFTER")).toEqual([
+      `CHATHISTORY AFTER #chan timestamp=${iso(BURST_TIME - 1)} ${PAGE}`,
     ]);
+    expect(await w.gaps()).toEqual([]);
+    expect(await w.saved()).toEqual([...ids(35, 109), ...ids(210, 259)]);
+  });
+
+  it("fetches the lines between the two pages for a page nothing waits on", async () => {
+    const w = await boot("msgid,timestamp");
+    w.world.has = range(0, BURST_END);
+    await w.loadNewest();
+
+    w.askAround(timeOf(LAST_READ));
+
+    await vi.waitFor(
+      async () => expect(await w.saved()).toEqual(ids(35, BURST_END)),
+      { timeout: WRITE_TIMEOUT_MS },
+    );
+    expect(w.requests("AFTER")).toEqual([
+      `CHATHISTORY AFTER #chan msgid=m84 ${PAGE}`,
+    ]);
+    await vi.waitFor(async () => expect(await w.gaps()).toEqual([]));
+  });
+
+  it("asks again after the next newest page when the server refused both requests for the gap", async () => {
+    const w = await boot("msgid,timestamp");
+    w.world.has = range(0, BURST_END);
+    w.world.refusesAfter = { code: "MESSAGE_ERROR", context: "AFTER #chan" };
+
+    expect(await w.comeBack()).toBe(true);
+
+    expect(await w.gaps()).toMatchObject([
+      { from: BURST_TIME, to: BURST_TIME, lost: false, fromMsgid: "m84" },
+    ]);
+
+    w.world.refusesAfter = undefined;
+    await w.loadNewest();
+
+    await vi.waitFor(async () => expect(await w.gaps()).toEqual([]), {
+      timeout: WRITE_TIMEOUT_MS,
+    });
+    expect(await w.saved()).toEqual(ids(35, BURST_END));
+    expect(w.requests("AFTER")).toEqual([
+      `CHATHISTORY AFTER #chan msgid=m84 ${PAGE}`,
+      `CHATHISTORY AFTER #chan timestamp=${iso(BURST_TIME)} ${PAGE}`,
+      `CHATHISTORY AFTER #chan msgid=m84 ${PAGE}`,
+    ]);
+  });
+
+  it("opens the chat on every line once the server answers again", async () => {
+    const w = await boot("msgid,timestamp");
+    w.world.has = range(0, 259);
+    w.world.refusesAfter = { code: "MESSAGE_ERROR", context: "AFTER #chan" };
+    expect(await w.comeBack()).toBe(true);
+    w.world.refusesAfter = undefined;
+    w.world.answersAfterInMs = 50;
+
+    expect(await w.comeBack()).toBe(true);
+
+    expect(await w.gaps()).toEqual([]);
+    expect(await w.saved()).toEqual(ids(35, 259));
+
+    await w.pageToPresent();
+
+    expect(byNumber(w.shown())).toEqual(ids(35, 259));
+  });
+
+  it("asks once for the gap when a second newest page lands while the request is out", async () => {
+    const w = await boot("msgid,timestamp");
+    w.world.has = range(0, 259);
+    w.world.refusesAfter = { code: "MESSAGE_ERROR", context: "AFTER #chan" };
+    expect(await w.comeBack()).toBe(true);
+    w.world.refusesAfter = undefined;
+    w.world.answersAfterInMs = 50;
+    const refused = w.requests("AFTER").length;
+
+    w.askNewest();
+    await w.loadNewest();
+
+    await vi.waitFor(async () => expect(await w.gaps()).toEqual([]), {
+      timeout: WRITE_TIMEOUT_MS,
+    });
+    expect(w.requests("AFTER").slice(refused)).toEqual(
+      [84, 134, 184].map(
+        (edge) => `CHATHISTORY AFTER #chan msgid=m${edge} ${PAGE}`,
+      ),
+    );
+    expect(await w.saved()).toEqual(ids(35, 259));
+  });
+
+  it("fetches every line of the gap when a second newest page lands while an answer is being saved", async () => {
+    const w = await boot("msgid,timestamp");
+    w.world.has = range(0, 259);
+    w.world.refusesAfter = { code: "MESSAGE_ERROR", context: "AFTER #chan" };
+    expect(await w.comeBack()).toBe(true);
+    w.world.refusesAfter = undefined;
+
+    w.askNewest();
+    await w.loadNewest();
+
+    await vi.waitFor(async () => expect(await w.gaps()).toEqual([]), {
+      timeout: WRITE_TIMEOUT_MS,
+    });
+    expect(await w.saved()).toEqual(ids(35, 259));
+  });
+
+  it("asks again after the next newest page when the connection dropped before the answer", async () => {
+    const w = await boot("msgid,timestamp");
+    // The newest page starts at m210, so the gap takes three pages.
+    w.world.has = range(0, 259);
+    w.world.ignoresAfter = true;
+
+    const opened = w.comeBack();
+    await vi.waitFor(() => expect(w.requests("AFTER")).toHaveLength(1), {
+      timeout: WRITE_TIMEOUT_MS,
+    });
+    w.dropConnection();
+    await opened;
+
+    expect(await w.gaps()).toMatchObject([
+      { from: BURST_TIME, to: BURST_TIME, lost: false, fromMsgid: "m84" },
+    ]);
+
+    w.world.ignoresAfter = false;
+    await w.loadNewest();
+
+    await vi.waitFor(async () => expect(await w.gaps()).toEqual([]), {
+      timeout: WRITE_TIMEOUT_MS,
+    });
+    expect(await w.saved()).toEqual(ids(35, 259));
+    expect(w.requests("AFTER")).toEqual(
+      [84, 84, 134, 184].map(
+        (edge) => `CHATHISTORY AFTER #chan msgid=m${edge} ${PAGE}`,
+      ),
+    );
+  });
+
+  it("drops the gap when the server refuses both requests for it in a way that never passes", async () => {
+    const w = await boot("msgid,timestamp");
+    w.world.has = range(0, BURST_END);
+    w.world.refusesAfter = { code: "INVALID_PARAMS", context: "AFTER #chan" };
+
+    expect(await w.comeBack()).toBe(true);
+    await vi.waitFor(async () => expect(await w.gaps()).toEqual([]));
+    await w.loadNewest();
+
+    expect(w.requests("AFTER")).toEqual([
+      `CHATHISTORY AFTER #chan msgid=m84 ${PAGE}`,
+      `CHATHISTORY AFTER #chan timestamp=${iso(BURST_TIME)} ${PAGE}`,
+    ]);
+    expect(await w.gaps()).toEqual([]);
+    expect(await w.saved()).toEqual([...ids(35, 84), ...ids(100, BURST_END)]);
+  });
+});
+
+describe("a page around a time with no line missing after it", {
+  timeout: 4 * WRITE_TIMEOUT_MS,
+}, () => {
+  for (const refs of ["msgid,timestamp", "timestamp"])
+    it(`asks nothing more when no other line we hold shares its last millisecond (${refs})`, async () => {
+      const w = await boot(refs);
+      await w.receiveLive(26);
+      // The page around the marker ends on m84, the newest line the server has.
+      w.world.has = range(0, 84);
+
+      await w.openOnMarker();
+
+      expect(w.requests("AROUND")).toHaveLength(1);
+      expect(w.requests("AFTER")).toEqual([]);
+      expect(await w.gaps()).toMatchObject([
+        { from: timeOf(25), to: timeOf(35), lost: false },
+      ]);
+      expect(await w.saved()).toEqual([...ids(0, 25), ...ids(35, 84)]);
+    });
+
+  for (const refs of ["msgid,timestamp", "timestamp"])
+    it(`asks nothing more when it ends on a line we hold (${refs})`, async () => {
+      const w = await boot(refs);
+      w.world.has = range(0, 149);
+      expect(await w.comeBack()).toBe(true);
+      expect(await w.saved()).toEqual(ids(35, 149));
+      const asked = w.requests("AFTER").length;
+
+      // A marker between two lines is on no saved row, so the page around it is asked again.
+      await w.openOnMarker(timeOf(LAST_READ) + 500);
+
+      expect(w.requests("AROUND")).toHaveLength(2);
+      expect(w.requests("AFTER")).toHaveLength(asked);
+      expect(await w.gaps()).toEqual([]);
+      expect(await w.saved()).toEqual(ids(35, 149));
+    });
+
+  it("finds a line we hold beside the page behind one the page repeats", async () => {
+    const w = await boot("msgid,timestamp");
+    w.world.has = range(0, 149);
+    // The first row we hold in the millisecond is a line of the page, and the newest page follows it.
+    await w.receiveLine(60);
+
+    expect(await w.comeBack()).toBe(true);
+
+    expect(w.requests("AFTER")).toEqual([
+      `CHATHISTORY AFTER #chan msgid=m84 ${PAGE}`,
+    ]);
+    expect(await w.gaps()).toEqual([]);
+    expect(await w.saved()).toEqual(ids(35, 149));
   });
 });
