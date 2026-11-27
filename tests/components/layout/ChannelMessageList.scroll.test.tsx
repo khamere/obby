@@ -261,7 +261,9 @@ describe("an older page the server refuses", () => {
   const isPlaceholderPulsing = (area: Element) => {
     const placeholder = topPlaceholder(area);
     expect(placeholder?.getAttribute("aria-hidden")).toBe("true");
-    return !!placeholder?.querySelector(".animate-pulse");
+    const shapes = [...(placeholder?.querySelectorAll("span:empty") ?? [])];
+    expect(shapes.length).toBeGreaterThan(0);
+    return shapes.some((shape) => shape.classList.contains("animate-pulse"));
   };
   const addMessage = (id: string, place: "above" | "below") =>
     act(() => {
