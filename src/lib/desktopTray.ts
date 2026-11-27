@@ -9,7 +9,7 @@ import type { Server } from "../types";
 
 export type UnreadLevel = "none" | "unread" | "mention";
 
-const DOT_COLORS: Record<
+export const DOT_COLORS: Record<
   Exclude<UnreadLevel, "none">,
   [number, number, number]
 > = {
