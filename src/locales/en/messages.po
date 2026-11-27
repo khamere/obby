@@ -1527,6 +1527,10 @@ msgstr "Clear history"
 msgid "Clear search"
 msgstr "Clear search"
 
+#: src/lib/clientCommands.ts
+msgid "Clear this view and keep saved history"
+msgstr "Clear this view and keep saved history"
+
 #: src/components/ui/InvitationsPanel.tsx
 msgid "Click again to confirm"
 msgstr "Click again to confirm"

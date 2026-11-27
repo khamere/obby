@@ -1528,6 +1528,10 @@ msgstr "履歴を消去"
 msgid "Clear search"
 msgstr "検索をクリア"
 
+#: src/lib/clientCommands.ts
+msgid "Clear this view and keep saved history"
+msgstr "この表示を消去し、保存された履歴は残す"
+
 #: src/components/ui/InvitationsPanel.tsx
 msgid "Click again to confirm"
 msgstr "もう一度クリックして確認"

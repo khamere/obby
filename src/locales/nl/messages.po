@@ -1528,6 +1528,10 @@ msgstr "Geschiedenis wissen"
 msgid "Clear search"
 msgstr "Zoekopdracht wissen"
 
+#: src/lib/clientCommands.ts
+msgid "Clear this view and keep saved history"
+msgstr "Deze weergave wissen en opgeslagen geschiedenis behouden"
+
 #: src/components/ui/InvitationsPanel.tsx
 msgid "Click again to confirm"
 msgstr "Klik nogmaals om te bevestigen"

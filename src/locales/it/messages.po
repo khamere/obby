@@ -1528,6 +1528,10 @@ msgstr "Cancella cronologia"
 msgid "Clear search"
 msgstr "Cancella ricerca"
 
+#: src/lib/clientCommands.ts
+msgid "Clear this view and keep saved history"
+msgstr "Svuota questa vista e conserva la cronologia salvata"
+
 #: src/components/ui/InvitationsPanel.tsx
 msgid "Click again to confirm"
 msgstr "Clicca di nuovo per confermare"

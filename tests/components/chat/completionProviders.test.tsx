@@ -279,6 +279,7 @@ describe("the commands the client runs itself", () => {
     "ignore",
     "unignore",
     "list",
+    "clear",
     "close",
     "raw",
   ];
@@ -308,9 +309,17 @@ describe("the commands the client runs itself", () => {
     const provider = slashProvider(slashSuggestions(server, channel), vi.fn());
     const isComplete = (query: string) =>
       provider.isComplete?.(query, provider.getItems(query));
-    for (const name of ["close", "list", "ignore", "whois"])
+    for (const name of ["close", "clear", "list", "ignore", "whois"])
       expect(isComplete(name)).toBe(true);
     expect(isComplete("query")).toBe(false);
     expect(isComplete("raw")).toBe(false);
+  });
+
+  it("offers clear before close", () => {
+    const provider = slashProvider(slashSuggestions(server, channel), vi.fn());
+    expect(provider.getItems("cl").map((c) => c.name)).toEqual([
+      "clear",
+      "close",
+    ]);
   });
 });

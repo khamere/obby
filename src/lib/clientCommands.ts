@@ -189,6 +189,12 @@ export function getClientCommands(inChannel = true): ClientCommand[] {
       name: "list",
       description: t`Find channels`,
     },
+    // "clear" sits before "close" so a half-typed name completes to the one
+    // that takes nothing away from the server.
+    {
+      name: "clear",
+      description: t`Clear this view and keep saved history`,
+    },
     {
       name: "close",
       description: inChannel ? t`Leave channel` : t`Close conversation`,
@@ -207,6 +213,7 @@ export const APP_COMMAND_NAMES: ReadonlySet<string> = new Set([
   "ignore",
   "unignore",
   "list",
+  "clear",
   "close",
   "raw",
 ]);

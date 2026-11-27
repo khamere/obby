@@ -1528,6 +1528,10 @@ msgstr "Geçmişi temizle"
 msgid "Clear search"
 msgstr "Aramayı temizle"
 
+#: src/lib/clientCommands.ts
+msgid "Clear this view and keep saved history"
+msgstr "Bu görünümü temizle ve kayıtlı geçmişi koru"
+
 #: src/components/ui/InvitationsPanel.tsx
 msgid "Click again to confirm"
 msgstr "Onaylamak için tekrar tıklayın"

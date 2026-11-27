@@ -82,6 +82,7 @@ const actions = {
   leaveChannel: vi.fn(),
   deletePrivateChat: vi.fn(),
   setMobileViewActiveColumn: vi.fn(),
+  clearChatView: vi.fn(),
 };
 const original = useStore.getState();
 const realActions = Object.fromEntries(
@@ -302,6 +303,19 @@ describe("/close", () => {
 
   it("has nothing to close in the server notices", () => {
     expectRefused("/close", "USAGE", inServerNotices);
+  });
+});
+
+describe("/clear", () => {
+  it.each(["/clear", "/clear\n"])("%j clears this chat's view", (text) => {
+    expect(run(text)).toBeUndefined();
+    expect(actions.clearChatView).toHaveBeenCalledWith("s1", "c1");
+    expect(rows()).toEqual([]);
+  });
+
+  it("clears nothing when an argument follows", () => {
+    expectRefused("/clear all", "USAGE");
+    expect(actions.clearChatView).not.toHaveBeenCalled();
   });
 });
 

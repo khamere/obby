@@ -1528,6 +1528,10 @@ msgstr "清除历史"
 msgid "Clear search"
 msgstr "清除搜索"
 
+#: src/lib/clientCommands.ts
+msgid "Clear this view and keep saved history"
+msgstr "清空此视图并保留已保存的历史"
+
 #: src/components/ui/InvitationsPanel.tsx
 msgid "Click again to confirm"
 msgstr "再次点击以确认"

@@ -1528,6 +1528,10 @@ msgstr "Vymazat historii"
 msgid "Clear search"
 msgstr "Vymazat hledání"
 
+#: src/lib/clientCommands.ts
+msgid "Clear this view and keep saved history"
+msgstr "Vymazat toto zobrazení a ponechat uloženou historii"
+
 #: src/components/ui/InvitationsPanel.tsx
 msgid "Click again to confirm"
 msgstr "Klikněte znovu pro potvrzení"

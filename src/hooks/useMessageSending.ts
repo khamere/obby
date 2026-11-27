@@ -269,6 +269,11 @@ function runAppCommand(
         store.setMobileViewActiveColumn("serverList");
       return;
     }
+    case "clear": {
+      if (words.length > 0) return usage();
+      store.clearChatView(serverId, chatId);
+      return;
+    }
     case "list": {
       if (words.length > 0) return usage();
       store.openPage({ kind: "channelBrowser", serverId });

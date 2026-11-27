@@ -19,13 +19,14 @@ describe("the client command list", () => {
       expect(CLIENT_COMMAND_NAMES.has(name)).toBe(true);
   });
 
-  it("ends with the app commands", () => {
-    expect(names.slice(-7)).toEqual([
+  it("ends with the app commands, clear before close", () => {
+    expect(names.slice(-8)).toEqual([
       "query",
       "whois",
       "ignore",
       "unignore",
       "list",
+      "clear",
       "close",
       "raw",
     ]);

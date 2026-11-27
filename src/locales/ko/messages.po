@@ -1528,6 +1528,10 @@ msgstr "기록 지우기"
 msgid "Clear search"
 msgstr "검색 지우기"
 
+#: src/lib/clientCommands.ts
+msgid "Clear this view and keep saved history"
+msgstr "이 보기를 지우고 저장된 기록은 유지"
+
 #: src/components/ui/InvitationsPanel.tsx
 msgid "Click again to confirm"
 msgstr "확인하려면 다시 클릭하세요"
