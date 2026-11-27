@@ -7,8 +7,13 @@ import {
   extractMediaFromMessage,
   extractMediaFromText,
   getEmbedThumbnailUrl,
+  isAllowedSiteOnly,
+  type MediaSettings,
+  type MediaVisibilityLevel,
   mediaLevelToSettings,
+  needsTrustedSources,
   TRUSTED_EMBED_DOMAINS,
+  withoutAllowedSites,
 } from "../../src/lib/mediaUtils";
 import type { Message } from "../../src/types/index";
 
@@ -725,4 +730,200 @@ describe("getEmbedThumbnailUrl", () => {
   test("returns null for invalid URL", () => {
     expect(getEmbedThumbnailUrl("not-a-url")).toBeNull();
   });
+});
+
+describe("mediaLevelToSettings with allowed sites", () => {
+  const hosts = ["img.example"];
+
+  test.each([0, 3] as MediaVisibilityLevel[])(
+    "level %i carries no list",
+    (level) => {
+      expect("allowedHosts" in mediaLevelToSettings(level, hosts)).toBe(false);
+    },
+  );
+
+  test.each([1, 2] as MediaVisibilityLevel[])(
+    "level %i carries the list",
+    (level) => {
+      expect(mediaLevelToSettings(level, hosts).allowedHosts).toBe(hosts);
+    },
+  );
+
+  test("an empty list or a non-array adds no key", () => {
+    expect("allowedHosts" in mediaLevelToSettings(1, [])).toBe(false);
+    expect(
+      "allowedHosts" in
+        mediaLevelToSettings(1, "img.example" as unknown as string[]),
+    ).toBe(false);
+    expect("allowedHosts" in mediaLevelToSettings(1, undefined)).toBe(false);
+  });
+
+  test("withoutAllowedSites drops the list and keeps the level", () => {
+    expect(withoutAllowedSites(mediaLevelToSettings(2, hosts))).toEqual(
+      mediaLevelToSettings(2),
+    );
+  });
+});
+
+describe("canShowMedia with allowed sites", () => {
+  const hosts = ["img.example"];
+  const at = (level: MediaVisibilityLevel) =>
+    mediaLevelToSettings(level, hosts);
+
+  test("a listed host shows at Safe and Trusted Sources, and stays off at Off", () => {
+    expect(canShowMedia("https://img.example/a.png", at(1))).toBe(true);
+    expect(canShowMedia("https://img.example/a.png", at(2))).toBe(true);
+    expect(canShowMedia("https://img.example/a.png", at(0))).toBe(false);
+  });
+
+  test("the list is ignored when safe media is off, whatever the object holds", () => {
+    const handBuilt: MediaSettings = {
+      showSafeMedia: false,
+      showTrustedSourcesMedia: false,
+      showExternalContent: false,
+      allowedHosts: hosts,
+    };
+    expect(canShowMedia("https://img.example/a.png", handBuilt)).toBe(false);
+  });
+
+  test.each([
+    "http://img.example/a.png",
+    "https://img.example:8443/a.png",
+    "//img.example/a.png",
+    "/a.png",
+    "a.png",
+    "https://other.example/a.png",
+    "https://other.example/?u=https://img.example/a.png",
+  ])("%j stays refused at Safe", (url) => {
+    expect(canShowMedia(url, at(1))).toBe(false);
+  });
+
+  test("All Content still admits an unlisted host", () => {
+    expect(canShowMedia("https://other.example/a.png", at(3))).toBe(true);
+  });
+
+  test("without a list the levels behave as before", () => {
+    expect(
+      canShowMedia("https://img.example/a.png", mediaLevelToSettings(1)),
+    ).toBe(false);
+    expect(
+      canShowMedia("https://img.example/a.png", mediaLevelToSettings(2)),
+    ).toBe(false);
+  });
+
+  test("a listed player service is not enabled at Safe", () => {
+    expect(
+      canShowMedia(
+        "https://www.youtube.com/watch?v=abc",
+        mediaLevelToSettings(1, ["youtube.com", "www.youtube.com"]),
+      ),
+    ).toBe(false);
+  });
+
+  test("a Tenor wildcard reaches the image host and not the share pages", () => {
+    const settings = mediaLevelToSettings(1, ["*.tenor.com"]);
+    expect(canShowMedia("https://tenor.com/view/x-gif-1", settings)).toBe(
+      false,
+    );
+    expect(canShowMedia("https://media.tenor.com/a.gif", settings)).toBe(true);
+  });
+
+  test("a built-in image host can be listed at Safe", () => {
+    expect(
+      canShowMedia(
+        "https://i.imgur.com/a.png",
+        mediaLevelToSettings(1, ["i.imgur.com"]),
+      ),
+    ).toBe(true);
+  });
+});
+
+describe("needsTrustedSources", () => {
+  test.each([
+    "youtube.com",
+    "www.youtube.com",
+    "m.youtube.com",
+    "open.spotify.com",
+    "openstreetmap.org",
+    "tenor.com",
+    "c.tenor.com",
+  ])("%s loads from other hosts", (host) => {
+    expect(needsTrustedSources(host)).toBe(true);
+  });
+
+  test.each([
+    "i.imgur.com",
+    "media.tenor.com",
+    "media.giphy.com",
+    "example.com",
+    "notyoutube.com",
+  ])("%s can be listed", (host) => {
+    expect(needsTrustedSources(host)).toBe(false);
+  });
+});
+
+describe("isAllowedSiteOnly", () => {
+  const url = "https://img.example/a.png";
+
+  test("true for a listed host at Safe", () => {
+    expect(
+      isAllowedSiteOnly(url, mediaLevelToSettings(1, ["img.example"])),
+    ).toBe(true);
+  });
+
+  test("false when the server's file host serves the URL too", () => {
+    expect(
+      isAllowedSiteOnly(
+        url,
+        mediaLevelToSettings(1, ["img.example"]),
+        "https://img.example",
+      ),
+    ).toBe(false);
+  });
+
+  test("false at Off and at All Content", () => {
+    expect(
+      isAllowedSiteOnly(url, mediaLevelToSettings(0, ["img.example"])),
+    ).toBe(false);
+    expect(
+      isAllowedSiteOnly(url, mediaLevelToSettings(3, ["img.example"])),
+    ).toBe(false);
+  });
+
+  test("false at Trusted Sources for a listed built-in image host", () => {
+    const settings = mediaLevelToSettings(2, ["i.imgur.com"]);
+    expect(isAllowedSiteOnly("https://i.imgur.com/a.png", settings)).toBe(
+      false,
+    );
+    expect(
+      isAllowedSiteOnly(
+        "https://i.imgur.com/a.png",
+        mediaLevelToSettings(1, ["i.imgur.com"]),
+      ),
+    ).toBe(true);
+  });
+
+  test("false for an unlisted host", () => {
+    expect(
+      isAllowedSiteOnly(
+        "https://other.example/a.png",
+        mediaLevelToSettings(1, ["img.example"]),
+      ),
+    ).toBe(false);
+  });
+});
+
+describe("canShowAvatarUrl ignores allowed sites", () => {
+  test.each([1, 2] as MediaVisibilityLevel[])(
+    "a listed host is refused at level %i",
+    (level) => {
+      expect(
+        canShowAvatarUrl(
+          "https://img.example/avatar.png",
+          "https://files.example.com",
+          mediaLevelToSettings(level, ["img.example"]),
+        ),
+      ).toBe(false);
+    },
+  );
 });

@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { probeMediaUrl, shouldProbeUrl } from "../../src/lib/mediaProbe";
+import {
+  getCachedProbeResult,
+  probeMediaUrl,
+  setAllowedSiteCheck,
+  shouldProbeUrl,
+} from "../../src/lib/mediaProbe";
 
 vi.mock("../../src/lib/mediaUtils", () => ({
   extractHostname: (url: string) => new URL(url).hostname,
@@ -87,6 +92,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  setAllowedSiteCheck(() => false);
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   vi.clearAllMocks();
@@ -468,5 +474,116 @@ describe("shouldProbeUrl", () => {
     expect(shouldProbeUrl("https://radio.example.com/stream")).toBe(true);
     expect(shouldProbeUrl("https://files.example.com/abc123")).toBe(true);
     expect(shouldProbeUrl("https://example.com/page")).toBe(true);
+  });
+});
+
+describe("guarded probe for a link only the user's allowed sites admit", () => {
+  function mediaElementsCreated() {
+    return vi
+      .mocked(document.createElement)
+      .mock.calls.filter(
+        ([tag]) => tag === "video" || tag === "audio" || tag === "img",
+      );
+  }
+
+  test("refuses redirects on both requests", async () => {
+    setAllowedSiteCheck(() => true);
+    vi.mocked(fetch).mockRejectedValue(new TypeError("redirect"));
+    await probeMediaUrl(uniqueUrl());
+    const calls = vi.mocked(fetch).mock.calls;
+    expect(calls.map(([, init]) => init?.method)).toEqual(["HEAD", "GET"]);
+    for (const [, init] of calls) expect(init?.redirect).toBe("error");
+  });
+
+  test("follows redirects for any other link", async () => {
+    setAllowedSiteCheck(() => false);
+    vi.mocked(fetch).mockResolvedValueOnce(
+      makeResponse({ "Content-Type": "image/png" }),
+    );
+    await probeMediaUrl(uniqueUrl());
+    expect(vi.mocked(fetch).mock.calls[0][1]?.redirect).toBe("follow");
+  });
+
+  test("a media Content-Type resolves", async () => {
+    setAllowedSiteCheck(() => true);
+    vi.mocked(fetch).mockResolvedValueOnce(
+      makeResponse({ "Content-Type": "image/png" }),
+    );
+    const result = await probeMediaUrl(uniqueUrl());
+    expect(result?.type).toBe("image");
+    expect(mediaElementsCreated()).toHaveLength(0);
+  });
+
+  test("a web page stays a link", async () => {
+    setAllowedSiteCheck(() => true);
+    vi.mocked(fetch).mockResolvedValueOnce(
+      makeResponse({ "Content-Type": "text/html" }),
+    );
+    expect(await probeMediaUrl(uniqueUrl(".jpg"))).toBeNull();
+    expect(mediaElementsCreated()).toHaveLength(0);
+  });
+
+  test("failed requests fall back to a media file extension", async () => {
+    setAllowedSiteCheck(() => true);
+    vi.mocked(fetch).mockRejectedValue(new TypeError("CORS"));
+    const result = await probeMediaUrl(uniqueUrl(".jpg"));
+    expect(result?.type).toBe("image");
+    expect(mediaElementsCreated()).toHaveLength(0);
+  });
+
+  test("failed requests and no extension give no preview and load no media element", async () => {
+    setAllowedSiteCheck(() => true);
+    const ImageSpy = vi.fn();
+    vi.stubGlobal("Image", ImageSpy);
+    vi.mocked(fetch).mockRejectedValue(new TypeError("redirect"));
+    const url = uniqueUrl("/go?u=https://elsewhere.example/x");
+    expect(await probeMediaUrl(url)).toBeNull();
+    expect(mediaElementsCreated()).toHaveLength(0);
+    expect(ImageSpy).not.toHaveBeenCalled();
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2);
+    expect(getCachedProbeResult(url)).toBeNull();
+  });
+
+  test.each([".svg", ".m3u8"])(
+    "failed requests + %s give no preview",
+    async (ext) => {
+      setAllowedSiteCheck(() => true);
+      vi.mocked(fetch).mockRejectedValue(new TypeError("CORS"));
+      expect(await probeMediaUrl(uniqueUrl(ext))).toBeNull();
+      expect(mediaElementsCreated()).toHaveLength(0);
+    },
+  );
+
+  test("the same link without the guard still sniffs with media elements", async () => {
+    setAllowedSiteCheck(() => false);
+    vi.mocked(fetch).mockRejectedValue(new TypeError("CORS"));
+    expect(await probeMediaUrl(uniqueUrl())).toBeNull();
+    expect(mediaElementsCreated().length).toBeGreaterThan(0);
+  });
+
+  test("a result from one mode is never reused in the other", async () => {
+    const url = uniqueUrl();
+    vi.mocked(fetch).mockResolvedValue(
+      makeResponse({ "Content-Type": "image/png" }),
+    );
+
+    setAllowedSiteCheck(() => false);
+    expect(getCachedProbeResult(url)).toBeUndefined();
+    expect((await probeMediaUrl(url))?.type).toBe("image");
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
+    expect(getCachedProbeResult(url)?.type).toBe("image");
+
+    setAllowedSiteCheck(() => true);
+    expect(getCachedProbeResult(url)).toBeUndefined();
+    vi.mocked(fetch).mockResolvedValue(
+      makeResponse({ "Content-Type": "text/html" }),
+    );
+    expect(await probeMediaUrl(url)).toBeNull();
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(fetch).mock.calls[1][1]?.redirect).toBe("error");
+    expect(getCachedProbeResult(url)).toBeNull();
+
+    setAllowedSiteCheck(() => false);
+    expect(getCachedProbeResult(url)?.type).toBe("image");
   });
 });

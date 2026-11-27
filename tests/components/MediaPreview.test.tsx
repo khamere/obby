@@ -1,5 +1,5 @@
 import { fireEvent, render, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { MediaPreview } from "../../src/components/message/MediaPreview";
 import type { MediaEntry } from "../../src/lib/mediaUtils";
 import { setVideoPosition } from "../../src/lib/videoPositionCache";
@@ -353,5 +353,53 @@ describe("EmbedPreview — Now Playing Bar stop behaviour", () => {
       expect(await findByTestId("react-player")).not.toBe(playing),
     );
     expect((await findByTestId("react-player")).dataset.start).toBe("0");
+  });
+});
+
+describe("ImagePreview — Tenor lookup is tied to the link's own host", () => {
+  const tenorCalls = (fetchMock: ReturnType<typeof vi.fn>) =>
+    fetchMock.mock.calls
+      .map(([input]) => String(input))
+      .filter((u) => u.includes("tenor.googleapis.com"));
+
+  function renderImage(url: string) {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ results: [] }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubEnv("VITE_TENOR_API_KEY", "test-key");
+    render(<MediaPreview entry={{ url, type: "image" }} />);
+    return fetchMock;
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  test.each([
+    "https://img.example/a.png?tenor.com/view/x-gif-123",
+    "https://img.example/tenor.com/view/x-gif-123",
+    "https://nottenor.com/view/x-gif-123",
+    "https://tenor.com.img.example/view/x-gif-123",
+  ])("%s makes no lookup", async (url) => {
+    const fetchMock = renderImage(url);
+    await waitFor(() =>
+      expect(document.querySelector(`img[src="${url}"]`)).toBeTruthy(),
+    );
+    expect(tenorCalls(fetchMock)).toEqual([]);
+  });
+
+  test.each([
+    "https://tenor.com/view/x-gif-123",
+    "https://www.tenor.com/view/x-gif-123",
+  ])("%s is looked up by its id", async (url) => {
+    const fetchMock = renderImage(url);
+    await waitFor(() =>
+      expect(tenorCalls(fetchMock)).toEqual([
+        "https://tenor.googleapis.com/v2/posts?ids=123&key=test-key",
+      ]),
+    );
   });
 });

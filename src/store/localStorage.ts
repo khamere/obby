@@ -1,4 +1,5 @@
 import { isLiveChannel } from "../lib/channelFolders";
+import { sanitizeMediaAllowedHosts } from "../lib/mediaAllowedHosts";
 import type { ServerConfig } from "../types";
 import { isMentionEntry, type MentionEntry } from "./mentionLog";
 import type {
@@ -127,6 +128,12 @@ export const settings = {
         delete raw.showSafeMedia;
         delete raw.showTrustedSourcesMedia;
         delete raw.showExternalContent;
+      }
+
+      if ("mediaAllowedHosts" in raw) {
+        raw.mediaAllowedHosts = sanitizeMediaAllowedHosts(
+          raw.mediaAllowedHosts,
+        );
       }
 
       return raw as Partial<GlobalSettings>;

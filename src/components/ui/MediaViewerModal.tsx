@@ -31,6 +31,7 @@ import {
 } from "react-icons/fa";
 import { useShallow } from "zustand/react/shallow";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { useMediaSettings } from "../../hooks/useMediaSettings";
 import { getDecryptedObjectUrl } from "../../lib/e2ee/decryptedMediaCache";
 import type { MediaDescriptor } from "../../lib/e2ee/media";
 import { parseLocationShareUrl } from "../../lib/geolocation";
@@ -52,9 +53,10 @@ import {
   extractMediaFromText,
   filenameFromUrl,
   getEmbedThumbnailUrl,
+  isAllowedSiteOnly,
   type MediaEntry,
   type MediaType,
-  mediaLevelToSettings,
+  withoutAllowedSites,
 } from "../../lib/mediaUtils";
 import {
   describeAttachment,
@@ -268,11 +270,32 @@ const AudioViewerPlayer: React.FC<{ url: string }> = ({ url }) => {
   );
 };
 
-/** react-pdf viewer with page navigation and a fallback for cross-origin failures. */
-const PdfModalViewer: React.FC<{ url: string; onRequestOpen: () => void }> = ({
-  url,
+const PdfUnavailable: React.FC<{ onRequestOpen: () => void }> = ({
   onRequestOpen,
-}) => {
+}) => (
+  <div className="flex flex-col items-center gap-4 text-discord-text-muted p-8">
+    <p className="text-sm text-center">
+      <Trans>PDF cannot be displayed in browser.</Trans>
+    </p>
+    <button
+      type="button"
+      className="flex items-center gap-2 px-4 py-2 button-primary rounded text-sm"
+      onClick={onRequestOpen}
+    >
+      <FaExternalLinkAlt className="w-3 h-3" />
+      <Trans>Open in browser</Trans>
+    </button>
+  </div>
+);
+
+/** react-pdf viewer with page navigation and a fallback for cross-origin failures. */
+const PdfModalViewer: React.FC<{
+  url: string;
+  // The native viewer renders whatever the host returns, a web page included,
+  // so callers turn it off for a site that only the user's list admits.
+  nativeFallback: boolean;
+  onRequestOpen: () => void;
+}> = ({ url, nativeFallback, onRequestOpen }) => {
   const [numPages, setNumPages] = useState(0);
   const [pageNumber, setPageNumber] = useState(1);
   // react-pdf uses pdfjs fetch() which fails on CORS. When that happens we fall back to
@@ -288,6 +311,17 @@ const PdfModalViewer: React.FC<{ url: string; onRequestOpen: () => void }> = ({
     Math.round(pageWidth * Math.SQRT2),
     window.innerHeight - 180,
   );
+
+  if (useNativeViewer && !nativeFallback) {
+    return (
+      <div
+        className="pointer-events-auto flex flex-col items-center"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <PdfUnavailable onRequestOpen={onRequestOpen} />
+      </div>
+    );
+  }
 
   if (useNativeViewer) {
     return (
@@ -307,19 +341,7 @@ const PdfModalViewer: React.FC<{ url: string; onRequestOpen: () => void }> = ({
           }}
         >
           {/* Fallback content shown when the browser has no PDF plugin */}
-          <div className="flex flex-col items-center gap-4 text-discord-text-muted p-8">
-            <p className="text-sm text-center">
-              PDF cannot be displayed in browser.
-            </p>
-            <button
-              type="button"
-              className="flex items-center gap-2 px-4 py-2 button-primary rounded text-sm"
-              onClick={onRequestOpen}
-            >
-              <FaExternalLinkAlt className="w-3 h-3" />
-              Open in browser
-            </button>
-          </div>
+          <PdfUnavailable onRequestOpen={onRequestOpen} />
         </object>
       </div>
     );
@@ -588,10 +610,7 @@ export function MediaViewerModal({
   );
   const topicEntryCount = mediaEntries.filter((e) => e.isTopicEntry).length;
 
-  const { showSafeMedia, showTrustedSourcesMedia, showExternalContent } =
-    mediaLevelToSettings(
-      useStore((state) => state.globalSettings.mediaVisibilityLevel),
-    );
+  const mediaSettings = useMediaSettings();
 
   // Map of msgid → reply count, covers both the toolbar button and filmstrip thumbnails
   const commentCountByMsgid = useStore(
@@ -676,11 +695,6 @@ export function MediaViewerModal({
     const filehost = serverFilehosts(
       storeState.servers.find((s) => s.id === serverId),
     );
-    const mediaSettings = {
-      showSafeMedia,
-      showTrustedSourcesMedia,
-      showExternalContent,
-    };
 
     // Build topic entries (prepended before message entries)
     const channel = storeState.servers
@@ -763,7 +777,14 @@ export function MediaViewerModal({
       const type = summary ? kindMediaType(summary.kind) : null;
       // The descriptor URL is peer-authored, so it faces the same origin trust
       // decision the plain path makes.
-      if (!type || !canShowMedia(descriptor.url, mediaSettings, filehost)) {
+      if (
+        !type ||
+        !canShowMedia(
+          descriptor.url,
+          withoutAllowedSites(mediaSettings),
+          filehost,
+        )
+      ) {
         return [];
       }
       return [
@@ -841,9 +862,7 @@ export function MediaViewerModal({
     preferTopicEntry,
     preferLastEntry,
     decryptedType,
-    showSafeMedia,
-    showTrustedSourcesMedia,
-    showExternalContent,
+    mediaSettings,
   ]);
 
   const goTo = useCallback(
@@ -1206,12 +1225,7 @@ export function MediaViewerModal({
               entryKey: string;
               isTopicEntry: false;
             } =>
-              e.type !== null &&
-              canShowMedia(
-                e.url,
-                { showSafeMedia, showTrustedSourcesMedia, showExternalContent },
-                filehost,
-              ),
+              e.type !== null && canShowMedia(e.url, mediaSettings, filehost),
           );
         idx = freshEntries.findIndex((e) => e.url === imgUrl);
         if (idx >= 0) {
@@ -1221,15 +1235,7 @@ export function MediaViewerModal({
       }
       if (idx >= 0) goTo(idx);
     },
-    [
-      mediaEntries,
-      serverId,
-      channelId,
-      goTo,
-      showSafeMedia,
-      showTrustedSourcesMedia,
-      showExternalContent,
-    ],
+    [mediaEntries, serverId, channelId, goTo, mediaSettings],
   );
 
   // The dialog opens the link itself.
@@ -1599,6 +1605,17 @@ export function MediaViewerModal({
                 <PdfModalViewer
                   key={currentUrl}
                   url={currentUrl}
+                  nativeFallback={
+                    !isAllowedSiteOnly(
+                      currentUrl,
+                      mediaSettings,
+                      serverFilehosts(
+                        useStore
+                          .getState()
+                          .servers.find((s) => s.id === serverId),
+                      ),
+                    )
+                  }
                   onRequestOpen={() => setShowWarning(true)}
                 />
               )}

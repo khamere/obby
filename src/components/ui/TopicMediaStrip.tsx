@@ -1,6 +1,7 @@
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
 import { FaFileAlt, FaPlay } from "react-icons/fa";
+import { useMediaSettings } from "../../hooks/useMediaSettings";
 import { revealHiddenChars } from "../../lib/hiddenChars";
 import { serverFilehosts } from "../../lib/ircUtils";
 import { getCachedProbeResult, probeMediaUrl } from "../../lib/mediaProbe";
@@ -9,7 +10,6 @@ import {
   canShowMedia,
   extractMediaFromText,
   getEmbedThumbnailUrl,
-  mediaLevelToSettings,
 } from "../../lib/mediaUtils";
 import useStore from "../../store";
 
@@ -20,9 +20,7 @@ export const TopicMediaStrip: React.FC = () => {
     Map<string, MediaType | null>
   >(new Map());
 
-  const mediaVisibilityLevel = useStore(
-    (s) => s.globalSettings.mediaVisibilityLevel,
-  );
+  const mediaSettings = useMediaSettings();
   const servers = useStore((s) => s.servers);
   const selectedServerId = useStore((s) => s.ui.selectedServerId);
   const perServerSelections = useStore((s) => s.ui.perServerSelections);
@@ -43,11 +41,6 @@ export const TopicMediaStrip: React.FC = () => {
   const filehost = useMemo(
     () => serverFilehosts(servers.find((s) => s.id === selectedServerId)),
     [servers, selectedServerId],
-  );
-
-  const mediaSettings = useMemo(
-    () => mediaLevelToSettings(mediaVisibilityLevel),
-    [mediaVisibilityLevel],
   );
 
   const candidates = useMemo(() => {

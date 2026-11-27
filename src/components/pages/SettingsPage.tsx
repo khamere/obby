@@ -409,7 +409,7 @@ const SettingsContent: React.FC<
       { label: t`Off`, description: t`Turn off media previews.` },
       {
         label: t`Safe`,
-        description: t`Preview media from your server's trusted file host only. Make no requests to external services.`,
+        description: t`Preview media from your server's trusted file host and your allowed sites only. Make no requests to other services.`,
       },
       {
         label: t`Trusted Sources`,
@@ -426,6 +426,7 @@ const SettingsContent: React.FC<
       (globalValues.mediaVisibilityLevel as number | undefined) ?? 1;
     const levelInfo = LEVELS[level as 0 | 1 | 2 | 3];
     const fillPct = (level / 3) * 100;
+    const allowedHosts = settingsRegistry.get("media.allowedHosts");
 
     return (
       <SettingGroup>
@@ -484,6 +485,13 @@ const SettingsContent: React.FC<
             {levelInfo.description}
           </p>
         </SettingRow>
+        {allowedHosts && (
+          <SettingField
+            setting={allowedHosts}
+            value={globalValue(allowedHosts)}
+            onChange={(value) => setGlobal(allowedHosts.key, value)}
+          />
+        )}
       </SettingGroup>
     );
   };

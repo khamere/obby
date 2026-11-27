@@ -157,6 +157,10 @@ msgstr "{failedCount, plural, one {업로드 1건 실패} other {업로드 #건 
 msgid "{hiddenLines, plural, one {# more line} other {# more lines}}"
 msgstr "{hiddenLines, plural, other {# 개 더 보기}}"
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "{host} is already on the list."
+msgstr "{host}은(는) 이미 목록에 있습니다."
+
 #: src/store/handlers/users.ts
 msgid "{inviter} has invited {target} to join {channel}"
 msgstr "{inviter}이(가) {target}을(를) {channel}에 초대했습니다"
@@ -536,6 +540,7 @@ msgstr "활동"
 #: src/components/pages/TwoFactorPage.tsx
 #: src/components/ui/settings/CustomMentionsField.tsx
 #: src/components/ui/settings/IgnoreListField.tsx
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
 msgid "Add"
 msgstr "추가"
 
@@ -606,6 +611,10 @@ msgstr "IRC 서버 추가"
 msgid "Add Network"
 msgstr "네트워크 추가"
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Add only sites you trust. On every server, a link to an allowed site makes Obby contact that site, which shows it your IP address. Anyone who can put files on the site can post such a link, and the site can pass your request on to another site."
+msgstr "신뢰하는 사이트만 추가하세요. 어느 서버에서든 허용된 사이트로 연결되는 링크가 있으면 Obby가 그 사이트에 접속하며, 이때 사이트에 내 IP 주소가 드러납니다. 그 사이트에 파일을 올릴 수 있는 사람은 누구나 그런 링크를 게시할 수 있고, 사이트는 요청을 다른 사이트로 넘길 수 있습니다."
+
 #: src/components/message/MessageActions.tsx
 #: src/components/message/MessageReactions.tsx
 #: src/components/message/MessageReactions.tsx
@@ -628,6 +637,10 @@ msgstr "감시할 활동과 임계값을 넘었을 때의 동작을 정하는 �
 #: src/components/layout/ServerList.tsx
 msgid "Add Server"
 msgstr "서버 추가"
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Add the exact site instead. {host} is shared by many unrelated people."
+msgstr "대신 정확한 사이트를 추가하세요. {host}은(는) 서로 관련 없는 많은 사람이 함께 사용합니다."
 
 #: src/components/ui/SavedHistoryChoice.tsx
 msgid "Add this network again to get its saved chat history back."
@@ -744,6 +757,10 @@ msgstr "Obby의 업데이트 설치 허용"
 #: src/components/layout/ChatArea.tsx
 msgid "Allow Obby under Screen Recording in System Settings, then record again."
 msgstr "시스템 설정의 화면 기록에서 Obby를 허용한 다음 다시 녹화하세요."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Allowed Sites"
+msgstr "허용된 사이트"
 
 #. placeholder {0}: message.inviteChannel
 #: src/components/message/InviteMessage.tsx
@@ -2615,6 +2632,10 @@ msgstr "공백, 이모지, 기호를 포함한 이름을 입력하세요. IRC �
 msgid "Enter a number for {0}"
 msgstr "{0}에 숫자를 입력하세요"
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Enter a site name such as files.example.com, or paste a link to it. Ports and IP addresses cannot be added."
+msgstr "files.example.com 같은 사이트 이름을 입력하거나 해당 사이트의 링크를 붙여넣으세요. 포트와 IP 주소는 추가할 수 없습니다."
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a URL. Use {sizeToken} in the URL for dynamic sizing. Example: https://example.com/avatar/{sizeToken}/channel.jpg"
 msgstr "URL을 입력하세요. 크기를 동적으로 지정하려면 URL에 {sizeToken}를 사용하세요. 예: https://example.com/avatar/{sizeToken}/channel.jpg"
@@ -2879,6 +2900,10 @@ msgstr "파일 호스트 이미지"
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "Files larger than {0} are sent unencrypted. The file host can read them, and anyone with the link can open them."
 msgstr "{0}보다 큰 파일은 암호화 없이 전송됩니다. 파일 호스트가 내용을 읽을 수 있고, 링크가 있는 사람은 누구나 열 수 있습니다."
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "files.example.com or a pasted link"
+msgstr "files.example.com 또는 붙여넣은 링크"
 
 #. placeholder {0}: e.name
 #: src/components/chat/CommandArgHint.tsx
@@ -4583,6 +4608,7 @@ msgstr "채팅 옵션 열기"
 
 #: src/components/ui/MediaViewerModal.tsx
 #: src/components/ui/MediaViewerModal.tsx
+#: src/components/ui/MediaViewerModal.tsx
 msgid "Open in browser"
 msgstr "브라우저에서 열기"
 
@@ -4743,6 +4769,10 @@ msgstr "비밀번호가 업데이트되었습니다. 이제 로그인할 수 있
 msgid "Passwords don't match."
 msgstr "비밀번호가 일치하지 않습니다."
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Paste a link to add the site that serves the file; it often differs from the page you opened. A name matches that exact site over https. Add *.example.com to cover example.com and all its subdomains."
+msgstr "링크를 붙여넣으면 파일을 제공하는 사이트가 추가됩니다. 이 사이트는 열어 본 페이지와 다른 경우가 많습니다. 이름은 https의 바로 그 사이트에만 일치합니다. example.com과 모든 하위 도메인을 포함하려면 *.example.com을 추가하세요."
+
 #: src/components/ui/PluginsScreen.tsx
 msgid "Paste code with syntax highlighting and line numbers."
 msgstr "구문 강조와 줄 번호로 코드를 붙여넣으세요."
@@ -4783,6 +4813,10 @@ msgstr "일시 정지"
 #: src/components/ui/MediaCommentsSidebar.tsx
 msgid "PDF"
 msgstr "PDF"
+
+#: src/components/ui/MediaViewerModal.tsx
+msgid "PDF cannot be displayed in browser."
+msgstr "브라우저에서 PDF를 표시할 수 없습니다."
 
 #: src/components/message/MediaPreview.tsx
 msgid "PDF preview"
@@ -4937,9 +4971,13 @@ msgstr "미리보기 (아직 업로드되지 않음)"
 msgid "Preview all external media. Any URL can trigger a request to an unknown server."
 msgstr "모든 외부 미디어를 미리 보기합니다. 모든 URL이 알 수 없는 서버에 요청을 보낼 수 있습니다."
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Preview media from these sites at Safe and Trusted Sources."
+msgstr "안전 및 신뢰할 수 있는 출처 단계에서 이 사이트들의 미디어를 미리 보기합니다."
+
 #: src/components/pages/SettingsPage.tsx
-msgid "Preview media from your server's trusted file host only. Make no requests to external services."
-msgstr "서버의 신뢰된 파일 호스트에 있는 미디어만 미리 보기합니다. 외부 서비스에는 요청하지 않습니다."
+msgid "Preview media from your server's trusted file host and your allowed sites only. Make no requests to other services."
+msgstr "서버의 신뢰된 파일 호스트와 허용된 사이트에 있는 미디어만 미리 보기합니다. 다른 서비스에는 요청하지 않습니다."
 
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "Previous fingerprint"
@@ -5265,6 +5303,11 @@ msgstr "제거"
 #: src/components/pages/TwoFactorPage.tsx
 msgid "Remove \"{0}\"? You will no longer be able to use it as a second factor."
 msgstr "\"{0}\"을(를) 삭제할까요? 더 이상 두 번째 인증 요소로 사용할 수 없습니다."
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Remove {host}"
+msgstr "{host} 제거"
 
 #: src/components/ui/ModerationModal.tsx
 msgid "Remove {username} from the channel"
@@ -5885,6 +5928,10 @@ msgstr "카운터가 초기화되기 전까지 도배 활동을 셀 시간(초)�
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Set how much disk space saved history can use. The oldest messages are deleted first when the limit is reached."
 msgstr "저장된 기록이 사용할 수 있는 디스크 공간을 설정하세요. 한도에 도달하면 가장 오래된 메시지부터 삭제됩니다."
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Set Media Previews to Trusted Sources to preview {host}. It also loads from other sites, so it cannot be added here."
+msgstr "{host}을(를) 미리 보려면 미디어 미리보기를 신뢰할 수 있는 출처로 설정하세요. 다른 사이트에서도 콘텐츠를 불러오므로 여기에 추가할 수 없습니다."
 
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Set new password"

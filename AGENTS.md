@@ -235,9 +235,11 @@ Making a request to an arbitrary external URL reveals the user's IP.
 Trust levels (checked before any network request):
 
 1. **Safe media** — server-accepted filehost or server-marked-trusted origin → probe allowed
-2. **Trusted sources** — embeddable services (YouTube, etc.) from a known-safe list → probe allowed
-3. **External content** — user explicitly enabled "show all external content" → probe allowed
-4. **Anything else** — show a plain link, no preview, no request
+2. **Allowed sites** — a site the user added in Settings > Media, at Safe and Trusted Sources → probe
+   allowed with redirects refused and no media-element sniffing
+3. **Trusted sources** — embeddable services (YouTube, etc.) from a known-safe list → probe allowed
+4. **External content** — user explicitly enabled "show all external content" → probe allowed
+5. **Anything else** — show a plain link, no preview, no request
 
 Logic lives in `src/lib/mediaUtils.ts` (trust detection) and `src/lib/mediaProbe.ts`
 (HEAD → GET fallback). `src/components/message/MediaPreview.tsx` is the call site.

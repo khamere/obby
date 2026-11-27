@@ -157,6 +157,10 @@ msgstr "{failedCount, plural, one {1 încărcare a eșuat} other {# încărcări
 msgid "{hiddenLines, plural, one {# more line} other {# more lines}}"
 msgstr "{hiddenLines, plural, one {# rând suplimentar} few {# rânduri suplimentare} other {# de rânduri suplimentare}}"
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "{host} is already on the list."
+msgstr "{host} este deja în listă."
+
 #: src/store/handlers/users.ts
 msgid "{inviter} has invited {target} to join {channel}"
 msgstr "{inviter} l-a invitat pe {target} să se alăture la {channel}"
@@ -536,6 +540,7 @@ msgstr "Activitate"
 #: src/components/pages/TwoFactorPage.tsx
 #: src/components/ui/settings/CustomMentionsField.tsx
 #: src/components/ui/settings/IgnoreListField.tsx
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
 msgid "Add"
 msgstr "Adaugă"
 
@@ -606,6 +611,10 @@ msgstr "Adaugă server IRC"
 msgid "Add Network"
 msgstr "Adaugă rețea"
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Add only sites you trust. On every server, a link to an allowed site makes Obby contact that site, which shows it your IP address. Anyone who can put files on the site can post such a link, and the site can pass your request on to another site."
+msgstr "Adăugați doar site-uri în care aveți încredere. Pe orice server, un link către un site permis face ca Obby să contacteze acel site, care vă vede astfel adresa IP. Oricine poate pune fișiere pe site poate posta un astfel de link, iar site-ul poate transmite cererea dvs. către alt site."
+
 #: src/components/message/MessageActions.tsx
 #: src/components/message/MessageReactions.tsx
 #: src/components/message/MessageReactions.tsx
@@ -628,6 +637,10 @@ msgstr "Adăugați reguli care stabilesc ce activitate să urmăriți și ce să
 #: src/components/layout/ServerList.tsx
 msgid "Add Server"
 msgstr "Adaugă server"
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Add the exact site instead. {host} is shared by many unrelated people."
+msgstr "Adăugați în schimb site-ul exact. {host} este folosit în comun de multe persoane fără legătură între ele."
 
 #: src/components/ui/SavedHistoryChoice.tsx
 msgid "Add this network again to get its saved chat history back."
@@ -744,6 +757,10 @@ msgstr "Permite Obby să instaleze actualizări"
 #: src/components/layout/ChatArea.tsx
 msgid "Allow Obby under Screen Recording in System Settings, then record again."
 msgstr "Permite Obby la Înregistrare ecran în Configurări sistem, apoi înregistrează din nou."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Allowed Sites"
+msgstr "Site-uri permise"
 
 #. placeholder {0}: message.inviteChannel
 #: src/components/message/InviteMessage.tsx
@@ -2615,6 +2632,10 @@ msgstr "Introduceți un nume cu spații, emoji sau simboluri. Comenzile IRC folo
 msgid "Enter a number for {0}"
 msgstr "Introdu un număr pentru {0}"
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Enter a site name such as files.example.com, or paste a link to it. Ports and IP addresses cannot be added."
+msgstr "Introduceți un nume de site, de exemplu files.example.com, sau lipiți un link către el. Porturile și adresele IP nu pot fi adăugate."
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a URL. Use {sizeToken} in the URL for dynamic sizing. Example: https://example.com/avatar/{sizeToken}/channel.jpg"
 msgstr "Introduceți un URL. Folosiți {sizeToken} în URL pentru dimensionare dinamică. Exemplu: https://example.com/avatar/{sizeToken}/channel.jpg"
@@ -2879,6 +2900,10 @@ msgstr "Imagine filehost"
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "Files larger than {0} are sent unencrypted. The file host can read them, and anyone with the link can open them."
 msgstr "Fișierele mai mari de {0} sunt trimise necriptate. Gazda de fișiere le poate citi, iar oricine are linkul le poate deschide."
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "files.example.com or a pasted link"
+msgstr "files.example.com sau un link lipit"
 
 #. placeholder {0}: e.name
 #: src/components/chat/CommandArgHint.tsx
@@ -4583,6 +4608,7 @@ msgstr "Deschide opțiunile chatului"
 
 #: src/components/ui/MediaViewerModal.tsx
 #: src/components/ui/MediaViewerModal.tsx
+#: src/components/ui/MediaViewerModal.tsx
 msgid "Open in browser"
 msgstr "Deschide în browser"
 
@@ -4743,6 +4769,10 @@ msgstr "Parola a fost actualizată. Vă puteți autentifica acum."
 msgid "Passwords don't match."
 msgstr "Parolele nu se potrivesc."
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Paste a link to add the site that serves the file; it often differs from the page you opened. A name matches that exact site over https. Add *.example.com to cover example.com and all its subdomains."
+msgstr "Lipiți un link pentru a adăuga site-ul care furnizează fișierul; adesea diferă de pagina pe care ați deschis-o. Un nume se potrivește doar cu acel site exact, prin https. Adăugați *.example.com pentru a acoperi example.com și toate subdomeniile sale."
+
 #: src/components/ui/PluginsScreen.tsx
 msgid "Paste code with syntax highlighting and line numbers."
 msgstr "Lipește cod cu evidențiere de sintaxă și numere de linie."
@@ -4783,6 +4813,10 @@ msgstr "Pauză"
 #: src/components/ui/MediaCommentsSidebar.tsx
 msgid "PDF"
 msgstr "PDF"
+
+#: src/components/ui/MediaViewerModal.tsx
+msgid "PDF cannot be displayed in browser."
+msgstr "PDF-ul nu poate fi afișat în browser."
 
 #: src/components/message/MediaPreview.tsx
 msgid "PDF preview"
@@ -4937,9 +4971,13 @@ msgstr "Previzualizare (neîncărcat încă)"
 msgid "Preview all external media. Any URL can trigger a request to an unknown server."
 msgstr "Previzualizați toate media externe. Orice URL poate declanșa o cerere către un server necunoscut."
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Preview media from these sites at Safe and Trusted Sources."
+msgstr "Previzualizați media de pe aceste site-uri la nivelurile Sigur și Surse de încredere."
+
 #: src/components/pages/SettingsPage.tsx
-msgid "Preview media from your server's trusted file host only. Make no requests to external services."
-msgstr "Previzualizați media doar de la gazda de fișiere de încredere a serverului. Nu faceți cereri către servicii externe."
+msgid "Preview media from your server's trusted file host and your allowed sites only. Make no requests to other services."
+msgstr "Previzualizați media doar de la gazda de fișiere de încredere a serverului și de pe site-urile permise. Nu faceți cereri către alte servicii."
 
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "Previous fingerprint"
@@ -5265,6 +5303,11 @@ msgstr "Elimină"
 #: src/components/pages/TwoFactorPage.tsx
 msgid "Remove \"{0}\"? You will no longer be able to use it as a second factor."
 msgstr "Elimini \"{0}\"? Nu o vei mai putea folosi ca al doilea factor."
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Remove {host}"
+msgstr "Elimină {host}"
 
 #: src/components/ui/ModerationModal.tsx
 msgid "Remove {username} from the channel"
@@ -5885,6 +5928,10 @@ msgstr "Setați câte secunde să numărați activitatea de inundare înainte ca
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Set how much disk space saved history can use. The oldest messages are deleted first when the limit is reached."
 msgstr "Setează cât spațiu pe disc poate folosi istoricul salvat. Cele mai vechi mesaje sunt șterse primele când se atinge limita."
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Set Media Previews to Trusted Sources to preview {host}. It also loads from other sites, so it cannot be added here."
+msgstr "Setați Previzualizări media la Surse de încredere pentru a previzualiza {host}. Serviciul încarcă și de pe alte site-uri, deci nu poate fi adăugat aici."
 
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Set new password"

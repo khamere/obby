@@ -138,6 +138,18 @@ const FilehostImageBanner: React.FC<{
   );
 };
 
+// The Tenor lookup contacts Google with our API key, so we run it only for a
+// share page whose own host is tenor.com.
+function tenorGifId(url: string): string | null {
+  try {
+    const { hostname, pathname } = new URL(url);
+    if (hostname.replace(/^www\./, "") !== "tenor.com") return null;
+    return pathname.match(/^\/view\/.*-gif-(\d+)/)?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 const ImagePreview: React.FC<{
   url: string;
   msgid?: string;
@@ -169,10 +181,9 @@ const ImagePreview: React.FC<{
   useEffect(() => {
     const resolveTenorUrl = async (sharingUrl: string) => {
       try {
-        const match = sharingUrl.match(/tenor\.com\/view\/.*-gif-(\d+)/);
-        if (!match) return sharingUrl;
+        const gifId = tenorGifId(sharingUrl);
+        if (!gifId) return sharingUrl;
 
-        const gifId = match[1];
         const apiKey = import.meta.env.VITE_TENOR_API_KEY;
 
         if (!apiKey) return sharingUrl;
@@ -202,7 +213,7 @@ const ImagePreview: React.FC<{
     const processUrl = async () => {
       let finalUrl = url;
 
-      if (url.match(/tenor\.com\/view\//)) {
+      if (tenorGifId(url) !== null) {
         finalUrl = await resolveTenorUrl(url);
         setResolvedUrl(finalUrl);
       } else {

@@ -21,6 +21,21 @@ function cacheSet(url: string, result: ProbeResult | null): void {
   keyOrder.push(url);
 }
 
+// A link that only the user's allowed sites admit gets a guarded probe: we
+// refuse redirects and never load it into a hidden media element, so the
+// request stays on the site the user named.
+let isAllowedSiteUrl: (url: string) => boolean = () => false;
+
+export function setAllowedSiteCheck(check: (url: string) => boolean): void {
+  isAllowedSiteUrl = check;
+}
+
+// We keep the two probe modes apart in the cache, since the guarded probe
+// refuses links the plain one accepts.
+function probeKey(url: string, guarded: boolean): string {
+  return guarded ? `guarded ${url}` : url;
+}
+
 // The browser logs every request a host blocks with CORS, so we stop asking a host once it refuses.
 const fetchBlockedHosts = new Set<string>();
 
@@ -38,8 +53,9 @@ export function shouldProbeUrl(url: string): boolean {
 export function getCachedProbeResult(
   url: string,
 ): ProbeResult | null | undefined {
-  if (!cache.has(url)) return undefined;
-  return cache.get(url) ?? null;
+  const key = probeKey(url, isAllowedSiteUrl(url));
+  if (!cache.has(key)) return undefined;
+  return cache.get(key) ?? null;
 }
 
 interface HttpProbe {
@@ -52,6 +68,7 @@ interface HttpProbe {
 async function tryHttpFetch(
   url: string,
   method: "HEAD" | "GET",
+  guarded: boolean,
 ): Promise<HttpProbe | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 5_000);
@@ -62,6 +79,7 @@ async function tryHttpFetch(
     const response = await fetch(url, {
       method,
       headers,
+      redirect: guarded ? "error" : "follow",
       signal: controller.signal,
     });
     clearTimeout(timer);
@@ -92,8 +110,9 @@ async function tryHttpFetch(
 async function fetchContentType(
   url: string,
   host: string | null,
+  guarded: boolean,
 ): Promise<{ contentType: string; contentLength?: number } | null> {
-  const head = await tryHttpFetch(url, "HEAD");
+  const head = await tryHttpFetch(url, "HEAD", guarded);
   if (head?.ok && head.contentType) {
     return { contentType: head.contentType, contentLength: head.contentLength };
   }
@@ -102,7 +121,7 @@ async function fetchContentType(
   if (head !== null && !head.ok && head.status !== 405 && head.status !== 501) {
     return null;
   }
-  const get = await tryHttpFetch(url, "GET");
+  const get = await tryHttpFetch(url, "GET", guarded);
   if (head === null && get === null && host !== null)
     fetchBlockedHosts.add(host);
   if (get?.ok && get.contentType) {
@@ -155,18 +174,26 @@ const inFlight = new Map<string, Promise<ProbeResult | null>>();
 // Every caller of a URL shares one probe: each one opens hidden media elements,
 // and WebKit can deadlock while it cancels many of those at once.
 export function probeMediaUrl(url: string): Promise<ProbeResult | null> {
-  if (cache.has(url)) return Promise.resolve(cache.get(url) ?? null);
-  let probe = inFlight.get(url);
+  const guarded = isAllowedSiteUrl(url);
+  const key = probeKey(url, guarded);
+  if (cache.has(key)) return Promise.resolve(cache.get(key) ?? null);
+  let probe = inFlight.get(key);
   if (!probe) {
-    probe = probeUncached(url).finally(() => inFlight.delete(url));
-    inFlight.set(url, probe);
+    probe = probeUncached(url, key, guarded).finally(() =>
+      inFlight.delete(key),
+    );
+    inFlight.set(key, probe);
   }
   return probe;
 }
 
-async function probeUncached(url: string): Promise<ProbeResult | null> {
+async function probeUncached(
+  url: string,
+  key: string,
+  guarded: boolean,
+): Promise<ProbeResult | null> {
   if (isRejectedLocationShareUrl(url)) {
-    cacheSet(url, null);
+    cacheSet(key, null);
     return null;
   }
 
@@ -175,7 +202,7 @@ async function probeUncached(url: string): Promise<ProbeResult | null> {
   const pageType = detectMediaType(url);
   if (pageType === "embed" || pageType === "map") {
     const result = { type: pageType, streamable: false, skipped: false };
-    cacheSet(url, result);
+    cacheSet(key, result);
     return result;
   }
 
@@ -185,13 +212,13 @@ async function probeUncached(url: string): Promise<ProbeResult | null> {
   const fetched =
     host !== null && fetchBlockedHosts.has(host)
       ? null
-      : await fetchContentType(url, host);
+      : await fetchContentType(url, host, guarded);
   if (fetched) {
     const result = classifyContentType(
       fetched.contentType,
       fetched.contentLength,
     );
-    cacheSet(url, result);
+    cacheSet(key, result);
     return result;
   }
 
@@ -203,7 +230,7 @@ async function probeUncached(url: string): Promise<ProbeResult | null> {
   // servers outside CORS (SVG sub-resources on old WebKit, HLS/DASH via AVFoundation).
   const urlLower = url.split("?")[0].split("#")[0].toLowerCase();
   if (/\.(svg|m3u8?|mpd)$/.test(urlLower)) {
-    cacheSet(url, null);
+    cacheSet(key, null);
     return null;
   }
   const extType = detectMediaType(url);
@@ -218,8 +245,15 @@ async function probeUncached(url: string): Promise<ProbeResult | null> {
       streamable: extType === "audio",
       skipped: false,
     };
-    cacheSet(url, result);
+    cacheSet(key, result);
     return result;
+  }
+
+  // An allowed site that neither answered with a media type nor names a media
+  // file gets no preview, since a media element would follow its redirects.
+  if (guarded) {
+    cacheSet(key, null);
+    return null;
   }
 
   // Last resort: media element probes for extensionless URLs where HTTP is blocked by CORS.
@@ -232,7 +266,7 @@ async function probeUncached(url: string): Promise<ProbeResult | null> {
       streamable: false,
       skipped: false,
     };
-    cacheSet(url, result);
+    cacheSet(key, result);
     return result;
   }
 
@@ -243,7 +277,7 @@ async function probeUncached(url: string): Promise<ProbeResult | null> {
       streamable: true,
       skipped: false,
     };
-    cacheSet(url, result);
+    cacheSet(key, result);
     return result;
   }
 
@@ -259,7 +293,7 @@ async function probeUncached(url: string): Promise<ProbeResult | null> {
       streamable: false,
       skipped: false,
     };
-    cacheSet(url, result);
+    cacheSet(key, result);
     return result;
   }
 
@@ -271,11 +305,11 @@ async function probeUncached(url: string): Promise<ProbeResult | null> {
       streamable: false,
       skipped: false,
     };
-    cacheSet(url, result);
+    cacheSet(key, result);
     return result;
   }
 
-  cacheSet(url, null);
+  cacheSet(key, null);
   return null;
 }
 

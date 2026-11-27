@@ -157,6 +157,10 @@ msgstr "{failedCount, plural, one {1 yükleme başarısız oldu} other {# yükle
 msgid "{hiddenLines, plural, one {# more line} other {# more lines}}"
 msgstr "{hiddenLines, plural, one {# satır daha} other {# satır daha}}"
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "{host} is already on the list."
+msgstr "{host} zaten listede."
+
 #: src/store/handlers/users.ts
 msgid "{inviter} has invited {target} to join {channel}"
 msgstr "{inviter}, {target} kişisini {channel} kanalına davet etti"
@@ -536,6 +540,7 @@ msgstr "Etkinlik"
 #: src/components/pages/TwoFactorPage.tsx
 #: src/components/ui/settings/CustomMentionsField.tsx
 #: src/components/ui/settings/IgnoreListField.tsx
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
 msgid "Add"
 msgstr "Ekle"
 
@@ -606,6 +611,10 @@ msgstr "IRC Sunucusu Ekle"
 msgid "Add Network"
 msgstr "Ağ Ekle"
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Add only sites you trust. On every server, a link to an allowed site makes Obby contact that site, which shows it your IP address. Anyone who can put files on the site can post such a link, and the site can pass your request on to another site."
+msgstr "Yalnızca güvendiğiniz siteleri ekleyin. Her sunucuda, izin verilen bir siteye giden bağlantı Obby'nin o siteyle iletişim kurmasına neden olur ve site IP adresinizi görür. Siteye dosya koyabilen herkes böyle bir bağlantı gönderebilir ve site isteğinizi başka bir siteye aktarabilir."
+
 #: src/components/message/MessageActions.tsx
 #: src/components/message/MessageReactions.tsx
 #: src/components/message/MessageReactions.tsx
@@ -628,6 +637,10 @@ msgstr "İzlenecek etkinliği ve eşik aşıldığında yapılacakları belirley
 #: src/components/layout/ServerList.tsx
 msgid "Add Server"
 msgstr "Sunucu Ekle"
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Add the exact site instead. {host} is shared by many unrelated people."
+msgstr "Bunun yerine tam siteyi ekleyin. {host}, birbiriyle ilgisi olmayan birçok kişi tarafından paylaşılıyor."
 
 #: src/components/ui/SavedHistoryChoice.tsx
 msgid "Add this network again to get its saved chat history back."
@@ -744,6 +757,10 @@ msgstr "Obby'nin güncelleme yüklemesine izin ver"
 #: src/components/layout/ChatArea.tsx
 msgid "Allow Obby under Screen Recording in System Settings, then record again."
 msgstr "Sistem Ayarları'nda Ekran Kaydı altında Obby'ye izin verin, ardından yeniden kaydedin."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Allowed Sites"
+msgstr "İzin Verilen Siteler"
 
 #. placeholder {0}: message.inviteChannel
 #: src/components/message/InviteMessage.tsx
@@ -2615,6 +2632,10 @@ msgstr "Boşluk, emoji veya sembol içerebilen bir ad girin. IRC komutları yine
 msgid "Enter a number for {0}"
 msgstr "{0} için bir sayı girin"
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Enter a site name such as files.example.com, or paste a link to it. Ports and IP addresses cannot be added."
+msgstr "files.example.com gibi bir site adı girin veya siteye giden bir bağlantı yapıştırın. Bağlantı noktaları ve IP adresleri eklenemez."
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a URL. Use {sizeToken} in the URL for dynamic sizing. Example: https://example.com/avatar/{sizeToken}/channel.jpg"
 msgstr "Bir URL girin. Dinamik boyut için URL'de {sizeToken} kullanın. Örnek: https://example.com/avatar/{sizeToken}/channel.jpg"
@@ -2879,6 +2900,10 @@ msgstr "Dosya sunucu görseli"
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "Files larger than {0} are sent unencrypted. The file host can read them, and anyone with the link can open them."
 msgstr "{0} boyutundan büyük dosyalar şifresiz gönderilir. Dosya sunucusu bunları okuyabilir ve bağlantıya sahip herkes açabilir."
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "files.example.com or a pasted link"
+msgstr "files.example.com veya yapıştırılmış bir bağlantı"
 
 #. placeholder {0}: e.name
 #: src/components/chat/CommandArgHint.tsx
@@ -4583,6 +4608,7 @@ msgstr "Sohbet seçeneklerini aç"
 
 #: src/components/ui/MediaViewerModal.tsx
 #: src/components/ui/MediaViewerModal.tsx
+#: src/components/ui/MediaViewerModal.tsx
 msgid "Open in browser"
 msgstr "Tarayıcıda aç"
 
@@ -4743,6 +4769,10 @@ msgstr "Parola güncellendi. Artık giriş yapabilirsiniz."
 msgid "Passwords don't match."
 msgstr "Parolalar eşleşmiyor."
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Paste a link to add the site that serves the file; it often differs from the page you opened. A name matches that exact site over https. Add *.example.com to cover example.com and all its subdomains."
+msgstr "Dosyayı sunan siteyi eklemek için bir bağlantı yapıştırın; bu site çoğu zaman açtığınız sayfadan farklıdır. Bir ad, https üzerinden yalnızca tam olarak o siteyle eşleşir. example.com ve tüm alt alan adlarını kapsamak için *.example.com ekleyin."
+
 #: src/components/ui/PluginsScreen.tsx
 msgid "Paste code with syntax highlighting and line numbers."
 msgstr "Sözdizimi vurgulama ve satır numaralarıyla kod yapıştır."
@@ -4783,6 +4813,10 @@ msgstr "Duraklat"
 #: src/components/ui/MediaCommentsSidebar.tsx
 msgid "PDF"
 msgstr "PDF"
+
+#: src/components/ui/MediaViewerModal.tsx
+msgid "PDF cannot be displayed in browser."
+msgstr "PDF tarayıcıda görüntülenemiyor."
 
 #: src/components/message/MediaPreview.tsx
 msgid "PDF preview"
@@ -4937,9 +4971,13 @@ msgstr "Önizleme (henüz yüklenmedi)"
 msgid "Preview all external media. Any URL can trigger a request to an unknown server."
 msgstr "Tüm dış medyayı önizleyin. Her URL bilinmeyen bir sunucuya istek gönderebilir."
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Preview media from these sites at Safe and Trusted Sources."
+msgstr "Güvenli ve Güvenilir Kaynaklar düzeylerinde bu sitelerdeki medyayı önizleyin."
+
 #: src/components/pages/SettingsPage.tsx
-msgid "Preview media from your server's trusted file host only. Make no requests to external services."
-msgstr "Yalnızca sunucunuzun güvenilir dosya barındırıcısındaki medyayı önizleyin. Dış hizmetlere istek göndermeyin."
+msgid "Preview media from your server's trusted file host and your allowed sites only. Make no requests to other services."
+msgstr "Yalnızca sunucunuzun güvenilir dosya barındırıcısındaki ve izin verdiğiniz sitelerdeki medyayı önizleyin. Başka hizmetlere istek göndermeyin."
 
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "Previous fingerprint"
@@ -5265,6 +5303,11 @@ msgstr "Kaldır"
 #: src/components/pages/TwoFactorPage.tsx
 msgid "Remove \"{0}\"? You will no longer be able to use it as a second factor."
 msgstr "\"{0}\" kaldırılsın mı? Artık ikinci faktör olarak kullanamayacaksınız."
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Remove {host}"
+msgstr "{host} sitesini kaldır"
 
 #: src/components/ui/ModerationModal.tsx
 msgid "Remove {username} from the channel"
@@ -5885,6 +5928,10 @@ msgstr "Sayaçlar sıfırlanmadan önce flood etkinliğinin kaç saniye sayılac
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Set how much disk space saved history can use. The oldest messages are deleted first when the limit is reached."
 msgstr "Kayıtlı geçmişin ne kadar disk alanı kullanabileceğini ayarlayın. Sınıra ulaşıldığında önce en eski mesajlar silinir."
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Set Media Previews to Trusted Sources to preview {host}. It also loads from other sites, so it cannot be added here."
+msgstr "{host} önizlemesi için Medya Önizlemeleri ayarını Güvenilir Kaynaklar yapın. Bu hizmet başka sitelerden de içerik yüklediği için buraya eklenemez."
 
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Set new password"

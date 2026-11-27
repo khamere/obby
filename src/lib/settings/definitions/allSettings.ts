@@ -10,6 +10,7 @@ import { CustomCssField } from "../../../components/ui/settings/CustomCssField";
 import { CustomMentionsField } from "../../../components/ui/settings/CustomMentionsField";
 import { HistoryUsageField } from "../../../components/ui/settings/HistoryUsageField";
 import { IgnoreListField } from "../../../components/ui/settings/IgnoreListField";
+import { MediaAllowedHostsField } from "../../../components/ui/settings/MediaAllowedHostsField";
 import { PushMethodField } from "../../../components/ui/settings/PushMethodField";
 import { ThemeEditorField } from "../../../components/ui/settings/ThemeEditorField";
 import { ThemeField } from "../../../components/ui/settings/ThemeField";
@@ -981,8 +982,9 @@ const preferenceSettings: SettingDefinition[] = [
 
 /**
  * Media Settings
- * The slider UI is rendered as a custom branch in UserSettings ("media" category),
- * so this entry exists only to make the setting discoverable via search.
+ * The settings page draws the "media" category by hand: the level slider is
+ * its own markup there, so that entry serves search, and the allowed sites
+ * render through their custom component.
  */
 const mediaSettings: SettingDefinition[] = [
   {
@@ -1008,6 +1010,28 @@ const mediaSettings: SettingDefinition[] = [
       "content",
     ],
     priority: 1,
+  },
+  {
+    id: "media.allowedHosts",
+    key: "mediaAllowedHosts",
+    category: "media",
+    subcategory: "Display",
+    title: msg`Allowed Sites`,
+    description: msg`Preview media from these sites at Safe and Trusted Sources.`,
+    type: "custom",
+    defaultValue: [],
+    searchKeywords: [
+      "allow",
+      "allowlist",
+      "whitelist",
+      "domain",
+      "site",
+      "host",
+      "trusted",
+      "preview",
+    ],
+    priority: 2,
+    customComponent: MediaAllowedHostsField,
   },
 ];
 

@@ -157,6 +157,10 @@ msgstr "{failedCount, plural, other {# 个上传失败}}"
 msgid "{hiddenLines, plural, one {# more line} other {# more lines}}"
 msgstr "{hiddenLines, plural, other {还有 # 行}}"
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "{host} is already on the list."
+msgstr "{host} 已在列表中。"
+
 #: src/store/handlers/users.ts
 msgid "{inviter} has invited {target} to join {channel}"
 msgstr "{inviter} 邀请了 {target} 加入 {channel}"
@@ -536,6 +540,7 @@ msgstr "活动"
 #: src/components/pages/TwoFactorPage.tsx
 #: src/components/ui/settings/CustomMentionsField.tsx
 #: src/components/ui/settings/IgnoreListField.tsx
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
 msgid "Add"
 msgstr "添加"
 
@@ -606,6 +611,10 @@ msgstr "添加 IRC 服务器"
 msgid "Add Network"
 msgstr "添加网络"
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Add only sites you trust. On every server, a link to an allowed site makes Obby contact that site, which shows it your IP address. Anyone who can put files on the site can post such a link, and the site can pass your request on to another site."
+msgstr "只添加你信任的网站。在任何服务器上，指向已允许网站的链接都会让 Obby 连接该网站，从而向它暴露你的 IP 地址。任何能在该网站上放置文件的人都可以发布这样的链接，而且该网站可以把你的请求转给其他网站。"
+
 #: src/components/message/MessageActions.tsx
 #: src/components/message/MessageReactions.tsx
 #: src/components/message/MessageReactions.tsx
@@ -628,6 +637,10 @@ msgstr "添加规则，设定要监视的活动以及超过阈值时的处理方
 #: src/components/layout/ServerList.tsx
 msgid "Add Server"
 msgstr "添加服务器"
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Add the exact site instead. {host} is shared by many unrelated people."
+msgstr "请改为添加确切的网站。{host} 由许多互不相关的人共用。"
 
 #: src/components/ui/SavedHistoryChoice.tsx
 msgid "Add this network again to get its saved chat history back."
@@ -744,6 +757,10 @@ msgstr "允许 Obby 安装更新"
 #: src/components/layout/ChatArea.tsx
 msgid "Allow Obby under Screen Recording in System Settings, then record again."
 msgstr "请在系统设置的“录屏”中允许 Obby，然后重新录制。"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Allowed Sites"
+msgstr "允许的网站"
 
 #. placeholder {0}: message.inviteChannel
 #: src/components/message/InviteMessage.tsx
@@ -2615,6 +2632,10 @@ msgstr "可包含空格、表情或符号。IRC 命令仍使用真实名称（{c
 msgid "Enter a number for {0}"
 msgstr "请为 {0} 输入数字"
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Enter a site name such as files.example.com, or paste a link to it. Ports and IP addresses cannot be added."
+msgstr "请输入网站名称（例如 files.example.com），或粘贴指向它的链接。不能添加端口和 IP 地址。"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a URL. Use {sizeToken} in the URL for dynamic sizing. Example: https://example.com/avatar/{sizeToken}/channel.jpg"
 msgstr "输入 URL。在 URL 中使用 {sizeToken} 可动态调整尺寸。示例：https://example.com/avatar/{sizeToken}/channel.jpg"
@@ -2879,6 +2900,10 @@ msgstr "文件托管图片"
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "Files larger than {0} are sent unencrypted. The file host can read them, and anyone with the link can open them."
 msgstr "大于 {0} 的文件将不加密发送。文件主机可以读取这些文件，任何拥有链接的人都可以打开。"
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "files.example.com or a pasted link"
+msgstr "files.example.com 或粘贴的链接"
 
 #. placeholder {0}: e.name
 #: src/components/chat/CommandArgHint.tsx
@@ -4583,6 +4608,7 @@ msgstr "打开聊天选项"
 
 #: src/components/ui/MediaViewerModal.tsx
 #: src/components/ui/MediaViewerModal.tsx
+#: src/components/ui/MediaViewerModal.tsx
 msgid "Open in browser"
 msgstr "在浏览器中打开"
 
@@ -4743,6 +4769,10 @@ msgstr "密码已更新。现在可以登录。"
 msgid "Passwords don't match."
 msgstr "两次输入的密码不一致。"
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Paste a link to add the site that serves the file; it often differs from the page you opened. A name matches that exact site over https. Add *.example.com to cover example.com and all its subdomains."
+msgstr "粘贴链接即可添加提供该文件的网站；它往往与你打开的页面不同。名称只匹配通过 https 访问的这一个网站。添加 *.example.com 可涵盖 example.com 及其所有子域名。"
+
 #: src/components/ui/PluginsScreen.tsx
 msgid "Paste code with syntax highlighting and line numbers."
 msgstr "粘贴带语法高亮和行号的代码。"
@@ -4783,6 +4813,10 @@ msgstr "暂停"
 #: src/components/ui/MediaCommentsSidebar.tsx
 msgid "PDF"
 msgstr "PDF"
+
+#: src/components/ui/MediaViewerModal.tsx
+msgid "PDF cannot be displayed in browser."
+msgstr "无法在浏览器中显示 PDF。"
 
 #: src/components/message/MediaPreview.tsx
 msgid "PDF preview"
@@ -4937,9 +4971,13 @@ msgstr "预览（尚未上传）"
 msgid "Preview all external media. Any URL can trigger a request to an unknown server."
 msgstr "预览所有外部媒体。任何 URL 都可能触发对未知服务器的请求。"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Preview media from these sites at Safe and Trusted Sources."
+msgstr "在“安全”和“受信任来源”级别下预览来自这些网站的媒体。"
+
 #: src/components/pages/SettingsPage.tsx
-msgid "Preview media from your server's trusted file host only. Make no requests to external services."
-msgstr "仅预览来自服务器可信文件主机的媒体。不向外部服务发出任何请求。"
+msgid "Preview media from your server's trusted file host and your allowed sites only. Make no requests to other services."
+msgstr "仅预览来自服务器可信文件主机和你允许的网站的媒体。不向其他服务发出任何请求。"
 
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "Previous fingerprint"
@@ -5265,6 +5303,11 @@ msgstr "移除"
 #: src/components/pages/TwoFactorPage.tsx
 msgid "Remove \"{0}\"? You will no longer be able to use it as a second factor."
 msgstr "删除 \"{0}\"？你将无法再将其用作第二重验证。"
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Remove {host}"
+msgstr "移除 {host}"
 
 #: src/components/ui/ModerationModal.tsx
 msgid "Remove {username} from the channel"
@@ -5885,6 +5928,10 @@ msgstr "设置在计数器重置前统计刷屏活动的秒数"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Set how much disk space saved history can use. The oldest messages are deleted first when the limit is reached."
 msgstr "设置已保存的历史记录可使用多少磁盘空间。达到上限时，最旧的消息会最先被删除。"
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Set Media Previews to Trusted Sources to preview {host}. It also loads from other sites, so it cannot be added here."
+msgstr "要预览 {host}，请将媒体预览设为“受信任来源”。它还会从其他网站加载内容，因此不能添加到这里。"
 
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Set new password"

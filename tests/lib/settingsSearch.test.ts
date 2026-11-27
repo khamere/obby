@@ -14,4 +14,13 @@ describe("settingsRegistry search", () => {
       "calls.speaker",
     );
   });
+
+  it.each(["whitelist", "domain", "allowed"])(
+    "finds the allowed media sites by %j",
+    (query) => {
+      expect(settingsRegistry.search(query).map((r) => r.setting.id)).toContain(
+        "media.allowedHosts",
+      );
+    },
+  );
 });

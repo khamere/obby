@@ -82,6 +82,38 @@ describe("settings.load migration", () => {
     const result = settings.load();
     expect(result).toEqual({});
   });
+
+  test("keeps only well-formed allowed media sites", () => {
+    mockStored({
+      mediaVisibilityLevel: 1,
+      mediaAllowedHosts: [
+        "*.co.uk",
+        5,
+        "EXAMPLE.com",
+        "files.example.com",
+        "https://b.example",
+        "*.example.org",
+        "files.example.com",
+      ],
+    });
+    expect(settings.load().mediaAllowedHosts).toEqual([
+      "files.example.com",
+      "*.example.org",
+    ]);
+  });
+
+  test.each([["files.example.com"], [{ 0: "files.example.com" }], [null], [7]])(
+    "loads allowed media sites stored as %j as an empty list",
+    (stored) => {
+      mockStored({ mediaVisibilityLevel: 1, mediaAllowedHosts: stored });
+      expect(settings.load().mediaAllowedHosts).toEqual([]);
+    },
+  );
+
+  test("leaves the allowed media sites key absent when nothing was saved", () => {
+    mockStored({ mediaVisibilityLevel: 1 });
+    expect("mediaAllowedHosts" in settings.load()).toBe(false);
+  });
 });
 
 describe("uiSelections.load", () => {

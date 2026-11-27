@@ -75,6 +75,35 @@ describe("SettingsPage", () => {
     });
   });
 
+  it("shows the allowed sites under the media level and saves an added site", () => {
+    state.current.globalSettings = {
+      mediaVisibilityLevel: 1,
+      mediaAllowedHosts: ["a.example"],
+    };
+    const { container } = render(
+      <SettingsPage page={{ kind: "settings", section: "media" }} />,
+    );
+
+    expect(
+      screen.getByText(
+        "Preview media from your server's trusted file host and your allowed sites only. Make no requests to other services.",
+      ),
+    ).toBeTruthy();
+    const row = container.querySelector('[id="setting-media.allowedHosts"]');
+    expect(row).toBeTruthy();
+    expect(row?.textContent).toContain("Allowed Sites");
+    expect(row?.textContent).toContain("a.example");
+
+    fireEvent.change(
+      screen.getByPlaceholderText("files.example.com or a pasted link"),
+      { target: { value: "b.example" } },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    expect(state.current.updateGlobalSettings).toHaveBeenCalledWith({
+      mediaAllowedHosts: ["a.example", "b.example"],
+    });
+  });
+
   it("sends a profile change shortly after the field is committed", () => {
     vi.useFakeTimers();
     render(<SettingsPage page={{ kind: "settings" }} />);
