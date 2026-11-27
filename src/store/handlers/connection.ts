@@ -231,6 +231,8 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
           ...(connectionState === "connected"
             ? { isAway: false, awayMessage: undefined }
             : {}),
+          // Each connection negotiates its own capabilities, so we start it with none enabled.
+          ...(connectionState === "connected" ? { capabilities: [] } : {}),
           webPushFailure: undefined,
           account:
             connectionState === "connected"

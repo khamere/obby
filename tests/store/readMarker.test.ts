@@ -459,6 +459,10 @@ describe("read markers", () => {
     const welcome = () => {
       state("connecting");
       state("connected");
+      ircClient.triggerEvent("CAP ACK", {
+        serverId: SERVER,
+        cliCaps: "draft/read-marker",
+      });
       ircClient.triggerEvent("ready", {
         serverId: SERVER,
         serverName: "irc.test",
