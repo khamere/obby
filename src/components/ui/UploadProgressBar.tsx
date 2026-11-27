@@ -45,10 +45,10 @@ const JobStatusIcon: React.FC<{ status: UploadJob["status"] }> = ({
     <FaTimes className="w-3.5 h-3.5 text-discord-red shrink-0" />
   ) : null;
 
-const ProgressTrack: React.FC<{ percent: number; isFailed: boolean }> = ({
-  percent,
-  isFailed,
-}) => (
+export const ProgressTrack: React.FC<{
+  percent: number;
+  isFailed: boolean;
+}> = ({ percent, isFailed }) => (
   <div className="h-1.5 rounded-full bg-discord-dark-500 overflow-hidden">
     <div
       className={`h-full rounded-full ${isFailed ? "bg-discord-red" : "bg-discord-primary"}`}
@@ -91,7 +91,7 @@ const EncryptionNote: React.FC<{ job: UploadJob }> = ({ job }) =>
     </span>
   );
 
-const BarButton: React.FC<{
+export const BarButton: React.FC<{
   label: string;
   onClick: () => void;
   isExpanded?: boolean;

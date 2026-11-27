@@ -129,6 +129,15 @@ export const splitLongMessage = (
 ): string[] =>
   splitToBytes(message, maxMessageBytes(target), preserveBoundarySpace);
 
+const ctcpAction = (text: string): string => `\u0001ACTION ${text}\u0001`;
+
+/** Splits an action into the complete CTCP ACTION messages one PRIVMSG to `target` can carry each. */
+export const splitAction = (action: string, target: string): string[] =>
+  splitToBytes(
+    action,
+    maxMessageBytes(target) - byteLength(ctcpAction("")),
+  ).map(ctcpAction);
+
 /**
  * Calculate protocol overhead for a given target
  * @param target - The channel or username

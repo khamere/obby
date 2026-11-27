@@ -146,6 +146,36 @@ describe("our own line on a server that echoes it", () => {
     expect(ownLines()).toMatchObject([{ content: "hello", status: "failed" }]);
   });
 
+  it("keeps it pending while it waits behind other lines", () => {
+    withCaps("labeled-response", "echo-message", "batch");
+    const hasWaitingLines = vi
+      .spyOn(ircClient, "hasWaitingLines")
+      .mockReturnValue(true);
+    runCommand("hello", me);
+    vi.advanceTimersByTime(30_000);
+    expect(ownLines()).toMatchObject([{ content: "hello", status: "pending" }]);
+
+    hasWaitingLines.mockReturnValue(false);
+    vi.advanceTimersByTime(30_000);
+    expect(ownLines()).toMatchObject([{ content: "hello", status: "pending" }]);
+    vi.advanceTimersByTime(30_000);
+    expect(ownLines()).toMatchObject([{ content: "hello", status: "failed" }]);
+  });
+
+  it("asks whether lines wait only once its own line is handed over", () => {
+    withCaps("labeled-response", "echo-message", "batch");
+    const calls: string[] = [];
+    vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {
+      calls.push("sendRaw");
+    });
+    vi.spyOn(ircClient, "hasWaitingLines").mockImplementation(() => {
+      calls.push("hasWaitingLines");
+      return false;
+    });
+    runCommand("hello", me);
+    expect(calls).toEqual(["sendRaw", "hasWaitingLines"]);
+  });
+
   it("waits for the echo before it shows the line", () => {
     withCaps("echo-message");
     runCommand("hello", me);
@@ -628,5 +658,200 @@ describe("a line longer in bytes than one message carries", () => {
     );
     for (const line of lines)
       expect(utf8.encode(payload(line)).length).toBeLessThanOrEqual(lineBytes);
+  });
+});
+
+describe("a command whose text is longer in bytes than one message carries", () => {
+  // A line to #lobby or to friend carries 377 bytes and a line to bob 380.
+  const toLobby = 377;
+  const toBob = 380;
+  const utf8 = new TextEncoder();
+  const bytes = (text: string) => utf8.encode(text).length;
+  const payload = (line: string) => line.slice(line.indexOf(" :") + 2);
+  const actionText = (line: string) => {
+    const message = payload(line);
+    return message.startsWith("\u0001ACTION ") && message.endsWith("\u0001")
+      ? message.slice(8, -1)
+      : undefined;
+  };
+  const hasLoneSurrogate = (text: string) =>
+    /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(
+      text,
+    );
+  const whisperTags = "@+channel-context=#lobby;+draft/channel-context=#lobby ";
+  // Each text names what joins its parts back: a cut between words takes the space with it.
+  const texts: [string, string, string][] = [
+    ["ASCII words", "the quick brown fox ".repeat(30).trim(), " "],
+    ["CJK", "漢字仮名".repeat(75), ""],
+    ["emoji", "\u{1F600}".repeat(200), ""],
+    [
+      "a mix of one- to four-byte characters",
+      "aé漢\u{1F600}\u{1F600}".repeat(45),
+      "",
+    ],
+  ];
+  const friend = { id: "p1", username: "friend" } as unknown as PrivateChat;
+  const inChat: Selection = {
+    selectedChannelId: null,
+    selectedPrivateChatId: "p1",
+    selectedChannel: null,
+    selectedPrivateChat: friend,
+  };
+  const whisper = {
+    id: "w1",
+    msgid: "w1",
+    userId: "bob",
+    tags: { "+channel-context": "#lobby" },
+  } as unknown as Message;
+
+  function send(
+    text: string,
+    selection: Selection = inLobby,
+    localReplyTo: Message | null = null,
+  ) {
+    const lines: string[] = [];
+    vi.spyOn(ircClient, "sendRaw").mockImplementation((_, line) => {
+      lines.push(line);
+    });
+    const { result } = renderHook(() =>
+      useMessageSending({
+        selectedServerId: "s1",
+        ...selection,
+        currentUser: me,
+        selectedColor: null,
+        selectedFormatting: [],
+        localReplyTo,
+      }),
+    );
+    result.current.sendMessage(text);
+    return lines;
+  }
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    useStore.setState({
+      servers: [{ ...server, privateChats: [friend] }],
+      messages: {},
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    useStore.setState({ servers: [server], messages: {} });
+  });
+
+  it.each(texts)("sends /me with %s as complete actions", (_, text, joint) => {
+    const lines = send(`/me ${text}`);
+
+    expect(lines.length).toBeGreaterThan(1);
+    for (const line of lines) {
+      expect(line.startsWith("PRIVMSG #lobby :\u0001ACTION ")).toBe(true);
+      expect(line.endsWith("\u0001")).toBe(true);
+      expect(bytes(payload(line))).toBeLessThanOrEqual(toLobby);
+      expect(hasLoneSurrogate(line)).toBe(false);
+    }
+    expect(lines.map(actionText).join(joint)).toBe(text);
+  });
+
+  it("shows one own action for a /me that goes to a private chat in parts", () => {
+    const text = "aé漢\u{1F600}\u{1F600}".repeat(45);
+
+    const lines = send(`/me ${text}`, inChat);
+
+    expect(lines.length).toBeGreaterThan(1);
+    for (const line of lines) {
+      expect(line.startsWith("PRIVMSG friend :\u0001ACTION ")).toBe(true);
+      expect(bytes(payload(line))).toBeLessThanOrEqual(toLobby);
+    }
+    expect(lines.map(actionText).join("")).toBe(text);
+    expect(
+      (useStore.getState().messages["s1-p1"] ?? []).map((m) => m.content),
+    ).toEqual([`\u0001ACTION ${text}\u0001`]);
+  });
+
+  it("sends /me in a whisper reply as tagged actions sized for the user", () => {
+    const text = "aé漢\u{1F600}\u{1F600}".repeat(45);
+
+    const lines = send(`/me ${text}`, inLobby, whisper);
+
+    expect(lines.length).toBeGreaterThan(1);
+    for (const line of lines) {
+      expect(line.startsWith(`${whisperTags}PRIVMSG bob :\u0001ACTION `)).toBe(
+        true,
+      );
+      expect(bytes(payload(line))).toBeLessThanOrEqual(toBob);
+    }
+    expect(lines.map(actionText).join("")).toBe(text);
+  });
+
+  it("sizes a /me in a whisper reply for the user when their nick is longer than the channel name", () => {
+    const longNick = "bartholomew-the-long";
+    const fromLongNick = { ...whisper, userId: longNick } as Message;
+    const text = "aé漢\u{1F600}\u{1F600}".repeat(45);
+
+    const lines = send(`/me ${text}`, inLobby, fromLongNick);
+
+    expect(lines.length).toBeGreaterThan(1);
+    for (const line of lines) {
+      expect(
+        line.startsWith(`${whisperTags}PRIVMSG ${longNick} :\u0001ACTION `),
+      ).toBe(true);
+      expect(bytes(payload(line))).toBeLessThanOrEqual(
+        toBob + "bob".length - longNick.length,
+      );
+    }
+    expect(lines.map(actionText).join("")).toBe(text);
+  });
+
+  it.each(texts)("sends /msg with %s in parts", (_, text, joint) => {
+    const lines = send(`/msg bob ${text}`);
+
+    expect(lines.length).toBeGreaterThan(1);
+    for (const line of lines) {
+      expect(line.startsWith("PRIVMSG bob :")).toBe(true);
+      expect(bytes(payload(line))).toBeLessThanOrEqual(toBob);
+      expect(hasLoneSurrogate(line)).toBe(false);
+    }
+    expect(lines.map(payload).join(joint)).toBe(text);
+  });
+
+  it.each(texts)(
+    "sends /whisper with %s in parts that each carry the channel",
+    (_, text, joint) => {
+      const lines = send(`/whisper bob ${text}`);
+
+      expect(lines.length).toBeGreaterThan(1);
+      for (const line of lines) {
+        expect(line.startsWith(`${whisperTags}PRIVMSG bob :`)).toBe(true);
+        expect(bytes(payload(line))).toBeLessThanOrEqual(toBob);
+        expect(hasLoneSurrogate(line)).toBe(false);
+      }
+      expect(lines.map(payload).join(joint)).toBe(text);
+    },
+  );
+
+  it("sends a typed reply to a whisper in parts that each carry the channel", () => {
+    const text = "aé漢\u{1F600}\u{1F600}".repeat(45);
+
+    const lines = send(text, inLobby, whisper);
+
+    expect(lines.length).toBeGreaterThan(1);
+    for (const line of lines) {
+      expect(line.startsWith(`${whisperTags}PRIVMSG bob :`)).toBe(true);
+      expect(bytes(payload(line))).toBeLessThanOrEqual(toBob);
+    }
+    expect(lines.map(payload).join("")).toBe(text);
+  });
+
+  it("sends a command that fits one message as it did", () => {
+    expect(send("/me waves \u{1F600}")).toEqual([
+      "PRIVMSG #lobby :\u0001ACTION waves \u{1F600}\u0001",
+    ]);
+    expect(send("/msg bob  two  spaces ")).toEqual([
+      "PRIVMSG bob : two  spaces",
+    ]);
+    expect(send("/whisper bob hi \u{1F600}")).toEqual([
+      `${whisperTags}PRIVMSG bob :hi \u{1F600}`,
+    ]);
   });
 });

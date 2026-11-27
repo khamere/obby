@@ -1116,11 +1116,18 @@ export function registerHistoryHandlers(store: StoreApi<AppState>): void {
       forgetRemovedReadBacks(state);
   });
 
-  ircClient.on("rawLine", ({ serverId, direction, line }) => {
+  ircClient.on("rawLine", ({ serverId, direction, line, afterWaiting }) => {
     if (direction !== "tx") return;
     const said = /^(?:@\S+ )?PRIVMSG (\S+) :/.exec(line);
-    if (said) showPresent(store, serverId, said[1]);
+    // A line that waited leaves long after the user sent it, so it leaves the view where they have moved since.
+    if (said && !afterWaiting) showPresent(store, serverId, said[1]);
     if (isEnabled(store)) trackOutgoing(store, serverId, line);
+  });
+
+  // A line that has to wait is sent from the chat the user is in now, so that chat returns to the present as for a line that leaves at once.
+  ircClient.on("lineQueued", ({ serverId, line }) => {
+    const said = /^(?:@\S+ )?PRIVMSG (\S+) :/.exec(line);
+    if (said) showPresent(store, serverId, said[1]);
   });
 
   ircClient.on("BATCH_START", ({ serverId, batchId, type, parameters }) => {

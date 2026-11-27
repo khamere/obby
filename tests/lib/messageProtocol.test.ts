@@ -4,6 +4,7 @@ import {
   byteLength,
   calculateProtocolOverhead,
   exceedsLineLimit,
+  splitAction,
   splitLongMessage,
   splitToBytes,
 } from "../../src/lib/messageProtocol";
@@ -341,5 +342,71 @@ describe("splitToBytes", () => {
 
     expect(parts.join("")).toBe(line);
     for (const part of parts) expect(bytes(part)).toBeLessThanOrEqual(20);
+  });
+});
+
+describe("splitAction", () => {
+  // A line to #chan carries 378 bytes, and the CTCP ACTION wrapper takes 9 of them.
+  const lineBytes = 512 - calculateProtocolOverhead("#chan");
+  const actionBytes = lineBytes - 9;
+  const text = (message: string) =>
+    message.startsWith("\u0001ACTION ") && message.endsWith("\u0001")
+      ? message.slice(8, -1)
+      : undefined;
+
+  test("wraps an action that fits as one message", () => {
+    expect(splitAction("waves \u{1F600}", "#chan")).toEqual([
+      "\u0001ACTION waves \u{1F600}\u0001",
+    ]);
+  });
+
+  test("counts the wrapper toward the line", () => {
+    expect(splitAction("a".repeat(actionBytes), "#chan")).toEqual([
+      `\u0001ACTION ${"a".repeat(actionBytes)}\u0001`,
+    ]);
+    expect(splitAction("a".repeat(actionBytes + 1), "#chan")).toEqual([
+      `\u0001ACTION ${"a".repeat(actionBytes)}\u0001`,
+      "\u0001ACTION a\u0001",
+    ]);
+  });
+
+  test("ends a message before a character that would cross the limit", () => {
+    expect(
+      splitAction(`${"a".repeat(actionBytes - 1)}\u{1F600}b`, "#chan"),
+    ).toEqual([
+      `\u0001ACTION ${"a".repeat(actionBytes - 1)}\u0001`,
+      "\u0001ACTION \u{1F600}b\u0001",
+    ]);
+  });
+
+  test.each([
+    ["CJK", "漢字仮名".repeat(75)],
+    ["emoji", "\u{1F600}".repeat(200)],
+    [
+      "a mix of one- to four-byte characters",
+      "aé漢\u{1F600}\u{1F600}".repeat(45),
+    ],
+    ["clusters", `${FAMILY}${FLAG}${WAVE}`.repeat(60)],
+  ])("cuts %s between characters into complete actions", (_, action) => {
+    const messages = splitAction(action, "#chan");
+
+    expect(messages.length).toBeGreaterThan(1);
+    for (const message of messages) {
+      expect(text(message)).toBeTruthy();
+      expect(bytes(message)).toBeLessThanOrEqual(lineBytes);
+      expect(hasLoneSurrogate(message)).toBe(false);
+    }
+    expect(messages.map(text).join("")).toBe(action);
+    expect(
+      messages.map(text).reduce((n, t) => n + graphemeCount(t ?? ""), 0),
+    ).toBe(graphemeCount(action));
+  });
+
+  test("leaves room for a longer target", () => {
+    const target = `#${"c".repeat(40)}`;
+    const limit = 512 - calculateProtocolOverhead(target);
+
+    for (const message of splitAction("漢".repeat(300), target))
+      expect(bytes(message)).toBeLessThanOrEqual(limit);
   });
 });

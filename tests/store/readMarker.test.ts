@@ -341,6 +341,50 @@ describe("read markers", () => {
     );
   });
 
+  it("leaves the chat as it is when a line leaves long after the user sent it", async () => {
+    const { ircClient, markreadSet } = await boot({ selected: true });
+    const send = (line: string, afterWaiting?: boolean) =>
+      ircClient.triggerEvent("rawLine", {
+        serverId: SERVER,
+        direction: "tx",
+        line,
+        afterWaiting,
+      });
+
+    send("PRIVMSG #chan :pasted earlier", true);
+    send("BATCH +ml2 draft/multiline #chan", true);
+    send("@batch=ml2 PRIVMSG #chan :one", true);
+    send("BATCH -ml2", true);
+    expect(markreadSet).not.toHaveBeenCalled();
+
+    send("PRIVMSG #chan :typed now");
+    expect(markreadSet).toHaveBeenCalledTimes(1);
+    // The batch that waited is closed for us too, so its id marks nothing later.
+    send("BATCH -ml2");
+    expect(markreadSet).toHaveBeenCalledTimes(1);
+  });
+
+  it("marks the chat read when the user sends a line that has to wait", async () => {
+    const { ircClient, markreadSet } = await boot({ selected: true });
+    const queue = (line: string) =>
+      ircClient.triggerEvent("lineQueued", { serverId: SERVER, line });
+
+    queue("PRIVMSG #chan :typed behind a paste");
+    expect(markreadSet).toHaveBeenCalledTimes(1);
+  });
+
+  it("marks the chat read once the whole of a batch has joined the wait", async () => {
+    const { ircClient, markreadSet } = await boot({ selected: true });
+    const queue = (line: string) =>
+      ircClient.triggerEvent("lineQueued", { serverId: SERVER, line });
+
+    queue("BATCH +ml3 draft/multiline #chan");
+    queue("@batch=ml3 PRIVMSG #chan :one");
+    expect(markreadSet).not.toHaveBeenCalled();
+    queue("BATCH -ml3");
+    expect(markreadSet).toHaveBeenCalledTimes(1);
+  });
+
   it("marks our own line read at the time the server stored it, never at the time we sent it", async () => {
     const { useStore, ircClient, markreadSet } = await boot({
       selected: true,

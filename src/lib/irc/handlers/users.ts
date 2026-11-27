@@ -26,6 +26,9 @@ export function handleNick(
     }
   }
 
+  // A nick change replayed from history carries a batch and renames nobody now.
+  if (!mtags?.batch) ctx.renameWaitingReceiver(serverId, oldNick, newNick);
+
   ctx.triggerEvent("NICK", {
     serverId,
     mtags,

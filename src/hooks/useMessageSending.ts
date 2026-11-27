@@ -13,6 +13,7 @@ import { LINE_BREAK } from "../lib/irc/IRCClient";
 import ircClient from "../lib/ircClient";
 import { parseJoinCommand, replyTags } from "../lib/ircUtils";
 import {
+  failWhenUnanswered,
   makeLabel,
   shouldUseLabeledResponse,
   withLabel,
@@ -21,7 +22,11 @@ import {
   type FormattingType,
   formatMessageForIrc,
 } from "../lib/messageFormatter";
-import { exceedsLineLimit, splitLongMessage } from "../lib/messageProtocol";
+import {
+  exceedsLineLimit,
+  splitAction,
+  splitLongMessage,
+} from "../lib/messageProtocol";
 import { showOwnPrivateMessage } from "../lib/ownPrivateMessage";
 import { PRIVILEGED_COMMANDS } from "../lib/privilegedCommands";
 import {
@@ -204,19 +209,6 @@ export function sendBotCommand(
   return false;
 }
 
-/** How long to wait before flipping a pending message to "failed". */
-const PENDING_TIMEOUT_MS = 30_000;
-
-function arm_pending_timeout(
-  serverId: string,
-  bufferId: string,
-  label: string,
-) {
-  setTimeout(() => {
-    useStore.getState().failPendingMessage(serverId, bufferId, label);
-  }, PENDING_TIMEOUT_MS);
-}
-
 interface UseMessageSendingOptions {
   selectedServerId: string | null;
   selectedChannelId: string | null;
@@ -387,7 +379,9 @@ export function useMessageSending({
         const actionLines = actionMessage
           .split(/[\r\n]+/)
           .filter(Boolean)
-          .map((line) => `\u0001ACTION ${line}\u0001`)
+          .flatMap((line) =>
+            splitAction(line, whisperContext?.targetUser ?? target),
+          )
           .join("\n");
         if (whisperContext) {
           ircClient.sendWhisper(
@@ -664,7 +658,6 @@ export function useMessageSending({
           status: "pending",
         };
         useStore.getState().addMessage(placeholder);
-        arm_pending_timeout(selectedServerId, bufferId, label);
       }
 
       const replyPrefix = replyTags(localReplyTo?.msgid);
@@ -692,6 +685,12 @@ export function useMessageSending({
           },
         );
       }
+      if (label && bufferId && currentUser)
+        failWhenUnanswered(selectedServerId, () =>
+          useStore
+            .getState()
+            .failPendingMessage(selectedServerId, bufferId, label),
+        );
     },
     [
       selectedServerId,

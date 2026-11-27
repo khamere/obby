@@ -450,8 +450,16 @@ export function registerReadMarkerHandlers(store: StoreApi<AppState>): void {
 
   // Sending a message means the user has read the chat, so we mark it read
   // at once, even when they switch away or scroll up right after.
-  ircClient.on("rawLine", ({ serverId, direction, line }) => {
+  // A line that waited leaves long after the user sent it, when they may be reading elsewhere, so it marks nothing.
+  ircClient.on("rawLine", ({ serverId, direction, line, afterWaiting }) => {
     if (direction !== "tx") return;
+    const target = sentMessageTarget(serverId, line);
+    if (afterWaiting) return;
+    const chat = target && findConversation(store, serverId, target);
+    if (chat) markChatRead(store, serverId, chat.channelId);
+  });
+  // The user has read the chat when they send, also when the line has to wait before it leaves.
+  ircClient.on("lineQueued", ({ serverId, line }) => {
     const target = sentMessageTarget(serverId, line);
     const chat = target && findConversation(store, serverId, target);
     if (chat) markChatRead(store, serverId, chat.channelId);
