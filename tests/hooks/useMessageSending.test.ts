@@ -493,6 +493,8 @@ describe("/msg typed in another buffer", () => {
     "/msg NickServ help",
     "/msg bob identify hunter2",
     "/msg Q@CServe.example.org AUTH me hunter2",
+    "/msg Q SET PASSWORD hunter2",
+    "/msg Q NEWPASS old hunter2 hunter2",
   ])("sends %j and puts it in no chat", (text) => {
     const sendRaw = start(false);
     runCommand(text, me);
@@ -501,6 +503,21 @@ describe("/msg typed in another buffer", () => {
     expect(chats()).toEqual([]);
     expect(rows()).toEqual([]);
   });
+
+  it.each([false, true])(
+    "lists no chat when a later line can carry a password (echo-message %s)",
+    (echoes) => {
+      const sendRaw = start(echoes);
+      runCommand("/msg Q hello\nAUTH me hunter2", me);
+
+      expect(privmsgs(sendRaw)).toEqual([
+        "PRIVMSG Q :hello",
+        "PRIVMSG Q :AUTH me hunter2",
+      ]);
+      expect(chats()).toEqual([]);
+      expect(rows()).toEqual([]);
+    },
+  );
 
   it("adds no copy of a password line to a service chat already listed", () => {
     const sendRaw = start(false, [nickServ]);

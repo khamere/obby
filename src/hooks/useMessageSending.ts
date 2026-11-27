@@ -355,7 +355,10 @@ export function useMessageSending({
         if (routed === "sent") return;
         // A line that can carry a password gets no chat and no copy from us, so we never put it on screen ourselves.
         const chat =
-          message && !canCarryPassword(`/${command}`)
+          message &&
+          !message
+            .split(LINE_BREAK)
+            .some((line) => canCarryPassword(`/msg ${target} ${line}`))
             ? privateChatForOwnMessage(selectedServerId, target)
             : undefined;
         ircClient.sendPrivmsgLines(selectedServerId, target, message);
