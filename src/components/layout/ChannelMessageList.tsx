@@ -1067,6 +1067,8 @@ export const ChannelMessageList = forwardRef<
         keepPlace();
         cancelAnimationFrame(frame);
         frame = requestAnimationFrame(keepPlace);
+        // A list shown again after a page covered it fires no scroll event, so we look for an edge in view here.
+        loadNearEdgesRef.current();
       });
       observer.observe(container);
       return () => {

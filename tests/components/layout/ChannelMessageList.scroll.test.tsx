@@ -556,6 +556,123 @@ describe("ChannelMessageList resized by the keyboard", () => {
   });
 });
 
+describe("a list a page covered while the chat came to offer older history", () => {
+  const requests = () =>
+    vi.mocked(ircClient.requestChathistoryBefore).mock.calls.length;
+  const observed: { callback: ResizeObserverCallback; target?: Element }[] = [];
+
+  // The list starts with no height, as it has while a page covers the chat.
+  const renderCoveredList = (scrollHeight: number, savedScrollTop: number) => {
+    const { container } = render(<ChannelMessageList {...defaultProps} />);
+    const area = container.querySelector(".obby-chat-area") as HTMLElement;
+    let height = 0;
+    let scrollTop = savedScrollTop;
+    Object.defineProperty(area, "clientHeight", { get: () => height });
+    Object.defineProperty(area, "scrollHeight", {
+      get: () => (height === 0 ? 0 : scrollHeight),
+    });
+    Object.defineProperty(area, "scrollTop", {
+      configurable: true,
+      get: () => (height === 0 ? 0 : scrollTop),
+      set: (value: number) => {
+        scrollTop = Math.max(0, Math.min(value, scrollHeight - height));
+      },
+    });
+    const offerOlderHistory = () =>
+      act(() => {
+        useStore.setState((state) => ({
+          servers: state.servers.map((server) => ({
+            ...server,
+            privateChats: server.privateChats?.map((pc) => ({
+              ...pc,
+              hasMoreHistory: true,
+            })),
+          })),
+        }));
+      });
+    const uncover = () => {
+      height = 600;
+      for (const { callback, target } of observed)
+        if (target === area) act(() => callback([], {} as ResizeObserver));
+    };
+    return { offerOlderHistory, uncover };
+  };
+
+  beforeEach(() => {
+    observed.length = 0;
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        entry: { callback: ResizeObserverCallback; target?: Element };
+        constructor(callback: ResizeObserverCallback) {
+          this.entry = { callback };
+          observed.push(this.entry);
+        }
+        observe(target: Element) {
+          this.entry.target = target;
+        }
+        disconnect() {}
+      },
+    );
+    vi.mocked(ircClient.requestChathistoryBefore).mockReset();
+    vi.mocked(ircClient.requestChathistoryBefore).mockReturnValue(true);
+    useStore.setState((state) => ({
+      globalSettings: { ...state.globalSettings, keepHistory: false },
+      servers: [
+        {
+          id: "s1",
+          name: "Pebble",
+          host: "irc.pebble.example",
+          port: 6697,
+          isConnected: true,
+          users: [],
+          channels: [],
+          privateChats: [
+            {
+              id: "pm1",
+              username: "kestrel",
+              serverId: "s1",
+              unreadCount: 0,
+              isMentioned: false,
+              hasMoreHistory: false,
+            },
+          ],
+          capabilities: ["draft/chathistory"],
+        },
+      ],
+      messages: { [defaultProps.channelKey]: [makeMsg("recent")] },
+    }));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("asks for the older page once the list is shown again with its top in view", () => {
+    const { offerOlderHistory, uncover } = renderCoveredList(300, 0);
+    offerOlderHistory();
+    expect(requests()).toBe(0);
+
+    uncover();
+    expect(requests()).toBe(1);
+  });
+
+  it("asks nothing when the list is shown again at the bottom of a chat taller than the list", () => {
+    const { offerOlderHistory, uncover } = renderCoveredList(4000, 3400);
+    offerOlderHistory();
+
+    uncover();
+    expect(requests()).toBe(0);
+  });
+
+  it("asks nothing when the list is shown again with no older history on offer", () => {
+    const { uncover } = renderCoveredList(300, 0);
+
+    uncover();
+    expect(requests()).toBe(0);
+  });
+});
+
 describe("ChannelMessageList highlight", () => {
   beforeEach(() => {
     useStore.setState({
