@@ -226,10 +226,9 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
             // Historical join from event-playback — create a message record, skip live mutation.
             // Use the channel scoped by the batch, not all channels.
             const batchChannelName = batch.parameters?.[0];
-            const ourNick = ircClient.getNick(serverId);
             if (
               batchChannelName &&
-              username !== ourNick &&
+              !isOwnNick(serverId, username) &&
               state.globalSettings.showEvents &&
               state.globalSettings.showJoinsParts
             ) {

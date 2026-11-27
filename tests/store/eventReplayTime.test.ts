@@ -239,6 +239,19 @@ describe("JOIN, PART and QUIT replayed from chathistory", () => {
     expect(lines("quit")).toHaveLength(0);
   });
 
+  test("our own JOIN from history is ours in any letter case", () => {
+    for (const username of ["me", "ME"]) {
+      ircClient.triggerEvent("JOIN", {
+        serverId,
+        username,
+        channelName: "#help",
+        batchTag: "hist1",
+        time: HIST_TIME,
+      });
+    }
+    expect(lines("join")).toHaveLength(0);
+  });
+
   test("another user's QUIT beside ours in history is still shown", () => {
     quit("me", "hist1");
     quit("brindle", "hist1");
