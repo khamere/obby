@@ -14,6 +14,12 @@ export interface BridgeMatch {
 export const MAX_TEMPLATE_CHARS = 200;
 const MAX_NICK_CHARS = 32;
 
+// A bridge may slip these into a name so that IRC clients do not highlight
+// the person. We read past them and leave them out of the name, so one person
+// keeps one name however the bridge wrote it.
+const INVISIBLE = "\\u200B\\u200C\\u200D\\u2060\\uFEFF";
+const INVISIBLE_CHARS = new RegExp(`[${INVISIBLE}]`, "gu");
+
 function escapeRegex(literal: string): string {
   return literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -45,7 +51,10 @@ export function compileTemplate(
     const stop = next && next !== "{" ? escapeClassChar(next) : "";
     if (token === "{nick}") {
       nicks++;
-      pattern += `([^\\s${stop}]{1,${MAX_NICK_CHARS}})`;
+      // The limit counts the characters of the name itself. The two classes
+      // share no character, so there is one way to read a name and matching
+      // stays linear.
+      pattern += `((?:[${INVISIBLE}]*[^\\s${INVISIBLE}${stop}]){1,${MAX_NICK_CHARS}}[${INVISIBLE}]*)`;
     } else if (token === "{text}") {
       texts++;
       if (kind !== "message" || i !== tokens.length - 1) return null;
@@ -71,5 +80,8 @@ export function compileTemplate(
 export function matchTemplate(re: RegExp, input: string): BridgeMatch | null {
   const found = re.exec(input);
   if (!found) return null;
-  return { nick: found[1], text: found[2] ?? "" };
+  return {
+    nick: found[1].replace(INVISIBLE_CHARS, ""),
+    text: found[2] ?? "",
+  };
 }

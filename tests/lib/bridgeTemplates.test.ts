@@ -98,4 +98,70 @@ describe("compileTemplate", () => {
   it("rejects a nick longer than 32 characters", () => {
     expect(m("[{nick}] {text}", `[${"n".repeat(33)}] hi`)).toBeNull();
   });
+
+  it("leaves invisible characters out of the nick wherever the bridge put them", () => {
+    for (const nick of [
+      "m\u200Bara",
+      "ma\u200Cra",
+      "mar\u200Da",
+      "m\u2060ara",
+      "m\uFEFFara",
+      "\u200Bmara",
+      "mara\uFEFF",
+      "\u200Bm\u200Ca\u200Dr\u2060a\uFEFF",
+    ]) {
+      expect(m("[{nick}] {text}", `[${nick}] hi`)).toEqual({
+        nick: "mara",
+        text: "hi",
+      });
+    }
+    expect(m("[Chatbox] {nick}: {text}", "[Chatbox] 7\u200BNova: hi")).toEqual({
+      nick: "7Nova",
+      text: "hi",
+    });
+    const re = compileTemplate("({nick})", "nick");
+    expect(re && matchTemplate(re, "(To\u200Bbias)")).toEqual({
+      nick: "Tobias",
+      text: "",
+    });
+  });
+
+  it("keeps invisible characters in the text", () => {
+    const text =
+      "\u{1F468}\u200D\u{1F469}\u200D\u{1F467} zw\u200Bsp \u2060\uFEFFx";
+    expect(m("[{nick}] {text}", `[m\u200Bara] ${text}`)).toEqual({
+      nick: "mara",
+      text,
+    });
+  });
+
+  it("does not match a nick made of invisible characters only", () => {
+    expect(m("[{nick}] {text}", "[\u200B] hi")).toBeNull();
+    expect(
+      m("[{nick}] {text}", "[\u200B\u200C\u200D\u2060\uFEFF] hi"),
+    ).toBeNull();
+    const re = compileTemplate("({nick})", "nick");
+    expect(re && matchTemplate(re, "(\u200D)")).toBeNull();
+  });
+
+  it("counts only the visible characters against the nick limit", () => {
+    const spaced = (n: number) =>
+      Array.from({ length: n }, () => "n").join("\u200B");
+    expect(m("[{nick}] {text}", `[${spaced(32)}] hi`)).toEqual({
+      nick: "n".repeat(32),
+      text: "hi",
+    });
+    expect(m("[{nick}] {text}", `[${spaced(33)}] hi`)).toBeNull();
+  });
+
+  it("still stops the nick at the literal that follows it", () => {
+    expect(m("{nick}: {text}", "ma\u200Bra: a: b")).toEqual({
+      nick: "mara",
+      text: "a: b",
+    });
+    expect(m("{nick} {text}", "m\uFEFFara\uFEFF hello there")).toEqual({
+      nick: "mara",
+      text: "hello there",
+    });
+  });
 });

@@ -151,6 +151,46 @@ describe("applyBridgeRules", () => {
     ).toEqual({ kind: "bot", nick: "7Nova", text: "hi", via: "ChatRelay" });
   });
 
+  it("gives one person one name when the bot hides invisible characters in it", () => {
+    for (const nick of ["mara", "m\u200Bara", "ma\u200Cra", "m\uFEFFara"]) {
+      expect(
+        applyBridgeRules(
+          rules,
+          "irc.alder.example",
+          "#general",
+          "Bot",
+          `[${nick}] hi \u{1F468}\u200D\u{1F469}`,
+        ),
+      ).toEqual({
+        kind: "bot",
+        nick: "mara",
+        text: "hi \u{1F468}\u200D\u{1F469}",
+        via: "Bot",
+      });
+    }
+    expect(
+      applyBridgeRules(
+        rules,
+        "irc.lantern.example",
+        "#lantern",
+        "(To\u200Bbias)",
+        "o/",
+      ),
+    ).toEqual({ kind: "nick", displayNick: "Tobias", via: "web" });
+  });
+
+  it("leaves a line whose name is only invisible characters to the bot", () => {
+    expect(
+      applyBridgeRules(
+        rules,
+        "irc.alder.example",
+        "#general",
+        "Bot",
+        "[\u200B\u200D] hi",
+      ),
+    ).toBeNull();
+  });
+
   it("returns null for another network, another nick, a non-matching line, or the wrong channel", () => {
     expect(
       applyBridgeRules(

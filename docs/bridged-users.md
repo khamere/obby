@@ -112,7 +112,10 @@ Put the `.json` file somewhere with a stable link and share the link:
 
 Templates are literal text with placeholders:
 
-- `{nick}`: the person's name, 1 to 32 characters without whitespace.
+- `{nick}`: the person's name, 1 to 32 characters without whitespace. Some
+  bots hide zero-width characters inside the name so that IRC clients do not
+  highlight the person; Obby leaves them out of the name and does not count
+  them.
 - `{text}`: the rest of the message. A message template must end with it.
 - `{_}`: anything up to the next literal, thrown away, for example a rank in
   `»{nick} ({_})« {text}`. At most one per template.
