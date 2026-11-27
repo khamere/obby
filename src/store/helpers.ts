@@ -172,9 +172,16 @@ export function mergeHistoryPage(
     held.add(copy);
     return [copy];
   });
-  // A page that brings nothing new tells us nothing about the lines it leaves out, so our lines stay as they are.
-  if (added.length === 0)
-    return { merged: [...existing].sort(compareMessageOrder), added };
+  // A page that brings nothing new tells us nothing about the lines it leaves out, so those stay where they are and only the lines it names take its order.
+  if (added.length === 0) {
+    const named = run[Symbol.iterator]();
+    return {
+      merged: existing
+        .map((m) => (held.has(m) ? (named.next().value ?? m) : m))
+        .sort(compareMessageOrder),
+      added,
+    };
+  }
   const times = page.map(messageTime);
   const oldest = Math.min(...times);
   const newest = Math.max(...times);

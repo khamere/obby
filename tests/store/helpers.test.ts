@@ -275,6 +275,25 @@ describe("mergeHistoryPage", () => {
     expect(added).toEqual([]);
   });
 
+  it("takes a line with an id for the alike line we hold without one", () => {
+    const local = { ...said("m1", 1000), content: "ok", msgid: undefined };
+    const existing = [local as Message];
+
+    const { merged, added } = mergeHistoryPage(existing, [
+      { ...said("m1", 1000), content: "ok" },
+    ]);
+
+    expect(merged).toEqual(existing);
+    expect(added).toEqual([]);
+  });
+
+  it("gives the lines a page names its order when the page brings nothing new", () => {
+    const existing = [said("m2", 1000), said("j", 1000), said("m1", 1000)];
+    const page = [said("m1", 1000), said("m2", 1000)];
+
+    expect(order(existing, page)).toEqual(["m1", "j", "m2"]);
+  });
+
   it("leaves a line we hold where it is when a page that leaves it out brings nothing new", () => {
     const existing = [said("m1", 1000), said("m2", 1000), said("m3", 1000)];
     const page = [said("m1", 1000), said("m3", 1000)];
