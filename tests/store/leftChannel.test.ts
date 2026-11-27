@@ -133,6 +133,18 @@ function ownJoin(username = "me", channelName = "#lounge") {
   ircClient.triggerEvent("JOIN", { serverId, username, channelName });
 }
 
+// Hands the client the server's channel prefixes, which reach us before or after the line that ends registration.
+function channelPrefixes(chantypes: string, id = serverId) {
+  (
+    ircClient as unknown as {
+      handleMessage: (data: string, serverId: string) => void;
+    }
+  ).handleMessage(
+    `:irc.test 005 me CHANTYPES=${chantypes} :are supported by this server\r\n`,
+    id,
+  );
+}
+
 // Hands the client the line that ends registration, as every new connection does.
 function welcome(id = serverId) {
   readyProcessedServers.delete(id);
@@ -454,6 +466,93 @@ describe("a channel we were removed from", () => {
       ircClient.nicks.delete(loaded);
       clientServers().delete(loaded);
       readyProcessedServers.delete(loaded);
+    });
+
+    // Starts the page load of a server whose saved entry holds these channels and left marks.
+    function loadSavedServer(entry: Partial<ServerConfig>): string {
+      const loaded = `left-srv-prefix-${++counter}`;
+      saveEntries([{ id: loaded, ...entry }, { id: OTHER_SERVER }]);
+      useStore.setState((state) => ({
+        servers: [
+          { ...state.servers[0], id: loaded, channels: [] },
+          state.servers[1],
+        ],
+      }));
+      ircClient.nicks.set(loaded, "me");
+      clientServers().set(loaded, {
+        id: loaded,
+        channels: [],
+        capabilities: [],
+      });
+      sendRaw.mockClear();
+      return loaded;
+    }
+
+    function unloadServer(id: string) {
+      ircClient.nicks.delete(id);
+      ircClient.isupportValues.delete(id);
+      clientServers().delete(id);
+      readyProcessedServers.delete(id);
+    }
+
+    const loadedRows = () =>
+      useStore
+        .getState()
+        .servers[0].channels.map((c) => [c.name, c.leftReason]);
+
+    test("after a page load stays out of a left channel whose prefix only the server names", () => {
+      const loaded = loadSavedServer({
+        channels: ["~Lounge", "#other"],
+        leftChannels: { "~Lounge": "kicked" },
+      });
+
+      channelPrefixes("#~", loaded);
+      welcome(loaded);
+
+      expect(loadedRows()).toEqual([
+        ["~Lounge", "kicked"],
+        ["#other", undefined],
+      ]);
+      expect(new Set(sentJoins())).toEqual(new Set(["JOIN #other"]));
+      unloadServer(loaded);
+    });
+
+    test("after a page load shows such a channel as left when the server names its prefixes after greeting us", () => {
+      const loaded = loadSavedServer({
+        channels: [],
+        leftChannels: { "~Lounge": "kicked", "%Den": "parted" },
+      });
+
+      welcome(loaded);
+      channelPrefixes("#~", loaded);
+
+      expect(loadedRows()).toEqual([["~Lounge", "kicked"]]);
+      expect(sentJoins()).toEqual([]);
+      unloadServer(loaded);
+    });
+
+    test("after a page load keeps the saved mark of such a channel when we leave another one", () => {
+      const loaded = loadSavedServer({
+        channels: ["~Lounge", "#other"],
+        leftChannels: { "~Lounge": "kicked" },
+      });
+      channelPrefixes("#~", loaded);
+      welcome(loaded);
+
+      ircClient.triggerEvent("KICK", {
+        serverId: loaded,
+        mtags: undefined,
+        username: "op",
+        target: "me",
+        channelName: "#other",
+        reason: "out",
+      });
+
+      expect(savedEntry(loaded).leftChannels).toEqual({
+        "~Lounge": "kicked",
+        "#other": "kicked",
+      });
+      unloadServer(loaded);
     });
 
     test("to a bouncer shows the channel as left until the bouncer joins us", () => {

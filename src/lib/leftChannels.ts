@@ -1,13 +1,13 @@
 import * as storage from "../store/localStorage";
 import type { Channel } from "../types";
-import { isJoinableChannelName } from "./ircUtils";
+import { cannotBeChannelName } from "./ircUtils";
 
 export type LeftReason = NonNullable<Channel["leftReason"]>;
 
 // We read the saved marks of a server once and answer from memory after that, so asking costs nothing where storage is slow or closed to us.
 const leftChannels = new Map<string, Record<string, LeftReason>>();
 
-// Storage can hold anything a restored backup or an older build wrote, so we keep only the entries that read as a channel and a reason.
+// Storage can hold anything a restored backup or an older build wrote, and we read it before the server names its channel prefixes, so we keep every entry with a name a server could hold and a reason we know.
 function savedLeftChannels(serverId: string): Record<string, LeftReason> {
   let saved: unknown;
   try {
@@ -19,7 +19,8 @@ function savedLeftChannels(serverId: string): Record<string, LeftReason> {
   return Object.fromEntries(
     Object.entries(saved).filter(
       ([name, leftReason]) =>
-        isJoinableChannelName(name) &&
+        name !== "" &&
+        !cannotBeChannelName(name) &&
         (leftReason === "kicked" || leftReason === "parted"),
     ),
   );
