@@ -904,10 +904,6 @@ msgstr "自動調整麥克風音量"
 msgid "Automatically authenticate as operator on connect"
 msgstr "連線時自動以操作員身分認證"
 
-#: src/lib/settings/definitions/allSettings.ts
-msgid "Automatically switch to single line for short messages"
-msgstr "短訊息自動切換至單行"
-
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Avatar"
@@ -4525,6 +4521,10 @@ msgstr "確定"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "on"
 msgstr "開啟"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "On servers without multiline support, join the lines of a message with spaces instead of sending one message per line"
+msgstr "在不支援多行訊息的伺服器上，以空格將訊息的各行合併傳送，而不是每行傳送一則訊息"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Once a day, ask the project's release page whether a newer build exists and show it above your name. Nothing is downloaded until you tap Update."
