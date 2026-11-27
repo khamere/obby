@@ -531,6 +531,24 @@ describe("a channel we were removed from", () => {
       unloadServer(loaded);
     });
 
+    test("after a page load stays out of such a channel on our saved list when the server names its prefixes after greeting us", () => {
+      const loaded = loadSavedServer({
+        channels: ["~Lounge", "#other"],
+        leftChannels: { "~Lounge": "kicked" },
+      });
+
+      welcome(loaded);
+      channelPrefixes("#~", loaded);
+
+      expect(sentJoins()).toEqual(["JOIN #other"]);
+      expect(savedEntry(loaded).channels).toEqual(["~Lounge", "#other"]);
+      expect(loadedRows()).toEqual([
+        ["#other", undefined],
+        ["~Lounge", "kicked"],
+      ]);
+      unloadServer(loaded);
+    });
+
     test("after a page load keeps the saved mark of such a channel when we leave another one", () => {
       const loaded = loadSavedServer({
         channels: ["~Lounge", "#other"],
