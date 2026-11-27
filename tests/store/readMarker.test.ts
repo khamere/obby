@@ -578,6 +578,7 @@ describe("read markers", () => {
       await bootBoundNetwork();
     drop();
     open();
+    expect(useStore.getState().servers[0].capabilities).toEqual([]);
     useStore.getState().markChannelAsRead(SERVER, "chan-1");
     expect(markreadSet).not.toHaveBeenCalled();
     expect(channel()).toMatchObject({ unreadCount: 0, readMarker: READ });
