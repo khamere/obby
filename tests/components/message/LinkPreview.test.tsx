@@ -57,6 +57,11 @@ describe("link preview card image", () => {
     ["a javascript: address", "javascript:alert(1)"],
     ["a blob: address", "blob:https://site.example.com/1234"],
     ["a scheme without an authority", "https:card.png"],
+    [
+      "a non-breaking space before the scheme",
+      "\u00A0https://cdn.example.com/card.png",
+    ],
+    ["a byte order mark before the scheme", "\uFEFFhttps://../../api/logout"],
   ])("loads nothing for %s at any level", (_name, imageUrl) => {
     for (const level of LEVELS) {
       expect(cardImage(imageUrl, level)).toBeNull();
@@ -85,6 +90,9 @@ describe("link preview card image", () => {
     );
     expect(cardImage("http://cdn.example.com/card.png", 3)).toBe(
       "http://cdn.example.com/card.png",
+    );
+    expect(cardImage(" \thttps://cdn.example.com/card.png", 3)).toBe(
+      " \thttps://cdn.example.com/card.png",
     );
   });
 });
