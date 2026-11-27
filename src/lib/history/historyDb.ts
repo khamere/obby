@@ -609,10 +609,11 @@ async function deleteWithReactions(
 }
 
 // Rows sharing a millisecond are read back in id order, so where a server page
-// meets rows we held at one of its edge times we give new ids to the rows that
-// sit out of the server's order. A page asked from a line we hold at that time
-// lies on that line's side, and `held` places our rows when it was not. Each
-// moved row keeps its search terms, and a failed step undoes the whole move.
+// meets rows we held inside one of its milliseconds we give new ids to the rows
+// that sit out of the server's order. A page asked from a line we hold at that
+// time lies on that line's side, and `held` places the rows the page leaves out
+// when it was not. Each moved row keeps its search terms, and a failed step
+// undoes the whole move.
 export function orderRowsAtPageEdge(
   server: string,
   target: string,

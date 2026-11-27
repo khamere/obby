@@ -179,6 +179,44 @@ async function boot(refs?: string, { keepHistory = true } = {}) {
     (await db.newestEventRows(SERVER, "#chan", 5000)).map((row) => row.msgid);
   const requests = (subcommand: string) =>
     sent.filter((raw) => raw.startsWith(`CHATHISTORY ${subcommand} `));
+  // What the database holds for the channel: each row in read-back order
+  // with the words it is found by, the words left without a row, and the
+  // bytes its rows add up to.
+  const savedIndex = async () => {
+    await db.whenHistoryIdle();
+    const opened = indexedDB.open("obby-history");
+    const raw = await new Promise<IDBDatabase>((resolve, reject) => {
+      opened.onsuccess = () => resolve(opened.result);
+      opened.onerror = () => reject(opened.error);
+    });
+    const tx = raw.transaction(["rows", "terms"], "readonly");
+    const all = <T>(source: IDBObjectStore | IDBIndex) =>
+      new Promise<T[]>((resolve) => {
+        const request = source.getAll();
+        request.onsuccess = () => resolve(request.result as T[]);
+      });
+    const rows = await all<{
+      id: number;
+      time: number;
+      msgid?: string;
+      bytes: number;
+    }>(tx.objectStore("rows").index("conv"));
+    const terms = await all<{ term: string; time: number; rowId: number }>(
+      tx.objectStore("terms"),
+    );
+    raw.close();
+    const wordsOf = (row: { id: number; time: number }) =>
+      terms
+        .filter((t) => t.rowId === row.id && t.time === row.time)
+        .map((t) => t.term)
+        .sort();
+    const rowIds = new Set(rows.map((row) => row.id));
+    return {
+      rows: rows.map((row) => [row.msgid, ...wordsOf(row)].join(" ")),
+      orphans: terms.filter((t) => !rowIds.has(t.rowId)).length,
+      bytes: rows.reduce((sum, row) => sum + row.bytes, 0),
+    };
+  };
 
   const loadLatest = async (target = "#chan", key = KEY) => {
     const newest = `m${world.has[world.has.length - 1]}`;
@@ -261,6 +299,7 @@ async function boot(refs?: string, { keepHistory = true } = {}) {
     feed,
     shown,
     saved,
+    savedIndex,
     requests,
     loadLatest,
     scrollToTop,
@@ -447,6 +486,31 @@ describe("history pages that end inside a millisecond", {
         [...shown].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1))),
       );
     });
+
+    it("leaves the rows we hold ahead of an older page that shares their millisecond and names no line", async () => {
+      const w = await boot("timestamp");
+      // m0 came earlier, and m1 to m59 share one millisecond.
+      timeOf = (index) => (index === 0 ? BASE : BASE + 1000);
+      await w.receiveLive(10);
+      w.world.has = range(0, 59);
+
+      w.ircClient.requestChathistoryBefore(
+        SERVER,
+        "#chan",
+        new Date(BASE + 2000).toISOString(),
+      );
+      await vi.waitFor(async () => expect(await w.saved()).toHaveLength(60), {
+        timeout: WRITE_TIMEOUT_MS,
+      });
+      await sleep(50);
+      await w.db.whenHistoryIdle();
+
+      expect(w.requests("BEFORE")).toEqual([
+        `CHATHISTORY BEFORE #chan timestamp=${new Date(BASE + 2000).toISOString()} ${PAGE}`,
+      ]);
+      expect(w.shown()).toEqual(ids(0, 59));
+      expect(await w.saved()).toEqual(ids(0, 59));
+    });
   });
 
   describe("catching up after time away", () => {
@@ -523,6 +587,46 @@ describe("history pages that end inside a millisecond", {
       );
     });
 
+    it("keeps the server's order, every row and its search words when a page fetched forward meets the newest page inside one of its milliseconds", async () => {
+      const w = await boot("msgid,timestamp");
+      // m752 to m756 share a millisecond of their own. The newest page starts
+      // at m754 and the last page fetched forward, m750 to m799, runs through it.
+      timeOf = (index) =>
+        index >= 752 && index <= 756 ? inRuns(751) + 500 : inRuns(index);
+      await w.receiveLive(100);
+      w.world.has = range(0, 803);
+      w.useStore.setState({ messages: {} });
+      await w.loadLatest();
+      await vi.waitFor(
+        async () => expect(await w.db.gapsFor(SERVER, "#chan")).toHaveLength(1),
+        { timeout: WRITE_TIMEOUT_MS },
+      );
+      await w.openOnMarker(60);
+      const first = Number(w.shown()[0].slice(1));
+
+      const seen = await w.pageToPresent();
+
+      expect(w.requests("AFTER").at(-1)).toBe(
+        `CHATHISTORY AFTER #chan msgid=m749 ${PAGE}`,
+      );
+      expect(seen).toEqual(ids(first, 803));
+      expect(await w.db.gapsFor(SERVER, "#chan")).toEqual([]);
+      const index = await w.savedIndex();
+      expect(index.rows).toEqual(
+        range(0, 803).map((line) =>
+          line < 10 ? `m${line} line` : `m${line} ${line} line`,
+        ),
+      );
+      expect(index.orphans).toBe(0);
+      expect(index.bytes).toBe(await w.db.usageBytes());
+
+      w.useStore.setState({ messages: {} });
+      await w.loadLatest();
+      await w.scrollToTop();
+
+      expect(w.shown()).toEqual(ids(0, 803));
+    });
+
     it("keeps the server's order on screen and on disk when the gap lies inside a run longer than a page", async () => {
       const w = await boot("msgid,timestamp");
       // m0 came earlier, and m1 to m130 share one millisecond.
@@ -583,6 +687,25 @@ describe("history pages that end inside a millisecond", {
       expect(w.sent.filter((raw) => raw.includes("msgid="))).toEqual([]);
       const shown = w.shown();
       expect(new Set(shown).size).toBe(shown.length);
+    });
+  });
+
+  describe("paging newer through saved lines that share a millisecond", () => {
+    it("puts each page read back from disk behind the lines on screen once all of them share the millisecond", async () => {
+      const w = await boot("msgid,timestamp");
+      // m0 to m9 came earlier, and every later line shares one millisecond.
+      timeOf = (index) => (index < 10 ? BASE : BASE + 1000);
+      await w.receiveLive(380);
+      w.world.has = range(0, 379);
+      await w.openOnMarker(0);
+      expect(w.shown()).toEqual(ids(0, 59));
+
+      const seen = await w.pageToPresent();
+
+      expect(seen).toEqual(ids(0, 379));
+      const shown = w.shown();
+      expect(shown).toEqual(ids(380 - shown.length, 379));
+      expect(w.requests("AFTER")).toEqual([]);
     });
   });
 });

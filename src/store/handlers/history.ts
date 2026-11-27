@@ -546,18 +546,27 @@ async function saveHistoryPage(
       request.msgid !== undefined
         ? { msgid: request.msgid, kind: request.kind }
         : undefined;
-    // A page inside one millisecond tells its place by the line it was asked from, or by being asked as the next older page of the chat.
-    const isBeforeAllHeld = request?.kind === "before" && !request.fill?.gap;
+    // A page that runs on into rows we hold meets them in a millisecond between its edges, which then holds a new row beside one we had.
+    const heldTimes = new Set(
+      rows.filter((_, at) => !inserted[at]).map((row) => row.time),
+    );
+    const metInside = new Set(
+      rows
+        .filter((row, at) => inserted[at] && heldTimes.has(row.time))
+        .map((row) => row.time)
+        .filter((time) => time > oldest && time < newest),
+    );
     // A move that fails leaves every row as it was saved, so the page goes on to settle its gaps and its request.
     try {
-      if (oldest !== newest)
-        await orderRowsAtPageEdge(key, target, oldest, msgids, "ahead", anchor);
+      for (const time of oldest === newest ? [] : [oldest, ...metInside])
+        await orderRowsAtPageEdge(key, target, time, msgids, "ahead", anchor);
+      // A page inside one millisecond has no second edge to tell its side, so only the line it was asked from places it.
       await orderRowsAtPageEdge(
         key,
         target,
         newest,
         msgids,
-        oldest !== newest || isBeforeAllHeld ? "behind" : undefined,
+        oldest !== newest ? "behind" : undefined,
         anchor,
       );
     } catch (error) {
