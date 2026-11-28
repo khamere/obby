@@ -14,14 +14,18 @@ const BASE = Date.parse("2026-01-01T12:00:00.000Z");
 const WRITE_TIMEOUT_MS = 60_000;
 const PAGE = 50;
 // Lines 0 to 59 are a second apart and the reader has read up to the last
-// of them. Every later line is one burst the server stamped into a single
-// millisecond.
+// of them. The lines up to 299 are one burst the server stamped into a single
+// millisecond, and the lines from 300 on follow it a second apart.
 const SPACED = 60;
 const LAST_READ = SPACED - 1;
 const BURST_TIME = BASE + 600_000;
+const AFTER_BURST = 300;
 
-const timeOf = (index: number) =>
-  index < SPACED ? BASE + index * 1000 : BURST_TIME;
+const timeOf = (index: number) => {
+  if (index < SPACED) return BASE + index * 1000;
+  if (index < AFTER_BURST) return BURST_TIME;
+  return BURST_TIME + 60_000 + (index - AFTER_BURST) * 1000;
+};
 const iso = (time: number) => new Date(time).toISOString();
 const line = (index: number) =>
   `@msgid=m${index};time=${iso(timeOf(index))} :alice!u@h PRIVMSG #chan :line ${index}`;
@@ -174,7 +178,8 @@ async function boot(refs: string) {
     byNumber(
       (await db.newestEventRows(SERVER, "#chan", 5000)).map((row) => row.msgid),
     );
-  const gaps = () => db.gapsFor(SERVER, "#chan");
+  const gaps = async () =>
+    (await db.gapsFor(SERVER, "#chan")).sort((a, b) => a.from - b.from);
   const requests = (subcommand: string) =>
     sent.filter((raw) => raw.startsWith(`CHATHISTORY ${subcommand} `));
 
@@ -251,6 +256,7 @@ async function boot(refs: string) {
     askAround,
     dropConnection,
     pageToPresent,
+    whenSaved: () => db.whenHistoryIdle(),
   };
 }
 
@@ -528,6 +534,89 @@ describe("a page around the read marker that ends in the millisecond the newest 
     ]);
     expect(await w.gaps()).toEqual([]);
     expect(await w.saved()).toEqual([...ids(35, 84), ...ids(100, BURST_END)]);
+  });
+});
+
+describe("a page around the read marker that ends in the millisecond a gap left by a newest page starts in", {
+  timeout: 4 * WRITE_TIMEOUT_MS,
+}, () => {
+  // The burst is m60 to m179 and one newest page saved m130 to m179. A later
+  // newest page saved m350 to m399, so a gap runs from the burst to m350, and
+  // the page around the marker ends on m84.
+  const BURST_END = 179;
+  const comeBackAfterTwoNewestPages = async (
+    w: Awaited<ReturnType<typeof boot>>,
+  ) => {
+    await w.receiveLive(26);
+    w.world.has = range(0, BURST_END);
+    await w.loadNewest();
+    w.world.has = [...range(0, BURST_END), ...range(AFTER_BURST, 399)];
+    return w.comeBack();
+  };
+
+  it("keeps the gap when the page it fetches forward ends on a line we hold inside the burst", async () => {
+    const w = await boot("msgid,timestamp");
+
+    expect(await comeBackAfterTwoNewestPages(w)).toBe(true);
+
+    expect(w.requests("AFTER")).toEqual([
+      `CHATHISTORY AFTER #chan msgid=m84 ${PAGE}`,
+    ]);
+    expect(await w.saved()).toEqual([
+      ...ids(0, 25),
+      ...ids(35, BURST_END),
+      ...ids(350, 399),
+    ]);
+    expect(await w.gaps()).toMatchObject([
+      { from: timeOf(25), to: timeOf(35), lost: false },
+      { from: BURST_TIME, to: timeOf(350), lost: false, fromMsgid: "m134" },
+    ]);
+
+    await w.pageToPresent();
+
+    expect(await w.saved()).toEqual([
+      ...ids(0, 25),
+      ...ids(35, BURST_END),
+      ...ids(AFTER_BURST, 399),
+    ]);
+    expect(await w.gaps()).toMatchObject([
+      { from: timeOf(25), to: timeOf(35), lost: false },
+    ]);
+    expect(byNumber(w.shown())).toEqual([
+      ...ids(35, BURST_END),
+      ...ids(AFTER_BURST, 399),
+    ]);
+    expect(w.requests("AFTER")).toEqual(
+      [84, 134, 304].map(
+        (edge) => `CHATHISTORY AFTER #chan msgid=m${edge} ${PAGE}`,
+      ),
+    );
+  });
+
+  it("keeps the gap when the server refuses both requests for it in a way that never passes", async () => {
+    const w = await boot("msgid,timestamp");
+    w.world.refusesAfter = { code: "INVALID_PARAMS", context: "AFTER #chan" };
+
+    expect(await comeBackAfterTwoNewestPages(w)).toBe(true);
+    await w.whenSaved();
+
+    expect(w.requests("AFTER")).toEqual([
+      `CHATHISTORY AFTER #chan msgid=m84 ${PAGE}`,
+      `CHATHISTORY AFTER #chan timestamp=${iso(BURST_TIME)} ${PAGE}`,
+    ]);
+    expect(await w.gaps()).toMatchObject([
+      { from: timeOf(25), to: timeOf(35), lost: false },
+      { from: BURST_TIME, to: timeOf(350), lost: false, fromMsgid: "m84" },
+    ]);
+
+    w.world.refusesAfter = undefined;
+    await w.pageToPresent();
+
+    expect(await w.saved()).toEqual([
+      ...ids(0, 25),
+      ...ids(35, BURST_END),
+      ...ids(AFTER_BURST, 399),
+    ]);
   });
 });
 

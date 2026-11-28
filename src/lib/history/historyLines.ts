@@ -558,7 +558,10 @@ export function decideAfterForwardFill(input: {
   const canMoveWithinEdge = canResumeFromEdge && page.newest === gap.from;
   if (startsBeforeGap && page.newest <= gap.from && !canMoveWithinEdge)
     return { kind: "keep" };
-  if (!startsBeforeGap && endsOnHeldRow) return { kind: "close" };
+  // Rows we hold in the millisecond of the gap's older edge sit before its missing lines, so a page that ends on one of them has yet to reach the far side.
+  const isPastOlderEdge = page.newest > gap.from;
+  if (!startsBeforeGap && endsOnHeldRow && isPastOlderEdge)
+    return { kind: "close" };
   return { kind: "shrink", from: page.newest };
 }
 
