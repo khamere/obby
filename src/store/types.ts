@@ -52,6 +52,12 @@ export type ChannelOrderMap = Record<string, string[]>;
 // serverId -> lowercased nick -> ISO time the user closed that private chat.
 export type ClosedPrivateChatsMap = Record<string, Record<string, string>>;
 
+// serverId -> lower-cased chat name -> the unsent text and the time of its last edit.
+export type SavedDrafts = Record<
+  string,
+  Record<string, { text: string; at: number }>
+>;
+
 export interface ChannelFolder {
   id: string;
   name: string;

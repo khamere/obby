@@ -1,4 +1,4 @@
-import { t } from "@lingui/core/macro";
+import { plural, t } from "@lingui/core/macro";
 import { v4 as uuidv4 } from "uuid";
 import type { StoreApi } from "zustand";
 import {
@@ -12,6 +12,7 @@ import {
 import { e2eeSessionKey, expectsProtection } from "../../lib/e2ee/session";
 import { isLocalReplay } from "../../lib/history/historyLines";
 import { isUserIgnored } from "../../lib/ignoreUtils";
+import { readUnsent } from "../../lib/irc/unsentLines";
 import ircClient from "../../lib/ircClient";
 import { isSilenced } from "../../lib/mutes";
 import { upstreamHostForServer } from "../../lib/networkHost";
@@ -33,7 +34,12 @@ import {
   withoutReaction,
   withReaction,
 } from "../helpers";
-import { type AppState, rememberMsgId, rememberMsgIds } from "../index";
+import {
+  type AppState,
+  hasSeenMsgId,
+  rememberMsgId,
+  rememberMsgIds,
+} from "../index";
 import { bufferChathistoryMessage, bufferHistoryEdit } from "./batches";
 import { notifyChatMessage } from "./chatNotifications";
 import { handleInboundObby } from "./e2ee";
@@ -43,12 +49,13 @@ import { laterActivity, notePrivateMessageArrived } from "./privateChatArrival";
 
 function isAlreadyProcessed(
   state: AppState,
+  serverId: string,
   mtags: Record<string, string> | undefined,
   msgids = mtags?.msgid ? [mtags.msgid] : [],
 ): boolean {
   return (
     !isLocalReplay(mtags) &&
-    msgids.some((id) => state.processedMessageIds.has(id))
+    msgids.some((id) => hasSeenMsgId(state.processedMessageIds, serverId, id))
   );
 }
 
@@ -127,6 +134,33 @@ function answerCtcp(
   else if (request.name === "TIME") reply(`TIME ${new Date().toUTCString()}`);
 }
 
+// A chat that shows the past keeps its newest rows aside, and a line sent before the user went there is among them.
+function hasPendingRow(state: AppState, key: string, label: string): boolean {
+  return [
+    ...(state.messages[key] ?? []),
+    ...(state.historyWindows[key]?.present ?? []),
+  ].some((m) => m.pendingLabel === label);
+}
+
+function notDeliveredRow(
+  serverId: string,
+  bufferId: string,
+  content: string,
+): Message {
+  return {
+    id: uuidv4(),
+    type: "error",
+    content,
+    timestamp: new Date(),
+    userId: "system",
+    channelId: bufferId,
+    serverId,
+    reactions: [],
+    replyMessage: null,
+    mentioned: [],
+  };
+}
+
 export function registerMessageHandlers(store: StoreApi<AppState>): void {
   // A refused send: the pending line it belongs to turns failed with the
   // server's reason under it; without a pending line (no labeled-response)
@@ -143,33 +177,67 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
     if (!bufferId) return;
     const actions = store.getState();
     if (label) {
-      const key = `${serverId}-${bufferId}`;
-      const labelled = (actions.messages[key] ?? []).some(
-        (m) => m.pendingLabel === label,
-      );
-      if (labelled) {
+      if (hasPendingRow(actions, `${serverId}-${bufferId}`, label)) {
         actions.failPendingMessage(serverId, bufferId, label, reason);
         ircClient.takeRecentSend(serverId, target);
         return;
       }
     }
-    if (actions.failLatestPendingMessage(serverId, bufferId, reason)) {
+    // While messages wait, the newest pending line may not have left yet, so a refusal without a label is not about it.
+    if (
+      !ircClient.hasWaitingLines(serverId) &&
+      actions.failLatestPendingMessage(serverId, bufferId, reason)
+    ) {
       ircClient.takeRecentSend(serverId, target);
       return;
     }
     if (!ircClient.takeRecentSend(serverId, target)) return;
-    actions.addMessage({
-      id: uuidv4(),
-      type: "error",
-      content: t`Not delivered: ${reason}`,
-      timestamp: new Date(),
-      userId: "system",
-      channelId: bufferId,
-      serverId,
-      reactions: [],
-      replyMessage: null,
-      mentioned: [],
-    });
+    const content = t`Not delivered: ${reason}`;
+    // A server refuses every line of a long send with the same words, and one
+    // row says it while more lines wait for that chat. A later send gets a row
+    // of its own. Pending lines sort below every row, so we look above them.
+    const last = [...(actions.messages[`${serverId}-${bufferId}`] ?? [])]
+      .reverse()
+      .find((m) => m.status !== "pending");
+    if (
+      ircClient.hasWaitingLines(serverId, target) &&
+      last?.type === "error" &&
+      last.content === content
+    )
+      return;
+    actions.addMessage(notDeliveredRow(serverId, bufferId, content));
+  });
+
+  // Lines dropped before they left: a pending line turns failed, and the rest
+  // are counted per chat, since their text was never drawn.
+  ircClient.on("linesNotSent", ({ serverId, lines }) => {
+    const server = store.getState().servers.find((s) => s.id === serverId);
+    if (!server) return;
+    const bufferOf = (name?: string) => {
+      const lower = name?.toLowerCase();
+      return (
+        server.channels.find((c) => c.name.toLowerCase() === lower)?.id ??
+        server.privateChats?.find((p) => p.username.toLowerCase() === lower)?.id
+      );
+    };
+    const lost = new Map<string, number>();
+    for (const { target, context, label } of readUnsent(lines)) {
+      // A whisper is shown in its channel, so its channel comes before a chat open with that nick.
+      const bufferId = bufferOf(context) ?? bufferOf(target);
+      if (!bufferId) continue;
+      const actions = store.getState();
+      if (label && hasPendingRow(actions, `${serverId}-${bufferId}`, label))
+        actions.failPendingMessage(serverId, bufferId, label);
+      else lost.set(bufferId, (lost.get(bufferId) ?? 0) + 1);
+    }
+    for (const [bufferId, totalLines] of lost) {
+      const reason = plural(totalLines, { one: "# line", other: "# lines" });
+      store
+        .getState()
+        .addMessage(
+          notDeliveredRow(serverId, bufferId, t`Not delivered: ${reason}`),
+        );
+    }
   });
 
   ircClient.on("CHANMSG", (response) => {
@@ -181,7 +249,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
       mtags?.msgid
     ) {
       const currentState = store.getState();
-      if (isAlreadyProcessed(currentState, mtags)) {
+      if (isAlreadyProcessed(currentState, response.serverId, mtags)) {
         return;
       }
 
@@ -337,6 +405,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
               store.setState((state) => ({
                 processedMessageIds: rememberMsgId(
                   state.processedMessageIds,
+                  server.id,
                   mtags.msgid as string,
                 ),
               }));
@@ -459,6 +528,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           if (mtags?.msgid) {
             newState.processedMessageIds = rememberMsgId(
               state.processedMessageIds,
+              server.id,
               mtags.msgid,
             );
           }
@@ -509,11 +579,19 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
     // History is deduplicated at batch end so cached pages still count as nonempty.
     const currentState = store.getState();
     if (messageIds && messageIds.length > 0) {
-      const hasDuplicate = isAlreadyProcessed(currentState, mtags, messageIds);
+      const hasDuplicate = isAlreadyProcessed(
+        currentState,
+        response.serverId,
+        mtags,
+        messageIds,
+      );
       if (hasDuplicate) {
         return;
       }
-    } else if (mtags?.msgid && isAlreadyProcessed(currentState, mtags)) {
+    } else if (
+      mtags?.msgid &&
+      isAlreadyProcessed(currentState, response.serverId, mtags)
+    ) {
       return;
     }
 
@@ -634,6 +712,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           store.setState((state) => ({
             processedMessageIds: rememberMsgIds(
               state.processedMessageIds,
+              server.id,
               idsToTrack,
             ),
           }));
@@ -715,10 +794,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
                       : [];
                 if (idsToTrack.length > 0) {
                   store.setState((state) => ({
-                    processedMessageIds: new Set([
-                      ...state.processedMessageIds,
-                      ...idsToTrack,
-                    ]),
+                    processedMessageIds: rememberMsgIds(
+                      state.processedMessageIds,
+                      server.id,
+                      idsToTrack,
+                    ),
                   }));
                 }
                 return;
@@ -764,10 +844,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
             }
             if (idsToTrack.length > 0) {
               store.setState((state) => ({
-                processedMessageIds: new Set([
-                  ...state.processedMessageIds,
-                  ...idsToTrack,
-                ]),
+                processedMessageIds: rememberMsgIds(
+                  state.processedMessageIds,
+                  server.id,
+                  idsToTrack,
+                ),
               }));
             }
             addOrBuffer(newMessage);
@@ -841,6 +922,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           store.setState((state) => ({
             processedMessageIds: rememberMsgIds(
               state.processedMessageIds,
+              server.id,
               idsToTrack,
             ),
           }));
@@ -877,7 +959,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
     // History is deduplicated at batch end so cached pages still count as nonempty.
     if (!replayed && mtags?.msgid) {
       const currentState = store.getState();
-      if (isAlreadyProcessed(currentState, mtags)) {
+      if (isAlreadyProcessed(currentState, response.serverId, mtags)) {
         return;
       }
     }
@@ -1051,10 +1133,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           // Mark this message ID as processed to prevent duplicates
           if (mtags?.msgid) {
             store.setState((state) => ({
-              processedMessageIds: new Set([
-                ...state.processedMessageIds,
+              processedMessageIds: rememberMsgId(
+                state.processedMessageIds,
+                server.id,
                 mtags.msgid,
-              ]),
+              ),
             }));
           }
 
@@ -1112,7 +1195,9 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
             if (matched) {
               if (mtags.msgid) {
                 store.setState((state) => ({
-                  processedMessageIds: new Set(state.processedMessageIds).add(
+                  processedMessageIds: rememberMsgId(
+                    state.processedMessageIds,
+                    server.id,
                     mtags.msgid as string,
                   ),
                 }));
@@ -1226,10 +1311,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
         // Mark this message ID as processed to prevent duplicates
         if (mtags?.msgid) {
           store.setState((state) => ({
-            processedMessageIds: new Set([
-              ...state.processedMessageIds,
+            processedMessageIds: rememberMsgId(
+              state.processedMessageIds,
+              server.id,
               mtags.msgid,
-            ]),
+            ),
           }));
         }
 
@@ -1279,7 +1365,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
     // Check for duplicate messages based on msgid
     if (mtags?.msgid) {
       const currentState = store.getState();
-      if (isAlreadyProcessed(currentState, mtags)) {
+      if (isAlreadyProcessed(currentState, response.serverId, mtags)) {
         console.log(
           `Skipping duplicate CHANNNOTICE with msgid: ${mtags.msgid}`,
         );
@@ -1395,10 +1481,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
     // Mark this message ID as processed to prevent duplicates
     if (mtags?.msgid) {
       store.setState((state) => ({
-        processedMessageIds: new Set([
-          ...state.processedMessageIds,
+        processedMessageIds: rememberMsgId(
+          state.processedMessageIds,
+          server.id,
           mtags.msgid,
-        ]),
+        ),
       }));
     }
 
@@ -1411,7 +1498,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
     // Check for duplicate messages based on msgid
     if (mtags?.msgid) {
       const currentState = store.getState();
-      if (isAlreadyProcessed(currentState, mtags)) {
+      if (isAlreadyProcessed(currentState, response.serverId, mtags)) {
         return;
       }
     }
@@ -1531,10 +1618,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
       // Mark this message ID as processed to prevent duplicates
       if (mtags?.msgid) {
         store.setState((state) => ({
-          processedMessageIds: new Set([
-            ...state.processedMessageIds,
+          processedMessageIds: rememberMsgId(
+            state.processedMessageIds,
+            server.id,
             mtags.msgid,
-          ]),
+          ),
         }));
       }
 

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ircClient from "../../src/lib/ircClient";
 import useStore from "../../src/store";
 import type { Message, Server } from "../../src/types";
@@ -27,6 +27,11 @@ const echo = (label: string, serverTime: number) =>
     msgid: `m-${label}`,
     timestamp: new Date(serverTime),
   });
+
+const hasLoneSurrogate = (text: string) =>
+  /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(
+    text,
+  );
 
 const shown = () =>
   (useStore.getState().messages["s1-c1"] ?? []).map((m) => m.content);
@@ -98,6 +103,40 @@ describe("pending messages", () => {
     expect(useStore.getState().messages["s1-c1"]?.[0].status).toBe("failed");
   });
 
+  describe("sent before the chat went back to show the past", () => {
+    const aside = () =>
+      useStore
+        .getState()
+        .historyWindows["s1-c1"]?.present.map((m) => [
+          m.content,
+          m.status,
+          m.msgid,
+        ]);
+
+    beforeEach(() =>
+      useStore.setState({
+        messages: { "s1-c1": [message("old", 500, "them")] },
+        historyWindows: {
+          "s1-c1": { until: 1000, present: [pending("mine", 5_000)] },
+        },
+      }),
+    );
+
+    afterEach(() => useStore.setState({ historyWindows: {} }));
+
+    it("is confirmed where it is kept when its echo arrives", () => {
+      expect(echo("mine", 9_000)).toBe(true);
+      expect(aside()).toEqual([["mine", undefined, "m-mine"]]);
+      expect(shown()).toEqual(["old"]);
+    });
+
+    it("is marked failed where it is kept", () => {
+      useStore.getState().failPendingMessage("s1", "c1", "mine", "refused");
+      expect(aside()).toEqual([["mine", "failed", undefined]]);
+      expect(shown()).toEqual(["old"]);
+    });
+  });
+
   it("retries a failed multi-line message as one PRIVMSG per line", () => {
     vi.useFakeTimers();
     const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
@@ -126,4 +165,89 @@ describe("pending messages", () => {
     vi.restoreAllMocks();
     vi.useRealTimers();
   });
+
+  it("keeps a retried message pending while lines still wait to leave", () => {
+    vi.useFakeTimers();
+    vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    const hasWaitingLines = vi
+      .spyOn(ircClient, "hasWaitingLines")
+      .mockReturnValue(true);
+    useStore.setState({
+      servers: [
+        {
+          id: "s1",
+          channels: [{ id: "c1", name: "#lobby" }],
+          privateChats: [],
+        } as unknown as Server,
+      ],
+    });
+    useStore
+      .getState()
+      .addMessage({ ...message("f1", 1000), status: "failed" });
+    const status = () => useStore.getState().messages["s1-c1"]?.[0].status;
+
+    useStore.getState().resendFailedMessage("f1");
+    vi.advanceTimersByTime(30_000);
+    expect(status()).toBe("pending");
+    hasWaitingLines.mockReturnValue(false);
+    vi.advanceTimersByTime(30_000);
+    expect(status()).toBe("pending");
+    vi.advanceTimersByTime(30_000);
+    expect(status()).toBe("failed");
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  it.each([
+    ["ASCII words", "the quick brown fox ".repeat(30).trim(), " "],
+    ["CJK", "漢字仮名".repeat(75), ""],
+    ["emoji", "\u{1F600}".repeat(200), ""],
+    [
+      "a mix of one- to four-byte characters",
+      "aé漢\u{1F600}\u{1F600}".repeat(45),
+      "",
+    ],
+  ])(
+    "retries a failed message of %s in parts that each fit a line",
+    (_, content, joint) => {
+      vi.useFakeTimers();
+      const sendRaw = vi
+        .spyOn(ircClient, "sendRaw")
+        .mockImplementation(() => {});
+      useStore.setState({
+        servers: [
+          {
+            id: "s1",
+            channels: [{ id: "c1", name: "#lobby" }],
+            privateChats: [],
+          } as unknown as Server,
+        ],
+      });
+      useStore.getState().addMessage({
+        ...message("f1", 1000),
+        content,
+        status: "failed",
+      });
+
+      useStore.getState().resendFailedMessage("f1");
+
+      const label = useStore.getState().messages["s1-c1"]?.[0].pendingLabel;
+      const prefix = `@label=${label} PRIVMSG #lobby :`;
+      const lines = sendRaw.mock.calls.map(([, line]) => line);
+      expect(lines.length).toBeGreaterThan(1);
+      for (const line of lines) {
+        expect(line.startsWith(prefix)).toBe(true);
+        // A line to #lobby carries 377 bytes.
+        expect(
+          new TextEncoder().encode(line.slice(prefix.length)).length,
+        ).toBeLessThanOrEqual(377);
+        expect(hasLoneSurrogate(line)).toBe(false);
+      }
+      expect(lines.map((line) => line.slice(prefix.length)).join(joint)).toBe(
+        content,
+      );
+      vi.restoreAllMocks();
+      vi.useRealTimers();
+    },
+  );
 });

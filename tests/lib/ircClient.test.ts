@@ -856,9 +856,13 @@ describe("IRCClient", () => {
         server.capabilityValues = { "draft/multiline": "max-lines=2" };
         const text = "слово ".repeat(200).trim();
 
-        const sent = sentBy(() =>
-          client.sendMultiline(server.id, "#a", [text]),
-        );
+        // Separate messages leave a few at once and the rest at a pace.
+        vi.useFakeTimers();
+        const sent = sentBy(() => {
+          client.sendMultiline(server.id, "#a", [text]);
+          vi.runAllTimers();
+        });
+        vi.useRealTimers();
 
         expect(sent.some((line) => line.includes("BATCH"))).toBe(false);
         expect(sent.map(payload).join(" ")).toBe(text);

@@ -1,8 +1,9 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ChatArea } from "../../src/components/layout/ChatArea";
 import { MemberList } from "../../src/components/layout/MemberList";
 import { DEFAULT_CHAT_LOOK } from "../../src/lib/chatLook";
+import { resetDraftsForTests } from "../../src/lib/drafts";
 import { getColorStyle } from "../../src/lib/ircUtils";
 import { DEFAULT_THEME_SETTINGS } from "../../src/lib/theme";
 import { DEFAULT_TYPOGRAPHY } from "../../src/lib/typography";
@@ -19,6 +20,8 @@ vi.mock("../../src/lib/ircClient", () => ({
     on: vi.fn(),
     getCurrentUser: vi.fn(() => ({ id: "test-user", username: "tester" })),
     getNick: vi.fn(() => "tester"),
+    waitingLines: vi.fn(() => ({ waiting: 0, total: 0 })),
+    deleteHook: vi.fn(),
     version: "1.0.0",
   },
 }));
@@ -31,6 +34,9 @@ Object.defineProperty(HTMLInputElement.prototype, "setSelectionRange", {
   value: vi.fn(),
   writable: true,
 });
+
+// Drafts outlive the component, so each test starts without the last one's text.
+afterEach(resetDraftsForTests);
 
 // Mock users with metadata
 const mockUsersWithMetadata: User[] = [

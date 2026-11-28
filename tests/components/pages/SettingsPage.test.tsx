@@ -104,6 +104,33 @@ describe("SettingsPage", () => {
     });
   });
 
+  it("shows the single line fallback on when no value is stored", () => {
+    render(
+      <SettingsPage page={{ kind: "settings", section: "preferences" }} />,
+    );
+
+    expect(
+      screen.getByRole("switch", { name: "Auto Fallback to Single Line" }),
+    ).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("keeps the single line fallback switchable while multiline input is off", () => {
+    state.current.globalSettings = {
+      enableMultilineInput: false,
+      autoFallbackToSingleLine: true,
+    };
+    render(
+      <SettingsPage page={{ kind: "settings", section: "preferences" }} />,
+    );
+
+    expect(
+      screen.getByRole("switch", { name: "Auto Fallback to Single Line" }),
+    ).toBeEnabled();
+    expect(
+      screen.getByRole("switch", { name: "Multiline on Shift+Enter" }),
+    ).toBeDisabled();
+  });
+
   it("sends a profile change shortly after the field is committed", () => {
     vi.useFakeTimers();
     render(<SettingsPage page={{ kind: "settings" }} />);

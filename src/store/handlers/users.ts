@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import type { StoreApi } from "zustand";
 import { releaseAutoAway } from "../../lib/autoAway";
 import { voiceDisplayName } from "../../lib/channelMentions";
+import { moveDraft } from "../../lib/drafts";
 import ircClient from "../../lib/ircClient";
 import { saveLeftReason } from "../../lib/leftChannels";
 import { moveChatMute } from "../../lib/mutes";
@@ -226,10 +227,9 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
             // Historical join from event-playback — create a message record, skip live mutation.
             // Use the channel scoped by the batch, not all channels.
             const batchChannelName = batch.parameters?.[0];
-            const ourNick = ircClient.getNick(serverId);
             if (
               batchChannelName &&
-              username !== ourNick &&
+              !isOwnNick(serverId, username) &&
               state.globalSettings.showEvents &&
               state.globalSettings.showJoinsParts
             ) {
@@ -489,6 +489,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
     saveConfirmedNick(store, serverId, newNick);
     noteMemberRenamed(serverId, oldNick, newNick);
     moveChatMute(serverId, "dm", oldNick, newNick);
+    moveDraft(serverId, oldNick, newNick);
     store.setState((state) => {
       const updatedServers = state.servers.map((server) => {
         if (server.id === serverId) {
@@ -554,6 +555,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
       const nickContent = isOurNickChange
         ? t`are now known as **${newNick}**`
         : t`is now known as **${newNick}**`;
+      const nickTime = mtags?.time ? new Date(mtags.time) : new Date();
 
       server.channels.forEach((channel) => {
         const userWasInChannel = channel.users.some(
@@ -570,7 +572,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
               oldNick, // userId is old nick so the message avatar/link resolves correctly
               channel.id,
               serverId,
-              new Date(),
+              nickTime,
             ),
           );
         }
@@ -590,7 +592,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
             oldNick,
             privateChat.id,
             serverId,
-            new Date(),
+            nickTime,
           ),
         );
       }
@@ -604,7 +606,9 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
       if (batch) {
         if (batch.type === "chathistory") {
           // Historical quit from event-playback — create a message record, skip live mutation.
+          // Our own quit ended a connection we have since replaced, and history leaves out the JOIN that brought us back, so we leave the quit out with it.
           if (
+            !isOwnNick(serverId, username) &&
             state.globalSettings.showEvents &&
             state.globalSettings.showQuits
           ) {
@@ -693,7 +697,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
                 username,
                 channel.id,
                 serverId,
-                new Date(),
+                time ? new Date(time) : new Date(),
               ),
             );
           }
@@ -815,7 +819,7 @@ export function registerUserHandlers(store: StoreApi<AppState>): void {
                 username,
                 channel.id,
                 serverId,
-                new Date(),
+                time ? new Date(time) : new Date(),
               ),
             );
           }

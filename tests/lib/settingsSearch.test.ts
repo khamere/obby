@@ -23,4 +23,12 @@ describe("settingsRegistry search", () => {
       );
     },
   );
+
+  it("finds the single line fallback by what it does to a message", () => {
+    const ids = (query: string) =>
+      settingsRegistry.search(query).map((result) => result.setting.id);
+
+    expect(ids("spaces")).toContain("preferences.autoFallback");
+    expect(ids("short messages")).not.toContain("preferences.autoFallback");
+  });
 });

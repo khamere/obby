@@ -287,6 +287,8 @@ msgid "{total, plural, one {# channel} other {# channels}}"
 msgstr "{total, plural, one {# kanál} few {# kanály} other {# kanálů}}"
 
 #: src/components/message/CollapsibleMessage.tsx
+#: src/components/ui/SendQueueBar.tsx
+#: src/store/handlers/messages.ts
 msgid "{totalLines, plural, one {# line} other {# lines}}"
 msgstr "{totalLines, plural, one {# řádek} few {# řádky} many {# řádků} other {# řádků}}"
 
@@ -919,10 +921,6 @@ msgstr "Automaticky upravit hlasitost mikrofonu"
 msgid "Automatically authenticate as operator on connect"
 msgstr "Automaticky ověřit jako operátor při připojení"
 
-#: src/lib/settings/definitions/allSettings.ts
-msgid "Automatically switch to single line for short messages"
-msgstr "Automaticky přepnout na jeden řádek pro krátké zprávy"
-
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Avatar"
@@ -1206,6 +1204,7 @@ msgstr "Nelze odebrat poslední údaj 2FA"
 #: src/components/ui/ModerationModal.tsx
 #: src/components/ui/RegionSelectOverlay.tsx
 #: src/components/ui/RemoveServerConfirmModal.tsx
+#: src/components/ui/SendQueueBar.tsx
 #: src/components/ui/settings/BackupField.tsx
 #: src/components/ui/settings/HistoryUsageField.tsx
 #: src/components/ui/TotpStepUpModal.tsx
@@ -4440,6 +4439,7 @@ msgstr "Nedoručeno"
 
 #: src/components/message/MessageStatusIndicator.tsx
 #: src/store/handlers/messages.ts
+#: src/store/handlers/messages.ts
 msgid "Not delivered: {reason}"
 msgstr "Nedoručeno: {reason}"
 
@@ -4546,6 +4546,10 @@ msgstr "OK"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "on"
 msgstr "zap"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "On servers without multiline support, join the lines of a message with spaces instead of sending one message per line"
+msgstr "Na serverech bez podpory víceřádkových zpráv spojit řádky zprávy mezerami místo odeslání jedné zprávy na řádek"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Once a day, ask the project's release page whether a newer build exists and show it above your name. Nothing is downloaded until you tap Update."
@@ -5736,6 +5740,13 @@ msgstr "Vyberte nebo přidejte kanál pro začátek."
 
 #: src/components/layout/ChannelRow.tsx
 #: src/components/layout/ChannelRow.tsx
+#: src/components/layout/PrivateChatRow.tsx
+#: src/components/layout/PrivateChatRow.tsx
+msgid "Select to continue your draft"
+msgstr "Vyberte pro pokračování v konceptu"
+
+#: src/components/layout/ChannelRow.tsx
+#: src/components/layout/ChannelRow.tsx
 msgid "Select to enter the channel key"
 msgstr "Vyberte pro zadání klíče kanálu"
 
@@ -5797,6 +5808,7 @@ msgid "Send unencrypted"
 msgstr "Odeslat nešifrovaně"
 
 #: src/components/message/MessageStatusIndicator.tsx
+#: src/components/ui/SendQueueBar.tsx
 msgid "Sending"
 msgstr "Odesílání"
 

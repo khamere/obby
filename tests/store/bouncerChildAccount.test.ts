@@ -77,6 +77,10 @@ describe("a bouncer child's account across a reconnect", () => {
   const open = (serverId: string) => {
     state(serverId, "connecting");
     state(serverId, "connected");
+    ircClient.triggerEvent("CAP ACK", {
+      serverId,
+      cliCaps: "draft/read-marker",
+    });
   };
   const logIn = (serverId: string) =>
     ircClient.triggerEvent("LOGGED_IN", { serverId, account: "me" });

@@ -287,6 +287,8 @@ msgid "{total, plural, one {# channel} other {# channels}}"
 msgstr "{total, plural, other {# 個頻道}}"
 
 #: src/components/message/CollapsibleMessage.tsx
+#: src/components/ui/SendQueueBar.tsx
+#: src/store/handlers/messages.ts
 msgid "{totalLines, plural, one {# line} other {# lines}}"
 msgstr "{totalLines, plural, other {# 行}}"
 
@@ -919,10 +921,6 @@ msgstr "自動調整麥克風音量"
 msgid "Automatically authenticate as operator on connect"
 msgstr "連線時自動以操作員身分認證"
 
-#: src/lib/settings/definitions/allSettings.ts
-msgid "Automatically switch to single line for short messages"
-msgstr "短訊息自動切換至單行"
-
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Avatar"
@@ -1206,6 +1204,7 @@ msgstr "無法移除你的最後一個 2FA 憑證"
 #: src/components/ui/ModerationModal.tsx
 #: src/components/ui/RegionSelectOverlay.tsx
 #: src/components/ui/RemoveServerConfirmModal.tsx
+#: src/components/ui/SendQueueBar.tsx
 #: src/components/ui/settings/BackupField.tsx
 #: src/components/ui/settings/HistoryUsageField.tsx
 #: src/components/ui/TotpStepUpModal.tsx
@@ -4440,6 +4439,7 @@ msgstr "未送達"
 
 #: src/components/message/MessageStatusIndicator.tsx
 #: src/store/handlers/messages.ts
+#: src/store/handlers/messages.ts
 msgid "Not delivered: {reason}"
 msgstr "未送達：{reason}"
 
@@ -4546,6 +4546,10 @@ msgstr "確定"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "on"
 msgstr "開啟"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "On servers without multiline support, join the lines of a message with spaces instead of sending one message per line"
+msgstr "在不支援多行訊息的伺服器上，以空格將訊息的各行合併傳送，而不是每行傳送一則訊息"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Once a day, ask the project's release page whether a newer build exists and show it above your name. Nothing is downloaded until you tap Update."
@@ -5736,6 +5740,13 @@ msgstr "选择或添加频道以开始使用。"
 
 #: src/components/layout/ChannelRow.tsx
 #: src/components/layout/ChannelRow.tsx
+#: src/components/layout/PrivateChatRow.tsx
+#: src/components/layout/PrivateChatRow.tsx
+msgid "Select to continue your draft"
+msgstr "選擇以繼續編輯草稿"
+
+#: src/components/layout/ChannelRow.tsx
+#: src/components/layout/ChannelRow.tsx
 msgid "Select to enter the channel key"
 msgstr "選擇以輸入頻道金鑰"
 
@@ -5797,6 +5808,7 @@ msgid "Send unencrypted"
 msgstr "未加密傳送"
 
 #: src/components/message/MessageStatusIndicator.tsx
+#: src/components/ui/SendQueueBar.tsx
 msgid "Sending"
 msgstr "傳送中"
 

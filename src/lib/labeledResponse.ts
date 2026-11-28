@@ -46,3 +46,20 @@ export function shouldUseLabeledResponse(serverId: string): boolean {
     ircClient.hasCapability(serverId, "batch")
   );
 }
+
+/** How long a sent message may go unanswered before it shows as failed. */
+export const PENDING_TIMEOUT_MS = 30_000;
+
+// A message that waits behind others has not reached the server yet, so its
+// time to answer starts once nothing waits on that connection.
+export function failWhenUnanswered(
+  serverId: string,
+  fail: () => void,
+  sawWaiting = ircClient.hasWaitingLines(serverId),
+): void {
+  setTimeout(() => {
+    const isWaiting = ircClient.hasWaitingLines(serverId);
+    if (isWaiting || sawWaiting) failWhenUnanswered(serverId, fail, isWaiting);
+    else fail();
+  }, PENDING_TIMEOUT_MS);
+}

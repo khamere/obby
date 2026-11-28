@@ -287,6 +287,8 @@ msgid "{total, plural, one {# channel} other {# channels}}"
 msgstr "{total, plural, one {# канал} few {# канала} many {# каналов} other {# канала}}"
 
 #: src/components/message/CollapsibleMessage.tsx
+#: src/components/ui/SendQueueBar.tsx
+#: src/store/handlers/messages.ts
 msgid "{totalLines, plural, one {# line} other {# lines}}"
 msgstr "{totalLines, plural, one {# строка} few {# строки} many {# строк} other {# строк}}"
 
@@ -919,10 +921,6 @@ msgstr "Автоматически регулировать громкость �
 msgid "Automatically authenticate as operator on connect"
 msgstr "Автоматически аутентифицироваться как оператор при подключении"
 
-#: src/lib/settings/definitions/allSettings.ts
-msgid "Automatically switch to single line for short messages"
-msgstr "Автоматически переключаться на однострочный режим для коротких сообщений"
-
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Avatar"
@@ -1206,6 +1204,7 @@ msgstr "Нельзя удалить последние учётные данны
 #: src/components/ui/ModerationModal.tsx
 #: src/components/ui/RegionSelectOverlay.tsx
 #: src/components/ui/RemoveServerConfirmModal.tsx
+#: src/components/ui/SendQueueBar.tsx
 #: src/components/ui/settings/BackupField.tsx
 #: src/components/ui/settings/HistoryUsageField.tsx
 #: src/components/ui/TotpStepUpModal.tsx
@@ -4440,6 +4439,7 @@ msgstr "Не доставлено"
 
 #: src/components/message/MessageStatusIndicator.tsx
 #: src/store/handlers/messages.ts
+#: src/store/handlers/messages.ts
 msgid "Not delivered: {reason}"
 msgstr "Не доставлено: {reason}"
 
@@ -4546,6 +4546,10 @@ msgstr "ОК"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "on"
 msgstr "вкл"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "On servers without multiline support, join the lines of a message with spaces instead of sending one message per line"
+msgstr "На серверах без поддержки многострочных сообщений объединять строки сообщения пробелами вместо отправки отдельного сообщения на каждую строку"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Once a day, ask the project's release page whether a newer build exists and show it above your name. Nothing is downloaded until you tap Update."
@@ -5736,6 +5740,13 @@ msgstr "Выберите или добавьте канал для начала.
 
 #: src/components/layout/ChannelRow.tsx
 #: src/components/layout/ChannelRow.tsx
+#: src/components/layout/PrivateChatRow.tsx
+#: src/components/layout/PrivateChatRow.tsx
+msgid "Select to continue your draft"
+msgstr "Выберите, чтобы продолжить черновик"
+
+#: src/components/layout/ChannelRow.tsx
+#: src/components/layout/ChannelRow.tsx
 msgid "Select to enter the channel key"
 msgstr "Выберите, чтобы ввести ключ канала"
 
@@ -5797,6 +5808,7 @@ msgid "Send unencrypted"
 msgstr "Отправить без шифрования"
 
 #: src/components/message/MessageStatusIndicator.tsx
+#: src/components/ui/SendQueueBar.tsx
 msgid "Sending"
 msgstr "Отправка"
 

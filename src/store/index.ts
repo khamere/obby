@@ -6,12 +6,13 @@ import { encodeBouncerAttrs } from "../lib/bouncerAttrs";
 import { getSelectionHistory, recordSelection } from "../lib/channelHistory";
 import { classifyChannelName } from "../lib/channelMentions";
 import { DEFAULT_CHAT_LOOK } from "../lib/chatLook";
+import { forgetServerDrafts, setDraft } from "../lib/drafts";
 import type { E2EEScheme, E2EESessionState } from "../lib/e2ee/session";
 import { e2eeSessionKey } from "../lib/e2ee/session";
 import { ConnectionClosedError } from "../lib/irc/IRCClient";
 import ircClient from "../lib/ircClient";
 import { serverFilehosts } from "../lib/ircUtils";
-import { makeLabel } from "../lib/labeledResponse";
+import { failWhenUnanswered, makeLabel } from "../lib/labeledResponse";
 import {
   forgetLeftChannels,
   leftReasonOf,
@@ -133,10 +134,26 @@ function generateDeterministicId(serverId: string, name: string): string {
 const MSG_DEDUP_CAP = 10000;
 const MSG_DEDUP_EVICT_BATCH = 1000;
 
-export function rememberMsgId(set: Set<string>, id: string): Set<string> {
-  if (set.has(id)) return set;
+// Every connection we hold to a network receives a line under the same msgid, so we remember it per server.
+const seenMsgKey = (serverId: string, msgid: string) => `${serverId} ${msgid}`;
+
+export function hasSeenMsgId(
+  set: Set<string>,
+  serverId: string,
+  id: string,
+): boolean {
+  return set.has(seenMsgKey(serverId, id));
+}
+
+export function rememberMsgId(
+  set: Set<string>,
+  serverId: string,
+  id: string,
+): Set<string> {
+  const key = seenMsgKey(serverId, id);
+  if (set.has(key)) return set;
   const next = new Set(set);
-  next.add(id);
+  next.add(key);
   if (next.size > MSG_DEDUP_CAP) {
     const evict = next.size - (MSG_DEDUP_CAP - MSG_DEDUP_EVICT_BATCH);
     let dropped = 0;
@@ -149,10 +166,14 @@ export function rememberMsgId(set: Set<string>, id: string): Set<string> {
   return next;
 }
 
-export function rememberMsgIds(set: Set<string>, ids: string[]): Set<string> {
+export function rememberMsgIds(
+  set: Set<string>,
+  serverId: string,
+  ids: string[],
+): Set<string> {
   if (ids.length === 0) return set;
   const next = new Set(set);
-  for (const id of ids) next.add(id);
+  for (const id of ids) next.add(seenMsgKey(serverId, id));
   if (next.size > MSG_DEDUP_CAP) {
     const evict = next.size - (MSG_DEDUP_CAP - MSG_DEDUP_EVICT_BATCH);
     let dropped = 0;
@@ -829,7 +850,7 @@ export interface AppState {
   bouncerGroupAccents: Record<string, string>;
   mentionLog: MentionEntry[];
   // Message deduplication tracking
-  processedMessageIds: Set<string>; // Set of msgid values that have already been processed
+  processedMessageIds: Set<string>; // The msgids each server has already delivered, written through rememberMsgIds
   // Auto-connect prevention
   hasConnectedToSavedServers: boolean;
   // draft/bot-tools workflow state, indexed by serverId then workflow id.
@@ -1257,6 +1278,40 @@ export interface AppState {
     botNick: string,
     action: import("../lib/botTools").AiActionMessage,
   ) => void;
+}
+
+// A chat that shows the past keeps its newest rows aside, and a message that
+// still waits for its answer can be among them, so we change it where it is kept.
+function withPendingRows(
+  state: AppState,
+  channelKey: string,
+  label: string,
+  change: (msg: Message) => Message,
+  arrange: (rows: Message[]) => Message[] = (rows) => rows,
+): Pick<AppState, "messages" | "historyWindows"> | null {
+  let isFound = false;
+  const changed = (rows: Message[]) =>
+    arrange(
+      rows.map((msg) => {
+        if (msg.pendingLabel !== label) return msg;
+        isFound = true;
+        return change(msg);
+      }),
+    );
+  const shown = state.messages[channelKey];
+  const window = state.historyWindows[channelKey];
+  const next = {
+    messages: shown
+      ? { ...state.messages, [channelKey]: changed(shown) }
+      : state.messages,
+    historyWindows: window
+      ? {
+          ...state.historyWindows,
+          [channelKey]: { ...window, present: changed(window.present) },
+        }
+      : state.historyWindows,
+  };
+  return isFound ? next : null;
 }
 
 // Helper functions for per-server tab selections
@@ -1847,8 +1902,13 @@ const useStore = create<AppState>((set, get) => ({
 
   joinChannel: (serverId, channelName, key, options) => {
     const joinedName = ircClient.withChannelPrefix(serverId, channelName);
-    // A channel the user was removed from or left stays theirs to rejoin, so a join nobody asked for passes it by.
-    if (options?.isAutomatic && leftReasonOf(serverId, joinedName)) return;
+    // A channel the user was removed from or left stays theirs to rejoin, so a join nobody asked for passes it by, under the name as saved too because the server names its channel prefixes only after it greets us.
+    if (
+      options?.isAutomatic &&
+      (leftReasonOf(serverId, channelName) ||
+        leftReasonOf(serverId, joinedName))
+    )
+      return;
     const isReturning = !!leftReasonOf(serverId, joinedName);
     const channel = ircClient.joinChannel(serverId, channelName, key, {
       isReturning,
@@ -1937,6 +1997,7 @@ const useStore = create<AppState>((set, get) => ({
       name.toLowerCase() === channelName.toLowerCase();
     ircClient.forgetChannel(serverId, channelName);
     saveLeftReason(serverId, channelName, undefined);
+    setDraft(serverId, channelName, "");
     set((state) => {
       const updatedServers = state.servers.map((server) => {
         if (server.id === serverId) {
@@ -2355,55 +2416,35 @@ const useStore = create<AppState>((set, get) => ({
   },
 
   confirmPendingMessage: (serverId, bufferId, label, updates) => {
-    const channelKey = `${serverId}-${bufferId}`;
     let matched = false;
     set((state) => {
-      const list = state.messages[channelKey];
-      if (!list) return state;
-      const next = list.map((msg) => {
-        if (msg.pendingLabel !== label) return msg;
-        matched = true;
-        return {
+      const changed = withPendingRows(
+        state,
+        `${serverId}-${bufferId}`,
+        label,
+        (msg) => ({
           ...msg,
           ...updates,
           pendingLabel: undefined,
           status: undefined,
-        };
-      });
-      if (!matched) return state;
-      return {
-        messages: {
-          ...state.messages,
-          [channelKey]: next.sort(compareMessageOrder),
-        },
-      };
+        }),
+        (rows) => rows.sort(compareMessageOrder),
+      );
+      matched = !!changed;
+      return changed ?? state;
     });
     return matched;
   },
 
   failPendingMessage: (serverId, bufferId, label, reason) => {
-    const channelKey = `${serverId}-${bufferId}`;
-    set((state) => {
-      const list = state.messages[channelKey];
-      if (!list) return state;
-      let touched = false;
-      const next = list.map((msg) => {
-        if (msg.pendingLabel !== label) return msg;
-        touched = true;
-        return {
+    set(
+      (state) =>
+        withPendingRows(state, `${serverId}-${bufferId}`, label, (msg) => ({
           ...msg,
           status: "failed" as const,
           failReason: reason ?? msg.failReason,
-        };
-      });
-      if (!touched) return state;
-      return {
-        messages: {
-          ...state.messages,
-          [channelKey]: next,
-        },
-      };
-    });
+        })) ?? state,
+    );
   },
 
   failLatestPendingMessage: (serverId, bufferId, reason) => {
@@ -2480,9 +2521,9 @@ const useStore = create<AppState>((set, get) => ({
       msg.content,
       `@label=${label} `,
     );
-    setTimeout(() => {
-      get().failPendingMessage(msg.serverId, msg.channelId, label);
-    }, 30_000);
+    failWhenUnanswered(msg.serverId, () =>
+      get().failPendingMessage(msg.serverId, msg.channelId, label),
+    );
   },
 
   addGlobalNotification: (notification) => {
@@ -3133,6 +3174,7 @@ const useStore = create<AppState>((set, get) => ({
       // bring it straight back on the next connect.
       if (privateChat) {
         storage.closedChats.record(serverId, privateChat.username, new Date());
+        setDraft(serverId, privateChat.username, "");
       }
 
       // If the deleted private chat was selected, clear the selection
@@ -3446,7 +3488,10 @@ const useStore = create<AppState>((set, get) => ({
         .map((s) => s.id),
     ]);
     closeServerConnections(toRemove);
-    for (const id of toRemove) forgetLeftChannels(id);
+    for (const id of toRemove) {
+      forgetLeftChannels(id);
+      forgetServerDrafts(id);
+    }
 
     set((state) => {
       const savedServers = loadSavedServers();

@@ -78,11 +78,17 @@ function whoLines(): string[] {
     .filter((line) => line.startsWith("WHO "));
 }
 
-function setConnection(connectionState: "connected" | "disconnected") {
+// A server acknowledges its capabilities again on every connection.
+function setConnection(
+  connectionState: "connected" | "disconnected",
+  capabilities = "draft/chathistory",
+) {
   ircClient.triggerEvent("connectionStateChange", {
     serverId,
     connectionState,
   });
+  if (connectionState === "connected")
+    ircClient.triggerEvent("CAP ACK", { serverId, cliCaps: capabilities });
 }
 
 function ownJoin() {
@@ -701,7 +707,7 @@ describe("member list after coming back to a channel", () => {
       .mockImplementation(() => {});
 
     setConnection("disconnected");
-    setConnection("connected");
+    setConnection("connected", "draft/metadata-2");
     ownJoin();
 
     expect(metadataGet.mock.calls).toEqual([

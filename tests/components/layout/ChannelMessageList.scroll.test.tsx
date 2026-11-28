@@ -258,6 +258,28 @@ describe("an older page the server refuses", () => {
     });
   const topPlaceholder = (area: Element) =>
     area.querySelector("[data-message-id]")?.parentElement?.firstElementChild;
+  const isPlaceholderPulsing = (area: Element) => {
+    const placeholder = topPlaceholder(area);
+    expect(placeholder?.getAttribute("aria-hidden")).toBe("true");
+    const shapes = [...(placeholder?.querySelectorAll("span:empty") ?? [])];
+    expect(shapes.length).toBeGreaterThan(0);
+    return shapes.some((shape) => shape.classList.contains("animate-pulse"));
+  };
+  const addMessage = (id: string, place: "above" | "below") =>
+    act(() => {
+      useStore.setState((state) => {
+        const shown = state.messages[defaultProps.channelKey];
+        return {
+          messages: {
+            ...state.messages,
+            [defaultProps.channelKey]:
+              place === "above"
+                ? [makeMsg(id), ...shown]
+                : [...shown, makeMsg(id)],
+          },
+        };
+      });
+    });
 
   const scrollToTopOfChat = () => {
     const { container } = render(<ChannelMessageList {...defaultProps} />);
@@ -409,6 +431,56 @@ describe("an older page the server refuses", () => {
     expect(topPlaceholder(area)?.getAttribute("aria-hidden")).toBe("true");
   });
 
+  it("pulses the placeholder while the older page is on its way", () => {
+    const area = scrollToTopOfChat();
+
+    expect(isPlaceholderPulsing(area)).toBe(true);
+  });
+
+  it("keeps the placeholder still once the server has refused the page", () => {
+    const area = scrollToTopOfChat();
+    updateChat({ isLoadingHistory: false, historyRefusedAt: Date.now() });
+
+    expect(isPlaceholderPulsing(area)).toBe(false);
+    liveTraffic();
+    addMessage("said-after-the-refusal", "below");
+    expect(isPlaceholderPulsing(area)).toBe(false);
+  });
+
+  it("keeps the placeholder still when the refusal lands after the loading state ends", () => {
+    const area = scrollToTopOfChat();
+    updateChat({ isLoadingHistory: false });
+    updateChat({ historyRefusedAt: Date.now() });
+
+    expect(isPlaceholderPulsing(area)).toBe(false);
+  });
+
+  it("pulses the placeholder again while the refused page is asked for again", () => {
+    const area = scrollToTopOfChat();
+    updateChat({ isLoadingHistory: false, historyRefusedAt: Date.now() });
+    vi.advanceTimersByTime(RETRY_WAIT_MS);
+    act(() => {
+      fireEvent.scroll(area);
+    });
+    expect(requests()).toBe(2);
+
+    expect(isPlaceholderPulsing(area)).toBe(true);
+    updateChat({ isLoadingHistory: true });
+    expect(isPlaceholderPulsing(area)).toBe(true);
+    updateChat({ isLoadingHistory: false, historyRefusedAt: Date.now() });
+    expect(isPlaceholderPulsing(area)).toBe(false);
+  });
+
+  it("pulses the placeholder again once older messages land above the refused page", () => {
+    const area = scrollToTopOfChat();
+    updateChat({ isLoadingHistory: false, historyRefusedAt: Date.now() });
+    expect(isPlaceholderPulsing(area)).toBe(false);
+
+    addMessage("older", "above");
+    expect(topPlaceholder(area)?.getAttribute("aria-hidden")).toBe("true");
+    expect(isPlaceholderPulsing(area)).toBe(true);
+  });
+
   it("removes the placeholder when the refusal ends the offer", () => {
     const area = scrollToTopOfChat();
     updateChat({ isLoadingHistory: false, hasMoreHistory: false });
@@ -553,6 +625,179 @@ describe("ChannelMessageList resized by the keyboard", () => {
     resizeList(600);
     expect(scrollTop).toBe(400);
     vi.unstubAllGlobals();
+  });
+});
+
+describe("a list a page covered while the chat came to offer older history", () => {
+  const requests = () =>
+    vi.mocked(ircClient.requestChathistoryBefore).mock.calls.length;
+  const observed: { callback: ResizeObserverCallback; target?: Element }[] = [];
+
+  // The list starts with no height, as it has while a page covers the chat.
+  const renderCoveredList = (scrollHeight: number, savedScrollTop: number) => {
+    const { container } = render(<ChannelMessageList {...defaultProps} />);
+    const area = container.querySelector(".obby-chat-area") as HTMLElement;
+    let height = 0;
+    let scrollTop = savedScrollTop;
+    Object.defineProperty(area, "clientHeight", { get: () => height });
+    Object.defineProperty(area, "scrollHeight", {
+      get: () => (height === 0 ? 0 : scrollHeight),
+    });
+    Object.defineProperty(area, "scrollTop", {
+      configurable: true,
+      get: () => (height === 0 ? 0 : scrollTop),
+      set: (value: number) => {
+        scrollTop = Math.max(0, Math.min(value, scrollHeight - height));
+      },
+    });
+    const offerOlderHistory = () =>
+      act(() => {
+        useStore.setState((state) => ({
+          servers: state.servers.map((server) => ({
+            ...server,
+            privateChats: server.privateChats?.map((pc) => ({
+              ...pc,
+              hasMoreHistory: true,
+            })),
+          })),
+        }));
+      });
+    const uncover = () => {
+      height = 600;
+      for (const { callback, target } of observed)
+        if (target === area) act(() => callback([], {} as ResizeObserver));
+    };
+    return { area, offerOlderHistory, uncover };
+  };
+
+  const connect = (isConnected: boolean) =>
+    act(() => {
+      useStore.setState((state) => ({
+        servers: state.servers.map((server) => ({ ...server, isConnected })),
+      }));
+    });
+
+  beforeEach(() => {
+    observed.length = 0;
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        entry: { callback: ResizeObserverCallback; target?: Element };
+        constructor(callback: ResizeObserverCallback) {
+          this.entry = { callback };
+          observed.push(this.entry);
+        }
+        observe(target: Element) {
+          this.entry.target = target;
+        }
+        disconnect() {}
+      },
+    );
+    vi.mocked(ircClient.requestChathistoryBefore).mockReset();
+    vi.mocked(ircClient.requestChathistoryBefore).mockReturnValue(true);
+    useStore.setState((state) => ({
+      globalSettings: { ...state.globalSettings, keepHistory: false },
+      servers: [
+        {
+          id: "s1",
+          name: "Pebble",
+          host: "irc.pebble.example",
+          port: 6697,
+          isConnected: true,
+          users: [],
+          channels: [],
+          privateChats: [
+            {
+              id: "pm1",
+              username: "kestrel",
+              serverId: "s1",
+              unreadCount: 0,
+              isMentioned: false,
+              hasMoreHistory: false,
+            },
+          ],
+          capabilities: ["draft/chathistory"],
+        },
+      ],
+      messages: { [defaultProps.channelKey]: [makeMsg("recent")] },
+    }));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("asks for the older page once the list is shown again with its top in view", () => {
+    const { offerOlderHistory, uncover } = renderCoveredList(300, 0);
+    offerOlderHistory();
+    expect(requests()).toBe(0);
+
+    uncover();
+    expect(requests()).toBe(1);
+  });
+
+  it("asks nothing when the list is shown again at the bottom of a chat taller than the list", () => {
+    const { offerOlderHistory, uncover } = renderCoveredList(4000, 3400);
+    offerOlderHistory();
+
+    uncover();
+    expect(requests()).toBe(0);
+  });
+
+  it("asks nothing when the list is shown again with no older history on offer", () => {
+    const { uncover } = renderCoveredList(300, 0);
+
+    uncover();
+    expect(requests()).toBe(0);
+  });
+
+  it("asks nothing on its own when the list is shown again while the connection is down", () => {
+    const { offerOlderHistory, uncover } = renderCoveredList(300, 0);
+    offerOlderHistory();
+    connect(false);
+
+    uncover();
+    expect(requests()).toBe(0);
+  });
+
+  it("asks for the older page when the reader turns the wheel once the connection is back", () => {
+    const { area, offerOlderHistory, uncover } = renderCoveredList(300, 0);
+    offerOlderHistory();
+    connect(false);
+    uncover();
+    connect(true);
+
+    act(() => {
+      fireEvent.wheel(area);
+    });
+    expect(requests()).toBe(1);
+  });
+
+  // The placeholders above the first message are 150px tall and scroll with the rows.
+  const scrollPlaceholdersBy = (scrolledPx: number) => {
+    const placeholders = document.querySelector(
+      '.obby-chat-area [aria-hidden="true"]',
+    ) as HTMLElement;
+    placeholders.getBoundingClientRect = () =>
+      ({ bottom: 150 - scrolledPx }) as DOMRect;
+  };
+
+  it("asks for the older page when the list is shown again at the bottom with the top placeholders still in view", () => {
+    const { offerOlderHistory, uncover } = renderCoveredList(620, 20);
+    offerOlderHistory();
+    scrollPlaceholdersBy(20);
+
+    uncover();
+    expect(requests()).toBe(1);
+  });
+
+  it("asks nothing when the list is shown again at the bottom with the top placeholders scrolled out of view", () => {
+    const { offerOlderHistory, uncover } = renderCoveredList(900, 300);
+    offerOlderHistory();
+    scrollPlaceholdersBy(300);
+
+    uncover();
+    expect(requests()).toBe(0);
   });
 });
 

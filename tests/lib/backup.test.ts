@@ -97,6 +97,15 @@ describe("encrypted backup", () => {
     expect(snapshotStorage()).toEqual(entries);
   });
 
+  it("leaves the unsent drafts out of the snapshot", () => {
+    localStorage.setItem("savedServers", entries.savedServers);
+    localStorage.setItem(
+      "drafts",
+      JSON.stringify({ s1: { "#chan": { text: "private words", at: 1 } } }),
+    );
+    expect(snapshotStorage()).toEqual({ savedServers: entries.savedServers });
+  });
+
   it("names the file by the day it was made", () => {
     expect(backupFileName(new Date("2026-11-03T10:00:00Z"))).toBe(
       "obby-backup-2026-11-03.json",
