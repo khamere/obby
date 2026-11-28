@@ -19,6 +19,9 @@ vi.mock("../../src/lib/notificationSounds", () => ({
   shouldPlayNotificationSound: () => false,
 }));
 
+// The jump itself reads saved history and asks the server, which these tests leave alone.
+vi.mock("../../src/lib/jumpToMention", () => ({ jumpToMention: vi.fn() }));
+
 const READ_AT = "2026-01-01T12:00:00.000Z";
 
 const channel = (id: string, name: string): Channel => ({
@@ -32,13 +35,15 @@ const channel = (id: string, name: string): Channel => ({
   users: [],
 });
 
-function feedRaw(...lines: string[]) {
+function feedTo(serverId: string, ...lines: string[]) {
   (
     ircClient as unknown as {
       handleMessage(data: string, serverId: string): void;
     }
-  ).handleMessage(lines.join("\r\n"), "s1");
+  ).handleMessage(lines.join("\r\n"), serverId);
 }
+
+const feedRaw = (...lines: string[]) => feedTo("s1", ...lines);
 
 const log = () => useStore.getState().mentionLog;
 const messages = () => Object.values(useStore.getState().messages).flat();
@@ -207,7 +212,7 @@ describe("mention catch-up by server search", () => {
     );
     expect(log()).toEqual([
       {
-        messageId: "a",
+        messageId: "search-s1-a",
         msgid: "a",
         serverId: "s1",
         channelId: "c2",
@@ -554,6 +559,42 @@ describe("mention catch-up by server search", () => {
       ),
     );
     expect(new Set(log().map((m) => m.messageId)).size).toBe(2);
+  });
+
+  it("keeps a line found on two connections to one network as two entries, each read on its own", () => {
+    useStore.setState((state) => ({
+      servers: [
+        ...state.servers,
+        {
+          ...state.servers[0],
+          id: "s2",
+          channels: state.servers[0].channels.map((c) => ({
+            ...c,
+            serverId: "s2",
+          })),
+        },
+      ],
+    }));
+    for (const serverId of ["s1", "s2"]) {
+      feedTo(serverId, `:server MARKREAD #two timestamp=${READ_AT}`);
+      feedTo(
+        serverId,
+        `@label=${labels().at(-1)} :server BATCH +s soju.im/search`,
+        `@batch=s;${hit("a", 300)}`,
+        ":server BATCH -s",
+      );
+    }
+    expect(log().map((m) => [m.serverId, m.msgid])).toEqual([
+      ["s1", "a"],
+      ["s2", "a"],
+    ]);
+    expect(new Set(log().map((m) => m.messageId)).size).toBe(2);
+
+    useStore.getState().jumpToMention(log()[0]);
+    expect(log().map((m) => [m.serverId, m.seen])).toEqual([
+      ["s1", true],
+      ["s2", false],
+    ]);
   });
 
   it("takes a refusal of a word the server cannot search for as an answer", () => {

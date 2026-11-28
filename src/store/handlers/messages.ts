@@ -34,7 +34,12 @@ import {
   withoutReaction,
   withReaction,
 } from "../helpers";
-import { type AppState, rememberMsgId, rememberMsgIds } from "../index";
+import {
+  type AppState,
+  hasSeenMsgId,
+  rememberMsgId,
+  rememberMsgIds,
+} from "../index";
 import { bufferChathistoryMessage, bufferHistoryEdit } from "./batches";
 import { notifyChatMessage } from "./chatNotifications";
 import { handleInboundObby } from "./e2ee";
@@ -44,12 +49,13 @@ import { laterActivity, notePrivateMessageArrived } from "./privateChatArrival";
 
 function isAlreadyProcessed(
   state: AppState,
+  serverId: string,
   mtags: Record<string, string> | undefined,
   msgids = mtags?.msgid ? [mtags.msgid] : [],
 ): boolean {
   return (
     !isLocalReplay(mtags) &&
-    msgids.some((id) => state.processedMessageIds.has(id))
+    msgids.some((id) => hasSeenMsgId(state.processedMessageIds, serverId, id))
   );
 }
 
@@ -243,7 +249,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
       mtags?.msgid
     ) {
       const currentState = store.getState();
-      if (isAlreadyProcessed(currentState, mtags)) {
+      if (isAlreadyProcessed(currentState, response.serverId, mtags)) {
         return;
       }
 
@@ -399,6 +405,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
               store.setState((state) => ({
                 processedMessageIds: rememberMsgId(
                   state.processedMessageIds,
+                  server.id,
                   mtags.msgid as string,
                 ),
               }));
@@ -521,6 +528,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           if (mtags?.msgid) {
             newState.processedMessageIds = rememberMsgId(
               state.processedMessageIds,
+              server.id,
               mtags.msgid,
             );
           }
@@ -571,11 +579,19 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
     // History is deduplicated at batch end so cached pages still count as nonempty.
     const currentState = store.getState();
     if (messageIds && messageIds.length > 0) {
-      const hasDuplicate = isAlreadyProcessed(currentState, mtags, messageIds);
+      const hasDuplicate = isAlreadyProcessed(
+        currentState,
+        response.serverId,
+        mtags,
+        messageIds,
+      );
       if (hasDuplicate) {
         return;
       }
-    } else if (mtags?.msgid && isAlreadyProcessed(currentState, mtags)) {
+    } else if (
+      mtags?.msgid &&
+      isAlreadyProcessed(currentState, response.serverId, mtags)
+    ) {
       return;
     }
 
@@ -696,6 +712,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           store.setState((state) => ({
             processedMessageIds: rememberMsgIds(
               state.processedMessageIds,
+              server.id,
               idsToTrack,
             ),
           }));
@@ -777,10 +794,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
                       : [];
                 if (idsToTrack.length > 0) {
                   store.setState((state) => ({
-                    processedMessageIds: new Set([
-                      ...state.processedMessageIds,
-                      ...idsToTrack,
-                    ]),
+                    processedMessageIds: rememberMsgIds(
+                      state.processedMessageIds,
+                      server.id,
+                      idsToTrack,
+                    ),
                   }));
                 }
                 return;
@@ -826,10 +844,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
             }
             if (idsToTrack.length > 0) {
               store.setState((state) => ({
-                processedMessageIds: new Set([
-                  ...state.processedMessageIds,
-                  ...idsToTrack,
-                ]),
+                processedMessageIds: rememberMsgIds(
+                  state.processedMessageIds,
+                  server.id,
+                  idsToTrack,
+                ),
               }));
             }
             addOrBuffer(newMessage);
@@ -903,6 +922,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           store.setState((state) => ({
             processedMessageIds: rememberMsgIds(
               state.processedMessageIds,
+              server.id,
               idsToTrack,
             ),
           }));
@@ -939,7 +959,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
     // History is deduplicated at batch end so cached pages still count as nonempty.
     if (!replayed && mtags?.msgid) {
       const currentState = store.getState();
-      if (isAlreadyProcessed(currentState, mtags)) {
+      if (isAlreadyProcessed(currentState, response.serverId, mtags)) {
         return;
       }
     }
@@ -1113,10 +1133,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
           // Mark this message ID as processed to prevent duplicates
           if (mtags?.msgid) {
             store.setState((state) => ({
-              processedMessageIds: new Set([
-                ...state.processedMessageIds,
+              processedMessageIds: rememberMsgId(
+                state.processedMessageIds,
+                server.id,
                 mtags.msgid,
-              ]),
+              ),
             }));
           }
 
@@ -1174,7 +1195,9 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
             if (matched) {
               if (mtags.msgid) {
                 store.setState((state) => ({
-                  processedMessageIds: new Set(state.processedMessageIds).add(
+                  processedMessageIds: rememberMsgId(
+                    state.processedMessageIds,
+                    server.id,
                     mtags.msgid as string,
                   ),
                 }));
@@ -1288,10 +1311,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
         // Mark this message ID as processed to prevent duplicates
         if (mtags?.msgid) {
           store.setState((state) => ({
-            processedMessageIds: new Set([
-              ...state.processedMessageIds,
+            processedMessageIds: rememberMsgId(
+              state.processedMessageIds,
+              server.id,
               mtags.msgid,
-            ]),
+            ),
           }));
         }
 
@@ -1341,7 +1365,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
     // Check for duplicate messages based on msgid
     if (mtags?.msgid) {
       const currentState = store.getState();
-      if (isAlreadyProcessed(currentState, mtags)) {
+      if (isAlreadyProcessed(currentState, response.serverId, mtags)) {
         console.log(
           `Skipping duplicate CHANNNOTICE with msgid: ${mtags.msgid}`,
         );
@@ -1457,10 +1481,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
     // Mark this message ID as processed to prevent duplicates
     if (mtags?.msgid) {
       store.setState((state) => ({
-        processedMessageIds: new Set([
-          ...state.processedMessageIds,
+        processedMessageIds: rememberMsgId(
+          state.processedMessageIds,
+          server.id,
           mtags.msgid,
-        ]),
+        ),
       }));
     }
 
@@ -1473,7 +1498,7 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
     // Check for duplicate messages based on msgid
     if (mtags?.msgid) {
       const currentState = store.getState();
-      if (isAlreadyProcessed(currentState, mtags)) {
+      if (isAlreadyProcessed(currentState, response.serverId, mtags)) {
         return;
       }
     }
@@ -1593,10 +1618,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
       // Mark this message ID as processed to prevent duplicates
       if (mtags?.msgid) {
         store.setState((state) => ({
-          processedMessageIds: new Set([
-            ...state.processedMessageIds,
+          processedMessageIds: rememberMsgId(
+            state.processedMessageIds,
+            server.id,
             mtags.msgid,
-          ]),
+          ),
         }));
       }
 

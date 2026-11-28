@@ -4,6 +4,7 @@ import { useState } from "react";
 import { decodeHtmlEntities } from "../../lib/htmlEntities";
 import {
   findFirstUrl,
+  isAbsoluteHttpUrl,
   isUrlFromTrustedSource,
   serverFilehosts,
 } from "../../lib/ircUtils";
@@ -53,8 +54,11 @@ export const LinkPreview: React.FC<LinkPreviewProps> = ({
   const isTrustedImage =
     imageUrl && isUrlFromTrustedSource(imageUrl, serverFilehosts(server));
   // Show image if it's from a trusted source and safe media is enabled, or if external content is allowed
+  // A relative address resolves against our own origin, so we load only an absolute http(s) image.
   const shouldShowImage =
-    imageUrl && ((isTrustedImage && showSafeMedia) || showExternalContent);
+    imageUrl &&
+    isAbsoluteHttpUrl(imageUrl) &&
+    ((isTrustedImage && showSafeMedia) || showExternalContent);
 
   const handleClick = () => {
     if (firstUrl) {

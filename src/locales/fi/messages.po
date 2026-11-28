@@ -904,10 +904,6 @@ msgstr "Säädä mikrofonisi äänenvoimakkuutta automaattisesti"
 msgid "Automatically authenticate as operator on connect"
 msgstr "Tunnistaudu automaattisesti operaattoriksi yhdistäessä"
 
-#: src/lib/settings/definitions/allSettings.ts
-msgid "Automatically switch to single line for short messages"
-msgstr "Vaihda automaattisesti yksiriviseen lyhyille viesteille"
-
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Avatar"
@@ -4525,6 +4521,10 @@ msgstr "OK"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "on"
 msgstr "päälle"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "On servers without multiline support, join the lines of a message with spaces instead of sending one message per line"
+msgstr "Yhdistä viestin rivit välilyönneillä palvelimilla, jotka eivät tue monirivisiä viestejä, sen sijaan että jokainen rivi lähetetään omana viestinään"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Once a day, ask the project's release page whether a newer build exists and show it above your name. Nothing is downloaded until you tap Update."

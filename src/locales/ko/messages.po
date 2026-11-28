@@ -904,10 +904,6 @@ msgstr "마이크 볼륨 자동 조절"
 msgid "Automatically authenticate as operator on connect"
 msgstr "연결 시 자동으로 operator로 인증"
 
-#: src/lib/settings/definitions/allSettings.ts
-msgid "Automatically switch to single line for short messages"
-msgstr "짧은 메시지의 경우 자동으로 한 줄 모드로 전환"
-
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Avatar"
@@ -4525,6 +4521,10 @@ msgstr "확인"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "on"
 msgstr "켜기"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "On servers without multiline support, join the lines of a message with spaces instead of sending one message per line"
+msgstr "여러 줄 메시지를 지원하지 않는 서버에서는 줄마다 메시지를 따로 보내는 대신 메시지의 줄을 공백으로 이어서 보냅니다"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Once a day, ask the project's release page whether a newer build exists and show it above your name. Nothing is downloaded until you tap Update."

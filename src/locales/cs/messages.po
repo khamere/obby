@@ -904,10 +904,6 @@ msgstr "Automaticky upravit hlasitost mikrofonu"
 msgid "Automatically authenticate as operator on connect"
 msgstr "Automaticky ověřit jako operátor při připojení"
 
-#: src/lib/settings/definitions/allSettings.ts
-msgid "Automatically switch to single line for short messages"
-msgstr "Automaticky přepnout na jeden řádek pro krátké zprávy"
-
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Avatar"
@@ -4525,6 +4521,10 @@ msgstr "OK"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "on"
 msgstr "zap"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "On servers without multiline support, join the lines of a message with spaces instead of sending one message per line"
+msgstr "Na serverech bez podpory víceřádkových zpráv spojit řádky zprávy mezerami místo odeslání jedné zprávy na řádek"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Once a day, ask the project's release page whether a newer build exists and show it above your name. Nothing is downloaded until you tap Update."
