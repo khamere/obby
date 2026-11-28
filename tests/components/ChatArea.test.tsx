@@ -2,6 +2,12 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ChatArea } from "../../src/components/layout/ChatArea";
+import {
+  getDraft,
+  moveDraft,
+  resetDraftsForTests,
+  setDraft,
+} from "../../src/lib/drafts";
 import ircClient from "../../src/lib/ircClient";
 import useStore from "../../src/store";
 import type { Channel, Server, User } from "../../src/types";
@@ -17,6 +23,8 @@ vi.mock("../../src/lib/ircClient", () => ({
     getCurrentUser: vi.fn(() => ({ id: "test-user", username: "tester" })),
     getNick: vi.fn(() => "tester"),
     hasCapability: vi.fn(() => false),
+    waitingLines: vi.fn(() => ({ waiting: 0, total: 0 })),
+    deleteHook: vi.fn(),
     version: "1.0.0",
   },
 }));
@@ -59,6 +67,9 @@ const mockServer: Server = {
   isConnected: true,
   users: mockUsers,
 };
+
+// Drafts outlive the component, so each test starts without the last one's text.
+afterEach(resetDraftsForTests);
 
 describe("ChatArea Tab Completion Integration", () => {
   beforeEach(() => {
@@ -718,5 +729,202 @@ describe("ChatArea reply keyboard navigation", () => {
 
     fireEvent.keyDown(input, { key: "ArrowUp", ctrlKey: true });
     expect(container.querySelector(".rounded-t-lg")).toBeNull();
+  });
+});
+
+describe("ChatArea drafts", () => {
+  const randomChannel: Channel = {
+    ...mockChannel,
+    id: "channel2",
+    name: "#random",
+  };
+  const alice = {
+    id: "pm1",
+    username: "alice",
+    serverId: "server1",
+    unreadCount: 0,
+    isMentioned: false,
+    isPinned: true,
+  };
+  const select = (selection: {
+    selectedChannelId: string | null;
+    selectedPrivateChatId: string | null;
+  }) =>
+    useStore.setState((state) => ({
+      ui: {
+        ...state.ui,
+        ...defaultUIExtensions,
+        selectedServerId: "server1",
+        perServerSelections: { server1: selection },
+        pendingBotCommandPick: null,
+        pendingComposerCommand: null,
+      },
+    }));
+  const selectChannel = (id: string) =>
+    select({ selectedChannelId: id, selectedPrivateChatId: null });
+  const setServer = (server: Partial<Server>) =>
+    useStore.setState({ servers: [{ ...mockServer, ...server }] });
+  const renderChat = () =>
+    render(<ChatArea onToggleChanList={() => {}} isChanListVisible={true} />);
+
+  beforeEach(() => {
+    setServer({ channels: [mockChannel, randomChannel] });
+    useStore.setState({
+      currentUser: { id: "user1", username: "testuser", isOnline: true },
+      messages: {},
+      typingUsers: {},
+    });
+    selectChannel("channel1");
+    vi.clearAllMocks();
+  });
+
+  it("records what is typed and drops it once it is sent", async () => {
+    renderChat();
+    const input = screen.getByPlaceholderText(/Message #general/i);
+    await userEvent.type(input, "half a thought");
+    expect(getDraft("server1", "#general")).toBe("half a thought");
+
+    fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
+    expect(getDraft("server1", "#general")).toBe("");
+  });
+
+  it("shows a chat's draft when the chat is opened, without a typing notification", () => {
+    setDraft("server1", "#General", "from the last session");
+    renderChat();
+    expect(screen.getByPlaceholderText(/Message #general/i)).toHaveValue(
+      "from the last session",
+    );
+    expect(ircClient.sendTyping).not.toHaveBeenCalled();
+  });
+
+  it("shows the draft of a selected chat once the server has listed it", () => {
+    setDraft("server1", "#general", "from the last session");
+    setServer({ channels: [] });
+    renderChat();
+    expect(screen.queryByPlaceholderText(/Message #general/i)).toBeNull();
+
+    act(() => setServer({ channels: [mockChannel] }));
+    expect(screen.getByPlaceholderText(/Message #general/i)).toHaveValue(
+      "from the last session",
+    );
+  });
+
+  it("keeps each chat's text with that chat", async () => {
+    renderChat();
+    await userEvent.type(
+      screen.getByPlaceholderText(/Message #general/i),
+      "for general",
+    );
+
+    act(() => selectChannel("channel2"));
+    expect(screen.getByPlaceholderText(/Message #random/i)).toHaveValue("");
+    expect(getDraft("server1", "#general")).toBe("for general");
+    expect(getDraft("server1", "#random")).toBe("");
+
+    act(() => selectChannel("channel1"));
+    expect(screen.getByPlaceholderText(/Message #general/i)).toHaveValue(
+      "for general",
+    );
+  });
+
+  it("records under the new nick after the person in the open chat changes nick", async () => {
+    setServer({ privateChats: [alice] });
+    select({ selectedChannelId: null, selectedPrivateChatId: "pm1" });
+    renderChat();
+    await userEvent.type(screen.getByPlaceholderText(/Message @alice/i), "hi");
+
+    act(() => {
+      moveDraft("server1", "alice", "alice_");
+      setServer({ privateChats: [{ ...alice, username: "alice_" }] });
+    });
+    const input = screen.getByPlaceholderText(/Message @alice_/i);
+    expect(input).toHaveValue("hi");
+
+    await userEvent.type(input, "!");
+    expect(getDraft("server1", "alice_")).toBe("hi!");
+    expect(getDraft("server1", "alice")).toBe("");
+  });
+
+  it("keeps a command argument out of the drafts", async () => {
+    renderChat();
+    await userEvent.type(
+      screen.getByPlaceholderText(/Message #general/i),
+      "earlier words",
+    );
+    act(() =>
+      useStore.getState().requestBotCommandPick("server1", "authbot", {
+        name: "login",
+        options: [{ name: "password", required: true }],
+      }),
+    );
+    const seen: string[] = [];
+    const argument = screen.getByPlaceholderText("password");
+    for (const letter of "s3cret") {
+      await userEvent.type(argument, letter);
+      seen.push(getDraft("server1", "#general"));
+    }
+    expect(argument).toHaveValue("s3cret");
+    expect(seen).toEqual(Array(6).fill("earlier words"));
+
+    act(() => selectChannel("channel2"));
+    expect(screen.getByPlaceholderText(/Message #random/i)).toHaveValue("");
+    expect(getDraft("server1", "#random")).toBe("");
+    expect(getDraft("server1", "#general")).toBe("earlier words");
+  });
+
+  const login = {
+    name: "login",
+    options: [{ name: "password", required: true }],
+  };
+
+  it("keeps a command argument out of the chat opened together with a new command", async () => {
+    renderChat();
+    await userEvent.type(
+      screen.getByPlaceholderText(/Message #general/i),
+      "earlier words",
+    );
+    act(() =>
+      useStore.getState().requestBotCommandPick("server1", "authbot", login),
+    );
+    await userEvent.type(screen.getByPlaceholderText("password"), "s3cret");
+
+    act(() => {
+      selectChannel("channel2");
+      useStore.getState().requestBotCommandPick("server1", "authbot", login);
+    });
+    expect(getDraft("server1", "#random")).toBe("");
+    await userEvent.type(screen.getByPlaceholderText("password"), "x");
+    expect(getDraft("server1", "#random")).toBe("");
+    expect(getDraft("server1", "#general")).toBe("earlier words");
+  });
+
+  it("keeps a chat's draft when a command is started as the chat opens", () => {
+    setDraft("server1", "#general", "keep me");
+    useStore.getState().requestBotCommandPick("server1", "authbot", login);
+    renderChat();
+    expect(screen.getByPlaceholderText("password")).toHaveValue("");
+    expect(getDraft("server1", "#general")).toBe("keep me");
+
+    fireEvent.keyDown(screen.getByPlaceholderText("password"), {
+      key: "Escape",
+    });
+    expect(screen.getByPlaceholderText(/Message #general/i)).toHaveValue(
+      "keep me",
+    );
+  });
+
+  it("leaves no draft behind when the open private chat is closed", async () => {
+    setServer({ privateChats: [alice] });
+    select({ selectedChannelId: null, selectedPrivateChatId: "pm1" });
+    renderChat();
+    await userEvent.type(screen.getByPlaceholderText(/Message @alice/i), "hi");
+    expect(getDraft("server1", "alice")).toBe("hi");
+
+    act(() => useStore.getState().deletePrivateChat("server1", "pm1"));
+    expect(getDraft("server1", "alice")).toBe("");
+
+    act(() => selectChannel("channel1"));
+    expect(screen.getByPlaceholderText(/Message #general/i)).toHaveValue("");
+    expect(getDraft("server1", "#general")).toBe("");
   });
 });

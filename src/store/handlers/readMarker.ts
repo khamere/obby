@@ -93,6 +93,13 @@ function findChat(state: AppState, serverId: string, chatId: string) {
 const isRegistered = (state: AppState, serverId: string) =>
   !!state.servers.find((s) => s.id === serverId)?.isRegistered;
 
+// A connection has not said whether it stores markers until it welcomes us, so until then we hold a read for the account we keep.
+function holdsMarkers(state: AppState, serverId: string): boolean {
+  if (serverTracksReadMarker(state, serverId)) return true;
+  const server = state.servers.find((s) => s.id === serverId);
+  return !!server?.account && !server.isRegistered;
+}
+
 // On a server without read markers we keep the marker for this session only.
 export function markChatRead(
   store: StoreApi<AppState>,
@@ -102,7 +109,7 @@ export function markChatRead(
   const state = store.getState();
   const chat = findChat(state, serverId, chatId);
   if (!chat) return;
-  const tracks = serverTracksReadMarker(state, serverId);
+  const tracks = holdsMarkers(state, serverId);
   // Until the server tells us the stored marker, ours could only replace it.
   if (tracks && chat.readMarker === undefined) return;
   const newest = newestMessageTime(state, chatKey(serverId, chat));
@@ -450,8 +457,16 @@ export function registerReadMarkerHandlers(store: StoreApi<AppState>): void {
 
   // Sending a message means the user has read the chat, so we mark it read
   // at once, even when they switch away or scroll up right after.
-  ircClient.on("rawLine", ({ serverId, direction, line }) => {
+  // A line that waited leaves long after the user sent it, when they may be reading elsewhere, so it marks nothing.
+  ircClient.on("rawLine", ({ serverId, direction, line, afterWaiting }) => {
     if (direction !== "tx") return;
+    const target = sentMessageTarget(serverId, line);
+    if (afterWaiting) return;
+    const chat = target && findConversation(store, serverId, target);
+    if (chat) markChatRead(store, serverId, chat.channelId);
+  });
+  // The user has read the chat when they send, also when the line has to wait before it leaves.
+  ircClient.on("lineQueued", ({ serverId, line }) => {
     const target = sentMessageTarget(serverId, line);
     const chat = target && findConversation(store, serverId, target);
     if (chat) markChatRead(store, serverId, chat.channelId);

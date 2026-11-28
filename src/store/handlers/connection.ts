@@ -136,6 +136,8 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
   });
 
   ircClient.on("ISUPPORT", ({ serverId, key, value }) => {
+    // A left channel shows only under a prefix the server names, so we look at the saved marks again once CHANTYPES arrives.
+    if (key === "CHANTYPES") restoreLeftChannels(store, serverId);
     if (key !== "NETWORK" || !value) return;
     store.setState((state) => ({
       servers: state.servers.map((s) =>
@@ -231,6 +233,8 @@ export function registerConnectionHandlers(store: StoreApi<AppState>): void {
           ...(connectionState === "connected"
             ? { isAway: false, awayMessage: undefined }
             : {}),
+          // Each connection negotiates its own capabilities, so we start it with none enabled.
+          ...(connectionState === "connected" ? { capabilities: [] } : {}),
           webPushFailure: undefined,
           account:
             connectionState === "connected"

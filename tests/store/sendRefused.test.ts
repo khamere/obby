@@ -35,6 +35,7 @@ describe("a refused send", () => {
     registerMessageHandlers(useStore);
     useStore.setState({
       messages: {},
+      historyWindows: {},
       servers: [
         {
           id: "s1",
@@ -72,6 +73,30 @@ describe("a refused send", () => {
     ]);
   });
 
+  it("fails the labelled line of a chat that went back to show the past", () => {
+    useStore.setState({
+      messages: { "s1-c1": [] },
+      historyWindows: {
+        "s1-c1": { until: 1000, present: [pending("one", "l1")] },
+      },
+    });
+    ircClient.triggerEvent("SEND_REFUSED", {
+      serverId: "s1",
+      target: "#chan",
+      reason: "Cannot send to channel (+m)",
+      label: "l1",
+    });
+    const { historyWindows } = useStore.getState();
+    expect(
+      historyWindows["s1-c1"]?.present.map((m) => [
+        m.content,
+        m.status,
+        m.failReason,
+      ]),
+    ).toEqual([["one", "failed", "Cannot send to channel (+m)"]]);
+    expect(lines()).toEqual([]);
+  });
+
   it("fails the newest pending line when the refusal has no label", () => {
     useStore.getState().addMessage(pending("one", "l1"));
     useStore.getState().addMessage(pending("two", "l2"));
@@ -96,6 +121,94 @@ describe("a refused send", () => {
     expect(lines().map((m) => [m.type, m.content])).toEqual([
       ["error", "Not delivered: Cannot send to channel"],
     ]);
+  });
+
+  it("leaves the newest pending line alone while lines still wait to leave", () => {
+    vi.spyOn(ircClient, "hasWaitingLines").mockReturnValue(true);
+    vi.spyOn(ircClient, "takeRecentSend").mockReturnValue(true);
+    useStore.getState().addMessage(pending("typed", "l1"));
+    ircClient.triggerEvent("SEND_REFUSED", {
+      serverId: "s1",
+      target: "#chan",
+      reason: "Cannot send to channel",
+    });
+    expect(lines().map((m) => [m.type, m.content, m.status])).toEqual([
+      ["error", "Not delivered: Cannot send to channel", undefined],
+      ["message", "typed", "pending"],
+    ]);
+  });
+
+  describe("repeated for every line of a long send", () => {
+    const refuse = () => {
+      vi.advanceTimersByTime(2000);
+      ircClient.triggerEvent("SEND_REFUSED", {
+        serverId: "s1",
+        target: "#chan",
+        reason: "Cannot send to channel",
+      });
+    };
+    const said = (content: string): Message => ({
+      ...pending(content, "unused"),
+      pendingLabel: undefined,
+      status: undefined,
+    });
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(0);
+      vi.spyOn(ircClient, "takeRecentSend").mockReturnValue(true);
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("is said once while the rest of the send waits", () => {
+      vi.spyOn(ircClient, "hasWaitingLines").mockReturnValue(true);
+      refuse();
+      refuse();
+      refuse();
+      expect(lines().map((m) => m.type)).toEqual(["error"]);
+    });
+
+    it("is said again for a later send that the server refuses with the same words", () => {
+      vi.spyOn(ircClient, "hasWaitingLines").mockReturnValue(true);
+      refuse();
+      refuse();
+      vi.spyOn(ircClient, "hasWaitingLines").mockReturnValue(false);
+      vi.advanceTimersByTime(3_600_000);
+      refuse();
+      expect(lines().map((m) => m.type)).toEqual(["error", "error"]);
+    });
+
+    it("is said again for a later send while only lines for other chats wait", () => {
+      vi.spyOn(ircClient, "hasWaitingLines").mockImplementation(
+        (_serverId, receiver) => receiver !== "#chan",
+      );
+      refuse();
+      refuse();
+      expect(lines().map((m) => m.type)).toEqual(["error", "error"]);
+    });
+
+    it("is said once while a typed line waits below it", () => {
+      vi.spyOn(ircClient, "hasWaitingLines").mockReturnValue(true);
+      refuse();
+      useStore.getState().addMessage(pending("typed", "l1"));
+      refuse();
+      expect(lines().map((m) => [m.type, m.status])).toEqual([
+        ["error", undefined],
+        ["message", "pending"],
+      ]);
+    });
+
+    it("is said again after another line came in between", () => {
+      vi.spyOn(ircClient, "hasWaitingLines").mockReturnValue(true);
+      refuse();
+      vi.advanceTimersByTime(2000);
+      useStore.getState().addMessage(said("someone else spoke"));
+      refuse();
+      expect(lines().map((m) => m.type)).toEqual(["error", "message", "error"]);
+    });
   });
 
   it("ignores a refusal of something that was not a message, such as a typing notice", () => {

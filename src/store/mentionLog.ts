@@ -63,7 +63,10 @@ export function addMention(
   log: MentionEntry[],
   entry: MentionEntry,
 ): MentionEntry[] {
-  if (entry.msgid && log.some((m) => m.msgid === entry.msgid)) return log;
+  // Every connection we hold to a network logs the line under the same msgid, so the server tells them apart.
+  const isSameMsgid = (m: MentionEntry) =>
+    m.msgid === entry.msgid && m.serverId === entry.serverId;
+  if (entry.msgid && log.some(isSameMsgid)) return log;
   // A server without msgids sends the same line again on every replay, and
   // only its channel, sender, time and text tell us we have it.
   if (!entry.msgid && log.some((m) => isSameLine(m, entry))) return log;

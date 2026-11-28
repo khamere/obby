@@ -54,6 +54,11 @@ export function isServicesNick(nick: string): boolean {
   return lower.endsWith("serv") || SERVICES_NICKS.has(lower);
 }
 
+// A private line that hands a password to a bot, whatever the bot is called.
+export function isCredentialLine(body: string): boolean {
+  return CREDENTIAL_COMMAND.test(body.trim());
+}
+
 export type { ParsedLine };
 
 export interface RecorderEnv {
@@ -400,7 +405,7 @@ export class HistoryRecorder {
       !isFromServer &&
       !isServicesNick(target) &&
       !isServicesNick(nickOf(source)) &&
-      !CREDENTIAL_COMMAND.test(body.trim()) &&
+      !isCredentialLine(body) &&
       !this.env.isEncryptedPm(target)
     );
   }

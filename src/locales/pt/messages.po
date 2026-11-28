@@ -283,6 +283,8 @@ msgid "{total, plural, one {# channel} other {# channels}}"
 msgstr "{total, plural, one {# canal} other {# canais}}"
 
 #: src/components/message/CollapsibleMessage.tsx
+#: src/components/ui/SendQueueBar.tsx
+#: src/store/handlers/messages.ts
 msgid "{totalLines, plural, one {# line} other {# lines}}"
 msgstr "{totalLines, plural, one {# linha} other {# linhas}}"
 
@@ -902,10 +904,6 @@ msgstr "Ajustar automaticamente o volume do seu microfone"
 msgid "Automatically authenticate as operator on connect"
 msgstr "Autenticar automaticamente como operador ao conectar"
 
-#: src/lib/settings/definitions/allSettings.ts
-msgid "Automatically switch to single line for short messages"
-msgstr "Mudar automaticamente para linha única em mensagens curtas"
-
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Avatar"
@@ -1189,6 +1187,7 @@ msgstr "Não é possível remover a sua última credencial 2FA"
 #: src/components/ui/ModerationModal.tsx
 #: src/components/ui/RegionSelectOverlay.tsx
 #: src/components/ui/RemoveServerConfirmModal.tsx
+#: src/components/ui/SendQueueBar.tsx
 #: src/components/ui/settings/BackupField.tsx
 #: src/components/ui/settings/HistoryUsageField.tsx
 #: src/components/ui/TotpStepUpModal.tsx
@@ -4438,6 +4437,7 @@ msgstr "Não entregue"
 
 #: src/components/message/MessageStatusIndicator.tsx
 #: src/store/handlers/messages.ts
+#: src/store/handlers/messages.ts
 msgid "Not delivered: {reason}"
 msgstr "Não entregue: {reason}"
 
@@ -4564,6 +4564,10 @@ msgstr "OK"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "on"
 msgstr "ativo"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "On servers without multiline support, join the lines of a message with spaces instead of sending one message per line"
+msgstr "Em servidores sem suporte a multilinha, juntar as linhas de uma mensagem com espaços em vez de enviar uma mensagem por linha"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Once a day, ask the project's release page whether a newer build exists and show it above your name. Nothing is downloaded until you tap Update."
@@ -5737,6 +5741,13 @@ msgstr "Selecione ou adicione um canal para começar."
 
 #: src/components/layout/ChannelRow.tsx
 #: src/components/layout/ChannelRow.tsx
+#: src/components/layout/PrivateChatRow.tsx
+#: src/components/layout/PrivateChatRow.tsx
+msgid "Select to continue your draft"
+msgstr "Selecione para continuar o seu rascunho"
+
+#: src/components/layout/ChannelRow.tsx
+#: src/components/layout/ChannelRow.tsx
 msgid "Select to enter the channel key"
 msgstr "Selecione para inserir a chave do canal"
 
@@ -5802,6 +5813,7 @@ msgid "Send unencrypted"
 msgstr "Enviar sem criptografia"
 
 #: src/components/message/MessageStatusIndicator.tsx
+#: src/components/ui/SendQueueBar.tsx
 msgid "Sending"
 msgstr "Enviando"
 

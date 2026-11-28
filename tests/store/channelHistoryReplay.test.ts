@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ircClient from "../../src/lib/ircClient";
-import useStore from "../../src/store";
+import useStore, { rememberMsgIds } from "../../src/store";
 import {
   chathistoryBuffers,
   historyEditBuffers,
@@ -76,7 +76,9 @@ describe("channel history through the IRC parser", () => {
   it("does not treat already-seen channel text as an empty history page", () => {
     useStore.setState({
       messages: { "history-server-channel": [msg("cached")] },
-      processedMessageIds: new Set(["cached"]),
+      processedMessageIds: rememberMsgIds(new Set(), "history-server", [
+        "cached",
+      ]),
     });
     feed(
       ":soju BATCH +repeat chathistory #test",

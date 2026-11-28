@@ -46,6 +46,7 @@ import {
   emojiClickValue,
   packEntriesForPicker,
 } from "../../lib/customEmojiPicker";
+import { getDraft, setDraft } from "../../lib/drafts";
 import {
   buildMediaDescriptor,
   CIPHERTEXT_EXTENSION,
@@ -146,6 +147,7 @@ import {
   type RecordingFailure,
   RegionRecordingBar,
 } from "../ui/RegionRecordingBar";
+import { SendQueueBar } from "../ui/SendQueueBar";
 import SuggestionList from "../ui/SuggestionList";
 import { TextArea } from "../ui/TextInput";
 import { TopicMediaStrip } from "../ui/TopicMediaStrip";
@@ -189,6 +191,14 @@ function previewable(file: File): boolean {
   );
 }
 
+// We measure a row from the top of its list, so a bar that opens or closes above the list leaves the value as it is.
+function topInList(row: HTMLElement): number {
+  const list = row.closest(".obby-chat-area");
+  return (
+    row.getBoundingClientRect().top - (list?.getBoundingClientRect().top ?? 0)
+  );
+}
+
 function releasePreview(attachment: PendingAttachment): void {
   if (attachment.kind === "file" && attachment.previewUrl) {
     URL.revokeObjectURL(attachment.previewUrl);
@@ -213,6 +223,8 @@ export const ChatArea: React.FC<{
   // Used to restore auto-scroll after nav ends without corrupting wasAtBottomRef.
   const navWasActiveRef = useRef(false);
   const wasAtBottomBeforeNavRef = useRef(false);
+  // Where keyboard nav last put its highlighted row in the list, so we can tell its own scrolling from the reader's.
+  const navPlacedRowRef = useRef<{ id: string; top: number } | null>(null);
   // messageText is NOT React state — stored in a ref to avoid re-renders on every keystroke.
   // hasText tracks the empty↔non-empty boundary for send-button rendering (rare transitions).
   // completionInput mirrors the text only while a completion can be open.
@@ -246,8 +258,8 @@ export const ChatArea: React.FC<{
   // We treat null, meaning no queryable policy or a fetch still in flight, as
   // unrestricted.
   const [uploadInfo, setUploadInfo] = useState<UploadInfo | null>(null);
-  // Keyed the way drafts are, so walking to another conversation never carries
-  // a file along to be sent there.
+  // Keyed by conversation, so walking to another one never carries a file
+  // along to be sent there.
   const [attachmentsByChannel, setAttachmentsByChannel] = useState<
     Record<string, PendingAttachment[]>
   >({});
@@ -319,14 +331,26 @@ export const ChatArea: React.FC<{
   });
   const [inviteUserModalOpen, setInviteUserModalOpen] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  // Per-channel draft storage. messageTextRef is the source of truth for the input value.
-  // It is updated imperatively (never from state), so no re-render occurs on each keystroke.
-  const draftMap = useRef<Map<string, string>>(new Map());
   // Per-channel scroll position. null = was at bottom (restore to bottom).
   const scrollPositionMapRef = useRef<
     Map<string, { scrollTop: number; visibleCount: number } | null>
   >(new Map());
+  // messageTextRef is the source of truth for the input value.
+  // It is updated imperatively (never from state), so no re-render occurs on each keystroke.
   const messageTextRef = useRef("");
+  const openChatRef = useRef<{
+    key: string;
+    serverId: string;
+    name: string;
+  } | null>(null);
+  // The chat whose text the box holds. The box still holds the text of the chat we left until the newly opened chat's draft is shown.
+  const textOwnerRef = useRef<string | null>(null);
+  const draftTextRef = useRef(() => messageTextRef.current);
+  const recordDraft = useCallback(() => {
+    const chat = openChatRef.current;
+    if (!chat || chat.key !== textOwnerRef.current) return;
+    setDraft(chat.serverId, chat.name, draftTextRef.current());
+  }, []);
   const hasTextRef = useRef(false);
   // platform() is stable at runtime — ref avoids adding it to useCallback deps.
   const isNativeMobileRef = useRef(isTauriMobile());
@@ -403,6 +427,7 @@ export const ChatArea: React.FC<{
   const applyText = useCallback(
     (text: string) => {
       messageTextRef.current = text;
+      recordDraft();
       if (inputRef.current) inputRef.current.value = text;
       resizeTextarea();
       const ht = text.trim().length > 0;
@@ -411,7 +436,7 @@ export const ChatArea: React.FC<{
         if (isNativeMobileRef.current) setHasText(ht);
       }
     },
-    [resizeTextarea],
+    [resizeTextarea, recordDraft],
   );
 
   const clearCompletion = useCallback(
@@ -830,30 +855,7 @@ export const ChatArea: React.FC<{
       messageHistory.resetHistory();
     },
   });
-
-  const pendingBotCommandPick = useStore(
-    (state) => state.ui.pendingBotCommandPick,
-  );
-  const clearBotCommandPickRequest = useStore(
-    (state) => state.clearBotCommandPickRequest,
-  );
-  useEffect(() => {
-    if (
-      pendingBotCommandPick &&
-      pendingBotCommandPick.serverId === selectedServerId
-    ) {
-      command.begin(
-        pendingBotCommandPick.botNick,
-        pendingBotCommandPick.command,
-      );
-      clearBotCommandPickRequest();
-    }
-  }, [
-    pendingBotCommandPick,
-    selectedServerId,
-    clearBotCommandPickRequest,
-    command.begin,
-  ]);
+  draftTextRef.current = command.draftText;
 
   const beginTypedBotCommand = (text: string, caret: number) => {
     const typed = typedBotCommand(
@@ -869,27 +871,6 @@ export const ChatArea: React.FC<{
       });
     return typed;
   };
-
-  const pendingComposerCommand = useStore(
-    (state) => state.ui.pendingComposerCommand,
-  );
-  // biome-ignore lint/correctness/useExhaustiveDependencies: store actions have unstable refs
-  useEffect(() => {
-    if (
-      !pendingComposerCommand ||
-      pendingComposerCommand.serverId !== selectedServerId
-    )
-      return;
-    useStore.getState().clearComposerCommandRequest();
-    const { name, botNick } = pendingComposerCommand;
-    if (command.invocation) command.cancel();
-    // We name the bot, since a bare name may belong to the server or another bot.
-    const text = `/${name}@${botNick} `;
-    applyText(text);
-    inputRef.current?.focus();
-    inputRef.current?.setSelectionRange(text.length, text.length);
-    beginTypedBotCommand(text, text.length);
-  }, [pendingComposerCommand, selectedServerId]);
 
   const completionUsers = useMemo<User[]>(
     () =>
@@ -1062,6 +1043,16 @@ export const ChatArea: React.FC<{
     [selectedServerId, selectedChannelId, selectedPrivateChatId],
   );
 
+  const openChatName = selectedChannelId
+    ? selectedChannel?.name
+    : selectedPrivateChat?.username;
+  openChatRef.current =
+    channelKey && selectedServerId && openChatName
+      ? { key: channelKey, serverId: selectedServerId, name: openChatName }
+      : null;
+  // A chat restored from the last session is selected before the server has listed it.
+  const isChatLoaded = openChatName !== undefined;
+
   const channelMessages = useMemo(
     () => (channelKey ? messages[channelKey] || [] : []),
     [messages, channelKey],
@@ -1090,9 +1081,21 @@ export const ChatArea: React.FC<{
       }
       const el = findMessageRow(document, navHighlightedMsgId);
       el?.scrollIntoView({ block: "nearest", behavior: "instant" });
+      navPlacedRowRef.current = el && {
+        id: navHighlightedMsgId,
+        top: topInList(el),
+      };
     } else if (navWasActiveRef.current) {
-      if (wasAtBottomBeforeNavRef.current) {
-        channelListRefs.current.get(channelKey)?.scrollToBottom();
+      const list = channelListRefs.current.get(channelKey);
+      const placed = navPlacedRowRef.current;
+      const row = placed && findMessageRow(document, placed.id);
+      // A reader who scrolled or jumped away during the navigation keeps their place, so we restore the bottom only while the list is still there or the highlighted row sits where the navigation put it.
+      if (
+        wasAtBottomBeforeNavRef.current &&
+        (list?.getScrollState().isAtBottom ||
+          (placed && row && Math.abs(topInList(row) - placed.top) <= 1))
+      ) {
+        list?.scrollToBottom();
       }
       navWasActiveRef.current = false;
       wasAtBottomBeforeNavRef.current = false;
@@ -1110,26 +1113,28 @@ export const ChatArea: React.FC<{
             .isAtBottom ?? false;
       }
     } else if (!navWasActiveRef.current && wasAtBottomBeforeNavRef.current) {
-      // rAF lets the banner-removal relayout settle before scrollTop can reach the new maximum
-      requestAnimationFrame(() => {
-        channelListRefs.current.get(channelKey)?.scrollToBottom();
-      });
+      // A reader who scrolled or jumped away during the reply keeps their place, so we restore the bottom only while the list is still there.
+      if (channelListRefs.current.get(channelKey)?.getScrollState().isAtBottom)
+        // rAF lets the banner-removal relayout settle before scrollTop can reach the new maximum
+        requestAnimationFrame(() => {
+          channelListRefs.current.get(channelKey)?.scrollToBottom();
+        });
       wasAtBottomBeforeNavRef.current = false;
     }
   }, [localReplyTo]);
 
   const messageHistory = useMessageHistory(channelKey);
 
-  // Save outgoing channel's draft on cleanup; messageText read through ref so the
-  // cleanup always sees the latest typed value, not the stale closure at effect-run time.
+  // A command being filled in ends with the chat it was started in.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the cleanup runs when the open chat changes
   useEffect(() => {
-    const key = channelKey;
     return () => {
-      if (key) draftMap.current.set(key, command.leave());
+      command.leave();
     };
   }, [channelKey, command.leave]);
 
-  // Save outgoing channel's scroll position on cleanup (same pattern as draftMap).
+  // Save outgoing channel's scroll position on cleanup; the key is captured so
+  // the cleanup names the chat we leave.
   useEffect(() => {
     const key = channelKey;
     return () => {
@@ -1147,12 +1152,18 @@ export const ChatArea: React.FC<{
     };
   }, [channelKey]);
 
-  // Restore the new channel's draft (empty string if none saved yet).
+  // Show the opened chat's draft (empty when it has none). From here on the
+  // box holds this chat's text, so edits are recorded under it.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the chat is read through a ref; its key and whether it is loaded drive the effect
   useEffect(() => {
-    if (channelKey) {
-      applyText(draftMap.current.get(channelKey) ?? "");
+    if (!channelKey) {
+      textOwnerRef.current = null;
+      return;
     }
-  }, [channelKey, applyText]);
+    const chat = openChatRef.current;
+    textOwnerRef.current = chat ? chat.key : null;
+    applyText(chat ? getDraft(chat.serverId, chat.name) : "");
+  }, [channelKey, isChatLoaded, applyText]);
 
   const hasComposer =
     !!(selectedChannel || selectedPrivateChat) && !selectedChannel?.leftReason;
@@ -1161,6 +1172,52 @@ export const ChatArea: React.FC<{
   useEffect(() => {
     if (hasComposer) applyText(messageTextRef.current);
   }, [hasComposer, applyText]);
+
+  // A command requested from elsewhere starts once the box holds the open chat's text, since starting it stashes that text as the chat's draft.
+  const pendingBotCommandPick = useStore(
+    (state) => state.ui.pendingBotCommandPick,
+  );
+  const clearBotCommandPickRequest = useStore(
+    (state) => state.clearBotCommandPickRequest,
+  );
+  useEffect(() => {
+    if (
+      pendingBotCommandPick &&
+      pendingBotCommandPick.serverId === selectedServerId
+    ) {
+      command.begin(
+        pendingBotCommandPick.botNick,
+        pendingBotCommandPick.command,
+      );
+      clearBotCommandPickRequest();
+    }
+  }, [
+    pendingBotCommandPick,
+    selectedServerId,
+    clearBotCommandPickRequest,
+    command.begin,
+  ]);
+
+  const pendingComposerCommand = useStore(
+    (state) => state.ui.pendingComposerCommand,
+  );
+  // biome-ignore lint/correctness/useExhaustiveDependencies: store actions have unstable refs
+  useEffect(() => {
+    if (
+      !pendingComposerCommand ||
+      pendingComposerCommand.serverId !== selectedServerId
+    )
+      return;
+    useStore.getState().clearComposerCommandRequest();
+    const { name, botNick } = pendingComposerCommand;
+    if (command.invocation) command.cancel();
+    // We name the bot, since a bare name may belong to the server or another bot.
+    const text = `/${name}@${botNick} `;
+    applyText(text);
+    inputRef.current?.focus();
+    inputRef.current?.setSelectionRange(text.length, text.length);
+    beginTypedBotCommand(text, text.length);
+  }, [pendingComposerCommand, selectedServerId]);
 
   // Keep-alive: maintain last 3 visited channels in an LRU list so their message list
   // DOMs are preserved with display:none (scroll position + media elements stay alive).
@@ -1248,12 +1305,17 @@ export const ChatArea: React.FC<{
         // an upload that never starts hands the words and the files back.
         const held = attachments;
         const replyTo = localReplyTo;
+        const sentFrom = openChatRef.current;
         updateAttachments(channelKey, () => NO_ATTACHMENTS);
         void handleFilesUpload(files, caption, links, replyTo).then(
           (outcome) => {
             if (outcome === "failed") {
               updateAttachments(channelKey, () => held);
-              applyText(caption);
+              // The words go back to the chat they were written in, which may no longer be the open one.
+              if (openChatRef.current?.key === sentFrom?.key)
+                applyText(caption);
+              else if (sentFrom)
+                setDraft(sentFrom.serverId, sentFrom.name, caption);
               setLocalReplyTo(replyTo);
               return;
             }
@@ -1277,7 +1339,6 @@ export const ChatArea: React.FC<{
     );
     applyText("");
     setCompletionInput(NO_COMPLETION_INPUT);
-    draftMap.current.delete(channelKey);
     setLocalReplyTo(null);
     setNavHighlightedMsgId(null);
     messageHistory.resetHistory();
@@ -1902,6 +1963,7 @@ export const ChatArea: React.FC<{
 
     // Update ref — no state setter, so no ChatArea re-render on every keystroke.
     messageTextRef.current = newText;
+    recordDraft();
     resizeTextarea();
 
     // Only trigger re-render when send-button state changes (empty ↔ non-empty).
@@ -2284,6 +2346,7 @@ export const ChatArea: React.FC<{
       <TopicMediaStrip />
       <MiniMediaPlayer />
       <UploadProgressBar jobs={uploadJobs} onCancel={cancelUploadJob} />
+      <SendQueueBar serverId={selectedServerId} />
       {/* Member list overlay replaces messages when desktop is too narrow for sidebar */}
       {showMemberListOverlay && (
         <div

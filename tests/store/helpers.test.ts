@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  capMergedMessages,
   dialsSavedAddress,
   findWhois,
+  MAX_MESSAGES_PER_CHANNEL,
+  mergeHistoryPage,
   resolveUserMetadata,
   withoutReaction,
   withReaction,
@@ -191,5 +194,245 @@ describe("findWhois", () => {
   it("finds nothing before any WHOIS arrived", () => {
     expect(findWhois(undefined, "alice")).toBeUndefined();
     expect(findWhois({}, "alice")).toBeUndefined();
+  });
+});
+
+describe("mergeHistoryPage", () => {
+  const said = (msgid: string, time: number): Message =>
+    ({
+      id: `id-${msgid}`,
+      msgid,
+      content: msgid,
+      userId: "alice",
+      timestamp: new Date(time),
+    }) as Message;
+  const order = (existing: Message[], page: Message[]) =>
+    mergeHistoryPage(existing, page).merged.map((m) => m.msgid);
+
+  it("puts an older page ahead of the lines we hold in the millisecond it ends in", () => {
+    const existing = [said("m3", 1000), said("m4", 1000), said("m5", 2000)];
+    const page = [said("m0", 500), said("m1", 1000), said("m2", 1000)];
+
+    expect(order(existing, page)).toEqual(["m0", "m1", "m2", "m3", "m4", "m5"]);
+  });
+
+  it("puts a newer page behind the lines we hold in the millisecond it starts in", () => {
+    const existing = [said("m0", 500), said("m1", 1000)];
+    const page = [said("m2", 1000), said("m3", 1000), said("m4", 2000)];
+
+    expect(order(existing, page)).toEqual(["m0", "m1", "m2", "m3", "m4"]);
+  });
+
+  it("fits a page between the lines we hold on both sides of it", () => {
+    const existing = [said("m0", 1000), said("m5", 2000), said("m6", 2000)];
+    const page = [
+      said("m1", 1000),
+      said("m2", 1500),
+      said("m3", 2000),
+      said("m4", 2000),
+    ];
+
+    expect(order(existing, page)).toEqual([
+      "m0",
+      "m1",
+      "m2",
+      "m3",
+      "m4",
+      "m5",
+      "m6",
+    ]);
+  });
+
+  it("keeps the page's order around a line we already hold, and adds it once", () => {
+    const held = said("m2", 1000);
+    const existing = [said("m0", 500), held];
+    const page = [said("m1", 1000), said("m2", 1000), said("m3", 1000)];
+
+    const { merged, added } = mergeHistoryPage(existing, page);
+
+    expect(merged.map((m) => m.msgid)).toEqual(["m0", "m1", "m2", "m3"]);
+    expect(merged[2]).toBe(held);
+    expect(added.map((m) => m.msgid)).toEqual(["m1", "m3"]);
+  });
+
+  it("puts a page of one millisecond ahead of our lines there when we hold nothing older", () => {
+    const existing = [said("m2", 1000), said("m3", 2000)];
+    const page = [said("m0", 1000), said("m1", 1000)];
+
+    expect(order(existing, page)).toEqual(["m0", "m1", "m2", "m3"]);
+  });
+
+  it("puts a page of one millisecond ahead of our lines there when all we hold from before is a join", () => {
+    const joined = { ...said("j0", 400), type: "join" } as Message;
+    const existing = [joined, said("m1", 1000), said("m2", 1000)];
+    const page = [said("m0", 1000)];
+
+    expect(order(existing, page)).toEqual(["j0", "m0", "m1", "m2"]);
+  });
+
+  it("keeps two alike lines apart when the server gave them different ids", () => {
+    const twin = (msgid: string): Message => ({
+      ...said(msgid, 1000),
+      content: "ok",
+    });
+    const existing = [twin("m1")];
+
+    const { merged, added } = mergeHistoryPage(existing, [
+      twin("m1"),
+      twin("m2"),
+    ]);
+
+    expect(merged.map((m) => m.msgid)).toEqual(["m1", "m2"]);
+    expect(added.map((m) => m.msgid)).toEqual(["m2"]);
+  });
+
+  it("takes a line without an id for the alike line we hold", () => {
+    const existing = [{ ...said("m1", 1000), content: "ok" }];
+    const echo = { ...said("m1", 1000), content: "ok", msgid: undefined };
+
+    const { merged, added } = mergeHistoryPage(existing, [echo as Message]);
+
+    expect(merged).toEqual(existing);
+    expect(added).toEqual([]);
+  });
+
+  it("takes a line with an id for the alike line we hold without one", () => {
+    const local = { ...said("m1", 1000), content: "ok", msgid: undefined };
+    const existing = [local as Message];
+
+    const { merged, added } = mergeHistoryPage(existing, [
+      { ...said("m1", 1000), content: "ok" },
+    ]);
+
+    expect(merged).toEqual(existing);
+    expect(added).toEqual([]);
+  });
+
+  it("gives the lines a page names its order when the page brings nothing new", () => {
+    const existing = [said("m2", 1000), said("j", 1000), said("m1", 1000)];
+    const page = [said("m1", 1000), said("m2", 1000)];
+
+    expect(order(existing, page)).toEqual(["m1", "j", "m2"]);
+  });
+
+  it("leaves a line we hold where it is when a page that leaves it out brings nothing new", () => {
+    const existing = [said("m1", 1000), said("m2", 1000), said("m3", 1000)];
+    const page = [said("m1", 1000), said("m3", 1000)];
+
+    expect(order(existing, page)).toEqual(["m1", "m2", "m3"]);
+  });
+
+  it("returns what we hold, in order, for an empty page", () => {
+    const existing = [said("m1", 2000), said("m0", 1000)];
+
+    expect(order(existing, [])).toEqual(["m0", "m1"]);
+  });
+
+  it("puts a newest page of one millisecond behind the only line we hold there", () => {
+    const existing = [said("m1", 1000)];
+    const page = [said("m2", 1000), said("m3", 1000), said("m4", 1000)];
+
+    expect(
+      mergeHistoryPage(existing, page, "newest").merged.map((m) => m.msgid),
+    ).toEqual(["m1", "m2", "m3", "m4"]);
+  });
+
+  it("puts rows read from the newer side behind our lines when all of them share one millisecond", () => {
+    const existing = [said("m1", 1000), said("m2", 1000)];
+    const page = [said("m3", 1000), said("m4", 1000)];
+
+    expect(
+      mergeHistoryPage(existing, page, "newest").merged.map((m) => m.msgid),
+    ).toEqual(["m1", "m2", "m3", "m4"]);
+  });
+
+  it("puts a page of one millisecond right ahead of the line it was asked from, between the lines we hold there", () => {
+    const existing = [
+      said("m0", 500),
+      said("m1", 1000),
+      said("m4", 1000),
+      said("m5", 1000),
+      said("m6", 2000),
+    ];
+    const page = [said("m2", 1000), said("m3", 1000)];
+
+    expect(
+      mergeHistoryPage(existing, page, { before: "m4" }).merged.map(
+        (m) => m.msgid,
+      ),
+    ).toEqual(["m0", "m1", "m2", "m3", "m4", "m5", "m6"]);
+  });
+
+  it("keeps our lines ahead of a page of one millisecond that repeats the lines behind them", () => {
+    const existing = ["m0", "m1", "m2", "m3"].map((msgid) => said(msgid, 1000));
+    const page = [said("m2", 1000), said("m3", 1000), said("m4", 1000)];
+
+    expect(order(existing, page)).toEqual(["m0", "m1", "m2", "m3", "m4"]);
+  });
+
+  it("keeps a line that reached us after a newest page of one millisecond behind that page", () => {
+    const existing = [said("m1", 1000), said("m2", 1000)];
+    const page = [said("m0", 1000), said("m1", 1000)];
+
+    expect(
+      mergeHistoryPage(existing, page, "newest").merged.map((m) => m.msgid),
+    ).toEqual(["m0", "m1", "m2"]);
+  });
+
+  it("places a page by its times when we do not hold the line it was asked from", () => {
+    const existing = [said("m3", 1000), said("m4", 2000)];
+    const page = [said("m0", 500), said("m1", 1000), said("m2", 1000)];
+
+    expect(
+      mergeHistoryPage(existing, page, { before: "gone" }).merged.map(
+        (m) => m.msgid,
+      ),
+    ).toEqual(["m0", "m1", "m2", "m3", "m4"]);
+  });
+});
+
+describe("capMergedMessages", () => {
+  const said = (index: number, time: number): Message =>
+    ({
+      id: `id-${index}`,
+      msgid: `m${index}`,
+      content: `line ${index}`,
+      userId: "alice",
+      timestamp: new Date(time),
+    }) as Message;
+  const full = Array.from({ length: MAX_MESSAGES_PER_CHANNEL }, (_, index) =>
+    said(index + 1, 1000 + Math.floor(index / 10)),
+  );
+
+  it("keeps an older line that shares the millisecond of the oldest line we hold at the cap", () => {
+    const older = said(0, 1000);
+
+    const capped = capMergedMessages(full, [older, ...full], undefined);
+
+    expect(capped.messages).toHaveLength(MAX_MESSAGES_PER_CHANNEL);
+    expect(capped.messages[0]).toBe(older);
+    expect(capped.window?.present).toBe(full);
+  });
+
+  it("keeps the newest end when the newest page puts a line first at the cap", () => {
+    const first = said(0, 1000);
+    const live = said(MAX_MESSAGES_PER_CHANNEL + 1, 9000);
+    const merged = [first, ...full, live];
+
+    const capped = capMergedMessages(full, merged, undefined, "newest");
+
+    expect(capped.messages).toHaveLength(MAX_MESSAGES_PER_CHANNEL);
+    expect(capped.messages.at(-1)).toBe(live);
+    expect(capped.window).toBeUndefined();
+  });
+
+  it("drops the oldest end when a newer line arrives at the cap", () => {
+    const newer = said(MAX_MESSAGES_PER_CHANNEL + 1, 9000);
+
+    const capped = capMergedMessages(full, [...full, newer], undefined);
+
+    expect(capped.messages.at(-1)).toBe(newer);
+    expect(capped.messages[0]).toBe(full[1]);
+    expect(capped.window).toBeUndefined();
   });
 });

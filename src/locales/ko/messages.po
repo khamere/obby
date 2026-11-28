@@ -283,6 +283,8 @@ msgid "{total, plural, one {# channel} other {# channels}}"
 msgstr "{total, plural, one {채널 #개} other {채널 #개}}"
 
 #: src/components/message/CollapsibleMessage.tsx
+#: src/components/ui/SendQueueBar.tsx
+#: src/store/handlers/messages.ts
 msgid "{totalLines, plural, one {# line} other {# lines}}"
 msgstr "{totalLines, plural, other {# 줄}}"
 
@@ -902,10 +904,6 @@ msgstr "마이크 볼륨 자동 조절"
 msgid "Automatically authenticate as operator on connect"
 msgstr "연결 시 자동으로 operator로 인증"
 
-#: src/lib/settings/definitions/allSettings.ts
-msgid "Automatically switch to single line for short messages"
-msgstr "짧은 메시지의 경우 자동으로 한 줄 모드로 전환"
-
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Avatar"
@@ -1189,6 +1187,7 @@ msgstr "마지막 2FA 인증 수단은 삭제할 수 없습니다"
 #: src/components/ui/ModerationModal.tsx
 #: src/components/ui/RegionSelectOverlay.tsx
 #: src/components/ui/RemoveServerConfirmModal.tsx
+#: src/components/ui/SendQueueBar.tsx
 #: src/components/ui/settings/BackupField.tsx
 #: src/components/ui/settings/HistoryUsageField.tsx
 #: src/components/ui/TotpStepUpModal.tsx
@@ -4438,6 +4437,7 @@ msgstr "전달되지 않음"
 
 #: src/components/message/MessageStatusIndicator.tsx
 #: src/store/handlers/messages.ts
+#: src/store/handlers/messages.ts
 msgid "Not delivered: {reason}"
 msgstr "전달되지 않음: {reason}"
 
@@ -4564,6 +4564,10 @@ msgstr "확인"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "on"
 msgstr "켜기"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "On servers without multiline support, join the lines of a message with spaces instead of sending one message per line"
+msgstr "여러 줄 메시지를 지원하지 않는 서버에서는 줄마다 메시지를 따로 보내는 대신 메시지의 줄을 공백으로 이어서 보냅니다"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Once a day, ask the project's release page whether a newer build exists and show it above your name. Nothing is downloaded until you tap Update."
@@ -5737,6 +5741,13 @@ msgstr "시작하려면 채널을 선택하거나 추가하세요."
 
 #: src/components/layout/ChannelRow.tsx
 #: src/components/layout/ChannelRow.tsx
+#: src/components/layout/PrivateChatRow.tsx
+#: src/components/layout/PrivateChatRow.tsx
+msgid "Select to continue your draft"
+msgstr "선택하여 임시 저장한 메시지 이어 쓰기"
+
+#: src/components/layout/ChannelRow.tsx
+#: src/components/layout/ChannelRow.tsx
 msgid "Select to enter the channel key"
 msgstr "선택하여 채널 키 입력"
 
@@ -5802,6 +5813,7 @@ msgid "Send unencrypted"
 msgstr "암호화하지 않고 보내기"
 
 #: src/components/message/MessageStatusIndicator.tsx
+#: src/components/ui/SendQueueBar.tsx
 msgid "Sending"
 msgstr "보내는 중"
 

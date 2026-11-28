@@ -1,3 +1,4 @@
+import { moveDraft } from "../lib/drafts";
 import { moveChannelHistory } from "../lib/history/historyDb";
 import { saveLeftReason } from "../lib/leftChannels";
 import { moveChatMute } from "../lib/mutes";
@@ -80,6 +81,7 @@ export function carrySavedChannelName(
   newName: string,
 ): void {
   moveChatMute(serverId, "channel", oldName, newName);
+  moveDraft(serverId, oldName, newName);
   // We are in the channel under its new name, so a mark that says we left a channel of that name goes.
   saveLeftReason(serverId, newName, undefined);
   renameRecentPlace(serverId, oldName, newName);

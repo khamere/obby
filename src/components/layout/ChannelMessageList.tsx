@@ -854,6 +854,7 @@ export const ChannelMessageList = forwardRef<
     const historyRefusedAt =
       channel?.historyRefusedAt ?? privateChat?.historyRefusedAt;
     const seenHistoryRefusedAtRef = useRef(historyRefusedAt);
+    const [refusedOldestId, setRefusedOldestId] = useState<string | null>();
     // A refusal says nothing about what the server holds, so the page stays
     // open to another request and never counts as an empty one.
     // biome-ignore lint/correctness/useExhaustiveDependencies: runs once per refusal; the oldest message is read as it stands then
@@ -863,9 +864,17 @@ export const ChannelMessageList = forwardRef<
       if (historyRefusedAt === undefined) return;
       const oldestId = channelMessages[0]?.id ?? null;
       refusedOlderPageRef.current = { oldestId, at: historyRefusedAt };
+      setRefusedOldestId(oldestId);
       if (emptyOlderPageAtRef.current === oldestId)
         emptyOlderPageAtRef.current = undefined;
     }, [historyRefusedAt]);
+    // Nothing is on its way for a refused page until we ask again, so we keep its placeholders still.
+    const isOlderPageRefused =
+      !locallyHidden &&
+      !isFetchingMore &&
+      !isLoadingHistory &&
+      refusedOldestId !== undefined &&
+      refusedOldestId === (channelMessages[0]?.id ?? null);
 
     // Scroll to bottom after initial join history loads; clear fetch spinner at batch end.
     const wasLoadingHistoryRef = useRef(false);
@@ -1067,6 +1076,8 @@ export const ChannelMessageList = forwardRef<
         keepPlace();
         cancelAnimationFrame(frame);
         frame = requestAnimationFrame(keepPlace);
+        // A list shown again after a page covered it fires no scroll event, so we look for an edge in view here.
+        loadNearEdgesRef.current();
       });
       observer.observe(container);
       return () => {
@@ -1085,6 +1096,8 @@ export const ChannelMessageList = forwardRef<
         return true;
       }
       if (!serverHasMore || !historyTarget) return false;
+      // A closed connection answers nothing, so we ask on our own account only while connected.
+      if (!isReaderScrolling && !isServerConnected) return false;
       // An empty chat has no oldest message, so the compare is on null: the
       // undefined-vs-null mismatch here used to ask again on every render.
       if ((oldest?.id ?? null) === emptyOlderPageAtRef.current) return false;
@@ -1167,7 +1180,9 @@ export const ChannelMessageList = forwardRef<
       if (
         container.scrollTop < LOAD_AHEAD_PX &&
         (!isScrolledToBottom(container) ||
-          container.scrollHeight <= container.clientHeight)
+          container.scrollHeight <= container.clientHeight ||
+          // A chat barely taller than the list shows its top placeholders at the bottom too, so we fill them.
+          isTopSkeletonInView(container))
       )
         loadOlder(isReaderScrolling);
     };
@@ -1300,7 +1315,9 @@ export const ChannelMessageList = forwardRef<
             <MessageSkeletons isFilling />
           ) : (
             <div ref={messagesInnerRef} className="flex-grow flex flex-col">
-              {hasMoreMessages && <MessageSkeletons isFilling />}
+              {hasMoreMessages && (
+                <MessageSkeletons isFilling isIdle={isOlderPageRefused} />
+              )}
               {eventGroups.map((group) => {
                 if (group.type === "eventGroup") {
                   const firstId = group.messages[0]?.id || "";

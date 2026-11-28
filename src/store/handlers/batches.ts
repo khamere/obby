@@ -8,8 +8,8 @@ import type { Channel, Message } from "../../types";
 import {
   type BatchInfo,
   capMergedMessages,
-  compareMessageOrder,
   hasMsgid,
+  mergeHistoryPage,
   redactedMessage,
   withoutReaction,
   withReaction,
@@ -17,7 +17,7 @@ import {
 import { type AppState, rememberMsgIds } from "../index";
 import type { MentionEntry } from "../mentionLog";
 import { noteMemberLeft } from "../whoReplyBatcher";
-import { isServerPageComing } from "./history";
+import { historyPagePlace, isServerPageComing } from "./history";
 
 // Chathistory messages are buffered here (outside the store) to avoid one
 // store.setState per incoming PRIVMSG.  Only flushed at BATCH_END.
@@ -399,25 +399,18 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
 
           // Dedup buffered messages against what's already in the store (event messages
           // like JOIN/PART arrive immediately and will already be in existing).
-          const existingIds = new Set(
-            existing.map((m) => m.msgid).filter(Boolean),
-          );
-          const newMessages = pending.filter(
-            (m) =>
-              !(m.msgid && existingIds.has(m.msgid)) &&
-              !existing.some(
-                (e) =>
-                  e.content === m.content &&
-                  new Date(e.timestamp).getTime() ===
-                    new Date(m.timestamp).getTime() &&
-                  e.userId === m.userId,
-              ),
+          const place = historyPagePlace(serverId, channelName, batchId);
+          const { merged: withPage, added: newMessages } = mergeHistoryPage(
+            existing,
+            pending,
+            place,
           );
 
           const capped = capMergedMessages(
             existing,
-            [...existing, ...newMessages].sort(compareMessageOrder),
+            withPage,
             state.historyWindows[key],
+            place,
           );
           const merged = capped.messages;
           const historyWindows = capped.window
@@ -448,6 +441,7 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
             historyWindows,
             processedMessageIds: rememberMsgIds(
               state.processedMessageIds,
+              serverId,
               newMsgIds,
             ),
             servers: state.servers.map((s) => {
@@ -481,25 +475,18 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
           historyEditBuffers.delete(historyBufferKey(serverId, batchId));
           const existing = state.messages[key] || [];
 
-          const existingIds = new Set(
-            existing.map((m) => m.msgid).filter(Boolean),
-          );
-          const newMessages = pending.filter(
-            (m) =>
-              !(m.msgid && existingIds.has(m.msgid)) &&
-              !existing.some(
-                (e) =>
-                  e.content === m.content &&
-                  new Date(e.timestamp).getTime() ===
-                    new Date(m.timestamp).getTime() &&
-                  e.userId === m.userId,
-              ),
+          const place = historyPagePlace(serverId, channelName, batchId);
+          const { merged: withPage, added: newMessages } = mergeHistoryPage(
+            existing,
+            pending,
+            place,
           );
 
           const capped = capMergedMessages(
             existing,
-            [...existing, ...newMessages].sort(compareMessageOrder),
+            withPage,
             state.historyWindows[key],
+            place,
           );
           const merged = capped.messages;
           const historyWindows = capped.window
@@ -521,6 +508,7 @@ export function registerBatchHandlers(store: StoreApi<AppState>): void {
             historyWindows,
             processedMessageIds: rememberMsgIds(
               state.processedMessageIds,
+              serverId,
               newMsgIds,
             ),
             servers: state.servers.map((s) =>

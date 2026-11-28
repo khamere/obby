@@ -33,7 +33,7 @@ describe("Store Initialization", () => {
     })) as unknown as typeof window.matchMedia;
 
     Object.defineProperty(global, "window", {
-      value: { matchMedia: mockMatchMedia },
+      value: { matchMedia: mockMatchMedia, addEventListener: vi.fn() },
       writable: true,
       configurable: true,
     });
@@ -57,7 +57,7 @@ describe("Store Initialization", () => {
     })) as unknown as typeof window.matchMedia;
 
     Object.defineProperty(global, "window", {
-      value: { matchMedia: mockMatchMedia },
+      value: { matchMedia: mockMatchMedia, addEventListener: vi.fn() },
       writable: true,
       configurable: true,
     });

@@ -1183,6 +1183,74 @@ describe("a gap fill the socket dropped", () => {
   });
 });
 
+describe("an older page asked for while the connection is down", () => {
+  let w: World;
+
+  const pmKey = `${SERVER}-pm-bob`;
+  const pmMessages = () => w.useStore.getState().messages[pmKey] ?? [];
+  const disconnect = () => {
+    w.dropSocket();
+    w.useStore.setState((state) => ({
+      servers: state.servers.map((server) => ({
+        ...server,
+        isConnected: false,
+        channels: server.channels.map((c) => ({ ...c, hasMoreHistory: true })),
+      })),
+    }));
+  };
+
+  beforeEach(async () => {
+    w = await boot(FULL_CAPS);
+  });
+
+  it("starts no load and keeps the offer of older history", async () => {
+    disconnect();
+
+    expect(await w.loadOlder()).toBe(false);
+
+    expect(w.chathistoryRequests()).toEqual([]);
+    expect(w.channel()?.isLoadingHistory).toBe(false);
+    expect(w.channel()?.hasMoreHistory).toBe(true);
+  });
+
+  it("starts no load with saved history off", async () => {
+    w.useStore.getState().updateGlobalSettings({ keepHistory: false });
+    disconnect();
+
+    expect(await w.loadOlder()).toBe(false);
+
+    expect(w.chathistoryRequests()).toEqual([]);
+    expect(w.channel()?.isLoadingHistory).not.toBe(true);
+  });
+
+  it("still reads an older page from disk", async () => {
+    w.addPrivateChat("bob");
+    w.feed(
+      ...Array.from({ length: 101 }, (_, index) =>
+        privmsg(`b${index}`, index + 1, `line ${index}`, "bob", OWN_NICK),
+      ),
+    );
+    await vi.waitFor(async () =>
+      expect(await w.stored("bob")).toHaveLength(101),
+    );
+    w.restart();
+    w.showSaved(SERVER, "bob");
+    await vi.waitFor(() => expect(pmMessages()).toHaveLength(100));
+    disconnect();
+
+    expect(
+      await w.loadOlderFor(
+        SERVER,
+        new Date(pmMessages()[0].timestamp).getTime(),
+        "bob",
+      ),
+    ).toBe(true);
+
+    await vi.waitFor(() => expect(pmMessages()).toHaveLength(101));
+    expect(w.chathistoryRequests()).toEqual([]);
+  });
+});
+
 describe("local history without chathistory", () => {
   let w: World;
 

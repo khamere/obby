@@ -15,7 +15,12 @@ export function handleNick(
     newNick = newNick.substring(1);
   }
 
-  if (oldNick === ctx.nicks.get(serverId)) {
+  // A nick change the server plays back from history happened when the nick we hold now may have been someone else's, so we keep our nick as it is.
+  const isFromHistory =
+    !!mtags?.batch &&
+    ctx.activeBatches.get(serverId)?.get(mtags.batch)?.type === "chathistory";
+
+  if (!isFromHistory && oldNick === ctx.nicks.get(serverId)) {
     ctx.nicks.set(serverId, newNick);
     const currentUser = ctx.currentUsers.get(serverId);
     if (currentUser) {
@@ -25,6 +30,9 @@ export function handleNick(
       });
     }
   }
+
+  // A nick change replayed from history carries a batch and renames nobody now.
+  if (!mtags?.batch) ctx.renameWaitingReceiver(serverId, oldNick, newNick);
 
   ctx.triggerEvent("NICK", {
     serverId,

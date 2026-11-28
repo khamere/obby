@@ -146,6 +146,88 @@ export function compareMessageOrder(a: Message, b: Message): number {
   return messageTime(a) - messageTime(b);
 }
 
+// Where a history page lies against the lines we hold, as its request tells:
+// right before the line the request named, or behind every line we hold.
+export type HistoryPagePlace = { before: string } | "newest";
+
+// A history page holds the server's lines in the server's order, which their
+// times cannot give back once several lines share a millisecond. So the page
+// keeps its own order, and a line we hold that the page leaves out goes ahead
+// of it or behind it by where the page lies, or by where the line's time falls
+// against the page's edges when the request does not tell.
+export function mergeHistoryPage(
+  existing: Message[],
+  page: Message[],
+  place?: HistoryPagePlace,
+): { merged: Message[]; added: Message[] } {
+  const byMsgid = new Map(
+    existing.flatMap((m) => (m.msgid ? [[m.msgid, m] as const] : [])),
+  );
+  const held = new Set<Message>();
+  const added: Message[] = [];
+  const run = page.flatMap((m) => {
+    const time = messageTime(m);
+    // Two lines the server gave different ids are two lines, however alike they are, so we match by sender, text and time only when one of them has no id.
+    const copy =
+      (m.msgid ? byMsgid.get(m.msgid) : undefined) ??
+      existing.find(
+        (e) =>
+          !(e.msgid && m.msgid) &&
+          e.content === m.content &&
+          e.userId === m.userId &&
+          messageTime(e) === time,
+      );
+    if (!copy) {
+      added.push(m);
+      return [m];
+    }
+    if (held.has(copy)) return [];
+    held.add(copy);
+    return [copy];
+  });
+  // A page that brings nothing new tells us nothing about the lines it leaves out, so those stay where they are and only the lines it names take its order.
+  if (added.length === 0) {
+    const named = run[Symbol.iterator]();
+    return {
+      merged: existing
+        .map((m) => (held.has(m) ? (named.next().value ?? m) : m))
+        .sort(compareMessageOrder),
+      added,
+    };
+  }
+  const times = page.map(messageTime);
+  const oldest = Math.min(...times);
+  const newest = Math.max(...times);
+  const others = existing.filter((m) => !held.has(m));
+  const anchor = typeof place === "object" ? place.before : undefined;
+  const anchorAt = anchor ? existing.findIndex((m) => hasMsgid(m, anchor)) : -1;
+  // A page inside one millisecond that repeats lines we hold starts where the first of them is, so we split our lines there the way we do at the line a request named.
+  const splitAt =
+    anchorAt < 0 && oldest === newest
+      ? existing.findIndex((m) => held.has(m))
+      : anchorAt;
+  const aheadOfSplit = new Set(existing.slice(0, Math.max(splitAt, 0)));
+  // A page inside one millisecond has a single edge time, so without its place a line we hold there counts as older when we hold messages before that time.
+  // We count messages only, since the joins and parts a page carries reach the chat ahead of it.
+  const isOlderAtEdge =
+    oldest === newest &&
+    (place === "newest" ||
+      others.some((m) => isChatMessage(m) && messageTime(m) < newest));
+  const isBeforePage = (m: Message) => {
+    if (splitAt >= 0) return aheadOfSplit.has(m);
+    const time = messageTime(m);
+    return time < newest || (time === newest && isOlderAtEdge);
+  };
+  return {
+    merged: [
+      ...others.filter(isBeforePage),
+      ...run,
+      ...others.filter((m) => !isBeforePage(m)),
+    ].sort(compareMessageOrder),
+    added,
+  };
+}
+
 export const isChatMessage = (message: Message) =>
   message.type === "message" || message.type === undefined;
 
@@ -361,9 +443,14 @@ export function capMergedMessages(
   existing: Message[],
   merged: Message[],
   window: HistoryWindow | undefined,
+  place?: HistoryPagePlace,
 ): { messages: Message[]; window?: HistoryWindow } {
+  // A page can put older lines ahead of ours inside our oldest millisecond, so we tell an older page by the line it puts first, unless it was asked as the newest page.
   const isOlder =
-    existing.length > 0 && messageTime(merged[0]) < messageTime(existing[0]);
+    place !== "newest" &&
+    existing.length > 0 &&
+    merged[0] !== existing[0] &&
+    messageTime(merged[0]) <= messageTime(existing[0]);
   if (merged.length <= MAX_MESSAGES_PER_CHANNEL || (!isOlder && window))
     return { messages: merged };
   if (!isOlder) return { messages: merged.slice(-MAX_MESSAGES_PER_CHANNEL) };
