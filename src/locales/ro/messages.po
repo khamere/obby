@@ -1544,6 +1544,10 @@ msgstr "Șterge istoricul"
 msgid "Clear search"
 msgstr "Șterge căutarea"
 
+#: src/lib/clientCommands.ts
+msgid "Clear this view and keep saved history"
+msgstr "Golește această vizualizare și păstrează istoricul salvat"
+
 #: src/components/ui/InvitationsPanel.tsx
 msgid "Click again to confirm"
 msgstr "Faceți clic din nou pentru a confirma"
@@ -1605,6 +1609,7 @@ msgid "Close comments"
 msgstr "Închide comentariile"
 
 #: src/components/layout/ChannelList.tsx
+#: src/lib/clientCommands.ts
 msgid "Close conversation"
 msgstr "Închide conversația"
 
@@ -2926,6 +2931,7 @@ msgid "Filters are unavailable on this server"
 msgstr "Filtrele nu sunt disponibile pe acest server"
 
 #: src/components/layout/NetworkMenu.tsx
+#: src/lib/clientCommands.ts
 msgid "Find channels"
 msgstr "Găsește canale"
 
@@ -3217,6 +3223,7 @@ msgid "Ignore List"
 msgstr "Listă de ignorați"
 
 #: src/components/layout/ProfilePane.tsx
+#: src/lib/clientCommands.ts
 msgid "Ignore user"
 msgstr "Ignoră utilizatorul"
 
@@ -3227,6 +3234,11 @@ msgstr "Ignoră utilizatorul"
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Ignored patterns:"
 msgstr "Modele ignorate:"
+
+#. placeholder {0}: stored ?? pattern
+#: src/hooks/useMessageSending.ts
+msgid "Ignoring {0}"
+msgstr "{0} este ignorat"
 
 #: src/components/ui/MediaCommentsSidebar.tsx
 msgid "Image"
@@ -3529,6 +3541,7 @@ msgid "Leave call"
 msgstr "Părăsește apelul"
 
 #: src/components/layout/ChannelContextMenu.tsx
+#: src/lib/clientCommands.ts
 msgid "Leave channel"
 msgstr "Părăsește canalul"
 
@@ -4312,6 +4325,11 @@ msgstr "Fără cereri de intrare (+K)"
 msgid "No limit"
 msgstr "Nicio limită"
 
+#. placeholder {0}: removed.join(", ")
+#: src/hooks/useMessageSending.ts
+msgid "No longer ignoring {0}"
+msgstr "{0} nu mai este ignorat"
+
 #: src/components/ui/MediaViewerModal.tsx
 msgid "No media in this channel"
 msgstr "Niciun fișier media în acest canal"
@@ -4429,7 +4447,12 @@ msgstr "Normal"
 msgid "Normal - Standard protection"
 msgstr "Normal – Protecție standard"
 
+#: src/hooks/useMessageSending.ts
+msgid "Not closed. Unpin this conversation first"
+msgstr "Nu s-a închis. Anulează mai întâi fixarea acestei conversații"
+
 #: src/components/pages/ServerSettingsPage.tsx
+#: src/hooks/useMessageSending.ts
 msgid "Not connected"
 msgstr "Neconectat"
 
@@ -4457,6 +4480,21 @@ msgstr "Nu ești în acest canal"
 msgid "Not now"
 msgstr "Nu acum"
 
+#. placeholder {0}: words[0]
+#: src/hooks/useMessageSending.ts
+#: src/hooks/useMessageSending.ts
+msgid "Not run. {0} matches your own nick"
+msgstr "Nu s-a executat. {0} se potrivește cu propriul tău pseudonim"
+
+#. placeholder {0}: clientCommandUsage(name)
+#: src/hooks/useMessageSending.ts
+msgid "Not run. Type it as {0}"
+msgstr "Nu s-a executat. Scrie comanda ca {0}"
+
+#: src/hooks/useMessageSending.ts
+msgid "Not sent. Put the command on one line"
+msgstr "Nu s-a trimis. Scrie comanda pe o singură linie"
+
 #: src/components/chat/CommandArgHint.tsx
 msgid "Not sent. Reconnect, or use a chat where the bot offers this command"
 msgstr "Netrimis. Reconectează-te sau folosește un chat în care botul oferă această comandă"
@@ -4468,6 +4506,11 @@ msgstr "Notă: modificarea metadatelor canalului necesită permisiuni de operato
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Note: the server returns the same response whether or not the account has a verified email, so a typo will not be flagged here. If no code arrives within a couple of minutes, double-check the account name."
 msgstr "Notă: serverul returnează același răspuns indiferent dacă contul are sau nu un e-mail verificat, deci o greșeală de scriere nu va fi semnalată aici. Dacă nu primești niciun cod în câteva minute, verifică din nou numele contului."
+
+#. placeholder {0}: words[0]
+#: src/hooks/useMessageSending.ts
+msgid "Nothing on the ignore list matches {0}. Type /ignore to see the list"
+msgstr "Nimic din lista de ignorați nu se potrivește cu {0}. Scrie /ignore pentru a vedea lista"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Notification Sound"
@@ -4642,6 +4685,7 @@ msgid "Open network options"
 msgstr "Deschide opțiunile de rețea"
 
 #: src/components/layout/StartPrivateChatRow.tsx
+#: src/lib/clientCommands.ts
 msgid "Open private chat"
 msgstr "Deschide chat privat"
 
@@ -5763,6 +5807,10 @@ msgstr "Trimite un GIF"
 msgid "Send a message in rainbow colors"
 msgstr "Trimite un mesaj în culorile curcubeului"
 
+#: src/lib/clientCommands.ts
+msgid "Send a raw line to the IRC server"
+msgstr "Trimite o linie brută către serverul IRC"
+
 #: src/components/ui/ModerationModal.tsx
 msgid "Send a warning message to {username}"
 msgstr "Trimite un mesaj de avertizare către {username}"
@@ -5823,6 +5871,10 @@ msgstr "Trimis necriptat deoarece OTR criptează doar text"
 #: src/components/ui/UploadProgressBar.tsx
 msgid "Sent unencrypted because the file is too large to encrypt"
 msgstr "Trimis necriptat deoarece fișierul este prea mare pentru a fi criptat"
+
+#: src/hooks/useMessageSending.ts
+msgid "Sent. The raw log shows the reply"
+msgstr "Trimis. Jurnalul brut arată răspunsul"
 
 #: src/components/chat/completionProviders.tsx
 #: src/components/layout/BotPane.tsx
@@ -6836,6 +6888,7 @@ msgid "Undeafen"
 msgstr "Activează sunetul"
 
 #: src/components/layout/ProfilePane.tsx
+#: src/lib/clientCommands.ts
 msgid "Unignore user"
 msgstr "Nu mai ignora utilizatorul"
 
@@ -7165,6 +7218,7 @@ msgid "View our privacy policy and data practices"
 msgstr "Vezi politica noastră de confidențialitate și practicile privind datele"
 
 #: src/components/pages/SettingsPage.tsx
+#: src/lib/clientCommands.ts
 msgid "View profile"
 msgstr "Vizualizați profilul"
 

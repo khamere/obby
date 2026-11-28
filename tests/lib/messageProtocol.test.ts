@@ -279,8 +279,6 @@ describe("splitToBytes", () => {
       " ",
       "  ",
       "\t",
-      "\x0304",
-      "\x02",
       "(",
       ").",
       "www.a.b",
@@ -342,6 +340,281 @@ describe("splitToBytes", () => {
 
     expect(parts.join("")).toBe(line);
     for (const part of parts) expect(bytes(part)).toBeLessThanOrEqual(20);
+  });
+});
+
+describe("splitToBytes with formatting codes", () => {
+  interface Look {
+    bold: boolean;
+    italic: boolean;
+    underline: boolean;
+    strikethrough: boolean;
+    reverse: boolean;
+    monospace: boolean;
+    fg: string;
+    bg: string;
+  }
+  const plain: Look = {
+    bold: false,
+    italic: false,
+    underline: false,
+    strikethrough: false,
+    reverse: false,
+    monospace: false,
+    fg: "",
+    bg: "",
+  };
+  const toggles: Record<string, keyof Omit<Look, "fg" | "bg">> = {
+    "\x02": "bold",
+    "\x1D": "italic",
+    "\x1F": "underline",
+    "\x1E": "strikethrough",
+    "\x16": "reverse",
+    "\x11": "monospace",
+  };
+  const codes =
+    // biome-ignore lint/suspicious/noControlCharactersInRegex: IRC formatting codes
+    /(\x04(?:[0-9A-Fa-f]{6}(?:,[0-9A-Fa-f]{6})?)?|\x03(?:\d{1,2}(?:,\d{1,2})?)?|[\x02\x1D\x1F\x1E\x16\x11\x0F])/;
+
+  /**
+   * Every visible character of one message with the look a reader gives it.
+   * `keepsBackground` picks between the two ways clients read a colour code
+   * that names no background.
+   */
+  const render = (message: string, keepsBackground: boolean): string[] => {
+    let look = plain;
+    const seen: string[] = [];
+    message.split(codes).forEach((piece, index) => {
+      if (index % 2 === 0) {
+        for (const char of piece)
+          if (char !== " ") seen.push(`${char}${JSON.stringify(look)}`);
+      } else if (piece === "\x0F") look = plain;
+      else if (toggles[piece])
+        look = { ...look, [toggles[piece]]: !look[toggles[piece]] };
+      else {
+        const hex = piece[0] === "\x04";
+        const [fg = "", bg] = piece.slice(1).split(",");
+        const name = (colour: string) =>
+          hex ? `#${colour.toLowerCase()}` : String(Number(colour));
+        look = {
+          ...look,
+          fg: fg && name(fg),
+          bg: bg ? name(bg) : fg && keepsBackground ? look.bg : "",
+        };
+      }
+    });
+    return seen;
+  };
+  const renderEach = (messages: string[], keepsBackground: boolean) =>
+    messages.flatMap((message) => render(message, keepsBackground));
+
+  test("starts every part with the colour and style of the whole text", () => {
+    expect(splitToBytes("\x0304\x02aaaa bbbb cccc\x02", 12)).toEqual([
+      "\x0304\x02aaaa",
+      "\x0304\x02bbbb",
+      "\x0304\x02cccc\x02",
+    ]);
+  });
+
+  test("resets before it re-opens the codes in a part the reader joins to the one before", () => {
+    const parts = splitToBytes("\x0304\x02aaaa bbbb cccc\x02", 12, true);
+
+    expect(parts).toEqual([
+      "\x0304\x02aaaa ",
+      "\x0F\x0304\x02bbbb ",
+      "\x0F\x0304\x02cccc\x02",
+    ]);
+    expect(render(parts.join(""), true)).toEqual(
+      render("\x0304\x02aaaa bbbb cccc\x02", true),
+    );
+  });
+
+  test("carries a style that opens inside the text into the next part only while it is open", () => {
+    expect(splitToBytes("aaaa \x1Dbbbb cccc\x1D dddd eeee", 10)).toEqual([
+      "aaaa \x1Dbbbb",
+      "\x1Dcccc\x1D",
+      "dddd eeee",
+    ]);
+    expect(splitToBytes("\x02\x1Faaaa\x0F bbbbbbbb cccc", 10)).toEqual([
+      "\x02\x1Faaaa\x0F",
+      "bbbbbbbb",
+      "cccc",
+    ]);
+  });
+
+  test("counts the codes it re-opens toward the budget", () => {
+    const text = `\x0304\x02\x1F${"word ".repeat(200)}\x1F\x02`;
+
+    for (const keepSpaces of [false, true]) {
+      const parts = splitToBytes(text, 100, keepSpaces);
+
+      expect(parts.length).toBeGreaterThan(10);
+      for (const part of parts) expect(bytes(part)).toBeLessThanOrEqual(100);
+      const opened = keepSpaces ? "\x0F\x0304\x02\x1F" : "\x0304\x02\x1F";
+      for (const part of parts.slice(1))
+        expect(part.startsWith(opened)).toBe(true);
+    }
+  });
+
+  test.each([
+    ["a colour", "\x0304,05"],
+    ["a hex colour", "\x04FF0000,00FF00"],
+  ])("keeps %s code and its digits in one part", (_, code) => {
+    const text = `${"a".repeat(20)}${code}bbbbbbbb`;
+
+    for (let limit = 21; limit < 20 + code.length; limit++) {
+      const parts = splitToBytes(text, limit);
+
+      expect(parts[0]).toBe("a".repeat(20));
+      expect(parts[1].startsWith(`${code}b`)).toBe(true);
+    }
+  });
+
+  test("writes a re-opened colour so the text after it stays text", () => {
+    expect(splitToBytes("\x034aaaa 5555", 8)).toEqual([
+      "\x034aaaa",
+      "\x03045555",
+    ]);
+    expect(splitToBytes("\x0304aaaa ,5bb", 9)).toEqual([
+      "\x0304aaaa",
+      "\x0304\x02\x02,5bb",
+    ]);
+  });
+
+  test("re-opens a background with the foreground set after it", () => {
+    expect(splitToBytes("\x0304,05aaaa \x0307bbbb cccc", 16)).toEqual([
+      "\x0304,05aaaa",
+      "\x0304,05\x0307bbbb",
+      "\x0304,05\x0307cccc",
+    ]);
+  });
+
+  test("sends no part of only formatting codes", () => {
+    expect(splitToBytes(`\x02${"a".repeat(11)}\x02`, 12)).toEqual([
+      "\x02aaaaaaaaaa",
+      "\x02a\x02",
+    ]);
+    expect(splitToBytes(`\x02${"a".repeat(11)}\x02`, 12, true)).toEqual([
+      "\x02aaaaaaaaaa",
+      "\x0F\x02a\x02",
+    ]);
+    expect(splitToBytes(`\x02${"a".repeat(12)} \x02`, 13)).toEqual([
+      `\x02${"a".repeat(12)}`,
+    ]);
+  });
+
+  test("re-opens no codes inside a link that is cut across the parts a reader joins", () => {
+    const address = `https://files.example/${"a".repeat(60)}.png`;
+    const text = `\x0304\x02look ${address} then ${"more words ".repeat(6)}\x02`;
+
+    const parts = splitToBytes(text, 40, true);
+
+    expect(parts.join("")).toContain(address);
+    for (const part of parts) expect(bytes(part)).toBeLessThanOrEqual(40);
+    expect(render(parts.join(""), true)).toEqual(render(text, true));
+    // The part that begins after the link opens the codes again.
+    expect(parts.at(-1)?.startsWith("\x0F\x0304\x02")).toBe(true);
+    // Separate messages cut the link anyway, so each one opens the codes.
+    for (const part of splitToBytes(text, 40))
+      expect(part.startsWith("\x0304\x02")).toBe(true);
+  });
+
+  test("re-opens the codes right after a link that ends where a joined part ends", () => {
+    const address = `https://files.example/${"a".repeat(13)}`;
+    expect(bytes(`\x0F\x02${address}`)).toBe(37);
+
+    expect(splitToBytes(`\x02aa ${address} bbbb\x02`, 37, true)).toEqual([
+      "\x02aa ",
+      `\x0F\x02${address}`,
+      "\x0F\x02 bbbb\x02",
+    ]);
+  });
+
+  test("sends a character that fills a part without the codes that would push it over", () => {
+    expect(bytes(FAMILY)).toBe(25);
+    expect(splitToBytes(`\x0304\x02aaaa ${FAMILY} bbbb`, 25)).toEqual([
+      "\x0304\x02aaaa",
+      FAMILY,
+      "\x0304\x02bbbb",
+    ]);
+  });
+
+  // A fixed seed gives the same texts on every run.
+  test("gives every character the look it has in the unsplit text, for any mix of codes", () => {
+    let seed = 0x51f0c0de;
+    const random = (n: number) => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      return seed % n;
+    };
+    const pieces = [
+      "a",
+      "word",
+      "x".repeat(70),
+      "привет",
+      "漢字",
+      FAMILY,
+      " ",
+      "  ",
+      ",",
+      "7",
+      "12,3",
+      "\x02",
+      "\x1D",
+      "\x1F",
+      "\x1E",
+      "\x16",
+      "\x11",
+      "\x0F",
+      "\x03",
+      "\x034",
+      "\x0304",
+      "\x0312,1",
+      "\x0307,08",
+      "\x04",
+      "\x04FF8800",
+      "\x04ff8800,0000AA",
+    ];
+
+    const closers = ["", "\x02", "\x1F\x02", "\x1D\x0F", " \x02"];
+
+    for (let run = 0; run < 600; run++) {
+      const body = Array.from(
+        { length: 1 + random(60) },
+        () => pieces[random(pieces.length)],
+      ).join(random(3) === 0 ? " " : "");
+      const text = `${body}z${closers[random(closers.length)]}`;
+      const maxBytes = 64 + random(340);
+
+      for (const keepsBackground of [true, false]) {
+        const whole = render(text, keepsBackground);
+
+        const concat = splitToBytes(text, maxBytes, true);
+        expect(render(concat.join(""), keepsBackground)).toEqual(whole);
+        expect(renderEach(concat, keepsBackground)).toEqual(whole);
+
+        expect(
+          renderEach(splitToBytes(text, maxBytes), keepsBackground),
+        ).toEqual(whole);
+      }
+      for (const part of [
+        ...splitToBytes(text, maxBytes, true),
+        ...splitToBytes(text, maxBytes),
+      ])
+        expect(bytes(part)).toBeLessThanOrEqual(maxBytes);
+    }
+  });
+
+  test("splits each part of an action into a complete action that re-opens the style", () => {
+    const messages = splitAction(`\x02${"waves ".repeat(120)}\x02`, "#chan");
+
+    expect(messages.length).toBeGreaterThan(1);
+    for (const message of messages) {
+      expect(message.startsWith("\u0001ACTION \x02waves")).toBe(true);
+      expect(message.endsWith("\u0001")).toBe(true);
+      expect(bytes(message)).toBeLessThanOrEqual(
+        512 - calculateProtocolOverhead("#chan"),
+      );
+    }
   });
 });
 

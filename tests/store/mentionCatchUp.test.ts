@@ -752,6 +752,38 @@ describe("mention catch-up by server search", () => {
     ]);
   });
 
+  it("leaves out a bridged person whose ignore entry was saved with invisible characters", async () => {
+    const bridgeRules = await import("../../src/lib/bridgeRules");
+    vi.spyOn(bridgeRules, "applyBridgeRules").mockImplementation(
+      (_rules, _host, _channel, sender, text) =>
+        sender === "relay"
+          ? ({
+              kind: "bot",
+              nick: text.split("> ")[0],
+              text: text.split("> ")[1],
+            } as never)
+          : null,
+    );
+    useStore.setState((state) => ({
+      globalSettings: {
+        ...state.globalSettings,
+        bridgedUsers: true,
+        ignoreList: ["ca\u200Brol!*@*"],
+      },
+    }));
+    feed(
+      `:server MARKREAD #two timestamp=${READ_AT}`,
+      ...answer(
+        "s",
+        `msgid=a;time=${at(5)} :relay!u@h PRIVMSG #two :carol> me: ping from the site`,
+        `msgid=b;time=${at(6)} :relay!u@h PRIVMSG #two :dana> me: another ping`,
+      ),
+    );
+    expect(log().map((m) => [m.sender, m.content])).toEqual([
+      ["dana", "me: another ping"],
+    ]);
+  });
+
   it("leaves out ignored senders and keeps a line without msgid once", () => {
     useStore.setState((state) => ({
       globalSettings: { ...state.globalSettings, ignoreList: ["troll!*@*"] },

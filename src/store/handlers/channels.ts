@@ -353,20 +353,24 @@ export function registerChannelHandlers(store: StoreApi<AppState>): void {
 
   ircClient.on("LIST_END", ({ serverId }) => {
     // Move buffered channels to the main list and set listing as complete
-    store.setState((state) => ({
-      channelList: {
-        ...state.channelList,
-        [serverId]: state.channelListBuffer[serverId] || [],
-      },
-      channelListBuffer: {
-        ...state.channelListBuffer,
-        [serverId]: [],
-      },
-      listingInProgress: {
-        ...state.listingInProgress,
-        [serverId]: false,
-      },
-    }));
+    store.setState((state) => {
+      // A LIST the user typed as a raw line ends here too, and the list we hold stays as it is.
+      if (state.listingInProgress[serverId] !== true) return {};
+      return {
+        channelList: {
+          ...state.channelList,
+          [serverId]: state.channelListBuffer[serverId] || [],
+        },
+        channelListBuffer: {
+          ...state.channelListBuffer,
+          [serverId]: [],
+        },
+        listingInProgress: {
+          ...state.listingInProgress,
+          [serverId]: false,
+        },
+      };
+    });
   });
 
   ircClient.on("NAMES", ({ serverId, channelName, users }) => {

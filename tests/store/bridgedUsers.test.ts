@@ -4,6 +4,7 @@ import {
   saveOwnBridgeRules,
 } from "../../src/lib/bridgeRules";
 import ircClient from "../../src/lib/ircClient";
+import { shouldShowMessageHeader } from "../../src/lib/messageGrouping";
 import { upstreamHostForServer } from "../../src/lib/networkHost";
 import type { AppState } from "../../src/store";
 import useStore from "../../src/store";
@@ -121,6 +122,87 @@ describe("bridged users in CHANMSG", () => {
       bridgedVia: "Bot",
       mentioned: [],
     });
+  });
+
+  test("invisible characters in the name do not make a second person", () => {
+    emit("Bot", "[mara] one");
+    const plain = last();
+    emit("Bot", "[m\u200Bara] two \u{1F468}\u200D\u{1F469}");
+    const hidden = last();
+    expect(hidden).toMatchObject({
+      userId: "mara",
+      content: "two \u{1F468}\u200D\u{1F469}",
+      bridgedVia: "Bot",
+      bridgedOriginal: "[m\u200Bara] two \u{1F468}\u200D\u{1F469}",
+    });
+    expect(plain && hidden && shouldShowMessageHeader(plain, hidden)).toBe(
+      false,
+    );
+  });
+
+  test("an ignore entry for the person covers a name with invisible characters", () => {
+    const { ignoreList } = useStore.getState().globalSettings;
+    useStore.setState((state) => ({
+      globalSettings: { ...state.globalSettings, ignoreList: ["mara!*@*"] },
+    }));
+    emit("Bot", "[nilo] kept");
+    emit("Bot", "[ma\u200Cra] dropped");
+    const shown = last();
+    useStore.setState((state) => ({
+      globalSettings: { ...state.globalSettings, ignoreList },
+    }));
+    expect(shown).toMatchObject({ userId: "nilo", content: "kept" });
+  });
+
+  test("an ignore entry saved with the invisible characters covers the person", () => {
+    const { ignoreList } = useStore.getState().globalSettings;
+    useStore.setState((state) => ({
+      globalSettings: {
+        ...state.globalSettings,
+        ignoreList: ["m\u200Bara!*@*"],
+      },
+    }));
+    emit("Bot", "[nilo] kept");
+    emit("Bot", "[m\u200Bara] dropped");
+    emit("Bot", "[mara] dropped");
+    emit("Bot", "[ma\u200Cra] dropped");
+    const shown = last();
+    useStore.setState((state) => ({
+      globalSettings: { ...state.globalSettings, ignoreList },
+    }));
+    expect(shown).toMatchObject({ userId: "nilo", content: "kept" });
+  });
+
+  test("an ignore entry with invisible characters leaves a person on IRC alone", () => {
+    const { ignoreList } = useStore.getState().globalSettings;
+    useStore.setState((state) => ({
+      globalSettings: {
+        ...state.globalSettings,
+        ignoreList: ["m\u200Bara!*@*"],
+      },
+    }));
+    emit("mara", "from IRC");
+    const shown = last();
+    useStore.setState((state) => ({
+      globalSettings: { ...state.globalSettings, ignoreList },
+    }));
+    expect(shown).toMatchObject({ userId: "mara", content: "from IRC" });
+    expect(shown?.bridgedVia).toBeUndefined();
+  });
+
+  test("my own nick with invisible characters through the bridge is not a mention", () => {
+    emit("Bot", "[m\u200Be] me: test");
+    expect(last()).toMatchObject({
+      userId: "me",
+      bridgedVia: "Bot",
+      mentioned: [],
+    });
+  });
+
+  test("a name of only invisible characters stays the bot's line", () => {
+    emit("Bot", "[\u200B] hi");
+    expect(last()).toMatchObject({ userId: "Bot", content: "[\u200B] hi" });
+    expect(last()?.bridgedVia).toBeUndefined();
   });
 
   test("a mention inside the stripped text still counts", () => {

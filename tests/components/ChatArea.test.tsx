@@ -476,6 +476,122 @@ const makeMsg = (
 // channelKey = `${selectedServerId}-${selectedChannelId}` = "server1-channel1"
 const NAV_CHANNEL_KEY = "server1-channel1";
 
+describe("a command the app runs, typed in the composer", () => {
+  const peer = {
+    id: "pc1",
+    username: "bob",
+    serverId: "server1",
+    unreadCount: 0,
+    isMentioned: false,
+    isOnline: false,
+  };
+  const realActions = {
+    openProfile: useStore.getState().openProfile,
+    addGlobalNotification: useStore.getState().addGlobalNotification,
+  };
+
+  function open(selection: {
+    selectedChannelId: string | null;
+    selectedPrivateChatId: string | null;
+  }) {
+    useStore.setState((state) => ({
+      servers: [{ ...mockServer, privateChats: [peer] } as Server],
+      currentUser: { id: "user1", username: "testuser", isOnline: true },
+      messages: {},
+      historyWindows: {},
+      typingUsers: {},
+      ui: {
+        ...state.ui,
+        ...defaultUIExtensions,
+        page: null,
+        isNarrowView: false,
+        selectedServerId: "server1",
+        perServerSelections: { server1: selection },
+      },
+    }));
+    render(<ChatArea onToggleChanList={() => {}} isChanListVisible={true} />);
+    return screen.getByRole("textbox") as HTMLTextAreaElement;
+  }
+  const inChannel = {
+    selectedChannelId: "channel1",
+    selectedPrivateChatId: null,
+  };
+  const withOfflinePeer = {
+    selectedChannelId: null,
+    selectedPrivateChatId: "pc1",
+  };
+
+  function send(input: HTMLElement, text: string) {
+    fireEvent.change(input, { target: { value: text } });
+    fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
+  }
+
+  afterEach(() => {
+    useStore.setState(realActions);
+    vi.clearAllMocks();
+  });
+
+  it("keeps a refused command in the message box and answers in the chat", () => {
+    const input = open(inChannel);
+
+    send(input, "/query ");
+
+    expect(input).toHaveValue("/query");
+    expect(useStore.getState().messages["server1-channel1"]).toMatchObject([
+      { type: "standard-reply", standardReplyType: "FAIL" },
+    ]);
+    expect(screen.getByText("Not run. Type it as /query <user>")).toBeTruthy();
+    expect(ircClient.sendRaw).not.toHaveBeenCalled();
+  });
+
+  it("runs while the peer is offline, where a message is still held back", () => {
+    const openProfile = vi.fn();
+    const addGlobalNotification = vi.fn();
+    useStore.setState({ openProfile, addGlobalNotification });
+    const input = open(withOfflinePeer);
+
+    send(input, "/whois");
+
+    expect(openProfile).toHaveBeenCalledWith("server1", "bob");
+    expect(addGlobalNotification).not.toHaveBeenCalled();
+    expect(input).toHaveValue("");
+
+    send(input, "hello");
+
+    expect(addGlobalNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ code: "ERR_OFFLINE", target: "bob" }),
+    );
+    expect(ircClient.sendRaw).not.toHaveBeenCalled();
+  });
+
+  it("leaves the message box when the command opens a page", () => {
+    const input = open(inChannel);
+    input.focus();
+
+    send(input, "/list");
+
+    expect(useStore.getState().ui.page).toEqual({
+      kind: "channelBrowser",
+      serverId: "server1",
+    });
+    expect(document.activeElement).not.toBe(input);
+  });
+
+  it("stays in the message box when the command answers in the chat", () => {
+    const realAdd = useStore.getState().addToIgnoreList;
+    const addToIgnoreList = vi.fn();
+    useStore.setState({ addToIgnoreList });
+    const input = open(inChannel);
+
+    send(input, "/ignore troll");
+    useStore.setState({ addToIgnoreList: realAdd });
+
+    expect(addToIgnoreList).toHaveBeenCalledWith("troll!*@*");
+    expect(document.activeElement).toBe(input);
+    expect(input).toHaveValue("");
+  });
+});
+
 describe("ChatArea reply keyboard navigation", () => {
   beforeEach(() => {
     useStore.setState({

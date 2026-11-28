@@ -15,7 +15,11 @@ import {
   FaUserTimes,
 } from "react-icons/fa";
 import { canModerate } from "../../lib/channelStatus";
-import { createIgnorePattern, isUserIgnored } from "../../lib/ignoreUtils";
+import {
+  createIgnorePattern,
+  ignoreEntriesFor,
+  isUserIgnored,
+} from "../../lib/ignoreUtils";
 import useStore from "../../store";
 import { queryBotCommands } from "../../store/handlers/pushbot";
 import type { BotCommand } from "../../types";
@@ -90,11 +94,7 @@ export const UserContextMenu: React.FC<UserContextMenuProps> = ({
     onOpenModerationModal?.(action);
 
   const unignore = () =>
-    ignoreList
-      .filter((pattern) =>
-        isUserIgnored(username, undefined, undefined, [pattern]),
-      )
-      .forEach(removeFromIgnoreList);
+    ignoreEntriesFor(username, ignoreList).forEach(removeFromIgnoreList);
 
   const botCommandItems: MenuItem[] = (botCommands ?? []).map((command) => ({
     id: `cmd-${command.name}`,

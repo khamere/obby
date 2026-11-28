@@ -173,6 +173,8 @@ export const IRC_DISPATCH: Record<string, HandlerFn> = {
   "421": (ctx, serverId, source, parv) => {
     const verb = (parv[1] ?? "").toUpperCase();
     if (verb === "TAGMSG") ctx.noteTagmsgRefused(serverId);
+    if (verb === "CHATHISTORY")
+      ctx.triggerEvent("CHATHISTORY_UNKNOWN", { serverId });
     if (AUTOMATIC_COMMANDS.has(verb)) return;
     ctx.triggerEvent("SERVER_REPLY", {
       serverId,

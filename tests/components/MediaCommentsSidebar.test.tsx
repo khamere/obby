@@ -186,6 +186,19 @@ describe("MediaCommentsSidebar", () => {
     expect(textarea).toHaveValue("");
   });
 
+  test("Enter keeps the text when the send is withheld", () => {
+    const mockSend = vi.fn(() => "withheld" as const);
+    vi.mocked(useMessageSending).mockReturnValue({ sendMessage: mockSend });
+
+    render(<MediaCommentsSidebar {...defaultProps} />);
+    const textarea = screen.getByPlaceholderText(/Reply in/);
+    fireEvent.change(textarea, { target: { value: "/query" } });
+    fireEvent.keyDown(textarea, { key: "Enter", shiftKey: false });
+
+    expect(mockSend).toHaveBeenCalledWith("/query");
+    expect(textarea).toHaveValue("/query");
+  });
+
   test("Shift+Enter does not send", () => {
     const mockSend = vi.fn();
     vi.mocked(useMessageSending).mockReturnValue({ sendMessage: mockSend });

@@ -34,7 +34,7 @@ const server = {
   privateChats: [],
   botCommands: {
     _cloudbot: [
-      { name: "whois", options: [{ name: "domain", type: "string" }] },
+      { name: "stats", options: [{ name: "domain", type: "string" }] },
       { name: "pkg" },
     ],
     netbot: [{ name: "pkg" }],
@@ -43,7 +43,7 @@ const server = {
     _cloudbot: { bot_id: "draft-bot-cmds:_cloudbot", scope: "channel" },
     netbot: { bot_id: "4", scope: "server" },
   },
-  cmdsAvailable: ["whois"],
+  cmdsAvailable: ["stats"],
 } as unknown as Server;
 
 const me = { id: "me", username: "me", isOnline: true };
@@ -96,15 +96,29 @@ describe("slash commands shared by the server and bots", () => {
 
   it("runs a bare name on the server", () => {
     const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
-    runCommand("/whois Valware");
-    expect(sendRaw).toHaveBeenCalledWith("s1", "whois Valware");
+    runCommand("/stats Valware");
+    expect(sendRaw).toHaveBeenCalledWith("s1", "stats Valware");
+  });
+
+  it("opens the profile on /whois even where the server lists whois", () => {
+    const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    const openProfile = vi.fn();
+    const realOpenProfile = useStore.getState().openProfile;
+    useStore.setState({
+      servers: [{ ...server, cmdsAvailable: ["whois"] }],
+      openProfile,
+    });
+    runCommand("/whois alice");
+    useStore.setState({ openProfile: realOpenProfile });
+    expect(openProfile).toHaveBeenCalledWith("s1", "alice");
+    expect(sendRaw).not.toHaveBeenCalled();
   });
 
   it("sends the name to the bot it is addressed to", () => {
     const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
-    runCommand("/whois@_cloudbot example.com");
+    runCommand("/stats@_cloudbot example.com");
     expect(sentBotCommand(sendRaw)).toMatchObject({
-      name: "whois",
+      name: "stats",
       bot: "_cloudbot",
     });
   });
@@ -382,6 +396,219 @@ describe("a command with a line break", () => {
     const sendRaw = vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
     runCommand("/quote one\ntwo");
     expect(sent(sendRaw)).toEqual(["quote one two"]);
+  });
+});
+
+describe("/msg typed in another buffer", () => {
+  const bob = {
+    id: "pm-bob",
+    username: "bob",
+    serverId: "s1",
+    unreadCount: 0,
+    isMentioned: false,
+  } as PrivateChat;
+  const nickServ = { ...bob, id: "pm-ns", username: "NickServ" };
+  const lobbySelection = {
+    selectedChannelId: "c1",
+    selectedPrivateChatId: null,
+  };
+  const chats = () =>
+    useStore.getState().servers[0].privateChats.map((chat) => chat.username);
+  const rows = () =>
+    Object.entries(useStore.getState().messages).flatMap(([buffer, list]) =>
+      list.map((m) => `${buffer} ${m.userId}: ${m.content}`),
+    );
+  const privmsgs = (sendRaw: ReturnType<typeof vi.spyOn>) =>
+    sendRaw.mock.calls
+      .map(([, line]: string[]) => line)
+      .filter((line: string) => line.startsWith("PRIVMSG"));
+
+  function start(echoes: boolean, privateChats: PrivateChat[] = []) {
+    useStore.setState((state) => ({
+      servers: [{ ...server, privateChats }],
+      messages: {},
+      ui: {
+        ...state.ui,
+        selectedServerId: "s1",
+        perServerSelections: { s1: lobbySelection },
+      },
+    }));
+    vi.spyOn(ircClient, "hasCapability").mockImplementation(
+      (_, cap) => echoes && cap === "echo-message",
+    );
+    vi.spyOn(ircClient, "getCurrentUser").mockReturnValue(me);
+    return vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+    useStore.setState((state) => ({
+      servers: [server],
+      messages: {},
+      ui: { ...state.ui, selectedServerId: null, perServerSelections: {} },
+    }));
+  });
+
+  it("lists the chat with the nick and keeps the channel open", () => {
+    const sendRaw = start(true);
+    runCommand("/msg bob hello", me);
+
+    expect(privmsgs(sendRaw)).toEqual(["PRIVMSG bob :hello"]);
+    expect(chats()).toEqual(["bob"]);
+    expect(useStore.getState().ui.perServerSelections.s1).toMatchObject(
+      lobbySelection,
+    );
+  });
+
+  it("shows the server's echo in that chat and adds no line of its own", () => {
+    start(true);
+    runCommand("/msg bob hello", me);
+    expect(rows()).toEqual([]);
+
+    ircClient.triggerEvent("USERMSG", {
+      serverId: "s1",
+      mtags: { msgid: "echo-1" },
+      sender: "me",
+      target: "bob",
+      message: "hello",
+      timestamp: new Date("2026-01-01T12:00:00Z"),
+    });
+
+    const chatId = useStore.getState().servers[0].privateChats[0].id;
+    expect(rows()).toEqual([`s1-${chatId} me: hello`]);
+  });
+
+  it("shows its own copy on a server that does not echo", () => {
+    start(false);
+    runCommand("/msg bob hello", me);
+
+    const chatId = useStore.getState().servers[0].privateChats[0].id;
+    expect(rows()).toEqual([`s1-${chatId} me: hello`]);
+  });
+
+  it("shows its own copy in a chat already listed on a server that does not echo", () => {
+    start(false, [bob]);
+    runCommand("/msg BOB hello", me);
+
+    expect(chats()).toEqual(["bob"]);
+    expect(rows()).toEqual(["s1-pm-bob me: hello"]);
+  });
+
+  it.each([
+    "/msg NickServ identify hunter2",
+    "/MSG nickserv IDENTIFY hunter2",
+    "/ msg NickServ identify hunter2",
+    "/msg NickServ help",
+    "/msg bob identify hunter2",
+    "/msg Q@CServe.example.org AUTH me hunter2",
+    "/msg Q SET PASSWORD hunter2",
+    "/msg Q NEWPASS old hunter2 hunter2",
+    "/msg Q EMAIL hunter2 me@example.org me@example.org",
+    "/msg x hunter2",
+    "/msg GLOBAL hunter2",
+    "/msg bob setpass hunter2",
+    "/msg bob release me hunter2",
+    "/msg bob authenticate hunter2",
+    "/msg bob  oper me hunter2",
+  ])("sends %j and puts it in no chat", (text) => {
+    const sendRaw = start(false);
+    runCommand(text, me);
+
+    expect(privmsgs(sendRaw)).toHaveLength(1);
+    expect(chats()).toEqual([]);
+    expect(rows()).toEqual([]);
+  });
+
+  it.each([false, true])(
+    "lists no chat when a later line can carry a password (echo-message %s)",
+    (echoes) => {
+      const sendRaw = start(echoes);
+      runCommand("/msg bob hello\nAUTH me hunter2", me);
+
+      expect(privmsgs(sendRaw)).toEqual([
+        "PRIVMSG bob :hello",
+        "PRIVMSG bob :AUTH me hunter2",
+      ]);
+      expect(chats()).toEqual([]);
+      expect(rows()).toEqual([]);
+    },
+  );
+
+  it("adds no copy of a password line to a service chat already listed", () => {
+    const sendRaw = start(false, [nickServ]);
+    runCommand("/msg NickServ identify hunter2", me);
+
+    expect(privmsgs(sendRaw)).toEqual(["PRIVMSG NickServ :identify hunter2"]);
+    expect(rows()).toEqual([]);
+  });
+
+  it("adds no copy of a line to a service chat already listed", () => {
+    const sendRaw = start(false, [{ ...bob, id: "pm-q", username: "Q" }]);
+    runCommand("/msg q EMAIL hunter2 me@example.org me@example.org", me);
+
+    expect(privmsgs(sendRaw)).toHaveLength(1);
+    expect(rows()).toEqual([]);
+  });
+
+  it("lists no chat for the server's echo of a message to a service", () => {
+    start(true);
+    runCommand("/msg Q EMAIL hunter2 me@example.org me@example.org", me);
+    ircClient.triggerEvent("USERMSG", {
+      serverId: "s1",
+      mtags: { msgid: "echo-1" },
+      sender: "me",
+      target: "Q",
+      message: "EMAIL hunter2 me@example.org me@example.org",
+      timestamp: new Date("2026-01-01T12:00:00Z"),
+    });
+
+    expect(chats()).toEqual([]);
+    expect(rows()).toEqual([]);
+  });
+
+  it.each([
+    "#lobby",
+    "#elsewhere",
+    "@#lobby",
+    "+#lobby",
+    "%#lobby",
+    "~#lobby",
+    "bob,mara",
+    "bob@irc.example.org",
+    "$*.example.org",
+    "irc.example.org",
+    "me",
+  ])("lists no private chat for a message to %s", (target) => {
+    const sendRaw = start(false);
+    runCommand(`/msg ${target} hello`, me);
+
+    expect(privmsgs(sendRaw)).toEqual([`PRIVMSG ${target} :hello`]);
+    expect(chats()).toEqual([]);
+    expect(rows()).toEqual([]);
+  });
+
+  it("lists no private chat for a channel behind a status prefix that is no channel type", () => {
+    const sendRaw = start(false);
+    vi.spyOn(ircClient, "chantypes").mockReturnValue("#");
+    runCommand("/msg +#lobby hello", me);
+
+    expect(privmsgs(sendRaw)).toEqual(["PRIVMSG +#lobby :hello"]);
+    expect(chats()).toEqual([]);
+    expect(rows()).toEqual([]);
+  });
+
+  it("lists no chat when there is no text to send", () => {
+    const sendRaw = start(false);
+    runCommand("/msg bob", me);
+
+    expect(privmsgs(sendRaw)).toEqual([]);
+    expect(chats()).toEqual([]);
   });
 });
 
@@ -853,5 +1080,138 @@ describe("a command whose text is longer in bytes than one message carries", () 
     expect(send("/whisper bob hi \u{1F600}")).toEqual([
       `${whisperTags}PRIVMSG bob :hi \u{1F600}`,
     ]);
+  });
+});
+
+describe("a long message with a colour and a style", () => {
+  // A line to #lobby carries 377 bytes and a line to bob 380.
+  const toLobby = 377;
+  const toBob = 380;
+  const red = "#FF0000";
+  const words = "the quick brown fox ".repeat(40).trim();
+  const utf8 = new TextEncoder();
+  const bytes = (text: string) => utf8.encode(text).length;
+  const payload = (line: string) => line.slice(line.indexOf(" :") + 2);
+  const whisper = {
+    id: "w1",
+    msgid: "w1",
+    userId: "bob",
+    tags: { "+channel-context": "#lobby" },
+  } as unknown as Message;
+
+  function send(
+    text: string,
+    caps: string[],
+    picked: { color: string | null; formatting: "bold"[] },
+    localReplyTo: Message | null = null,
+  ) {
+    useStore.setState({
+      servers: [{ ...server, capabilities: caps }],
+      messages: {},
+    });
+    vi.spyOn(ircClient, "hasCapability").mockImplementation((_, cap) =>
+      caps.includes(cap),
+    );
+    vi.spyOn(ircClient, "multilineLimits").mockReturnValue(
+      parseMultilineLimits(undefined),
+    );
+    const lines: string[] = [];
+    vi.spyOn(ircClient, "sendRaw").mockImplementation((_, line) => {
+      lines.push(line);
+    });
+    const { result } = renderHook(() =>
+      useMessageSending({
+        selectedServerId: "s1",
+        ...inLobby,
+        currentUser: me,
+        selectedColor: picked.color,
+        selectedFormatting: picked.formatting,
+        localReplyTo,
+      }),
+    );
+    result.current.sendMessage(text);
+    return lines;
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    useStore.setState({ servers: [server], messages: {} });
+  });
+
+  it("opens the colour and the style in every message on a server without batches", () => {
+    const lines = send(words, [], { color: red, formatting: ["bold"] });
+
+    expect(lines.length).toBeGreaterThan(1);
+    for (const line of lines) {
+      expect(payload(line).startsWith("\x0304\x02")).toBe(true);
+      expect(bytes(payload(line))).toBeLessThanOrEqual(toLobby);
+    }
+    expect(
+      lines
+        .map((line) =>
+          payload(line).replaceAll("\x0304", "").replaceAll("\x02", ""),
+        )
+        .join(" "),
+    ).toBe(words);
+  });
+
+  it("resets and opens them again in every concat line of a batch", () => {
+    const lines = send(words, ["draft/multiline", "batch"], {
+      color: red,
+      formatting: ["bold"],
+    });
+
+    const parts = lines.slice(1, -1);
+    expect(lines[0]).toMatch(/^BATCH \+\S+ draft\/multiline #lobby$/);
+    expect(parts.length).toBeGreaterThan(1);
+    expect(payload(parts[0]).startsWith("\x0304\x02the ")).toBe(true);
+    for (const part of parts.slice(1)) {
+      expect(part).toContain(";draft/multiline-concat PRIVMSG #lobby :");
+      expect(payload(part).startsWith("\x0F\x0304\x02")).toBe(true);
+    }
+    for (const part of parts)
+      expect(bytes(payload(part))).toBeLessThanOrEqual(toLobby);
+  });
+
+  it("opens them in every part of a typed reply to a whisper", () => {
+    const lines = send(
+      words,
+      [],
+      { color: red, formatting: ["bold"] },
+      whisper,
+    );
+
+    expect(lines.length).toBeGreaterThan(1);
+    for (const line of lines) {
+      expect(line).toContain(" PRIVMSG bob :\x0304\x02");
+      expect(bytes(payload(line))).toBeLessThanOrEqual(toBob);
+    }
+  });
+
+  it("opens a style typed into /me in every action", () => {
+    const lines = send(`/me \x1D${words}\x1D`, [], {
+      color: null,
+      formatting: [],
+    });
+
+    expect(lines.length).toBeGreaterThan(1);
+    for (const line of lines) {
+      expect(line.startsWith("PRIVMSG #lobby :\u0001ACTION \x1D")).toBe(true);
+      expect(line.endsWith("\u0001")).toBe(true);
+      expect(bytes(payload(line))).toBeLessThanOrEqual(toLobby);
+    }
+  });
+
+  it("opens a style typed into /msg in every part", () => {
+    const lines = send(`/msg bob \x1F${words}\x1F`, [], {
+      color: null,
+      formatting: [],
+    });
+
+    expect(lines.length).toBeGreaterThan(1);
+    for (const line of lines) {
+      expect(line.startsWith("PRIVMSG bob :\x1F")).toBe(true);
+      expect(bytes(payload(line))).toBeLessThanOrEqual(toBob);
+    }
   });
 });

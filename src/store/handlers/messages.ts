@@ -4,6 +4,7 @@ import type { StoreApi } from "zustand";
 import {
   applyBridgeRules,
   getCompiledBridgeRules,
+  isBridgedNameIgnored,
 } from "../../lib/bridgeRules";
 import {
   E2EE_UNDECRYPTABLE_TAG,
@@ -291,7 +292,11 @@ export function registerMessageHandlers(store: StoreApi<AppState>): void {
     // person silences only them.
     const ignored = (nick: string) =>
       isUserIgnored(nick, undefined, undefined, globalSettings.ignoreList);
-    if (ignored(response.sender) || ignored(shownSender)) {
+    if (
+      ignored(response.sender) ||
+      (bridged?.kind === "bot" &&
+        isBridgedNameIgnored(bridged.nick, globalSettings.ignoreList))
+    ) {
       return;
     }
 

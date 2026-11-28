@@ -3,7 +3,7 @@ import { Trans } from "@lingui/react/macro";
 import { useEffect, useMemo, useState } from "react";
 import type { CompletionProvider } from "../../hooks/useCompletion";
 import { botPriority } from "../../lib/botPriority";
-import { getClientCommands } from "../../lib/clientCommands";
+import { formatOptions, getClientCommands } from "../../lib/clientCommands";
 import type { ResolvedShortcode } from "../../lib/customEmoji";
 import { rankEmojis } from "../../lib/emojiSearch";
 import type { BotCommandOption, Channel, Server, User } from "../../types";
@@ -217,13 +217,6 @@ export function typedBotCommand(
   return bots[0] ?? null;
 }
 
-function formatOptions(options: BotCommandOption[] | undefined): string {
-  if (!options || options.length === 0) return "";
-  return options
-    .map((o) => (o.required ? `<${o.name}>` : `[${o.name}]`))
-    .join(" ");
-}
-
 function sourceLabel(source: SlashSuggestionSource): {
   label: string;
   title: string;
@@ -257,7 +250,7 @@ export function slashSuggestions(
   const suggestions: SlashSuggestion[] = [];
   const seen = new Set<string>();
 
-  for (const c of getClientCommands()) {
+  for (const c of getClientCommands(!!channel)) {
     if (c.scope === "channel-only" && !channel) continue;
     suggestions.push({
       name: c.name,

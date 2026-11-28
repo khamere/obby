@@ -2,13 +2,28 @@
  * Hook for handling message sending logic including IRC commands,
  * multiline messages, and protocol formatting
  */
+import { t } from "@lingui/core/macro";
 import { useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { useShallow } from "zustand/react/shallow";
 import { base64EncodeUtf8 } from "../lib/base64";
 import { botPriority } from "../lib/botPriority";
-import { slapAction } from "../lib/clientCommands";
+import {
+  clientCommandUsage,
+  isNickWord,
+  slapAction,
+  typedAppCommand,
+} from "../lib/clientCommands";
 import { coerceOptionValue } from "../lib/commandInvocation";
+import {
+  CREDENTIAL_COMMAND,
+  isServicesNick,
+} from "../lib/history/historyLines";
+import {
+  createIgnorePattern,
+  ignoreEntriesFor,
+  isUserIgnored,
+} from "../lib/ignoreUtils";
 import { LINE_BREAK } from "../lib/irc/IRCClient";
 import ircClient from "../lib/ircClient";
 import { parseJoinCommand, replyTags } from "../lib/ircUtils";
@@ -27,7 +42,10 @@ import {
   splitAction,
   splitLongMessage,
 } from "../lib/messageProtocol";
-import { showOwnPrivateMessage } from "../lib/ownPrivateMessage";
+import {
+  privateChatForOwnMessage,
+  showOwnPrivateMessage,
+} from "../lib/ownPrivateMessage";
 import { PRIVILEGED_COMMANDS } from "../lib/privilegedCommands";
 import {
   rainbowText,
@@ -36,7 +54,10 @@ import {
 } from "../lib/rainbow";
 import useStore, { serverSupportsMultiline } from "../store";
 import { routeOutgoingPM } from "../store/handlers/e2eeOutbound";
+import { showPresent } from "../store/handlers/history";
+import { showCommandReply } from "../store/handlers/serverReplies";
 import type { BotCommand, Channel, Message, PrivateChat, User } from "../types";
+import { canCarryPassword } from "./useMessageHistory";
 
 /**
  * Try to dispatch a slash command as a +draft/bot-cmd TAGMSG.
@@ -147,6 +168,145 @@ function tryDispatchBotCommand(
   return true;
 }
 
+interface AppCommandContext {
+  serverId: string;
+  chatId: string;
+  channel: Channel | null;
+  privateChat: PrivateChat | null;
+}
+
+// The commands that open or change something in the app. Each one calls the
+// store action its menu entry calls, and answers with a row in the chat where
+// it was typed, so a refused command never just empties the composer.
+function runAppCommand(
+  name: string,
+  argumentText: string,
+  { serverId, chatId, channel, privateChat }: AppCommandContext,
+): "withheld" | undefined {
+  const store = useStore.getState();
+  const chatTarget = channel?.name ?? privateChat?.username;
+  const reply = (type: "fail" | "note", code: string, message: string) => {
+    // A chat showing older history keeps new rows aside, so we return to the present first.
+    if (chatTarget) showPresent(useStore, serverId, chatTarget);
+    showCommandReply(
+      useStore,
+      { serverId, type, command: name.toUpperCase(), code, message },
+      chatId,
+    );
+  };
+  const refuse = (code: string, text: string) => {
+    reply("fail", code, text);
+    return "withheld" as const;
+  };
+  const note = (code: string, text: string) => {
+    reply("note", code, text);
+    return undefined;
+  };
+  const usage = () =>
+    refuse("USAGE", t`Not run. Type it as ${clientCommandUsage(name)}`);
+
+  const words = argumentText.split(/\s+/).filter(Boolean);
+  const ownNick = ircClient.getNick(serverId);
+  const isNick = (word: string, allowWildcards = false) =>
+    isNickWord(word, allowWildcards) && !ircClient.isChannel(serverId, word);
+
+  switch (name) {
+    case "query": {
+      if (words.length !== 1 || !isNick(words[0])) return usage();
+      if (words[0].toLowerCase() === ownNick?.toLowerCase())
+        return refuse(
+          "OWN_NICK",
+          t`Not run. ${words[0]} matches your own nick`,
+        );
+      store.openChat(serverId, words[0]);
+      return;
+    }
+    case "whois": {
+      // "/whois server nick" is the classic two-word form, and the nick comes last.
+      const typed = words.at(-1);
+      if (words.length > 2 || (typed !== undefined && !isNick(typed)))
+        return usage();
+      const nick = typed ?? privateChat?.username ?? ownNick;
+      if (!nick) return usage();
+      store.openProfile(serverId, nick);
+      return;
+    }
+    case "ignore":
+    case "unignore": {
+      if (words.length === 0) {
+        store.openPage({
+          kind: "settings",
+          section: "preferences",
+          highlight: "preferences.ignoreList",
+          fromSearch: true,
+        });
+        return;
+      }
+      if (words.length !== 1 || !isNick(words[0], true)) return usage();
+      const ignoreList = store.globalSettings.ignoreList;
+      if (name === "unignore") {
+        const removed = ignoreEntriesFor(words[0], ignoreList);
+        if (removed.length === 0)
+          return refuse(
+            "NO_MATCH",
+            t`Nothing on the ignore list matches ${words[0]}. Type /ignore to see the list`,
+          );
+        for (const entry of removed) store.removeFromIgnoreList(entry);
+        return note("UNIGNORED", t`No longer ignoring ${removed.join(", ")}`);
+      }
+      const pattern = createIgnorePattern(words[0]);
+      // Our own echoed lines would vanish with an entry that covers our nick.
+      if (ownNick && isUserIgnored(ownNick, undefined, undefined, [pattern]))
+        return refuse(
+          "OWN_NICK",
+          t`Not run. ${words[0]} matches your own nick`,
+        );
+      const stored = ignoreList.find(
+        (entry) => entry.toLowerCase() === pattern.toLowerCase(),
+      );
+      if (!stored) store.addToIgnoreList(pattern);
+      return note("IGNORED", t`Ignoring ${stored ?? pattern}`);
+    }
+    case "close": {
+      if (words.length > 0) return usage();
+      if (channel) {
+        store.leaveChannel(serverId, channel.name);
+        return;
+      }
+      if (!privateChat) return usage();
+      if (privateChat.isPinned)
+        return refuse("PINNED", t`Not closed. Unpin this conversation first`);
+      store.deletePrivateChat(serverId, privateChat.id);
+      // On a phone the chat column has nothing left to show, so we go back to the list.
+      if (useStore.getState().ui.isNarrowView)
+        store.setMobileViewActiveColumn("serverList");
+      return;
+    }
+    case "clear": {
+      if (words.length > 0) return usage();
+      store.clearChatView(serverId, chatId);
+      return;
+    }
+    case "list": {
+      if (words.length > 0) return usage();
+      store.openPage({ kind: "channelBrowser", serverId });
+      return;
+    }
+    case "raw": {
+      // We check for a line break before trimming, so a second line is refused and never sent as a command of its own.
+      if (/[\r\n\0]/.test(argumentText))
+        return refuse("ONE_LINE", t`Not sent. Put the command on one line`);
+      const line = argumentText.trimStart();
+      if (!line) return usage();
+      if (!ircClient.isSocketOpen(serverId))
+        return refuse("NOT_CONNECTED", t`Not connected`);
+      ircClient.sendRaw(serverId, line);
+      // A raw line can carry a password, so the row never repeats it.
+      return note("SENT", t`Sent. The raw log shows the reply`);
+    }
+  }
+}
+
 // Where a command may be invoked. Prefer the spec `contexts`; fall back to the
 // legacy obby.world/bot-info `visibility`/`scopes` pair so a private command is
 // NEVER routed publicly just because the directory hasn't sent `contexts` yet.
@@ -222,8 +382,9 @@ interface UseMessageSendingOptions {
 }
 
 interface UseMessageSendingReturn {
-  // Returns "withheld" when an engaged E2EE lock dropped the message so the
-  // caller can preserve the user's draft; otherwise void.
+  // Returns "withheld" when an engaged E2EE lock dropped the message or a
+  // command was refused, so the caller can preserve the user's draft;
+  // otherwise void.
   sendMessage: (text: string) => "withheld" | undefined;
 }
 
@@ -315,6 +476,15 @@ export function useMessageSending({
   const handleCommand = useCallback(
     (cleanedText: string) => {
       if (!selectedServerId) return;
+      const typed = typedAppCommand(cleanedText);
+      const chatId = selectedChannelId ?? selectedPrivateChatId;
+      if (typed && chatId)
+        return runAppCommand(typed.name, typed.argumentText, {
+          serverId: selectedServerId,
+          chatId,
+          channel: selectedChannel,
+          privateChat: selectedPrivateChat,
+        });
 
       const command = cleanedText.substring(1).trim();
       const [commandName, ...args] = command.split(" ");
@@ -349,7 +519,28 @@ export function useMessageSending({
         const routed = routeOutgoingPM(selectedServerId, target, message);
         if (routed === "withheld") return "withheld" as const;
         if (routed === "sent") return;
+        // A message to a service or a line that can carry a password gets no chat and no copy from us, so we never put it on screen ourselves.
+        const chat =
+          message &&
+          !isServicesNick(target) &&
+          !message
+            .split(LINE_BREAK)
+            .some(
+              (line) =>
+                CREDENTIAL_COMMAND.test(line.trim()) ||
+                canCarryPassword(`/msg ${target} ${line}`),
+            )
+            ? privateChatForOwnMessage(selectedServerId, target)
+            : undefined;
         ircClient.sendPrivmsgLines(selectedServerId, target, message);
+        if (chat && currentUser)
+          showOwnPrivateMessage(
+            selectedServerId,
+            chat,
+            currentUser,
+            message,
+            null,
+          );
       } else if (lowerName === "whisper") {
         const [targetUser, ...messageParts] = args;
         if (!selectedChannel) {
@@ -467,6 +658,8 @@ export function useMessageSending({
     },
     [
       selectedServerId,
+      selectedChannelId,
+      selectedPrivateChatId,
       selectedChannel,
       selectedPrivateChat,
       currentUser,

@@ -1544,6 +1544,10 @@ msgstr "Limpiar historial"
 msgid "Clear search"
 msgstr "Borrar búsqueda"
 
+#: src/lib/clientCommands.ts
+msgid "Clear this view and keep saved history"
+msgstr "Limpiar esta vista y conservar el historial guardado"
+
 #: src/components/ui/InvitationsPanel.tsx
 msgid "Click again to confirm"
 msgstr "Haz clic de nuevo para confirmar"
@@ -1605,6 +1609,7 @@ msgid "Close comments"
 msgstr "Cerrar comentarios"
 
 #: src/components/layout/ChannelList.tsx
+#: src/lib/clientCommands.ts
 msgid "Close conversation"
 msgstr "Cerrar conversación"
 
@@ -2926,6 +2931,7 @@ msgid "Filters are unavailable on this server"
 msgstr "Los filtros no están disponibles en este servidor"
 
 #: src/components/layout/NetworkMenu.tsx
+#: src/lib/clientCommands.ts
 msgid "Find channels"
 msgstr "Buscar canales"
 
@@ -3217,6 +3223,7 @@ msgid "Ignore List"
 msgstr "Lista de ignorados"
 
 #: src/components/layout/ProfilePane.tsx
+#: src/lib/clientCommands.ts
 msgid "Ignore user"
 msgstr "Ignorar usuario"
 
@@ -3227,6 +3234,11 @@ msgstr "Ignorar usuario"
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Ignored patterns:"
 msgstr "Patrones ignorados:"
+
+#. placeholder {0}: stored ?? pattern
+#: src/hooks/useMessageSending.ts
+msgid "Ignoring {0}"
+msgstr "Ignorando a {0}"
 
 #: src/components/ui/MediaCommentsSidebar.tsx
 msgid "Image"
@@ -3529,6 +3541,7 @@ msgid "Leave call"
 msgstr "Salir de la llamada"
 
 #: src/components/layout/ChannelContextMenu.tsx
+#: src/lib/clientCommands.ts
 msgid "Leave channel"
 msgstr "Salir del canal"
 
@@ -4312,6 +4325,11 @@ msgstr "Sin KNOCK (+K)"
 msgid "No limit"
 msgstr "Sin límite"
 
+#. placeholder {0}: removed.join(", ")
+#: src/hooks/useMessageSending.ts
+msgid "No longer ignoring {0}"
+msgstr "Ya no se ignora a {0}"
+
 #: src/components/ui/MediaViewerModal.tsx
 msgid "No media in this channel"
 msgstr "No hay medios en este canal"
@@ -4429,7 +4447,12 @@ msgstr "Normal"
 msgid "Normal - Standard protection"
 msgstr "Normal – Protección estándar"
 
+#: src/hooks/useMessageSending.ts
+msgid "Not closed. Unpin this conversation first"
+msgstr "No se cerró. Desfija primero esta conversación"
+
 #: src/components/pages/ServerSettingsPage.tsx
+#: src/hooks/useMessageSending.ts
 msgid "Not connected"
 msgstr "Sin conexión"
 
@@ -4457,6 +4480,21 @@ msgstr "No estás en este canal"
 msgid "Not now"
 msgstr "Ahora no"
 
+#. placeholder {0}: words[0]
+#: src/hooks/useMessageSending.ts
+#: src/hooks/useMessageSending.ts
+msgid "Not run. {0} matches your own nick"
+msgstr "No se ejecutó. {0} coincide con tu propio apodo"
+
+#. placeholder {0}: clientCommandUsage(name)
+#: src/hooks/useMessageSending.ts
+msgid "Not run. Type it as {0}"
+msgstr "No se ejecutó. Escríbelo como {0}"
+
+#: src/hooks/useMessageSending.ts
+msgid "Not sent. Put the command on one line"
+msgstr "No se envió. Escribe el comando en una sola línea"
+
 #: src/components/chat/CommandArgHint.tsx
 msgid "Not sent. Reconnect, or use a chat where the bot offers this command"
 msgstr "No enviado. Vuelve a conectarte o usa un chat donde el bot ofrezca este comando"
@@ -4468,6 +4506,11 @@ msgstr "Nota: Modificar los metadatos del canal requiere permisos de operador (@
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Note: the server returns the same response whether or not the account has a verified email, so a typo will not be flagged here. If no code arrives within a couple of minutes, double-check the account name."
 msgstr "Nota: el servidor devuelve la misma respuesta tenga o no la cuenta un correo verificado, así que aquí no se avisará de un error de escritura. Si no llega ningún código en un par de minutos, revisa el nombre de la cuenta."
+
+#. placeholder {0}: words[0]
+#: src/hooks/useMessageSending.ts
+msgid "Nothing on the ignore list matches {0}. Type /ignore to see the list"
+msgstr "Nada en la lista de ignorados coincide con {0}. Escribe /ignore para ver la lista"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Notification Sound"
@@ -4642,6 +4685,7 @@ msgid "Open network options"
 msgstr "Abrir opciones de red"
 
 #: src/components/layout/StartPrivateChatRow.tsx
+#: src/lib/clientCommands.ts
 msgid "Open private chat"
 msgstr "Abrir chat privado"
 
@@ -5763,6 +5807,10 @@ msgstr "Enviar un GIF"
 msgid "Send a message in rainbow colors"
 msgstr "Enviar un mensaje con los colores del arcoíris"
 
+#: src/lib/clientCommands.ts
+msgid "Send a raw line to the IRC server"
+msgstr "Enviar una línea sin procesar al servidor IRC"
+
 #: src/components/ui/ModerationModal.tsx
 msgid "Send a warning message to {username}"
 msgstr "Enviar un mensaje de advertencia a {username}"
@@ -5823,6 +5871,10 @@ msgstr "Enviado sin cifrar porque OTR solo cifra texto"
 #: src/components/ui/UploadProgressBar.tsx
 msgid "Sent unencrypted because the file is too large to encrypt"
 msgstr "Enviado sin cifrar porque el archivo es demasiado grande para cifrarlo"
+
+#: src/hooks/useMessageSending.ts
+msgid "Sent. The raw log shows the reply"
+msgstr "Enviado. El registro sin procesar muestra la respuesta"
 
 #: src/components/chat/completionProviders.tsx
 #: src/components/layout/BotPane.tsx
@@ -6836,6 +6888,7 @@ msgid "Undeafen"
 msgstr "Activar audio"
 
 #: src/components/layout/ProfilePane.tsx
+#: src/lib/clientCommands.ts
 msgid "Unignore user"
 msgstr "Dejar de ignorar usuario"
 
@@ -7165,6 +7218,7 @@ msgid "View our privacy policy and data practices"
 msgstr "Ver nuestra política de privacidad y prácticas de datos"
 
 #: src/components/pages/SettingsPage.tsx
+#: src/lib/clientCommands.ts
 msgid "View profile"
 msgstr "Ver perfil"
 

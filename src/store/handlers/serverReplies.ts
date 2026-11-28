@@ -1,5 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import type { StoreApi } from "zustand";
+import type { Message } from "../../types";
+import { messageTime } from "../helpers";
 import type { AppState } from "../index";
 
 export const SERVER_NOTICES_ID = "server-notices";
@@ -16,27 +18,19 @@ export interface ServerReply {
 
 const REPLY_TYPES = { fail: "FAIL", warn: "WARN", note: "NOTE" } as const;
 
-/** Files a server reply under the server's notices and counts problems the
- *  user has not looked at yet. */
-export function reportServerReply(
-  store: StoreApi<AppState>,
+function replyMessage(
   reply: ServerReply,
-): void {
+  channelId: string,
+  timestamp: Date,
+): Message {
   const { serverId, type, command, code, message, target, context } = reply;
-  if (type !== "note")
-    store.setState((s) => ({
-      serverAlerts: {
-        ...s.serverAlerts,
-        [serverId]: (s.serverAlerts[serverId] ?? 0) + 1,
-      },
-    }));
-  store.getState().addMessage({
+  return {
     id: uuidv4(),
     type: "standard-reply",
     content: message,
-    timestamp: new Date(),
+    timestamp,
     userId: "system",
-    channelId: SERVER_NOTICES_ID,
+    channelId,
     serverId,
     reactions: [],
     replyMessage: null,
@@ -47,7 +41,46 @@ export function reportServerReply(
     standardReplyTarget: target,
     standardReplyContext: context,
     standardReplyMessage: message,
-  });
+  };
+}
+
+/** Files a server reply under the server's notices and counts problems the
+ *  user has not looked at yet. */
+export function reportServerReply(
+  store: StoreApi<AppState>,
+  reply: ServerReply,
+): void {
+  const { serverId, type } = reply;
+  if (type !== "note")
+    store.setState((s) => ({
+      serverAlerts: {
+        ...s.serverAlerts,
+        [serverId]: (s.serverAlerts[serverId] ?? 0) + 1,
+      },
+    }));
+  store
+    .getState()
+    .addMessage(replyMessage(reply, SERVER_NOTICES_ID, new Date()));
+}
+
+/** Answers a command the user typed, in the chat where they typed it. The row
+ *  goes below the chat's newest line even when the device clock runs behind
+ *  the server's. */
+export function showCommandReply(
+  store: StoreApi<AppState>,
+  reply: ServerReply,
+  chatId: string,
+): void {
+  const key = `${reply.serverId}-${chatId}`;
+  const newest = Math.max(
+    0,
+    ...(store.getState().messages[key] ?? []).map(messageTime),
+  );
+  store
+    .getState()
+    .addMessage(
+      replyMessage(reply, chatId, new Date(Math.max(Date.now(), newest + 1))),
+    );
 }
 
 /** Marks a server's notices read whenever they are on screen, however the

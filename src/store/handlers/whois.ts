@@ -1,6 +1,7 @@
 import type { StoreApi } from "zustand";
 import ircClient from "../../lib/ircClient";
 import type { User } from "../../types";
+import { findWhois } from "../helpers";
 import type { AppState } from "../index";
 import * as storage from "../localStorage";
 import {
@@ -259,7 +260,8 @@ export function registerWhoisHandlers(store: StoreApi<AppState>): void {
 
     store.setState((state) => {
       const serverWhois = state.whoisData[serverId] || {};
-      const existingData = serverWhois[nick];
+      // Some servers end the reply with the nick as we asked for it, while the lines before carry their own spelling.
+      const existingData = findWhois(serverWhois, nick);
 
       if (existingData) {
         return {
@@ -267,7 +269,7 @@ export function registerWhoisHandlers(store: StoreApi<AppState>): void {
             ...state.whoisData,
             [serverId]: {
               ...serverWhois,
-              [nick]: {
+              [existingData.nick]: {
                 ...existingData,
                 isComplete: true,
               },

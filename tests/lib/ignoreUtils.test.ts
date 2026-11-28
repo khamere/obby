@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createIgnorePattern,
+  ignoreEntriesFor,
   isUserIgnored,
   isValidIgnorePattern,
   matchesIgnorePattern,
@@ -146,6 +147,24 @@ describe("ignoreUtils", () => {
     it("should handle empty strings", () => {
       expect(createIgnorePattern("", "", "")).toBe("*!*@*");
       expect(createIgnorePattern("nick", "", "")).toBe("nick!*@*");
+    });
+  });
+
+  describe("ignoreEntriesFor", () => {
+    const list = [
+      "bob!*@*",
+      "B*!*@*",
+      "alice!*@*",
+      "*!*@host.example",
+      "HistServ!*@*",
+    ];
+
+    it("returns every entry that hides the nick, wildcards included", () => {
+      expect(ignoreEntriesFor("bob", list)).toEqual(["bob!*@*", "B*!*@*"]);
+    });
+
+    it("returns nothing for a nick no entry covers", () => {
+      expect(ignoreEntriesFor("carol", list)).toEqual([]);
     });
   });
 });

@@ -103,6 +103,47 @@ describe("closed private chats and CHATHISTORY TARGETS", () => {
     expect(storage.closedChats.load()[serverId]).toEqual({});
   });
 
+  it("saves that no chat is open once the open one is closed, so the next start leaves it closed", () => {
+    useStore.setState((state) => ({
+      ui: { ...state.ui, selectedServerId: serverId },
+    }));
+    useStore.getState().selectPrivateChat("alice-id");
+    expect(storage.uiSelections.load()).toMatchObject({
+      perServerSelections: {
+        [serverId]: { selectedPrivateChatUsername: "alice" },
+      },
+      lastSelection: { privateChatUsername: "alice" },
+    });
+
+    useStore.getState().deletePrivateChat(serverId, "alice-id");
+
+    const saved = storage.uiSelections.load();
+    expect(saved.perServerSelections?.[serverId]).toEqual({
+      selectedChannelId: null,
+      selectedPrivateChatId: null,
+    });
+    expect(saved.lastSelection).toEqual({
+      serverHost: "bouncer.test",
+      channelName: null,
+      privateChatUsername: null,
+    });
+  });
+
+  it("leaves the saved selection alone when another chat is closed", () => {
+    const bob = { ...alice, id: "bob-id", username: "bob" };
+    seed([alice, bob]);
+    useStore.setState((state) => ({
+      ui: { ...state.ui, selectedServerId: serverId },
+    }));
+    useStore.getState().selectPrivateChat("alice-id");
+
+    useStore.getState().deletePrivateChat(serverId, "bob-id");
+
+    expect(storage.uiSelections.load().lastSelection).toMatchObject({
+      privateChatUsername: "alice",
+    });
+  });
+
   it("forgets the close when the user opens the chat again", () => {
     useStore.getState().deletePrivateChat(serverId, "alice-id");
     useStore.getState().openPrivateChat(serverId, "alice");
