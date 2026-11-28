@@ -5697,6 +5697,13 @@ msgstr "Valitse kanava tai lisää uusi päästäksesi alkuun."
 
 #: src/components/layout/ChannelRow.tsx
 #: src/components/layout/ChannelRow.tsx
+#: src/components/layout/PrivateChatRow.tsx
+#: src/components/layout/PrivateChatRow.tsx
+msgid "Select to continue your draft"
+msgstr "Valitse jatkaaksesi luonnostasi"
+
+#: src/components/layout/ChannelRow.tsx
+#: src/components/layout/ChannelRow.tsx
 msgid "Select to enter the channel key"
 msgstr "Valitse syöttääksesi kanavan avaimen"
 

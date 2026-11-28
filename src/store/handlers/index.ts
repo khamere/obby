@@ -7,6 +7,7 @@ import { registerBouncerHandlers } from "./bouncer";
 import { registerChannelHandlers } from "./channels";
 import { registerNotificationPermission } from "./chatNotifications";
 import { registerConnectionHandlers } from "./connection";
+import { registerDraftHandlers } from "./drafts";
 import { registerE2EEHandlers } from "./e2ee";
 import { registerHistoryHandlers } from "./history";
 import { registerInvitelinkHandlers } from "./invitelink";
@@ -54,4 +55,5 @@ export function registerAllHandlers(store: StoreApi<AppState>): void {
   registerWebPushHandlers(store);
   registerNativePushHandlers(store);
   registerMuteHandlers(store);
+  registerDraftHandlers(store);
 }

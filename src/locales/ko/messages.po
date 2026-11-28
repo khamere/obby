@@ -5697,6 +5697,13 @@ msgstr "시작하려면 채널을 선택하거나 추가하세요."
 
 #: src/components/layout/ChannelRow.tsx
 #: src/components/layout/ChannelRow.tsx
+#: src/components/layout/PrivateChatRow.tsx
+#: src/components/layout/PrivateChatRow.tsx
+msgid "Select to continue your draft"
+msgstr "선택하여 임시 저장한 메시지 이어 쓰기"
+
+#: src/components/layout/ChannelRow.tsx
+#: src/components/layout/ChannelRow.tsx
 msgid "Select to enter the channel key"
 msgstr "선택하여 채널 키 입력"
 

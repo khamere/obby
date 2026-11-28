@@ -5697,6 +5697,13 @@ msgstr "选择或添加频道以开始使用。"
 
 #: src/components/layout/ChannelRow.tsx
 #: src/components/layout/ChannelRow.tsx
+#: src/components/layout/PrivateChatRow.tsx
+#: src/components/layout/PrivateChatRow.tsx
+msgid "Select to continue your draft"
+msgstr "选择以继续编辑草稿"
+
+#: src/components/layout/ChannelRow.tsx
+#: src/components/layout/ChannelRow.tsx
 msgid "Select to enter the channel key"
 msgstr "选择以输入频道密钥"
 

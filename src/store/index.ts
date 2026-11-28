@@ -6,6 +6,7 @@ import { encodeBouncerAttrs } from "../lib/bouncerAttrs";
 import { getSelectionHistory, recordSelection } from "../lib/channelHistory";
 import { classifyChannelName } from "../lib/channelMentions";
 import { DEFAULT_CHAT_LOOK } from "../lib/chatLook";
+import { forgetServerDrafts, setDraft } from "../lib/drafts";
 import type { E2EEScheme, E2EESessionState } from "../lib/e2ee/session";
 import { e2eeSessionKey } from "../lib/e2ee/session";
 import { ConnectionClosedError } from "../lib/irc/IRCClient";
@@ -1989,6 +1990,7 @@ const useStore = create<AppState>((set, get) => ({
       name.toLowerCase() === channelName.toLowerCase();
     ircClient.forgetChannel(serverId, channelName);
     saveLeftReason(serverId, channelName, undefined);
+    setDraft(serverId, channelName, "");
     set((state) => {
       const updatedServers = state.servers.map((server) => {
         if (server.id === serverId) {
@@ -3165,6 +3167,7 @@ const useStore = create<AppState>((set, get) => ({
       // bring it straight back on the next connect.
       if (privateChat) {
         storage.closedChats.record(serverId, privateChat.username, new Date());
+        setDraft(serverId, privateChat.username, "");
       }
 
       // If the deleted private chat was selected, clear the selection
@@ -3478,7 +3481,10 @@ const useStore = create<AppState>((set, get) => ({
         .map((s) => s.id),
     ]);
     closeServerConnections(toRemove);
-    for (const id of toRemove) forgetLeftChannels(id);
+    for (const id of toRemove) {
+      forgetLeftChannels(id);
+      forgetServerDrafts(id);
+    }
 
     set((state) => {
       const savedServers = loadSavedServers();

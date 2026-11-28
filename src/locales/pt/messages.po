@@ -5697,6 +5697,13 @@ msgstr "Selecione ou adicione um canal para começar."
 
 #: src/components/layout/ChannelRow.tsx
 #: src/components/layout/ChannelRow.tsx
+#: src/components/layout/PrivateChatRow.tsx
+#: src/components/layout/PrivateChatRow.tsx
+msgid "Select to continue your draft"
+msgstr "Selecione para continuar o seu rascunho"
+
+#: src/components/layout/ChannelRow.tsx
+#: src/components/layout/ChannelRow.tsx
 msgid "Select to enter the channel key"
 msgstr "Selecione para inserir a chave do canal"
 

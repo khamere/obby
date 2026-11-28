@@ -1,10 +1,11 @@
+import { KEYS } from "../store/localStorage";
 import { base64ToBytes, bytesToBase64 } from "./base64";
 
-// A backup holds every key Obby keeps in local storage: saved servers with
-// their passwords, upload tokens, encryption identities, settings and
-// layout. It is only ever written encrypted under a password the user
-// chooses, so the file can sit in a cloud folder or a chat without handing
-// those secrets to whoever finds it.
+// A backup holds every key Obby keeps in local storage except the unsent
+// drafts: saved servers with their passwords, upload tokens, encryption
+// identities, settings and layout. It is only ever written encrypted under a
+// password the user chooses, so the file can sit in a cloud folder or a chat
+// without handing those secrets to whoever finds it.
 export const BACKUP_FORMAT = "obby-backup";
 export const BACKUP_VERSION = 1;
 export const PASSWORD_MIN_LENGTH = 8;
@@ -62,7 +63,8 @@ export function snapshotStorage(): Record<string, string> {
   const entries: Record<string, string> = {};
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (key === null) continue;
+    // Unsent drafts are private text that belongs to this device only.
+    if (key === null || key === KEYS.DRAFTS) continue;
     const value = localStorage.getItem(key);
     if (value !== null) entries[key] = value;
   }

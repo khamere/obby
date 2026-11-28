@@ -1,6 +1,14 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ChatArea } from "../../src/components/layout/ChatArea";
+import { waitForAuthToken } from "../../src/lib/authToken";
+import { getDraft, resetDraftsForTests } from "../../src/lib/drafts";
 import ircClient from "../../src/lib/ircClient";
 import { parseMessageTags } from "../../src/lib/ircUtils";
 import { setUserFilehost } from "../../src/lib/userFilehost";
@@ -18,6 +26,15 @@ vi.mock("../../src/lib/userFilehost", async (original) => ({
   ...(await original<typeof import("../../src/lib/userFilehost")>()),
   uploadToUserFilehost: vi.fn(async () => link),
 }));
+
+vi.mock("../../src/lib/authToken", () => ({ waitForAuthToken: vi.fn() }));
+vi.mock("../../src/lib/mediaUpload", async (original) => ({
+  ...(await original<typeof import("../../src/lib/mediaUpload")>()),
+  fetchUploadInfo: vi.fn(async () => null),
+}));
+
+// Drafts outlive the component, so each test starts without the last one's text.
+afterEach(resetDraftsForTests);
 
 const channel = {
   id: "channel1",
@@ -153,5 +170,100 @@ describe("a file sent from the composer", () => {
         autoFallbackToSingleLine: true,
       },
     }));
+  });
+});
+
+// The server's file host hands out a token per upload, and without one the
+// upload never starts.
+describe("a file whose upload never starts", () => {
+  const other = { ...channel, id: "channel2", name: "#random" } as Channel;
+  let refuseToken: () => void;
+
+  const selectChannel = (id: string) =>
+    useStore.setState((state) => ({
+      ui: {
+        ...state.ui,
+        perServerSelections: {
+          server1: { selectedChannelId: id, selectedPrivateChatId: null },
+        },
+      },
+    }));
+
+  beforeEach(() => {
+    setUserFilehost({ url: "", token: "" });
+    vi.spyOn(ircClient, "sendRaw").mockImplementation(() => {});
+    vi.spyOn(ircClient, "requestToken").mockImplementation(() => {});
+    vi.mocked(waitForAuthToken).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          refuseToken = () => resolve(null);
+        }),
+    );
+    useStore.setState((state) => ({
+      servers: [
+        {
+          ...server,
+          filehost: "https://files.example",
+          channels: [channel, other],
+        },
+      ],
+      currentUser: { id: "user1", username: "tester", isOnline: true },
+      messages: {},
+      typingUsers: {},
+      ui: {
+        ...state.ui,
+        ...defaultUIExtensions,
+        selectedServerId: "server1",
+        perServerSelections: {
+          server1: {
+            selectedChannelId: "channel1",
+            selectedPrivateChatId: null,
+          },
+        },
+      },
+    }));
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  async function sendFileWithCaption() {
+    render(<ChatArea onToggleChanList={() => {}} isChanListVisible={true} />);
+    const input = screen.getByPlaceholderText(/Message #general/i);
+    fireEvent.paste(input, {
+      clipboardData: {
+        files: [new File(["hello"], "note.txt", { type: "text/plain" })],
+      },
+    });
+    fireEvent.change(input, { target: { value: "see this" } });
+    fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
+    expect(input).toHaveValue("");
+    expect(getDraft("server1", "#general")).toBe("");
+    await waitFor(() => expect(waitForAuthToken).toHaveBeenCalled());
+  }
+
+  it("hands the caption back to the message box when its chat is still open", async () => {
+    await sendFileWithCaption();
+    await act(async () => refuseToken());
+    expect(screen.getByPlaceholderText(/Message #general/i)).toHaveValue(
+      "see this",
+    );
+    expect(getDraft("server1", "#general")).toBe("see this");
+  });
+
+  it("hands the caption back to the chat it was written in after another chat was opened", async () => {
+    await sendFileWithCaption();
+    act(() => selectChannel("channel2"));
+    await act(async () => refuseToken());
+
+    expect(screen.getByPlaceholderText(/Message #random/i)).toHaveValue("");
+    expect(getDraft("server1", "#random")).toBe("");
+    expect(getDraft("server1", "#general")).toBe("see this");
+
+    act(() => selectChannel("channel1"));
+    expect(screen.getByPlaceholderText(/Message #general/i)).toHaveValue(
+      "see this",
+    );
   });
 });

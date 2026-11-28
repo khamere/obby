@@ -175,6 +175,48 @@ describe("useCommandInvocation", () => {
     });
   });
 
+  it("names the typed text as the draft while no command is filled in", () => {
+    const { hook, type } = setup();
+    type("hello");
+    expect(hook.result.current.draftText()).toBe("hello");
+  });
+
+  it("names the stashed text as the draft while the field holds an argument", () => {
+    const { hook, input, type, key } = setup();
+    type("hello");
+    act(() => hook.result.current.begin("bot", say));
+    type("#ops");
+    expect(input.value).toBe("#ops");
+    expect(hook.result.current.draftText()).toBe("hello");
+
+    key("Escape");
+    expect(input.value).toBe("hello");
+    expect(hook.result.current.draftText()).toBe("hello");
+  });
+
+  it("names no draft while a typed command name is filled in", () => {
+    const { hook, type } = setup();
+    type("/weather");
+    act(() => hook.result.current.begin("bot", say));
+    type("#ops");
+    expect(hook.result.current.draftText()).toBe("");
+  });
+
+  it("hands the draft back when the chat is left mid-command", () => {
+    const { hook, type } = setup();
+    type("hello");
+    act(() => hook.result.current.begin("bot", say));
+    type("#ops");
+    const draft = hook.result.current.draftText();
+    let left = "";
+    act(() => {
+      left = hook.result.current.leave();
+    });
+    expect(left).toBe(draft);
+    expect(left).toBe("hello");
+    expect(hook.result.current.invocation).toBeNull();
+  });
+
   it("reopens with the values of an earlier run", () => {
     const { hook, input } = setup();
     act(() =>
