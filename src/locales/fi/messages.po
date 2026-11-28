@@ -1527,6 +1527,10 @@ msgstr "Tyhjennä historia"
 msgid "Clear search"
 msgstr "Tyhjennä haku"
 
+#: src/lib/clientCommands.ts
+msgid "Clear this view and keep saved history"
+msgstr "Tyhjennä tämä näkymä ja säilytä tallennettu historia"
+
 #: src/components/ui/InvitationsPanel.tsx
 msgid "Click again to confirm"
 msgstr "Vahvista napsauttamalla uudelleen"
@@ -1588,6 +1592,7 @@ msgid "Close comments"
 msgstr "Sulje kommentit"
 
 #: src/components/layout/ChannelList.tsx
+#: src/lib/clientCommands.ts
 msgid "Close conversation"
 msgstr "Sulje keskustelu"
 
@@ -2901,6 +2906,7 @@ msgid "Filters are unavailable on this server"
 msgstr "Suodattimet eivät ole käytettävissä tällä palvelimella"
 
 #: src/components/layout/NetworkMenu.tsx
+#: src/lib/clientCommands.ts
 msgid "Find channels"
 msgstr "Etsi kanavia"
 
@@ -3192,6 +3198,7 @@ msgid "Ignore List"
 msgstr "Estolistа"
 
 #: src/components/layout/ProfilePane.tsx
+#: src/lib/clientCommands.ts
 msgid "Ignore user"
 msgstr "Hylkää käyttäjä"
 
@@ -3202,6 +3209,11 @@ msgstr "Estä käyttäjä"
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Ignored patterns:"
 msgstr "Estetyt mallit:"
+
+#. placeholder {0}: stored ?? pattern
+#: src/hooks/useMessageSending.ts
+msgid "Ignoring {0}"
+msgstr "Hylätään {0}"
 
 #: src/components/ui/MediaCommentsSidebar.tsx
 msgid "Image"
@@ -3504,6 +3516,7 @@ msgid "Leave call"
 msgstr "Poistu puhelusta"
 
 #: src/components/layout/ChannelContextMenu.tsx
+#: src/lib/clientCommands.ts
 msgid "Leave channel"
 msgstr "Poistu kanavalta"
 
@@ -4287,6 +4300,11 @@ msgstr "Ei KNOCK-pyyntöjä (+K)"
 msgid "No limit"
 msgstr "Ei rajaa"
 
+#. placeholder {0}: removed.join(", ")
+#: src/hooks/useMessageSending.ts
+msgid "No longer ignoring {0}"
+msgstr "Ei enää hylätä: {0}"
+
 #: src/components/ui/MediaViewerModal.tsx
 msgid "No media in this channel"
 msgstr "Tällä kanavalla ei ole mediaa"
@@ -4404,7 +4422,12 @@ msgstr "Normaali"
 msgid "Normal - Standard protection"
 msgstr "Normaali – tavallinen suojaus"
 
+#: src/hooks/useMessageSending.ts
+msgid "Not closed. Unpin this conversation first"
+msgstr "Ei suljettu. Irrota tämä keskustelu ensin"
+
 #: src/components/pages/ServerSettingsPage.tsx
+#: src/hooks/useMessageSending.ts
 msgid "Not connected"
 msgstr "Ei yhteyttä"
 
@@ -4432,6 +4455,21 @@ msgstr "Et ole tällä kanavalla"
 msgid "Not now"
 msgstr "Ei nyt"
 
+#. placeholder {0}: words[0]
+#: src/hooks/useMessageSending.ts
+#: src/hooks/useMessageSending.ts
+msgid "Not run. {0} matches your own nick"
+msgstr "Ei suoritettu. {0} vastaa omaa lempinimeäsi"
+
+#. placeholder {0}: clientCommandUsage(name)
+#: src/hooks/useMessageSending.ts
+msgid "Not run. Type it as {0}"
+msgstr "Ei suoritettu. Kirjoita se muodossa {0}"
+
+#: src/hooks/useMessageSending.ts
+msgid "Not sent. Put the command on one line"
+msgstr "Ei lähetetty. Kirjoita komento yhdelle riville"
+
 #: src/components/chat/CommandArgHint.tsx
 msgid "Not sent. Reconnect, or use a chat where the bot offers this command"
 msgstr "Ei lähetetty. Yhdistä uudelleen tai käytä keskustelua, jossa botti tarjoaa tämän komennon"
@@ -4443,6 +4481,11 @@ msgstr "Huomio: kanavan metatietojen muokkaaminen vaatii operaattorin (@) tai ko
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Note: the server returns the same response whether or not the account has a verified email, so a typo will not be flagged here. If no code arrives within a couple of minutes, double-check the account name."
 msgstr "Huom: palvelin antaa saman vastauksen riippumatta siitä, onko tilillä vahvistettu sähköpostiosoite, joten kirjoitusvirhettä ei merkitä tässä. Jos koodi ei saavu muutaman minuutin kuluessa, tarkista tilin nimi."
+
+#. placeholder {0}: words[0]
+#: src/hooks/useMessageSending.ts
+msgid "Nothing on the ignore list matches {0}. Type /ignore to see the list"
+msgstr "Mikään estolistalla ei vastaa hakua {0}. Näet listan kirjoittamalla /ignore"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Notification Sound"
@@ -4616,6 +4659,7 @@ msgid "Open network options"
 msgstr "Avaa verkon asetukset"
 
 #: src/components/layout/StartPrivateChatRow.tsx
+#: src/lib/clientCommands.ts
 msgid "Open private chat"
 msgstr "Avaa yksityiskeskustelu"
 
@@ -5720,6 +5764,10 @@ msgstr "Lähetä GIF"
 msgid "Send a message in rainbow colors"
 msgstr "Lähetä viesti sateenkaaren väreissä"
 
+#: src/lib/clientCommands.ts
+msgid "Send a raw line to the IRC server"
+msgstr "Lähetä raakarivi IRC-palvelimelle"
+
 #: src/components/ui/ModerationModal.tsx
 msgid "Send a warning message to {username}"
 msgstr "Lähetä varoitusviesti käyttäjälle {username}"
@@ -5780,6 +5828,10 @@ msgstr "Lähetetty salaamattomana, koska OTR salaa vain tekstin"
 #: src/components/ui/UploadProgressBar.tsx
 msgid "Sent unencrypted because the file is too large to encrypt"
 msgstr "Lähetetty salaamattomana, koska tiedosto on liian suuri salattavaksi"
+
+#: src/hooks/useMessageSending.ts
+msgid "Sent. The raw log shows the reply"
+msgstr "Lähetetty. Vastaus näkyy raakalokissa"
 
 #: src/components/chat/completionProviders.tsx
 #: src/components/layout/BotPane.tsx
@@ -6789,6 +6841,7 @@ msgid "Undeafen"
 msgstr "Poista kuuntelun mykistys"
 
 #: src/components/layout/ProfilePane.tsx
+#: src/lib/clientCommands.ts
 msgid "Unignore user"
 msgstr "Lopeta käyttäjän hylkääminen"
 
@@ -7118,6 +7171,7 @@ msgid "View our privacy policy and data practices"
 msgstr "Lue tietosuojakäytäntömme ja tiedonkäsittelytapamme"
 
 #: src/components/pages/SettingsPage.tsx
+#: src/lib/clientCommands.ts
 msgid "View profile"
 msgstr "Näytä profiili"
 

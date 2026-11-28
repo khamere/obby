@@ -39,6 +39,7 @@ import {
 } from "../../lib/audioRecording";
 import { waitForAuthToken } from "../../lib/authToken";
 import { voiceDisplayName } from "../../lib/channelMentions";
+import { isAppCommand } from "../../lib/clientCommands";
 import { needsArguments } from "../../lib/commandInvocation";
 import { useEmojiResolver } from "../../lib/customEmoji";
 import {
@@ -1266,10 +1267,17 @@ export const ChatArea: React.FC<{
 
   const handleSendMessage = () => {
     if (!hasTextRef.current && attachments.length === 0) return;
+    // A command that acts on the app sends nothing to the peer, so it runs on
+    // the typed text alone: with the peer offline, and with files still attached.
+    const isCommand = isAppCommand(messageTextRef.current);
 
     // Block sending only when the server reported the PM target offline
     // (MONOFFLINE or an empty WHO); undefined means presence is unknown.
-    if (selectedPrivateChat?.isOnline === false && selectedServerId) {
+    if (
+      !isCommand &&
+      selectedPrivateChat?.isOnline === false &&
+      selectedServerId
+    ) {
       useStore.getState().addGlobalNotification({
         type: "warn",
         command: "PRIVMSG",
@@ -1282,7 +1290,7 @@ export const ChatArea: React.FC<{
     }
 
     channelListRefs.current.get(channelKey)?.scrollToBottom();
-    if (attachments.length > 0) {
+    if (!isCommand && attachments.length > 0) {
       const files = attachments.flatMap((a) =>
         a.kind === "file" ? [a.file] : [],
       );
@@ -1335,8 +1343,15 @@ export const ChatArea: React.FC<{
     setNavHighlightedMsgId(null);
     messageHistory.resetHistory();
 
-    // Keep the textarea focused so the keyboard stays open on mobile.
-    inputRef.current?.focus();
+    // Keep the textarea focused so the keyboard stays open on mobile, unless
+    // the send opened a page or moved to another column.
+    const { ui } = useStore.getState();
+    if (
+      ui.page ||
+      (ui.isNarrowView && ui.mobileViewActiveColumn !== "chatView")
+    )
+      inputRef.current?.blur();
+    else inputRef.current?.focus();
   };
 
   // Multi-file upload entry point.  Picks up an auth token (one-shot

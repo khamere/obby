@@ -1527,6 +1527,10 @@ msgstr "기록 지우기"
 msgid "Clear search"
 msgstr "검색 지우기"
 
+#: src/lib/clientCommands.ts
+msgid "Clear this view and keep saved history"
+msgstr "이 보기를 지우고 저장된 기록은 유지"
+
 #: src/components/ui/InvitationsPanel.tsx
 msgid "Click again to confirm"
 msgstr "확인하려면 다시 클릭하세요"
@@ -1588,6 +1592,7 @@ msgid "Close comments"
 msgstr "댓글 닫기"
 
 #: src/components/layout/ChannelList.tsx
+#: src/lib/clientCommands.ts
 msgid "Close conversation"
 msgstr "대화 닫기"
 
@@ -2901,6 +2906,7 @@ msgid "Filters are unavailable on this server"
 msgstr "이 서버에서는 필터를 사용할 수 없습니다"
 
 #: src/components/layout/NetworkMenu.tsx
+#: src/lib/clientCommands.ts
 msgid "Find channels"
 msgstr "채널 찾기"
 
@@ -3192,6 +3198,7 @@ msgid "Ignore List"
 msgstr "무시 목록"
 
 #: src/components/layout/ProfilePane.tsx
+#: src/lib/clientCommands.ts
 msgid "Ignore user"
 msgstr "사용자 무시"
 
@@ -3202,6 +3209,11 @@ msgstr "사용자 무시"
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Ignored patterns:"
 msgstr "무시된 패턴:"
+
+#. placeholder {0}: stored ?? pattern
+#: src/hooks/useMessageSending.ts
+msgid "Ignoring {0}"
+msgstr "{0} 무시 중"
 
 #: src/components/ui/MediaCommentsSidebar.tsx
 msgid "Image"
@@ -3504,6 +3516,7 @@ msgid "Leave call"
 msgstr "통화 나가기"
 
 #: src/components/layout/ChannelContextMenu.tsx
+#: src/lib/clientCommands.ts
 msgid "Leave channel"
 msgstr "채널 나가기"
 
@@ -4287,6 +4300,11 @@ msgstr "노크 금지 (+K)"
 msgid "No limit"
 msgstr "제한 없음"
 
+#. placeholder {0}: removed.join(", ")
+#: src/hooks/useMessageSending.ts
+msgid "No longer ignoring {0}"
+msgstr "{0} 무시 해제됨"
+
 #: src/components/ui/MediaViewerModal.tsx
 msgid "No media in this channel"
 msgstr "이 채널에 미디어가 없습니다"
@@ -4404,7 +4422,12 @@ msgstr "기본"
 msgid "Normal - Standard protection"
 msgstr "기본 - 표준 보호"
 
+#: src/hooks/useMessageSending.ts
+msgid "Not closed. Unpin this conversation first"
+msgstr "닫히지 않았습니다. 먼저 이 대화의 고정을 해제하세요"
+
 #: src/components/pages/ServerSettingsPage.tsx
+#: src/hooks/useMessageSending.ts
 msgid "Not connected"
 msgstr "연결되지 않음"
 
@@ -4432,6 +4455,21 @@ msgstr "이 채널에 참여하지 않음"
 msgid "Not now"
 msgstr "나중에"
 
+#. placeholder {0}: words[0]
+#: src/hooks/useMessageSending.ts
+#: src/hooks/useMessageSending.ts
+msgid "Not run. {0} matches your own nick"
+msgstr "실행되지 않았습니다. {0}은(는) 내 닉네임과 일치합니다"
+
+#. placeholder {0}: clientCommandUsage(name)
+#: src/hooks/useMessageSending.ts
+msgid "Not run. Type it as {0}"
+msgstr "실행되지 않았습니다. {0} 형식으로 입력하세요"
+
+#: src/hooks/useMessageSending.ts
+msgid "Not sent. Put the command on one line"
+msgstr "전송되지 않았습니다. 명령어를 한 줄로 입력하세요"
+
 #: src/components/chat/CommandArgHint.tsx
 msgid "Not sent. Reconnect, or use a chat where the bot offers this command"
 msgstr "전송되지 않았습니다. 다시 연결하거나 봇이 이 명령을 제공하는 채팅에서 사용하세요"
@@ -4443,6 +4481,11 @@ msgstr "참고: 채널 메타데이터를 수정하려면 운영자(@) 이상의
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Note: the server returns the same response whether or not the account has a verified email, so a typo will not be flagged here. If no code arrives within a couple of minutes, double-check the account name."
 msgstr "참고: 계정에 인증된 이메일이 있든 없든 서버는 같은 응답을 반환하므로 오타가 있어도 여기서는 알려주지 않습니다. 몇 분 안에 코드가 오지 않으면 계정 이름을 다시 확인하세요."
+
+#. placeholder {0}: words[0]
+#: src/hooks/useMessageSending.ts
+msgid "Nothing on the ignore list matches {0}. Type /ignore to see the list"
+msgstr "무시 목록에 {0}와(과) 일치하는 항목이 없습니다. 목록을 보려면 /ignore를 입력하세요"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Notification Sound"
@@ -4616,6 +4659,7 @@ msgid "Open network options"
 msgstr "네트워크 옵션 열기"
 
 #: src/components/layout/StartPrivateChatRow.tsx
+#: src/lib/clientCommands.ts
 msgid "Open private chat"
 msgstr "개인 채팅 열기"
 
@@ -5720,6 +5764,10 @@ msgstr "GIF 보내기"
 msgid "Send a message in rainbow colors"
 msgstr "무지개 색상으로 메시지 보내기"
 
+#: src/lib/clientCommands.ts
+msgid "Send a raw line to the IRC server"
+msgstr "IRC 서버에 원시 줄 보내기"
+
 #: src/components/ui/ModerationModal.tsx
 msgid "Send a warning message to {username}"
 msgstr "{username}에게 경고 메시지 보내기"
@@ -5780,6 +5828,10 @@ msgstr "OTR은 텍스트만 암호화하므로 암호화 없이 전송됨"
 #: src/components/ui/UploadProgressBar.tsx
 msgid "Sent unencrypted because the file is too large to encrypt"
 msgstr "파일이 너무 커서 암호화할 수 없으므로 암호화 없이 전송됨"
+
+#: src/hooks/useMessageSending.ts
+msgid "Sent. The raw log shows the reply"
+msgstr "전송되었습니다. 응답은 원시 로그에 표시됩니다"
 
 #: src/components/chat/completionProviders.tsx
 #: src/components/layout/BotPane.tsx
@@ -6789,6 +6841,7 @@ msgid "Undeafen"
 msgstr "헤드셋 음소거 해제"
 
 #: src/components/layout/ProfilePane.tsx
+#: src/lib/clientCommands.ts
 msgid "Unignore user"
 msgstr "무시 해제"
 
@@ -7118,6 +7171,7 @@ msgid "View our privacy policy and data practices"
 msgstr "개인정보 처리방침 및 데이터 관행 보기"
 
 #: src/components/pages/SettingsPage.tsx
+#: src/lib/clientCommands.ts
 msgid "View profile"
 msgstr "프로필 보기"
 

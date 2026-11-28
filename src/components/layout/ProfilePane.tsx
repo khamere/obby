@@ -26,13 +26,17 @@ import {
 import { getChannelKind } from "../../lib/channelFolders";
 import { e2eeSessionKey } from "../../lib/e2ee/session";
 import { revealHiddenChars } from "../../lib/hiddenChars";
-import { createIgnorePattern, isUserIgnored } from "../../lib/ignoreUtils";
+import {
+  createIgnorePattern,
+  ignoreEntriesFor,
+  isUserIgnored,
+} from "../../lib/ignoreUtils";
 import ircClient from "../../lib/ircClient";
 import { mircToHtml, serverFilehosts } from "../../lib/ircUtils";
 import { canShowAvatarUrl, mediaLevelToSettings } from "../../lib/mediaUtils";
 import { formatRelativeTime } from "../../lib/relativeTime";
 import useStore from "../../store";
-import { findServerUser } from "../../store/helpers";
+import { findServerUser, findWhois } from "../../store/helpers";
 import type { ProfilePane as ProfilePaneTarget } from "../../store/types";
 import type { WhoisSession } from "../../types";
 import ExternalLinkWarningModal from "../ui/ExternalLinkWarningModal";
@@ -290,7 +294,7 @@ const ProfilePane: React.FC<{ target: ProfilePaneTarget }> = ({
   const [menuOpen, setMenuOpen] = useState(false);
   const moreRef = useRef<HTMLButtonElement>(null);
 
-  const whoisData = useStore((s) => s.whoisData[serverId]?.[username]);
+  const whoisData = useStore((s) => findWhois(s.whoisData[serverId], username));
   const server = useStore((s) => s.servers.find((srv) => srv.id === serverId));
   const botCommands = useStore(
     (s) =>
@@ -438,11 +442,7 @@ const ProfilePane: React.FC<{ target: ProfilePaneTarget }> = ({
   const isIgnored = isUserIgnored(username, undefined, undefined, ignoreList);
   const toggleIgnored = () => {
     if (isIgnored) {
-      ignoreList
-        .filter((pattern) =>
-          isUserIgnored(username, undefined, undefined, [pattern]),
-        )
-        .forEach(removeFromIgnoreList);
+      ignoreEntriesFor(username, ignoreList).forEach(removeFromIgnoreList);
     } else {
       addToIgnoreList(createIgnorePattern(username));
     }

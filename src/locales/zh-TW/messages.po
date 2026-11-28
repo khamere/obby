@@ -1527,6 +1527,10 @@ msgstr "清除歷史"
 msgid "Clear search"
 msgstr "清除搜尋"
 
+#: src/lib/clientCommands.ts
+msgid "Clear this view and keep saved history"
+msgstr "清空此檢視並保留已儲存的歷史"
+
 #: src/components/ui/InvitationsPanel.tsx
 msgid "Click again to confirm"
 msgstr "再按一次以確認"
@@ -1588,6 +1592,7 @@ msgid "Close comments"
 msgstr "關閉評論"
 
 #: src/components/layout/ChannelList.tsx
+#: src/lib/clientCommands.ts
 msgid "Close conversation"
 msgstr "關閉對話"
 
@@ -2901,6 +2906,7 @@ msgid "Filters are unavailable on this server"
 msgstr "此伺服器不支援過濾器"
 
 #: src/components/layout/NetworkMenu.tsx
+#: src/lib/clientCommands.ts
 msgid "Find channels"
 msgstr "尋找頻道"
 
@@ -3192,6 +3198,7 @@ msgid "Ignore List"
 msgstr "忽略清單"
 
 #: src/components/layout/ProfilePane.tsx
+#: src/lib/clientCommands.ts
 msgid "Ignore user"
 msgstr "忽略使用者"
 
@@ -3202,6 +3209,11 @@ msgstr "忽略使用者"
 #: src/components/ui/settings/IgnoreListField.tsx
 msgid "Ignored patterns:"
 msgstr "已忽略的模式："
+
+#. placeholder {0}: stored ?? pattern
+#: src/hooks/useMessageSending.ts
+msgid "Ignoring {0}"
+msgstr "正在忽略 {0}"
 
 #: src/components/ui/MediaCommentsSidebar.tsx
 msgid "Image"
@@ -3504,6 +3516,7 @@ msgid "Leave call"
 msgstr "離開通話"
 
 #: src/components/layout/ChannelContextMenu.tsx
+#: src/lib/clientCommands.ts
 msgid "Leave channel"
 msgstr "离开频道"
 
@@ -4287,6 +4300,11 @@ msgstr "禁止 KNOCK (+K)"
 msgid "No limit"
 msgstr "无限制"
 
+#. placeholder {0}: removed.join(", ")
+#: src/hooks/useMessageSending.ts
+msgid "No longer ignoring {0}"
+msgstr "已不再忽略 {0}"
+
 #: src/components/ui/MediaViewerModal.tsx
 msgid "No media in this channel"
 msgstr "此頻道沒有媒體"
@@ -4404,7 +4422,12 @@ msgstr "普通"
 msgid "Normal - Standard protection"
 msgstr "普通 – 標準保護"
 
+#: src/hooks/useMessageSending.ts
+msgid "Not closed. Unpin this conversation first"
+msgstr "未關閉。請先取消釘選此對話"
+
 #: src/components/pages/ServerSettingsPage.tsx
+#: src/hooks/useMessageSending.ts
 msgid "Not connected"
 msgstr "未連線"
 
@@ -4432,6 +4455,21 @@ msgstr "不在此頻道中"
 msgid "Not now"
 msgstr "暫不"
 
+#. placeholder {0}: words[0]
+#: src/hooks/useMessageSending.ts
+#: src/hooks/useMessageSending.ts
+msgid "Not run. {0} matches your own nick"
+msgstr "未執行。{0} 與你自己的暱稱相符"
+
+#. placeholder {0}: clientCommandUsage(name)
+#: src/hooks/useMessageSending.ts
+msgid "Not run. Type it as {0}"
+msgstr "未執行。請依 {0} 的格式輸入"
+
+#: src/hooks/useMessageSending.ts
+msgid "Not sent. Put the command on one line"
+msgstr "未傳送。請將命令寫在一行內"
+
 #: src/components/chat/CommandArgHint.tsx
 msgid "Not sent. Reconnect, or use a chat where the bot offers this command"
 msgstr "未送出。請重新連線，或在機器人提供此指令的聊天中使用"
@@ -4443,6 +4481,11 @@ msgstr "注意：修改頻道中繼資料需要管理員（@）或更高權限�
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Note: the server returns the same response whether or not the account has a verified email, so a typo will not be flagged here. If no code arrives within a couple of minutes, double-check the account name."
 msgstr "注意：無論帳號是否有已驗證的電子郵件，伺服器都會回傳相同的回應，因此這裡不會提示拼字錯誤。如果幾分鐘內沒有收到驗證碼，請再次檢查帳號名稱。"
+
+#. placeholder {0}: words[0]
+#: src/hooks/useMessageSending.ts
+msgid "Nothing on the ignore list matches {0}. Type /ignore to see the list"
+msgstr "忽略清單中沒有與 {0} 相符的項目。輸入 /ignore 查看清單"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Notification Sound"
@@ -4616,6 +4659,7 @@ msgid "Open network options"
 msgstr "開啟網路選項"
 
 #: src/components/layout/StartPrivateChatRow.tsx
+#: src/lib/clientCommands.ts
 msgid "Open private chat"
 msgstr "開啟私人聊天"
 
@@ -5720,6 +5764,10 @@ msgstr "发送 GIF"
 msgid "Send a message in rainbow colors"
 msgstr "傳送彩虹色彩的訊息"
 
+#: src/lib/clientCommands.ts
+msgid "Send a raw line to the IRC server"
+msgstr "向IRC伺服器傳送一行原始內容"
+
 #: src/components/ui/ModerationModal.tsx
 msgid "Send a warning message to {username}"
 msgstr "向 {username} 发送警告消息"
@@ -5780,6 +5828,10 @@ msgstr "未加密傳送，因為 OTR 只加密文字"
 #: src/components/ui/UploadProgressBar.tsx
 msgid "Sent unencrypted because the file is too large to encrypt"
 msgstr "未加密傳送，因為檔案太大無法加密"
+
+#: src/hooks/useMessageSending.ts
+msgid "Sent. The raw log shows the reply"
+msgstr "已傳送。回覆顯示在原始記錄中"
 
 #: src/components/chat/completionProviders.tsx
 #: src/components/layout/BotPane.tsx
@@ -6789,6 +6841,7 @@ msgid "Undeafen"
 msgstr "取消屏蔽聲音"
 
 #: src/components/layout/ProfilePane.tsx
+#: src/lib/clientCommands.ts
 msgid "Unignore user"
 msgstr "取消忽略使用者"
 
@@ -7118,6 +7171,7 @@ msgid "View our privacy policy and data practices"
 msgstr "查看我们的隐私政策和数据使用规范"
 
 #: src/components/pages/SettingsPage.tsx
+#: src/lib/clientCommands.ts
 msgid "View profile"
 msgstr "檢視個人資料"
 

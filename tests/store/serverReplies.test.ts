@@ -6,6 +6,7 @@ import useStore from "../../src/store";
 import {
   registerServerReplyHandlers,
   reportServerReply,
+  showCommandReply,
 } from "../../src/store/handlers/serverReplies";
 
 vi.mock("../../src/lib/notificationSounds", () => ({
@@ -142,5 +143,58 @@ describe("server notices unread marks", () => {
     }));
     expect(useStore.getState().unreadServerNotices[serverId]).toBe(false);
     expect(useStore.getState().serverAlerts[serverId]).toBe(0);
+  });
+});
+
+describe("the answer to a typed command", () => {
+  const refusal = {
+    serverId,
+    type: "fail" as const,
+    command: "QUERY",
+    code: "USAGE",
+    message: "Not run. Type it as /query <user>",
+  };
+  const inChat = () => useStore.getState().messages[`${serverId}-c1`] ?? [];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    seedServer();
+  });
+
+  test("is one row in the chat where it was typed, and nothing else", () => {
+    showCommandReply(useStore, refusal, "c1");
+
+    expect(inChat()).toMatchObject([
+      {
+        type: "standard-reply",
+        channelId: "c1",
+        standardReplyType: "FAIL",
+        standardReplyCommand: "QUERY",
+        standardReplyCode: "USAGE",
+        standardReplyMessage: "Not run. Type it as /query <user>",
+      },
+    ]);
+    const state = useStore.getState();
+    expect(notices()).toHaveLength(0);
+    expect(state.serverAlerts).toEqual({});
+    expect(state.unreadServerNotices).toEqual({});
+    expect(state.globalNotifications).toHaveLength(0);
+    expect(playNotificationSound).not.toHaveBeenCalled();
+  });
+
+  test("goes below a line the server stamped ahead of the device clock", () => {
+    const ahead = new Date(Date.now() + 60 * 60 * 1000);
+    useStore.setState({
+      messages: {
+        [`${serverId}-c1`]: [
+          { id: "m1", type: "message", content: "hi", timestamp: ahead },
+        ] as never,
+      },
+    });
+
+    showCommandReply(useStore, refusal, "c1");
+
+    expect(inChat().map((m) => m.type)).toEqual(["message", "standard-reply"]);
+    expect(new Date(inChat()[1].timestamp).getTime()).toBe(ahead.getTime() + 1);
   });
 });

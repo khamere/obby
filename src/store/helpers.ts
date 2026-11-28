@@ -15,6 +15,19 @@ export function findServerUser(
   return undefined;
 }
 
+// The server answers WHOIS in its own spelling of the nick, so we fall back to
+// the entry that differs from the asked nick only in case.
+export function findWhois<T>(
+  byNick: Record<string, T> | undefined,
+  nick: string,
+): T | undefined {
+  if (!byNick) return undefined;
+  if (Object.hasOwn(byNick, nick)) return byNick[nick];
+  const lower = nick.toLowerCase();
+  const key = Object.keys(byNick).find((k) => k.toLowerCase() === lower);
+  return key === undefined ? undefined : byNick[key];
+}
+
 // Our own away state lives on the server and on our channel entries, so we write both together.
 export function setUserAway(
   server: Server,

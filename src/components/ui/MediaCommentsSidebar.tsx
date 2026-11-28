@@ -225,7 +225,7 @@ export function MediaCommentsSidebar({
 
   const handleSend = () => {
     if (!commentText.trim() || !sourceMessage.msgid) return;
-    sendMessage(commentText);
+    if (sendMessage(commentText) === "withheld") return;
     setCommentText("");
     if (channelName) typingNotification.notifyTypingDone(channelName);
   };

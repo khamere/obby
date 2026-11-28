@@ -271,3 +271,55 @@ describe("typedBotCommand", () => {
     expect(typedBotCommand("/pkg ", 5, [me, pkg("a")])).toBeNull();
   });
 });
+
+describe("the commands the client runs itself", () => {
+  const appNames = [
+    "query",
+    "whois",
+    "ignore",
+    "unignore",
+    "list",
+    "clear",
+    "close",
+    "raw",
+  ];
+  const channel = { users: [] } as unknown as Channel;
+  const server = { cmdsAvailable: ["LIST", "WHOIS", "HELP"] } as Server;
+
+  it("hides the server's command of the same name", () => {
+    const suggestions = slashSuggestions(server, channel);
+    expect(
+      suggestions.filter((s) => s.source.kind === "server").map((s) => s.name),
+    ).toEqual(["HELP"]);
+    for (const name of appNames)
+      expect(
+        suggestions.filter((s) => s.name.toLowerCase() === name),
+      ).toMatchObject([{ source: { kind: "client" } }]);
+  });
+
+  it("describes close by what it closes", () => {
+    const close = (inChannel: Channel | undefined) =>
+      slashSuggestions(server, inChannel).find((s) => s.name === "close")
+        ?.description;
+    expect(close(channel)).toBe("Leave channel");
+    expect(close(undefined)).toBe("Close conversation");
+  });
+
+  it("runs on Enter once the name is typed, except where an argument is required", () => {
+    const provider = slashProvider(slashSuggestions(server, channel), vi.fn());
+    const isComplete = (query: string) =>
+      provider.isComplete?.(query, provider.getItems(query));
+    for (const name of ["close", "clear", "list", "ignore", "whois"])
+      expect(isComplete(name)).toBe(true);
+    expect(isComplete("query")).toBe(false);
+    expect(isComplete("raw")).toBe(false);
+  });
+
+  it("offers clear before close", () => {
+    const provider = slashProvider(slashSuggestions(server, channel), vi.fn());
+    expect(provider.getItems("cl").map((c) => c.name)).toEqual([
+      "clear",
+      "close",
+    ]);
+  });
+});

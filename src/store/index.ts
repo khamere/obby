@@ -1035,6 +1035,8 @@ export interface AppState {
   setName: (serverId: string, realname: string) => void;
   changeNick: (serverId: string, newNick: string) => void;
   addMessage: (message: Message) => void;
+  // Empties what a chat shows. Saved history and the server keep every line.
+  clearChatView: (serverId: string, chatId: string) => void;
   // labeled-response: replace a local pending placeholder (matched by
   // pendingLabel) with the server's echo.  Returns true if a match was
   // found.  Caller falls back to addMessage on miss.
@@ -2408,6 +2410,44 @@ const useStore = create<AppState>((set, get) => ({
     });
   },
 
+  clearChatView: (serverId, chatId) => {
+    const key = `${serverId}-${chatId}`;
+    // The message list asks for an older page whenever it is short and the chat offers one, so the chat stops offering.
+    const withoutOlder = <T extends { id: string }>(chat: T): T =>
+      chat.id === chatId ? { ...chat, hasMoreHistory: false } : chat;
+    set((state) => {
+      const shown = state.messages[key] ?? [];
+      const shownIds = new Set(shown.map((m) => m.id));
+      const aside = (state.historyWindows[key]?.present ?? []).filter(
+        (m) => !shownIds.has(m.id),
+      );
+      const { [key]: _, ...historyWindows } = state.historyWindows;
+      const server = state.servers.find((s) => s.id === serverId);
+      const holdsChat =
+        server?.channels.some((c) => c.id === chatId) ||
+        server?.privateChats?.some((pc) => pc.id === chatId);
+      return {
+        // A line still waiting for its echo stays, so a send that fails is still reported.
+        messages: {
+          ...state.messages,
+          [key]: [...aside, ...shown].filter((m) => m.status === "pending"),
+        },
+        historyWindows,
+        ...(holdsChat && {
+          servers: state.servers.map((s) =>
+            s.id === serverId
+              ? {
+                  ...s,
+                  channels: s.channels.map(withoutOlder),
+                  privateChats: s.privateChats?.map(withoutOlder),
+                }
+              : s,
+          ),
+        }),
+      };
+    });
+  },
+
   confirmPendingMessage: (serverId, bufferId, label, updates) => {
     let matched = false;
     set((state) => {
@@ -3139,6 +3179,8 @@ const useStore = create<AppState>((set, get) => ({
   },
 
   deletePrivateChat: (serverId, privateChatId) => {
+    const wasSelected =
+      getCurrentSelection(get()).selectedPrivateChatId === privateChatId;
     set((state) => {
       const server = state.servers.find((s) => s.id === serverId);
       if (!server) return {};
@@ -3198,6 +3240,19 @@ const useStore = create<AppState>((set, get) => ({
 
       return newState;
     });
+    // The next start reopens the chat the saved selection names, so we save that none is selected.
+    if (wasSelected) {
+      const { ui, servers } = get();
+      patchUISelections({
+        selectedServerId: ui.selectedServerId,
+        perServerSelections: ui.perServerSelections,
+        lastSelection: {
+          serverHost: servers.find((s) => s.id === serverId)?.host || "",
+          channelName: null,
+          privateChatUsername: null,
+        },
+      });
+    }
   },
 
   pinPrivateChat: (serverId, privateChatId) => {
