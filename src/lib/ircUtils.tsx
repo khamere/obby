@@ -1398,9 +1398,10 @@ export function hasOpPermission(userStatus?: string): boolean {
 
 /** Blocks relative paths, protocol-relative URLs, and non-http schemes that would
  * resolve against the app origin or trigger unexpected fetches. Browsers strip
- * leading whitespace and are scheme-case-insensitive, so we normalize the same way. */
+ * leading ASCII whitespace and are scheme-case-insensitive, so we normalize the same way.
+ * A browser reads any other leading character as the start of a relative path. */
 export function isAbsoluteHttpUrl(url: string): boolean {
-  const u = url.trimStart().toLowerCase();
+  const u = url.replace(/^[\t\n\f\r ]+/, "").toLowerCase();
   return u.startsWith("https://") || u.startsWith("http://");
 }
 

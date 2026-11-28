@@ -761,17 +761,11 @@ const preferenceSettings: SettingDefinition[] = [
     category: "preferences",
     subcategory: "Input",
     title: msg`Auto Fallback to Single Line`,
-    description: msg`Automatically switch to single line for short messages`,
+    description: msg`On servers without multiline support, join the lines of a message with spaces instead of sending one message per line`,
     type: "toggle",
-    defaultValue: false,
+    defaultValue: true,
     searchKeywords: ["fallback", "single", "line", "auto"],
     priority: 10,
-    dependencies: [
-      {
-        settingId: "preferences.multilineInput",
-        condition: (value) => value === true,
-      },
-    ],
   },
   {
     id: "preferences.ignoreList",

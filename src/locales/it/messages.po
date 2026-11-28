@@ -904,10 +904,6 @@ msgstr "Regola automaticamente il volume del tuo microfono"
 msgid "Automatically authenticate as operator on connect"
 msgstr "Autentica automaticamente come operatore alla connessione"
 
-#: src/lib/settings/definitions/allSettings.ts
-msgid "Automatically switch to single line for short messages"
-msgstr "Passa automaticamente a riga singola per messaggi brevi"
-
 #: src/components/pages/ChannelSettingsPage.tsx
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Avatar"
@@ -4525,6 +4521,10 @@ msgstr "OK"
 #: src/lib/settings/definitions/allSettings.ts
 msgid "on"
 msgstr "attivo"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "On servers without multiline support, join the lines of a message with spaces instead of sending one message per line"
+msgstr "Sui server senza supporto multiriga, unisci le righe di un messaggio con spazi invece di inviare un messaggio per riga"
 
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Once a day, ask the project's release page whether a newer build exists and show it above your name. Nothing is downloaded until you tap Update."
