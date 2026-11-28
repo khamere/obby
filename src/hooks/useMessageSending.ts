@@ -16,6 +16,10 @@ import {
 } from "../lib/clientCommands";
 import { coerceOptionValue } from "../lib/commandInvocation";
 import {
+  CREDENTIAL_COMMAND,
+  isServicesNick,
+} from "../lib/history/historyLines";
+import {
   createIgnorePattern,
   ignoreEntriesFor,
   isUserIgnored,
@@ -38,7 +42,10 @@ import {
   splitAction,
   splitLongMessage,
 } from "../lib/messageProtocol";
-import { showOwnPrivateMessage } from "../lib/ownPrivateMessage";
+import {
+  privateChatForOwnMessage,
+  showOwnPrivateMessage,
+} from "../lib/ownPrivateMessage";
 import { PRIVILEGED_COMMANDS } from "../lib/privilegedCommands";
 import {
   rainbowText,
@@ -50,6 +57,7 @@ import { routeOutgoingPM } from "../store/handlers/e2eeOutbound";
 import { showPresent } from "../store/handlers/history";
 import { showCommandReply } from "../store/handlers/serverReplies";
 import type { BotCommand, Channel, Message, PrivateChat, User } from "../types";
+import { canCarryPassword } from "./useMessageHistory";
 
 /**
  * Try to dispatch a slash command as a +draft/bot-cmd TAGMSG.
@@ -511,7 +519,28 @@ export function useMessageSending({
         const routed = routeOutgoingPM(selectedServerId, target, message);
         if (routed === "withheld") return "withheld" as const;
         if (routed === "sent") return;
+        // A message to a service or a line that can carry a password gets no chat and no copy from us, so we never put it on screen ourselves.
+        const chat =
+          message &&
+          !isServicesNick(target) &&
+          !message
+            .split(LINE_BREAK)
+            .some(
+              (line) =>
+                CREDENTIAL_COMMAND.test(line.trim()) ||
+                canCarryPassword(`/msg ${target} ${line}`),
+            )
+            ? privateChatForOwnMessage(selectedServerId, target)
+            : undefined;
         ircClient.sendPrivmsgLines(selectedServerId, target, message);
+        if (chat && currentUser)
+          showOwnPrivateMessage(
+            selectedServerId,
+            chat,
+            currentUser,
+            message,
+            null,
+          );
       } else if (lowerName === "whisper") {
         const [targetUser, ...messageParts] = args;
         if (!selectedChannel) {

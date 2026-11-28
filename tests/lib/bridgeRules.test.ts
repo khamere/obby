@@ -4,6 +4,7 @@ import {
   compileBridgeRules,
   getBridgeRulesState,
   getCompiledBridgeRules,
+  isBridgedNameIgnored,
   loadBridgeRules,
   mergeBridgeRules,
   parseBridgeRules,
@@ -30,6 +31,28 @@ const LANTERN = {
   nickFormat: "({nick})",
   label: "web",
 };
+
+describe("isBridgedNameIgnored", () => {
+  it("reads an entry without the invisible characters a bridge wrote into the name", () => {
+    expect(isBridgedNameIgnored("mara", ["m\u200Bara!*@*"])).toBe(true);
+    expect(isBridgedNameIgnored("mara", ["\uFEFFMa\u200Dra\u2060!*@*"])).toBe(
+      true,
+    );
+    expect(isBridgedNameIgnored("mara", ["mara!*@*"])).toBe(true);
+    expect(isBridgedNameIgnored("mara", ["m\u200Bara?!*@*", "nilo!*@*"])).toBe(
+      false,
+    );
+    expect(isBridgedNameIgnored("mara", [])).toBe(false);
+  });
+
+  it("keeps a joiner that belongs to the name on both sides", () => {
+    const coder = "\u{1F469}\u200D\u{1F4BB}";
+    expect(isBridgedNameIgnored(coder, [`${coder}!*@*`])).toBe(true);
+    expect(isBridgedNameIgnored("\u{1F469}\u{1F4BB}", [`${coder}!*@*`])).toBe(
+      false,
+    );
+  });
+});
 
 describe("parseBridgeRules", () => {
   it("parses good rules and counts skipped ones", () => {
@@ -149,6 +172,46 @@ describe("applyBridgeRules", () => {
         "\x0304[Chatbox]\x03 7Nova: hi",
       ),
     ).toEqual({ kind: "bot", nick: "7Nova", text: "hi", via: "ChatRelay" });
+  });
+
+  it("gives one person one name when the bot hides invisible characters in it", () => {
+    for (const nick of ["mara", "m\u200Bara", "ma\u200Cra", "m\uFEFFara"]) {
+      expect(
+        applyBridgeRules(
+          rules,
+          "irc.alder.example",
+          "#general",
+          "Bot",
+          `[${nick}] hi \u{1F468}\u200D\u{1F469}`,
+        ),
+      ).toEqual({
+        kind: "bot",
+        nick: "mara",
+        text: "hi \u{1F468}\u200D\u{1F469}",
+        via: "Bot",
+      });
+    }
+    expect(
+      applyBridgeRules(
+        rules,
+        "irc.lantern.example",
+        "#lantern",
+        "(To\u200Bbias)",
+        "o/",
+      ),
+    ).toEqual({ kind: "nick", displayNick: "Tobias", via: "web" });
+  });
+
+  it("leaves a line whose name is only invisible characters to the bot", () => {
+    expect(
+      applyBridgeRules(
+        rules,
+        "irc.alder.example",
+        "#general",
+        "Bot",
+        "[\u200B\u200D] hi",
+      ),
+    ).toBeNull();
   });
 
   it("returns null for another network, another nick, a non-matching line, or the wrong channel", () => {

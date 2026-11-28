@@ -2,6 +2,7 @@ import type { StoreApi } from "zustand";
 import {
   applyBridgeRules,
   getCompiledBridgeRules,
+  isBridgedNameIgnored,
 } from "../../lib/bridgeRules";
 import { isUserIgnored } from "../../lib/ignoreUtils";
 import type { SearchResult } from "../../lib/irc/IRCClient";
@@ -256,7 +257,12 @@ export function mentionsAmong(
       : null;
     const sender = bridged?.kind === "bot" ? bridged.nick : result.sender;
     const content = bridged?.kind === "bot" ? bridged.text : result.message;
-    if (isIgnored(result.sender) || isIgnored(sender)) continue;
+    if (isIgnored(result.sender)) continue;
+    if (
+      bridged?.kind === "bot" &&
+      isBridgedNameIgnored(bridged.nick, settings.ignoreList)
+    )
+      continue;
     // Our own words relayed by a bridge are not a ping either.
     const myNick = me.username.toLowerCase();
     if (result.sender.toLowerCase() === myNick) continue;

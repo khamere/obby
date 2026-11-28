@@ -1499,6 +1499,13 @@ describe("decideAfterForwardFill", () => {
       expect(resume(900, 900, [true, false])).toEqual({ kind: "close" });
     });
 
+    it("keeps the gap open on a page inside that millisecond that passes a row we had and ends on a new one", () => {
+      expect(resume(900, 900, [true, false, true])).toEqual({
+        kind: "shrink",
+        from: 900,
+      });
+    });
+
     it("closes on a page that runs past the gap", () => {
       expect(resume(310, 901, [true, true])).toEqual({ kind: "close" });
     });
@@ -1508,6 +1515,17 @@ describe("decideAfterForwardFill", () => {
         kind: "shrink",
         from: 300,
       });
+    });
+
+    it("keeps the gap open on a page inside the millisecond of its older edge that ends on a row we had", () => {
+      expect(resume(300, 300, [true, false])).toEqual({
+        kind: "shrink",
+        from: 300,
+      });
+    });
+
+    it("closes once a page that left the millisecond of its older edge ends on a row we had", () => {
+      expect(resume(300, 500, [true, false])).toEqual({ kind: "close" });
     });
 
     it("moves on from a page of lines we hold at the older edge, so the next page starts behind them", () => {

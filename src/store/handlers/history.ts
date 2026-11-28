@@ -471,14 +471,15 @@ async function saveRows(store: StoreApi<AppState>, rows: NewHistoryRow[]) {
 
 // A page fetched around a time can land apart from the rows we had, or inside
 // a gap, so we replace the gaps it overlaps with one on each side whose edge
-// row is new to us.
+// row is new to us. The result says whether the page ends on a new line
+// beside rows we hold in the same millisecond, which no gap between two times covers.
 async function addIslandGaps(
   server: string,
   target: string,
   page: HistoryPage,
   inserted: boolean[],
-) {
-  if (page.oldest === undefined || page.newest === undefined) return;
+): Promise<boolean> {
+  if (page.oldest === undefined || page.newest === undefined) return false;
   for (const gap of await gapsFor(server, target))
     if (gap.from < page.newest && gap.to > page.oldest) await deleteGap(gap.id);
   const [older] = await eventRowsBefore(server, target, page.oldest - 1, 1);
@@ -501,6 +502,79 @@ async function addIslandGaps(
       lost: false,
       ...(page.newestMsgid ? { fromMsgid: page.newestMsgid } : {}),
     });
+  return (
+    inserted[inserted.length - 1] === true &&
+    holdsLineBesidePage(server, target, page.newest, page.msgids)
+  );
+}
+
+async function holdsLineBesidePage(
+  server: string,
+  target: string,
+  time: number,
+  pageMsgids: string[],
+): Promise<boolean> {
+  const inPage = new Set(pageMsgids);
+  const rows = await eventRowsAfter(server, target, time, inPage.size + 1);
+  return rows.some(
+    (row) => row.time === time && !(row.msgid && inPage.has(row.msgid)),
+  );
+}
+
+// Lines can be missing between a page and rows we hold in the millisecond it
+// ends in. Where the server pages from a msgid we record that gap, which joins
+// a wider one starting at the same line, and fill it from the page's last
+// line. A time names the whole millisecond and could never move such a gap's
+// edge, so elsewhere we ask once from the millisecond before and keep no record.
+async function fetchLinesBesidePage(
+  store: StoreApi<AppState>,
+  serverId: string,
+  target: string,
+  page: HistoryPage,
+) {
+  const { newest, newestMsgid } = page;
+  if (newest === undefined) return;
+  if (!newestMsgid || !ircClient.canPageByMsgid(serverId)) {
+    await fetchPageToDisk(serverId, target, "AFTER", newest - 1);
+    return;
+  }
+  await addGap({
+    server: serverId,
+    target,
+    from: newest,
+    to: newest,
+    lost: false,
+    fromMsgid: newestMsgid,
+  });
+  const gap = (await gapsFor(serverId, target)).find(
+    (saved) => !saved.lost && saved.from === newest,
+  );
+  if (gap)
+    await fetchForwardToDisk(store, serverId, target, newest, gap).isSaved;
+}
+
+// No time reads a gap of one millisecond and the request sent on finding it can fail, so we ask for its lines again after each newest page and before a chat opens on its read marker.
+async function askAgainForMillisecondGaps(
+  store: StoreApi<AppState>,
+  serverId: string,
+  target: string,
+) {
+  for (const gap of await gapsFor(serverId, target))
+    if (gap.from === gap.to && gapEdgeMsgid(gap, "from", gap.from) && !gap.lost)
+      await fetchForwardToDisk(store, serverId, target, gap.from, gap).isSaved;
+}
+
+// A refusal that never passes would repeat after every newest page, so we drop the gap of one millisecond it answered.
+async function dropRefusedMillisecondGap(
+  serverId: string,
+  target: string,
+  started: HistoryGap | undefined,
+) {
+  const gap = findFilledGap(
+    await gapsFor(serverId, target.toLowerCase()),
+    started,
+  );
+  if (gap && !gap.lost && gap.from === gap.to) await deleteGap(gap.id);
 }
 
 // Records for one stretch merge into a single one, so the record a fill
@@ -621,8 +695,10 @@ async function saveHistoryPage(
       );
       if (gap) settleGap(store, serverId, target, gap, MAX_AUTO_FILL_PAGES);
     }
+    void askAgainForMillisecondGaps(store, serverId, target);
   } else if (request?.kind === "around") {
-    await addIslandGaps(key, target, page, inserted);
+    if (await addIslandGaps(key, target, page, inserted))
+      await fetchLinesBesidePage(store, serverId, target, page);
     request.fill?.onSettled?.(true);
   } else if (request?.kind === "after" && request.fill) {
     const filled = findFilledGap(await gapsFor(key, target), request.fill.gap);
@@ -742,13 +818,15 @@ async function refreshHasMore(
   const oldest = store.getState().messages[conversation.key]?.[0];
   const isOlderThanOldestShown = (gap: HistoryGap) =>
     !oldest || gap.from < messageTime(oldest);
+  // With local history off we load older pages from the server alone, so saved rows and gaps offer nothing.
   const hasMore =
     serverMayHaveMore ||
-    (await olderDiskRows(store, serverId, target, 1)).length > 0 ||
-    (canServerFillGaps &&
-      (await gapsServerCanFill(store, serverId, target)).some(
-        isOlderThanOldestShown,
-      ));
+    (isEnabled(store) &&
+      ((await olderDiskRows(store, serverId, target, 1)).length > 0 ||
+        (canServerFillGaps &&
+          (await gapsServerCanFill(store, serverId, target)).some(
+            isOlderThanOldestShown,
+          ))));
   updateChat(store, serverId, conversation.channelId, {
     hasMoreHistory: hasMore,
   });
@@ -789,8 +867,8 @@ const FINAL_REFUSALS = new Set([
   "UNKNOWN_COMMAND",
 ]);
 
-// Some servers name only the subcommand in a refusal, so we take it for the
-// one chat that waits for a reply to that subcommand.
+// Some servers name only the subcommand in a refusal, or nothing at all, so
+// we take it for the one chat that waits for a reply it can be for.
 function onlyChatAwaiting(
   serverId: string,
   subcommand: string | undefined,
@@ -798,27 +876,58 @@ function onlyChatAwaiting(
   const kind = subcommand?.toLowerCase();
   const waiting = [...pendingRequests]
     .filter(
-      ([key, queue]) =>
-        key.startsWith(`${serverId}\n`) && queue[0]?.kind === kind,
+      ([key, [request]]) =>
+        key.startsWith(`${serverId}\n`) &&
+        request &&
+        (!kind || request.kind === kind),
     )
     .map(([key]) => key.slice(serverId.length + 1));
   return waiting.length === 1 ? waiting[0] : undefined;
 }
 
+// We show a chat as loading only while it waits for a LATEST or a BEFORE page, so a refusal of one of these ends no chat's loading.
+const SUBCOMMANDS_WITHOUT_LOADING = new Set([
+  "AFTER",
+  "AROUND",
+  "BETWEEN",
+  "TARGETS",
+]);
+
+// With local history off we track no request and only a reply ends a chat's loading, so a refusal we can match to no chat settles each chat that is loading.
+function chatsLoadingUntracked(
+  store: StoreApi<AppState>,
+  serverId: string,
+  subcommand: string | undefined,
+): string[] {
+  if (isEnabled(store)) return [];
+  if (SUBCOMMANDS_WITHOUT_LOADING.has(subcommand?.toUpperCase() ?? ""))
+    return [];
+  const server = store.getState().servers.find((s) => s.id === serverId);
+  return [
+    ...(server?.channels ?? [])
+      .filter((channel) => channel.isLoadingHistory)
+      .map((channel) => channel.name),
+    ...(server?.privateChats ?? [])
+      .filter((chat) => chat.isLoadingHistory)
+      .map((chat) => chat.username),
+  ];
+}
+
 // A final refusal ends the offer of older history, apart from pages we can
 // still read from disk. After any other refusal the offer stands as it was,
-// and a refused older page is marked so the list can ask for it again.
+// and a refusal that can be for an older page is marked so the list can ask
+// for that page again.
 function settleRefusedOffer(
   store: StoreApi<AppState>,
   serverId: string,
   target: string,
-  code: string,
+  isFinal: boolean,
   subcommand: string | undefined,
 ) {
   const conversation = findConversation(store, serverId, target);
   if (!conversation) return;
   setLoading(serverId, target, false);
-  if (FINAL_REFUSALS.has(code)) {
+  if (isFinal) {
     void refreshHasMore(store, serverId, target, false, false);
     return;
   }
@@ -826,7 +935,7 @@ function settleRefusedOffer(
   const chat =
     server?.channels.find((c) => c.id === conversation.channelId) ??
     server?.privateChats?.find((pc) => pc.id === conversation.channelId);
-  if (subcommand?.toUpperCase() === "BEFORE")
+  if (!subcommand || subcommand.toUpperCase() === "BEFORE")
     updateChat(store, serverId, conversation.channelId, {
       historyRefusedAt: Date.now(),
     });
@@ -1211,8 +1320,7 @@ export function registerHistoryHandlers(store: StoreApi<AppState>): void {
 
   // A refused CHATHISTORY opens no batch, so we drop its request here or the
   // next reply would be matched to it.
-  ircClient.on("FAIL", ({ serverId, command, code, context }) => {
-    if (command !== "CHATHISTORY") return;
+  const onRefusal = (serverId: string, code: string, context: string[]) => {
     const [subcommand] = context;
     const target =
       context.find(
@@ -1232,9 +1340,24 @@ export function registerHistoryHandlers(store: StoreApi<AppState>): void {
       askAgainByTime(serverId, target, request, request.msgidTime)
     )
       return;
-    if (refused) settleRefusedOffer(store, serverId, refused, code, subcommand);
+    const settled = refused
+      ? [refused]
+      : chatsLoadingUntracked(store, serverId, subcommand);
+    // We cannot tell which of several chats a refusal is for, so each keeps its offer and can ask again.
+    const isFinal = FINAL_REFUSALS.has(code) && settled.length === 1;
+    for (const chat of settled)
+      settleRefusedOffer(store, serverId, chat, isFinal, subcommand);
+    if (target && request?.kind === "after" && FINAL_REFUSALS.has(code))
+      void dropRefusedMillisecondGap(serverId, target, request.fill?.gap);
     if (request && request.kind !== "latest") request.fill?.onSettled?.(false);
+  };
+  ircClient.on("FAIL", ({ serverId, command, code, context }) => {
+    if (command === "CHATHISTORY") onRefusal(serverId, code, context);
   });
+  // A server can answer a history request as an unknown command, which we take for a refusal that names no chat.
+  ircClient.on("CHATHISTORY_UNKNOWN", ({ serverId }) =>
+    onRefusal(serverId, "UNKNOWN_COMMAND", []),
+  );
 
   ircClient.on("connectionStateChange", ({ serverId, connectionState }) => {
     if (connectionState === "connected") {
@@ -1393,6 +1516,7 @@ export async function showMessagesFromReadMarker(
 ): Promise<boolean> {
   if (!isEnabled(store)) return false;
   const lower = target.toLowerCase();
+  await askAgainForMillisecondGaps(store, serverId, lower);
   const [lastRead] = await eventRowsBefore(serverId, lower, marker + 1, 1);
   const isMarkerInGap = (await gapsFor(serverId, lower)).some(
     (gap) => gap.from < marker && marker < gap.to,
