@@ -4,6 +4,7 @@ import { useShallow } from "zustand/react/shallow";
 import { useBackButton } from "../../hooks/useBackButton";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { useSwipeNavigation } from "../../hooks/useSwipeNavigation";
+import { useUnreadTitle } from "../../hooks/useUnreadTitle";
 import { ConfirmDialogHost } from "../../lib/modal/ConfirmDialog";
 import useStore from "../../store";
 import type { layoutColumn } from "../../store/types";
@@ -33,6 +34,7 @@ const getPageIndex = (column: layoutColumn): number =>
 const getColumnFromPage = (page: number): layoutColumn => PAGE_ORDER[page];
 
 export const AppLayout: React.FC = () => {
+  useUnreadTitle();
   const {
     sidebarPreferences,
     selectedServerId,
