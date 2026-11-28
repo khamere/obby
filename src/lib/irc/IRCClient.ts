@@ -522,6 +522,8 @@ export interface EventMap {
     channelName: string;
     isLoading: boolean;
   };
+  // ERR_UNKNOWNCOMMAND that answers a CHATHISTORY request of ours.
+  CHATHISTORY_UNKNOWN: BaseIRCEvent;
   RPL_BANLIST: {
     serverId: string;
     channel: string;

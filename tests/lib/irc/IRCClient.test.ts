@@ -68,6 +68,28 @@ describe("IRCClient line safety", () => {
     ]);
   });
 
+  it("opens the style of a long whisper in every part", () => {
+    const prefix =
+      "@+channel-context=#c;+draft/channel-context=#c PRIVMSG bob :";
+
+    client.sendWhisper(
+      "s1",
+      "bob",
+      "#c",
+      `\x0304\x02${"word ".repeat(150).trim()}\x02`,
+    );
+
+    const lines: string[] = send.mock.calls.map(([line]) => line);
+    expect(lines.length).toBeGreaterThan(1);
+    for (const line of lines) {
+      expect(line.startsWith(`${prefix}\x0304\x02word`)).toBe(true);
+      // A line to bob carries 380 bytes.
+      expect(
+        new TextEncoder().encode(line.slice(prefix.length)).length,
+      ).toBeLessThanOrEqual(380);
+    }
+  });
+
   it.each([
     ["empty text", ""],
     ["a leading line break", "\nhi"],
