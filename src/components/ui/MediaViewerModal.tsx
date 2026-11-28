@@ -31,6 +31,7 @@ import {
 } from "react-icons/fa";
 import { useShallow } from "zustand/react/shallow";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { useMediaSettings } from "../../hooks/useMediaSettings";
 import { getDecryptedObjectUrl } from "../../lib/e2ee/decryptedMediaCache";
 import type { MediaDescriptor } from "../../lib/e2ee/media";
 import { parseLocationShareUrl } from "../../lib/geolocation";
@@ -52,9 +53,10 @@ import {
   extractMediaFromText,
   filenameFromUrl,
   getEmbedThumbnailUrl,
+  isAllowedSiteOnly,
   type MediaEntry,
   type MediaType,
-  mediaLevelToSettings,
+  withoutAllowedSites,
 } from "../../lib/mediaUtils";
 import {
   describeAttachment,
@@ -268,11 +270,33 @@ const AudioViewerPlayer: React.FC<{ url: string }> = ({ url }) => {
   );
 };
 
-/** react-pdf viewer with page navigation and a fallback for cross-origin failures. */
-const PdfModalViewer: React.FC<{ url: string; onRequestOpen: () => void }> = ({
-  url,
+const PdfUnavailable: React.FC<{ onRequestOpen: () => void }> = ({
   onRequestOpen,
-}) => {
+}) => (
+  <div className="flex flex-col items-center gap-4 text-discord-text-muted p-8">
+    <p className="text-sm text-center">
+      <Trans>PDF cannot be displayed in browser.</Trans>
+    </p>
+    <button
+      type="button"
+      className="flex items-center gap-2 px-4 py-2 button-primary rounded text-sm"
+      onClick={onRequestOpen}
+    >
+      <FaExternalLinkAlt className="w-3 h-3" />
+      <Trans>Open in browser</Trans>
+    </button>
+  </div>
+);
+
+/** react-pdf viewer with page navigation and a fallback for cross-origin failures. */
+const PdfModalViewer: React.FC<{
+  url: string;
+  // The native viewer renders whatever the host returns, a web page included,
+  // so callers turn it on only for a link the media rules admit without the
+  // user's allowed sites.
+  nativeFallback: boolean;
+  onRequestOpen: () => void;
+}> = ({ url, nativeFallback, onRequestOpen }) => {
   const [numPages, setNumPages] = useState(0);
   const [pageNumber, setPageNumber] = useState(1);
   // react-pdf uses pdfjs fetch() which fails on CORS. When that happens we fall back to
@@ -288,6 +312,17 @@ const PdfModalViewer: React.FC<{ url: string; onRequestOpen: () => void }> = ({
     Math.round(pageWidth * Math.SQRT2),
     window.innerHeight - 180,
   );
+
+  if (useNativeViewer && !nativeFallback) {
+    return (
+      <div
+        className="pointer-events-auto flex flex-col items-center"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <PdfUnavailable onRequestOpen={onRequestOpen} />
+      </div>
+    );
+  }
 
   if (useNativeViewer) {
     return (
@@ -307,19 +342,7 @@ const PdfModalViewer: React.FC<{ url: string; onRequestOpen: () => void }> = ({
           }}
         >
           {/* Fallback content shown when the browser has no PDF plugin */}
-          <div className="flex flex-col items-center gap-4 text-discord-text-muted p-8">
-            <p className="text-sm text-center">
-              PDF cannot be displayed in browser.
-            </p>
-            <button
-              type="button"
-              className="flex items-center gap-2 px-4 py-2 button-primary rounded text-sm"
-              onClick={onRequestOpen}
-            >
-              <FaExternalLinkAlt className="w-3 h-3" />
-              Open in browser
-            </button>
-          </div>
+          <PdfUnavailable onRequestOpen={onRequestOpen} />
         </object>
       </div>
     );
@@ -588,9 +611,34 @@ export function MediaViewerModal({
   );
   const topicEntryCount = mediaEntries.filter((e) => e.isTopicEntry).length;
 
-  const { showSafeMedia, showTrustedSourcesMedia, showExternalContent } =
-    mediaLevelToSettings(
-      useStore((state) => state.globalSettings.mediaVisibilityLevel),
+  const mediaSettings = useMediaSettings();
+
+  // A setting can change while the viewer is open, so we ask the server's
+  // rules about the link on screen each time and neither probe nor show one
+  // they refuse.
+  const isCurrentRefused =
+    !!serverId &&
+    !!currentUrl &&
+    !isDecryptedView &&
+    !canShowMedia(
+      currentUrl,
+      mediaSettings,
+      serverFilehosts(
+        useStore.getState().servers.find((s) => s.id === serverId),
+      ),
+    );
+
+  // We hold a link that only the user's allowed sites admit until its probe
+  // answers, since a media element started on the file name alone would
+  // follow a redirect the probe refuses.
+  const awaitsProbe =
+    !!currentUrl &&
+    isAllowedSiteOnly(
+      currentUrl,
+      mediaSettings,
+      serverFilehosts(
+        useStore.getState().servers.find((s) => s.id === serverId),
+      ),
     );
 
   // Map of msgid → reply count, covers both the toolbar button and filmstrip thumbnails
@@ -676,11 +724,6 @@ export function MediaViewerModal({
     const filehost = serverFilehosts(
       storeState.servers.find((s) => s.id === serverId),
     );
-    const mediaSettings = {
-      showSafeMedia,
-      showTrustedSourcesMedia,
-      showExternalContent,
-    };
 
     // Build topic entries (prepended before message entries)
     const channel = storeState.servers
@@ -692,7 +735,7 @@ export function MediaViewerModal({
           .map((e, i) => {
             let type = e.type;
             if (type === null) {
-              const cached = getCachedProbeResult(e.url);
+              const cached = getCachedProbeResult(e.url, serverId);
               if (cached != null && !cached.skipped) type = cached.type;
             }
             return {
@@ -716,7 +759,7 @@ export function MediaViewerModal({
           // avoiding a flash of music-note icons for already-visited URLs.
           let type = e.type;
           if (type === null) {
-            const cached = getCachedProbeResult(e.url);
+            const cached = getCachedProbeResult(e.url, serverId);
             if (cached != null && !cached.skipped) type = cached.type;
           }
           return {
@@ -749,7 +792,7 @@ export function MediaViewerModal({
             // this condition is false and the URL is excluded immediately — no FaMusic.
             (filehost != null &&
               isUrlFromFilehost(e.url, filehost) &&
-              getCachedProbeResult(e.url) === undefined) ||
+              getCachedProbeResult(e.url, serverId) === undefined) ||
             (e.url === url && (!sourceMsgId || e.msg.msgid === sourceMsgId))) &&
           canShowMedia(e.url, mediaSettings, filehost),
       );
@@ -763,7 +806,14 @@ export function MediaViewerModal({
       const type = summary ? kindMediaType(summary.kind) : null;
       // The descriptor URL is peer-authored, so it faces the same origin trust
       // decision the plain path makes.
-      if (!type || !canShowMedia(descriptor.url, mediaSettings, filehost)) {
+      if (
+        !type ||
+        !canShowMedia(
+          descriptor.url,
+          withoutAllowedSites(mediaSettings),
+          filehost,
+        )
+      ) {
         return [];
       }
       return [
@@ -812,7 +862,7 @@ export function MediaViewerModal({
       ...new Set(entries.filter((e) => e.type === null).map((e) => e.url)),
     ];
     for (const probeUrl of urlsToProbe) {
-      probeMediaUrl(probeUrl).then((result) => {
+      probeMediaUrl(probeUrl, serverId).then((result) => {
         if (cancelled) return;
         if (result && !result.skipped && result.type !== null) {
           setMediaEntries((prev) =>
@@ -841,9 +891,7 @@ export function MediaViewerModal({
     preferTopicEntry,
     preferLastEntry,
     decryptedType,
-    showSafeMedia,
-    showTrustedSourcesMedia,
-    showExternalContent,
+    mediaSettings,
   ]);
 
   const goTo = useCallback(
@@ -885,6 +933,7 @@ export function MediaViewerModal({
     if (
       !isOpen ||
       !currentUrl ||
+      isCurrentRefused ||
       (currentEntry !== null && currentEntry.type !== null)
     ) {
       setProbedType("probing");
@@ -892,7 +941,7 @@ export function MediaViewerModal({
     }
     let cancelled = false;
     setProbedType("probing");
-    probeMediaUrl(currentUrl).then((result) => {
+    probeMediaUrl(currentUrl, serverId).then((result) => {
       if (!cancelled) {
         const resolved = result && !result.skipped ? result.type : null;
         setProbedType(resolved ?? "failed");
@@ -910,7 +959,7 @@ export function MediaViewerModal({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, currentUrl, currentEntry]);
+  }, [isOpen, currentUrl, currentEntry, isCurrentRefused, serverId]);
 
   // Swap a ciphertext URL for its plaintext blob, but only for the entry the
   // user is actually looking at. Resolving the whole list up front would
@@ -1206,12 +1255,7 @@ export function MediaViewerModal({
               entryKey: string;
               isTopicEntry: false;
             } =>
-              e.type !== null &&
-              canShowMedia(
-                e.url,
-                { showSafeMedia, showTrustedSourcesMedia, showExternalContent },
-                filehost,
-              ),
+              e.type !== null && canShowMedia(e.url, mediaSettings, filehost),
           );
         idx = freshEntries.findIndex((e) => e.url === imgUrl);
         if (idx >= 0) {
@@ -1221,15 +1265,7 @@ export function MediaViewerModal({
       }
       if (idx >= 0) goTo(idx);
     },
-    [
-      mediaEntries,
-      serverId,
-      channelId,
-      goTo,
-      showSafeMedia,
-      showTrustedSourcesMedia,
-      showExternalContent,
-    ],
+    [mediaEntries, serverId, channelId, goTo, mediaSettings],
   );
 
   // The dialog opens the link itself.
@@ -1284,19 +1320,23 @@ export function MediaViewerModal({
   // When currentEntry has type: null (extension-based URL), use URL extension as an optimistic
   // hint while the HEAD probe is in flight so the UI renders immediately. The probe result
   // takes over once it resolves, allowing the server's Content-Type to correct wrong guesses.
-  const effectiveType: MediaType | null =
-    currentEntry?.type ??
-    (probedType === "probing"
-      ? detectMediaType(currentUrl) // optimistic hint from URL extension while probing
-      : probedType === "failed"
-        ? null
-        : probedType);
+  const effectiveType: MediaType | null = isCurrentRefused
+    ? null
+    : (currentEntry?.type ??
+      (probedType === "probing"
+        ? awaitsProbe
+          ? null
+          : detectMediaType(currentUrl) // optimistic hint from URL extension while probing
+        : probedType === "failed"
+          ? null
+          : probedType));
   // Only show the spinner when both the probe is still in flight AND the URL extension gives
   // no hint — i.e., we truly don't know the type yet.
   const isViewerProbing =
+    !isCurrentRefused &&
     (currentEntry === null || currentEntry.type === null) &&
     probedType === "probing" &&
-    detectMediaType(currentUrl) === null;
+    (awaitsProbe || detectMediaType(currentUrl) === null);
   // Treat as image only when we know it's an image — never fall back for unknown types
   // (avoids feeding stream URLs into <img> which hangs the browser).
   const isImageEntry = effectiveType === "image";
@@ -1599,6 +1639,18 @@ export function MediaViewerModal({
                 <PdfModalViewer
                   key={currentUrl}
                   url={currentUrl}
+                  nativeFallback={
+                    isDecryptedView ||
+                    canShowMedia(
+                      currentUrl,
+                      withoutAllowedSites(mediaSettings),
+                      serverFilehosts(
+                        useStore
+                          .getState()
+                          .servers.find((s) => s.id === serverId),
+                      ),
+                    )
+                  }
                   onRequestOpen={() => setShowWarning(true)}
                 />
               )}

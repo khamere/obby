@@ -21,6 +21,24 @@ function cacheSet(url: string, result: ProbeResult | null): void {
   keyOrder.push(url);
 }
 
+// A link that only the user's allowed sites admit gets a guarded probe: we
+// refuse redirects and never load it into a hidden media element, so the
+// request stays on the site the user named. The answer depends on the server
+// the link was posted on, since a file host is trusted on its own server only.
+type AllowedSiteCheck = (url: string, serverId?: string) => boolean;
+
+let isAllowedSiteUrl: AllowedSiteCheck = () => false;
+
+export function setAllowedSiteCheck(check: AllowedSiteCheck): void {
+  isAllowedSiteUrl = check;
+}
+
+// We keep the two probe modes apart in the cache, since the guarded probe
+// refuses links the plain one accepts.
+function probeKey(url: string, guarded: boolean): string {
+  return guarded ? `guarded ${url}` : url;
+}
+
 // The browser logs every request a host blocks with CORS, so we stop asking a host once it refuses.
 const fetchBlockedHosts = new Set<string>();
 
@@ -37,9 +55,11 @@ export function shouldProbeUrl(url: string): boolean {
  */
 export function getCachedProbeResult(
   url: string,
+  serverId?: string,
 ): ProbeResult | null | undefined {
-  if (!cache.has(url)) return undefined;
-  return cache.get(url) ?? null;
+  const key = probeKey(url, isAllowedSiteUrl(url, serverId));
+  if (!cache.has(key)) return undefined;
+  return cache.get(key) ?? null;
 }
 
 interface HttpProbe {
@@ -47,11 +67,17 @@ interface HttpProbe {
   contentLength?: number;
   ok: boolean;
   status: number;
+  redirectRefused: boolean;
 }
+
+// A redirect we refused is still the site's answer for that one link, so we
+// report it as an answer with no media type and keep asking the host.
+const NO_MEDIA_TYPE = { contentType: "" };
 
 async function tryHttpFetch(
   url: string,
   method: "HEAD" | "GET",
+  guarded: boolean,
 ): Promise<HttpProbe | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 5_000);
@@ -62,6 +88,7 @@ async function tryHttpFetch(
     const response = await fetch(url, {
       method,
       headers,
+      redirect: guarded ? "manual" : "follow",
       signal: controller.signal,
     });
     clearTimeout(timer);
@@ -77,6 +104,7 @@ async function tryHttpFetch(
       contentLength,
       ok: response.ok,
       status: response.status,
+      redirectRefused: response.type === "opaqueredirect",
     };
   } catch (_err) {
     clearTimeout(timer);
@@ -92,22 +120,25 @@ async function tryHttpFetch(
 async function fetchContentType(
   url: string,
   host: string | null,
+  guarded: boolean,
 ): Promise<{ contentType: string; contentLength?: number } | null> {
-  const head = await tryHttpFetch(url, "HEAD");
+  const head = await tryHttpFetch(url, "HEAD", guarded);
   if (head?.ok && head.contentType) {
     return { contentType: head.contentType, contentLength: head.contentLength };
   }
+  if (head?.redirectRefused) return NO_MEDIA_TYPE;
   // Only the GET retry can help when HEAD threw (CORS), was rejected as a method
   // (405/501), or returned 2xx without a type. A 404/410/5xx won't improve on GET.
   if (head !== null && !head.ok && head.status !== 405 && head.status !== 501) {
     return null;
   }
-  const get = await tryHttpFetch(url, "GET");
+  const get = await tryHttpFetch(url, "GET", guarded);
   if (head === null && get === null && host !== null)
     fetchBlockedHosts.add(host);
   if (get?.ok && get.contentType) {
     return { contentType: get.contentType, contentLength: get.contentLength };
   }
+  if (get?.redirectRefused) return NO_MEDIA_TYPE;
   return null;
 }
 
@@ -154,19 +185,30 @@ const inFlight = new Map<string, Promise<ProbeResult | null>>();
 
 // Every caller of a URL shares one probe: each one opens hidden media elements,
 // and WebKit can deadlock while it cancels many of those at once.
-export function probeMediaUrl(url: string): Promise<ProbeResult | null> {
-  if (cache.has(url)) return Promise.resolve(cache.get(url) ?? null);
-  let probe = inFlight.get(url);
+export function probeMediaUrl(
+  url: string,
+  serverId?: string,
+): Promise<ProbeResult | null> {
+  const guarded = isAllowedSiteUrl(url, serverId);
+  const key = probeKey(url, guarded);
+  if (cache.has(key)) return Promise.resolve(cache.get(key) ?? null);
+  let probe = inFlight.get(key);
   if (!probe) {
-    probe = probeUncached(url).finally(() => inFlight.delete(url));
-    inFlight.set(url, probe);
+    probe = probeUncached(url, key, guarded).finally(() =>
+      inFlight.delete(key),
+    );
+    inFlight.set(key, probe);
   }
   return probe;
 }
 
-async function probeUncached(url: string): Promise<ProbeResult | null> {
+async function probeUncached(
+  url: string,
+  key: string,
+  guarded: boolean,
+): Promise<ProbeResult | null> {
   if (isRejectedLocationShareUrl(url)) {
-    cacheSet(url, null);
+    cacheSet(key, null);
     return null;
   }
 
@@ -175,23 +217,25 @@ async function probeUncached(url: string): Promise<ProbeResult | null> {
   const pageType = detectMediaType(url);
   if (pageType === "embed" || pageType === "map") {
     const result = { type: pageType, streamable: false, skipped: false };
-    cacheSet(url, result);
+    cacheSet(key, result);
     return result;
   }
 
   // Primary path: HTTP Content-Type is the single source of truth.
   // HEAD is tried first; GET fallback covers servers that reject HEAD (e.g. Icecast).
-  const host = extractHostname(url);
+  // The guarded probe asks about every link and keeps no host-wide refusal,
+  // since only the site's own answer shows us a redirect we must refuse.
+  const stopAskingHost = guarded ? null : extractHostname(url);
   const fetched =
-    host !== null && fetchBlockedHosts.has(host)
+    stopAskingHost !== null && fetchBlockedHosts.has(stopAskingHost)
       ? null
-      : await fetchContentType(url, host);
+      : await fetchContentType(url, stopAskingHost, guarded);
   if (fetched) {
     const result = classifyContentType(
       fetched.contentType,
       fetched.contentLength,
     );
-    cacheSet(url, result);
+    cacheSet(key, result);
     return result;
   }
 
@@ -203,7 +247,7 @@ async function probeUncached(url: string): Promise<ProbeResult | null> {
   // servers outside CORS (SVG sub-resources on old WebKit, HLS/DASH via AVFoundation).
   const urlLower = url.split("?")[0].split("#")[0].toLowerCase();
   if (/\.(svg|m3u8?|mpd)$/.test(urlLower)) {
-    cacheSet(url, null);
+    cacheSet(key, null);
     return null;
   }
   const extType = detectMediaType(url);
@@ -218,8 +262,15 @@ async function probeUncached(url: string): Promise<ProbeResult | null> {
       streamable: extType === "audio",
       skipped: false,
     };
-    cacheSet(url, result);
+    cacheSet(key, result);
     return result;
+  }
+
+  // An allowed site that neither answered with a media type nor names a media
+  // file gets no preview, since a media element would follow its redirects.
+  if (guarded) {
+    cacheSet(key, null);
+    return null;
   }
 
   // Last resort: media element probes for extensionless URLs where HTTP is blocked by CORS.
@@ -232,7 +283,7 @@ async function probeUncached(url: string): Promise<ProbeResult | null> {
       streamable: false,
       skipped: false,
     };
-    cacheSet(url, result);
+    cacheSet(key, result);
     return result;
   }
 
@@ -243,7 +294,7 @@ async function probeUncached(url: string): Promise<ProbeResult | null> {
       streamable: true,
       skipped: false,
     };
-    cacheSet(url, result);
+    cacheSet(key, result);
     return result;
   }
 
@@ -259,7 +310,7 @@ async function probeUncached(url: string): Promise<ProbeResult | null> {
       streamable: false,
       skipped: false,
     };
-    cacheSet(url, result);
+    cacheSet(key, result);
     return result;
   }
 
@@ -271,11 +322,11 @@ async function probeUncached(url: string): Promise<ProbeResult | null> {
       streamable: false,
       skipped: false,
     };
-    cacheSet(url, result);
+    cacheSet(key, result);
     return result;
   }
 
-  cacheSet(url, null);
+  cacheSet(key, null);
   return null;
 }
 

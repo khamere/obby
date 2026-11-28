@@ -4,6 +4,7 @@ import {
   clearEmojiPackCache,
   useEmojiResolver,
 } from "../../src/lib/customEmoji";
+import useStore from "../../src/store";
 
 const PACK = "https://packs.example/pack.json";
 const pack = {
@@ -54,5 +55,21 @@ describe("useEmojiResolver media gate", () => {
     );
     expect(result.current.resolve("beacon")).toBeNull();
     expect(result.current.shortcodes.map((e) => e.shortcode)).toEqual(["ok"]);
+  });
+
+  it("never fetches a pack from a site the user only allowed for media", async () => {
+    useStore.setState((state) => ({
+      globalSettings: {
+        ...state.globalSettings,
+        mediaVisibilityLevel: 1,
+        mediaAllowedHosts: ["packs.example", "files.example"],
+      },
+    }));
+    const { result } = renderHook(() =>
+      useEmojiResolver([PACK], [], SAFE_MEDIA),
+    );
+    await act(async () => {});
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.current.resolve("ok")).toBeNull();
   });
 });

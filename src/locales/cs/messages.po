@@ -157,6 +157,10 @@ msgstr "{failedCount, plural, one {1 nahrání selhalo} few {# nahrání selhala
 msgid "{hiddenLines, plural, one {# more line} other {# more lines}}"
 msgstr "{hiddenLines, plural, one {# dalších řádek} few {# dalších řádky} many {# dalších řádků} other {# dalších řádků}}"
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "{host} is already on the list."
+msgstr "{host} už na seznamu je."
+
 #: src/store/handlers/users.ts
 msgid "{inviter} has invited {target} to join {channel}"
 msgstr "{inviter} pozval {target} k připojení do {channel}"
@@ -538,6 +542,7 @@ msgstr "Aktivita"
 #: src/components/pages/TwoFactorPage.tsx
 #: src/components/ui/settings/CustomMentionsField.tsx
 #: src/components/ui/settings/IgnoreListField.tsx
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
 msgid "Add"
 msgstr "Přidat"
 
@@ -608,6 +613,10 @@ msgstr "Přidat IRC server"
 msgid "Add Network"
 msgstr "Přidat síť"
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Add only sites you trust. On every server, a link to an allowed site makes Obby contact that site, which shows it your IP address. Anyone who can put files on the site can post such a link, and the site can pass your request on to another site."
+msgstr "Přidávejte jen weby, kterým důvěřujete. Na každém serveru způsobí odkaz na povolený web, že Obby tento web kontaktuje, a ten tak uvidí vaši IP adresu. Takový odkaz může poslat kdokoli, kdo na web může nahrát soubory, a web může váš požadavek předat jinému webu."
+
 #: src/components/message/MessageActions.tsx
 #: src/components/message/MessageReactions.tsx
 #: src/components/message/MessageReactions.tsx
@@ -630,6 +639,10 @@ msgstr "Přidejte pravidla, která určují, jakou aktivitu sledovat a co dělat
 #: src/components/layout/ServerList.tsx
 msgid "Add Server"
 msgstr "Přidat server"
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Add the exact site instead. {host} is shared by many unrelated people."
+msgstr "Přidejte raději přesný web. {host} sdílí mnoho lidí, kteří spolu nesouvisejí."
 
 #: src/components/ui/SavedHistoryChoice.tsx
 msgid "Add this network again to get its saved chat history back."
@@ -746,6 +759,10 @@ msgstr "Povolit Obby instalovat aktualizace"
 #: src/components/layout/ChatArea.tsx
 msgid "Allow Obby under Screen Recording in System Settings, then record again."
 msgstr "Povolte Obby v Nastavení systému v části Nahrávání obrazovky a pak nahrávejte znovu."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Allowed Sites"
+msgstr "Povolené weby"
 
 #. placeholder {0}: message.inviteChannel
 #: src/components/message/InviteMessage.tsx
@@ -2619,6 +2636,10 @@ msgstr "Zadejte název s mezerami, emoji nebo symboly. Příkazy IRC stále pou�
 msgid "Enter a number for {0}"
 msgstr "Zadejte číslo pro {0}"
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Enter a site name such as files.example.com, or paste a link to it. Ports and IP addresses cannot be added."
+msgstr "Zadejte název webu, například files.example.com, nebo vložte odkaz na něj. Porty a IP adresy přidat nelze."
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a URL. Use {sizeToken} in the URL for dynamic sizing. Example: https://example.com/avatar/{sizeToken}/channel.jpg"
 msgstr "Zadejte URL. Pro dynamickou velikost použijte v URL {sizeToken}. Příklad: https://example.com/avatar/{sizeToken}/channel.jpg"
@@ -2883,6 +2904,10 @@ msgstr "Obrázek z file hostu"
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "Files larger than {0} are sent unencrypted. The file host can read them, and anyone with the link can open them."
 msgstr "Soubory větší než {0} se odesílají nešifrovaně. Hostitel souborů je může číst a otevřít je může kdokoli s odkazem."
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "files.example.com or a pasted link"
+msgstr "files.example.com nebo vložený odkaz"
 
 #. placeholder {0}: e.name
 #: src/components/chat/CommandArgHint.tsx
@@ -4630,6 +4655,7 @@ msgstr "Otevřít možnosti chatu"
 
 #: src/components/ui/MediaViewerModal.tsx
 #: src/components/ui/MediaViewerModal.tsx
+#: src/components/ui/MediaViewerModal.tsx
 msgid "Open in browser"
 msgstr "Otevřít v prohlížeči"
 
@@ -4791,6 +4817,10 @@ msgstr "Heslo změněno. Nyní se můžete přihlásit."
 msgid "Passwords don't match."
 msgstr "Hesla se neshodují."
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Paste a link to add the site that serves the file; it often differs from the page you opened. A name matches that exact site over https. Add *.example.com to cover example.com and all its subdomains."
+msgstr "Vložte odkaz a přidejte web, který soubor poskytuje; často se liší od stránky, kterou jste otevřeli. Název odpovídá přesně tomuto webu přes https. Přidejte *.example.com, chcete-li pokrýt example.com a všechny jeho subdomény."
+
 #: src/components/ui/PluginsScreen.tsx
 msgid "Paste code with syntax highlighting and line numbers."
 msgstr "Vkládejte kód se zvýrazněním syntaxe a čísly řádků."
@@ -4831,6 +4861,10 @@ msgstr "Pauza"
 #: src/components/ui/MediaCommentsSidebar.tsx
 msgid "PDF"
 msgstr "PDF"
+
+#: src/components/ui/MediaViewerModal.tsx
+msgid "PDF cannot be displayed in browser."
+msgstr "PDF nelze v prohlížeči zobrazit."
 
 #: src/components/message/MediaPreview.tsx
 msgid "PDF preview"
@@ -4985,9 +5019,13 @@ msgstr "Náhled (ještě nenahrán)"
 msgid "Preview all external media. Any URL can trigger a request to an unknown server."
 msgstr "Zobrazovat náhledy všech externích médií. Libovolná URL může vyvolat požadavek na neznámý server."
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Preview media from these sites at Safe and Trusted Sources."
+msgstr "Zobrazovat náhledy médií z těchto webů na úrovních Bezpečné a Důvěryhodné zdroje."
+
 #: src/components/pages/SettingsPage.tsx
-msgid "Preview media from your server's trusted file host only. Make no requests to external services."
-msgstr "Zobrazovat náhledy médií pouze z důvěryhodného úložiště souborů vašeho serveru. Nedělejte žádné požadavky na externí služby."
+msgid "Preview media from your server's trusted file host and your allowed sites only. Make no requests to other services."
+msgstr "Zobrazovat náhledy médií pouze z důvěryhodného úložiště souborů vašeho serveru a z vašich povolených webů. Nedělejte žádné požadavky na jiné služby."
 
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "Previous fingerprint"
@@ -5313,6 +5351,11 @@ msgstr "Odebrat"
 #: src/components/pages/TwoFactorPage.tsx
 msgid "Remove \"{0}\"? You will no longer be able to use it as a second factor."
 msgstr "Odebrat \"{0}\"? Už ho nebudete moci používat jako druhý faktor."
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Remove {host}"
+msgstr "Odebrat {host}"
 
 #: src/components/ui/ModerationModal.tsx
 msgid "Remove {username} from the channel"
@@ -5949,6 +5992,10 @@ msgstr "Nastavte, kolik sekund se počítá aktivita záplavy, než se počítad
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Set how much disk space saved history can use. The oldest messages are deleted first when the limit is reached."
 msgstr "Nastavte, kolik místa na disku může uložená historie zabrat. Po dosažení limitu se nejdřív smažou nejstarší zprávy."
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Set Media Previews to Trusted Sources to preview {host}. It also loads from other sites, so it cannot be added here."
+msgstr "Chcete-li zobrazit náhledy z {host}, nastavte Náhledy médií na Důvěryhodné zdroje. Služba načítá obsah i z jiných webů, takže ji sem přidat nelze."
 
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Set new password"

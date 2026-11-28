@@ -15,6 +15,15 @@ describe("settingsRegistry search", () => {
     );
   });
 
+  it.each(["whitelist", "domain", "allowed"])(
+    "finds the allowed media sites by %j",
+    (query) => {
+      expect(settingsRegistry.search(query).map((r) => r.setting.id)).toContain(
+        "media.allowedHosts",
+      );
+    },
+  );
+
   it("finds the single line fallback by what it does to a message", () => {
     const ids = (query: string) =>
       settingsRegistry.search(query).map((result) => result.setting.id);

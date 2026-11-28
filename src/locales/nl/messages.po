@@ -157,6 +157,10 @@ msgstr "{failedCount, plural, one {1 upload mislukt} other {# uploads mislukt}}"
 msgid "{hiddenLines, plural, one {# more line} other {# more lines}}"
 msgstr "{hiddenLines, plural, one {# extra regel} other {# extra regels}}"
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "{host} is already on the list."
+msgstr "{host} staat al op de lijst."
+
 #: src/store/handlers/users.ts
 msgid "{inviter} has invited {target} to join {channel}"
 msgstr "{inviter} heeft {target} uitgenodigd om deel te nemen aan {channel}"
@@ -538,6 +542,7 @@ msgstr "Activiteit"
 #: src/components/pages/TwoFactorPage.tsx
 #: src/components/ui/settings/CustomMentionsField.tsx
 #: src/components/ui/settings/IgnoreListField.tsx
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
 msgid "Add"
 msgstr "Toevoegen"
 
@@ -608,6 +613,10 @@ msgstr "IRC-server toevoegen"
 msgid "Add Network"
 msgstr "Netwerk toevoegen"
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Add only sites you trust. On every server, a link to an allowed site makes Obby contact that site, which shows it your IP address. Anyone who can put files on the site can post such a link, and the site can pass your request on to another site."
+msgstr "Voeg alleen sites toe die je vertrouwt. Op elke server zorgt een link naar een toegestane site ervoor dat Obby contact maakt met die site, waardoor die je IP-adres ziet. Iedereen die bestanden op de site kan zetten, kan zo'n link plaatsen, en de site kan je verzoek doorsturen naar een andere site."
+
 #: src/components/message/MessageActions.tsx
 #: src/components/message/MessageReactions.tsx
 #: src/components/message/MessageReactions.tsx
@@ -630,6 +639,10 @@ msgstr "Voeg regels toe die bepalen welke activiteit je bijhoudt en wat er gebeu
 #: src/components/layout/ServerList.tsx
 msgid "Add Server"
 msgstr "Server toevoegen"
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Add the exact site instead. {host} is shared by many unrelated people."
+msgstr "Voeg in plaats daarvan de exacte site toe. {host} wordt gedeeld door veel mensen die niets met elkaar te maken hebben."
 
 #: src/components/ui/SavedHistoryChoice.tsx
 msgid "Add this network again to get its saved chat history back."
@@ -746,6 +759,10 @@ msgstr "Obby toestaan updates te installeren"
 #: src/components/layout/ChatArea.tsx
 msgid "Allow Obby under Screen Recording in System Settings, then record again."
 msgstr "Sta Obby toe onder Schermopname in Systeeminstellingen en neem daarna opnieuw op."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Allowed Sites"
+msgstr "Toegestane sites"
 
 #. placeholder {0}: message.inviteChannel
 #: src/components/message/InviteMessage.tsx
@@ -2619,6 +2636,10 @@ msgstr "Voer een naam in met spaties, emoji of symbolen. IRC-commando's gebruike
 msgid "Enter a number for {0}"
 msgstr "Voer een getal in voor {0}"
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Enter a site name such as files.example.com, or paste a link to it. Ports and IP addresses cannot be added."
+msgstr "Voer een sitenaam in, zoals files.example.com, of plak een link ernaartoe. Poorten en IP-adressen kunnen niet worden toegevoegd."
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a URL. Use {sizeToken} in the URL for dynamic sizing. Example: https://example.com/avatar/{sizeToken}/channel.jpg"
 msgstr "Voer een URL in. Gebruik {sizeToken} in de URL voor dynamische grootte. Voorbeeld: https://example.com/avatar/{sizeToken}/channel.jpg"
@@ -2883,6 +2904,10 @@ msgstr "Afbeelding van bestandshost"
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "Files larger than {0} are sent unencrypted. The file host can read them, and anyone with the link can open them."
 msgstr "Bestanden groter dan {0} worden onversleuteld verstuurd. De bestandshost kan ze lezen en iedereen met de link kan ze openen."
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "files.example.com or a pasted link"
+msgstr "files.example.com of een geplakte link"
 
 #. placeholder {0}: e.name
 #: src/components/chat/CommandArgHint.tsx
@@ -4630,6 +4655,7 @@ msgstr "Chatopties openen"
 
 #: src/components/ui/MediaViewerModal.tsx
 #: src/components/ui/MediaViewerModal.tsx
+#: src/components/ui/MediaViewerModal.tsx
 msgid "Open in browser"
 msgstr "Openen in browser"
 
@@ -4791,6 +4817,10 @@ msgstr "Wachtwoord bijgewerkt. Je kunt nu inloggen."
 msgid "Passwords don't match."
 msgstr "Wachtwoorden komen niet overeen."
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Paste a link to add the site that serves the file; it often differs from the page you opened. A name matches that exact site over https. Add *.example.com to cover example.com and all its subdomains."
+msgstr "Plak een link om de site toe te voegen die het bestand levert; die verschilt vaak van de pagina die je hebt geopend. Een naam komt alleen overeen met precies die site via https. Voeg *.example.com toe om example.com en alle subdomeinen te dekken."
+
 #: src/components/ui/PluginsScreen.tsx
 msgid "Paste code with syntax highlighting and line numbers."
 msgstr "Plak code met syntaxiskleuring en regelnummers."
@@ -4831,6 +4861,10 @@ msgstr "Pauzeren"
 #: src/components/ui/MediaCommentsSidebar.tsx
 msgid "PDF"
 msgstr "PDF"
+
+#: src/components/ui/MediaViewerModal.tsx
+msgid "PDF cannot be displayed in browser."
+msgstr "De pdf kan niet in de browser worden weergegeven."
 
 #: src/components/message/MediaPreview.tsx
 msgid "PDF preview"
@@ -4985,9 +5019,13 @@ msgstr "Voorbeeld (nog niet geüpload)"
 msgid "Preview all external media. Any URL can trigger a request to an unknown server."
 msgstr "Toon voorvertoningen van alle externe media. Elke URL kan een verzoek naar een onbekende server sturen."
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Preview media from these sites at Safe and Trusted Sources."
+msgstr "Toon voorvertoningen van media van deze sites bij Veilig en Vertrouwde bronnen."
+
 #: src/components/pages/SettingsPage.tsx
-msgid "Preview media from your server's trusted file host only. Make no requests to external services."
-msgstr "Toon alleen voorvertoningen van media van de vertrouwde bestandshost van je server. Doe geen verzoeken naar externe diensten."
+msgid "Preview media from your server's trusted file host and your allowed sites only. Make no requests to other services."
+msgstr "Toon alleen voorvertoningen van media van de vertrouwde bestandshost van je server en van je toegestane sites. Doe geen verzoeken naar andere diensten."
 
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "Previous fingerprint"
@@ -5313,6 +5351,11 @@ msgstr "Verwijderen"
 #: src/components/pages/TwoFactorPage.tsx
 msgid "Remove \"{0}\"? You will no longer be able to use it as a second factor."
 msgstr "\"{0}\" verwijderen? Je kunt het dan niet meer als tweede factor gebruiken."
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Remove {host}"
+msgstr "{host} verwijderen"
 
 #: src/components/ui/ModerationModal.tsx
 msgid "Remove {username} from the channel"
@@ -5949,6 +5992,10 @@ msgstr "Stel in hoeveel seconden floodactiviteit wordt geteld voordat de tellers
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Set how much disk space saved history can use. The oldest messages are deleted first when the limit is reached."
 msgstr "Stel in hoeveel schijfruimte de opgeslagen geschiedenis mag gebruiken. Als de limiet is bereikt, worden de oudste berichten eerst verwijderd."
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Set Media Previews to Trusted Sources to preview {host}. It also loads from other sites, so it cannot be added here."
+msgstr "Zet Mediavoorbeeldweergaven op Vertrouwde bronnen om voorvertoningen van {host} te zien. De dienst laadt ook van andere sites en kan hier daarom niet worden toegevoegd."
 
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Set new password"

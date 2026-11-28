@@ -114,6 +114,7 @@ export interface GlobalSettings {
   multilineOnShiftEnter: boolean;
   autoFallbackToSingleLine: boolean;
   mediaVisibilityLevel: MediaVisibilityLevel;
+  mediaAllowedHosts: string[];
   enableMarkdownRendering: boolean;
   coloredNicknames: boolean;
   formatTopics: boolean;

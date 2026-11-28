@@ -10,6 +10,7 @@ import {
   isUrlFromFilehost,
   isUrlFromTrustedSource,
 } from "./ircUtils";
+import { matchAllowedMediaHost } from "./mediaAllowedHosts";
 import { stripIrcFormatting } from "./messageFormatter";
 
 export type MediaType = "image" | "video" | "audio" | "pdf" | "embed" | "map";
@@ -84,6 +85,15 @@ function matchingTrustedDomain(hostname: string): string | null {
     if (hostname === domain || hostname.endsWith(`.${domain}`)) return domain;
   }
   return null;
+}
+
+/** True for a built-in service whose preview also loads from other hosts (a
+ *  player, a thumbnail CDN, map tiles, the GIF lookup API), so allowing its
+ *  host alone would contact sites the user never named. */
+export function needsTrustedSources(hostname: string): boolean {
+  const domain = matchingTrustedDomain(hostname.replace(/^www\./, ""));
+  if (domain === null) return false;
+  return TRUSTED_EMBED_DOMAINS[domain] !== "image" || domain === "tenor.com";
 }
 
 /** Resolves a trusted domain's declared type, applying that type's own
@@ -216,6 +226,8 @@ export interface MediaSettings {
   showSafeMedia: boolean;
   showTrustedSourcesMedia: boolean;
   showExternalContent: boolean;
+  /** Sites the user allowed for media previews, in stored form. */
+  allowedHosts?: readonly string[];
 }
 
 export type MediaVisibilityLevel = 0 | 1 | 2 | 3;
@@ -227,12 +239,29 @@ export type MediaVisibilityLevel = 0 | 1 | 2 | 3;
 /** Single source of truth for the enum → MediaSettings conversion. */
 export function mediaLevelToSettings(
   level: MediaVisibilityLevel,
+  allowedHosts?: readonly string[],
 ): MediaSettings {
-  return {
+  const settings: MediaSettings = {
     showSafeMedia: level >= 1,
     showTrustedSourcesMedia: level >= 2,
     showExternalContent: level >= 3,
   };
+  // The user's allowed sites count at Safe and Trusted Sources only: Off
+  // loads nothing and All Content already loads everything.
+  if (
+    (level === 1 || level === 2) &&
+    Array.isArray(allowedHosts) &&
+    allowedHosts.length > 0
+  )
+    settings.allowedHosts = allowedHosts;
+  return settings;
+}
+
+/** The same settings with the user's allowed sites left out, for content
+ *  the list must never unlock. */
+export function withoutAllowedSites(settings: MediaSettings): MediaSettings {
+  const { allowedHosts: _allowedHosts, ...rest } = settings;
+  return rest;
 }
 
 /**
@@ -265,7 +294,7 @@ function getYouTubeVideoId(url: string): string | null {
 // referrer, so the app serves the player page from loopback and we embed that.
 // We name the host localhost because YouTube refuses an embed on an IP origin.
 let youtubePlayerOrigin: string | null = null;
-if (typeof window !== "undefined" && window.location.protocol === "tauri:") {
+if (typeof window !== "undefined" && window.location?.protocol === "tauri:") {
   invoke<number | null>("youtube_player_port").then((port) => {
     if (port) youtubePlayerOrigin = `http://localhost:${port}`;
   });
@@ -336,6 +365,10 @@ export function canShowMedia(
     for (const trustedUrl of __TRUSTED_MEDIA_URLS__) {
       if (trustedUrl && isUrlFromFilehost(url, trustedUrl)) return true;
     }
+    if (matchAllowedMediaHost(url, settings.allowedHosts) !== null) {
+      const hostname = extractHostname(url);
+      if (hostname !== null && !needsTrustedSources(hostname)) return true;
+    }
   }
   if (settings.showTrustedSourcesMedia) {
     const hostname = extractHostname(url);
@@ -345,6 +378,19 @@ export function canShowMedia(
     }
   }
   return false;
+}
+
+/** True when only the user's allowed sites admit `url`: neither a file host
+ *  nor a built-in service would. Such a link gets the guarded probe. */
+export function isAllowedSiteOnly(
+  url: string,
+  settings: MediaSettings,
+  filehost?: string | string[] | null,
+): boolean {
+  return (
+    canShowMedia(url, settings, filehost) &&
+    !canShowMedia(url, withoutAllowedSites(settings), filehost)
+  );
 }
 
 /** Gates every avatar/icon <img> render. Absolute-URL check is unconditional so

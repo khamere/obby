@@ -157,6 +157,10 @@ msgstr "{failedCount, plural, one {1 件のアップロードに失敗しまし�
 msgid "{hiddenLines, plural, one {# more line} other {# more lines}}"
 msgstr "{hiddenLines, plural, other {あと # 行}}"
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "{host} is already on the list."
+msgstr "{host} はすでにリストにあります。"
+
 #: src/store/handlers/users.ts
 msgid "{inviter} has invited {target} to join {channel}"
 msgstr "{inviter} が {target} を {channel} に招待しました"
@@ -538,6 +542,7 @@ msgstr "アクティビティ"
 #: src/components/pages/TwoFactorPage.tsx
 #: src/components/ui/settings/CustomMentionsField.tsx
 #: src/components/ui/settings/IgnoreListField.tsx
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
 msgid "Add"
 msgstr "追加"
 
@@ -608,6 +613,10 @@ msgstr "IRCサーバーを追加"
 msgid "Add Network"
 msgstr "ネットワークを追加"
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Add only sites you trust. On every server, a link to an allowed site makes Obby contact that site, which shows it your IP address. Anyone who can put files on the site can post such a link, and the site can pass your request on to another site."
+msgstr "信頼できるサイトだけを追加してください。どのサーバーでも、許可したサイトへのリンクがあると Obby はそのサイトに接続し、あなたの IP アドレスがそのサイトに伝わります。そのサイトにファイルを置ける人なら誰でもそのようなリンクを投稿でき、サイトはあなたのリクエストを別のサイトへ転送することもできます。"
+
 #: src/components/message/MessageActions.tsx
 #: src/components/message/MessageReactions.tsx
 #: src/components/message/MessageReactions.tsx
@@ -630,6 +639,10 @@ msgstr "監視するアクティビティと、しきい値を超えた場合の
 #: src/components/layout/ServerList.tsx
 msgid "Add Server"
 msgstr "サーバーを追加"
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Add the exact site instead. {host} is shared by many unrelated people."
+msgstr "代わりに正確なサイトを追加してください。{host} は互いに無関係な多くの人が共有しています。"
 
 #: src/components/ui/SavedHistoryChoice.tsx
 msgid "Add this network again to get its saved chat history back."
@@ -746,6 +759,10 @@ msgstr "Obbyによるアップデートのインストールを許可"
 #: src/components/layout/ChatArea.tsx
 msgid "Allow Obby under Screen Recording in System Settings, then record again."
 msgstr "システム設定の「画面収録」で Obby を許可してから、もう一度録画してください。"
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Allowed Sites"
+msgstr "許可するサイト"
 
 #. placeholder {0}: message.inviteChannel
 #: src/components/message/InviteMessage.tsx
@@ -2619,6 +2636,10 @@ msgstr "スペース、絵文字、記号を含む名前を入力してくださ
 msgid "Enter a number for {0}"
 msgstr "{0} に数値を入力してください"
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Enter a site name such as files.example.com, or paste a link to it. Ports and IP addresses cannot be added."
+msgstr "files.example.com のようなサイト名を入力するか、そのサイトへのリンクを貼り付けてください。ポートと IP アドレスは追加できません。"
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a URL. Use {sizeToken} in the URL for dynamic sizing. Example: https://example.com/avatar/{sizeToken}/channel.jpg"
 msgstr "URL を入力してください。サイズを動的に指定するには URL に {sizeToken} を使います。例: https://example.com/avatar/{sizeToken}/channel.jpg"
@@ -2883,6 +2904,10 @@ msgstr "ファイルホスト画像"
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "Files larger than {0} are sent unencrypted. The file host can read them, and anyone with the link can open them."
 msgstr "{0} を超えるファイルは暗号化なしで送信されます。ファイルホストはその内容を読み取れ、リンクを知っている人は誰でも開けます。"
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "files.example.com or a pasted link"
+msgstr "files.example.com または貼り付けたリンク"
 
 #. placeholder {0}: e.name
 #: src/components/chat/CommandArgHint.tsx
@@ -4630,6 +4655,7 @@ msgstr "チャットのオプションを開く"
 
 #: src/components/ui/MediaViewerModal.tsx
 #: src/components/ui/MediaViewerModal.tsx
+#: src/components/ui/MediaViewerModal.tsx
 msgid "Open in browser"
 msgstr "ブラウザで開く"
 
@@ -4791,6 +4817,10 @@ msgstr "パスワードを更新しました。ログインできます。"
 msgid "Passwords don't match."
 msgstr "パスワードが一致しません。"
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Paste a link to add the site that serves the file; it often differs from the page you opened. A name matches that exact site over https. Add *.example.com to cover example.com and all its subdomains."
+msgstr "リンクを貼り付けると、そのファイルを配信しているサイトを追加できます。開いたページとは別のサイトであることがよくあります。名前は https のそのサイトだけに一致します。example.com とそのすべてのサブドメインを対象にするには *.example.com を追加してください。"
+
 #: src/components/ui/PluginsScreen.tsx
 msgid "Paste code with syntax highlighting and line numbers."
 msgstr "構文ハイライトと行番号付きでコードを貼り付けましょう。"
@@ -4831,6 +4861,10 @@ msgstr "一時停止"
 #: src/components/ui/MediaCommentsSidebar.tsx
 msgid "PDF"
 msgstr "PDF"
+
+#: src/components/ui/MediaViewerModal.tsx
+msgid "PDF cannot be displayed in browser."
+msgstr "PDF をブラウザで表示できません。"
 
 #: src/components/message/MediaPreview.tsx
 msgid "PDF preview"
@@ -4985,9 +5019,13 @@ msgstr "プレビュー（未アップロード）"
 msgid "Preview all external media. Any URL can trigger a request to an unknown server."
 msgstr "すべての外部メディアをプレビューします。どの URL も、未知のサーバーへのリクエストを引き起こす可能性があります。"
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Preview media from these sites at Safe and Trusted Sources."
+msgstr "「安全」と「信頼できるソース」のレベルで、これらのサイトのメディアをプレビューします。"
+
 #: src/components/pages/SettingsPage.tsx
-msgid "Preview media from your server's trusted file host only. Make no requests to external services."
-msgstr "サーバーの信頼済みファイルホストのメディアのみプレビューします。外部サービスへのリクエストは行いません。"
+msgid "Preview media from your server's trusted file host and your allowed sites only. Make no requests to other services."
+msgstr "サーバーの信頼済みファイルホストと許可したサイトのメディアのみプレビューします。ほかのサービスへのリクエストは行いません。"
 
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "Previous fingerprint"
@@ -5313,6 +5351,11 @@ msgstr "削除"
 #: src/components/pages/TwoFactorPage.tsx
 msgid "Remove \"{0}\"? You will no longer be able to use it as a second factor."
 msgstr "\"{0}\" を削除しますか? 第 2 要素として使用できなくなります。"
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Remove {host}"
+msgstr "{host} を削除"
 
 #: src/components/ui/ModerationModal.tsx
 msgid "Remove {username} from the channel"
@@ -5949,6 +5992,10 @@ msgstr "カウンターがリセットされるまでフラッド活動を数え
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Set how much disk space saved history can use. The oldest messages are deleted first when the limit is reached."
 msgstr "保存した履歴が使用できるディスク容量を設定してください。上限に達すると、古いメッセージから削除されます。"
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Set Media Previews to Trusted Sources to preview {host}. It also loads from other sites, so it cannot be added here."
+msgstr "{host} をプレビューするには、メディアプレビューを「信頼できるソース」に設定してください。ほかのサイトからも読み込むため、ここには追加できません。"
 
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Set new password"

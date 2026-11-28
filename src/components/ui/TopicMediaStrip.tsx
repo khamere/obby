@@ -1,6 +1,7 @@
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
 import { FaFileAlt, FaPlay } from "react-icons/fa";
+import { useMediaSettings } from "../../hooks/useMediaSettings";
 import { revealHiddenChars } from "../../lib/hiddenChars";
 import { serverFilehosts } from "../../lib/ircUtils";
 import { getCachedProbeResult, probeMediaUrl } from "../../lib/mediaProbe";
@@ -9,7 +10,6 @@ import {
   canShowMedia,
   extractMediaFromText,
   getEmbedThumbnailUrl,
-  mediaLevelToSettings,
 } from "../../lib/mediaUtils";
 import useStore from "../../store";
 
@@ -20,9 +20,7 @@ export const TopicMediaStrip: React.FC = () => {
     Map<string, MediaType | null>
   >(new Map());
 
-  const mediaVisibilityLevel = useStore(
-    (s) => s.globalSettings.mediaVisibilityLevel,
-  );
+  const mediaSettings = useMediaSettings();
   const servers = useStore((s) => s.servers);
   const selectedServerId = useStore((s) => s.ui.selectedServerId);
   const perServerSelections = useStore((s) => s.ui.perServerSelections);
@@ -45,11 +43,6 @@ export const TopicMediaStrip: React.FC = () => {
     [servers, selectedServerId],
   );
 
-  const mediaSettings = useMemo(
-    () => mediaLevelToSettings(mediaVisibilityLevel),
-    [mediaVisibilityLevel],
-  );
-
   const candidates = useMemo(() => {
     if (!topic) return [];
     // A location link renders as its own inline card, not a strip thumbnail --
@@ -61,9 +54,10 @@ export const TopicMediaStrip: React.FC = () => {
 
   useEffect(() => {
     let cancelled = false;
+    const probeServerId = selectedServerId ?? undefined;
     for (const entry of candidates) {
       if (entry.type !== null) continue;
-      const cached = getCachedProbeResult(entry.url);
+      const cached = getCachedProbeResult(entry.url, probeServerId);
       if (cached !== undefined) {
         if (!cancelled) {
           setResolvedTypes((prev) =>
@@ -72,7 +66,7 @@ export const TopicMediaStrip: React.FC = () => {
         }
         continue;
       }
-      probeMediaUrl(entry.url).then((result) => {
+      probeMediaUrl(entry.url, probeServerId).then((result) => {
         if (!cancelled) {
           setResolvedTypes((prev) =>
             new Map(prev).set(entry.url, result?.type ?? null),
@@ -83,7 +77,7 @@ export const TopicMediaStrip: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [candidates]);
+  }, [candidates, selectedServerId]);
 
   // Only show entries with a confirmed media type — skip anything still probing (undefined) or
   // confirmed non-media (null). Tiles appear after probe succeeds, never as a loading skeleton.

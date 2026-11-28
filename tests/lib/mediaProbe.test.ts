@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { probeMediaUrl, shouldProbeUrl } from "../../src/lib/mediaProbe";
+import {
+  getCachedProbeResult,
+  probeMediaUrl,
+  setAllowedSiteCheck,
+  shouldProbeUrl,
+} from "../../src/lib/mediaProbe";
 
 vi.mock("../../src/lib/mediaUtils", () => ({
   extractHostname: (url: string) => new URL(url).hostname,
@@ -87,6 +92,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  setAllowedSiteCheck(() => false);
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   vi.clearAllMocks();
@@ -468,5 +474,264 @@ describe("shouldProbeUrl", () => {
     expect(shouldProbeUrl("https://radio.example.com/stream")).toBe(true);
     expect(shouldProbeUrl("https://files.example.com/abc123")).toBe(true);
     expect(shouldProbeUrl("https://example.com/page")).toBe(true);
+  });
+});
+
+describe("guarded probe for a link only the user's allowed sites admit", () => {
+  function mediaElementsCreated() {
+    return vi
+      .mocked(document.createElement)
+      .mock.calls.filter(
+        ([tag]) => tag === "video" || tag === "audio" || tag === "img",
+      );
+  }
+
+  // What a browser gives for a redirect from a host that sends CORS headers:
+  // an opaque response when the redirect is handed back, a failed request
+  // when it is refused outright.
+  function redirectingFetch(_url: unknown, init?: RequestInit) {
+    if (init?.redirect !== "manual")
+      return Promise.reject(new TypeError("Failed to fetch"));
+    return Promise.resolve({
+      headers: makeHeaders({}),
+      ok: false,
+      status: 0,
+      type: "opaqueredirect",
+    } as unknown as Response);
+  }
+
+  test("refuses redirects on both requests", async () => {
+    setAllowedSiteCheck(() => true);
+    vi.mocked(fetch).mockRejectedValue(new TypeError("CORS"));
+    await probeMediaUrl(uniqueUrl());
+    const calls = vi.mocked(fetch).mock.calls;
+    expect(calls.map(([, init]) => init?.method)).toEqual(["HEAD", "GET"]);
+    for (const [, init] of calls) expect(init?.redirect).toBe("manual");
+  });
+
+  test("a redirect gives that link no preview after one request, media extension or not", async () => {
+    setAllowedSiteCheck(() => true);
+    const ImageSpy = vi.fn();
+    vi.stubGlobal("Image", ImageSpy);
+    vi.mocked(fetch).mockImplementation(redirectingFetch);
+    const url = uniqueUrl("/r/x.jpg");
+    expect(await probeMediaUrl(url)).toBeNull();
+    expect(vi.mocked(fetch).mock.calls.map(([, init]) => init?.method)).toEqual(
+      ["HEAD"],
+    );
+    expect(getCachedProbeResult(url)).toBeNull();
+    expect(mediaElementsCreated()).toHaveLength(0);
+    expect(ImageSpy).not.toHaveBeenCalled();
+  });
+
+  test("a redirect answered to the GET retry gives that link no preview", async () => {
+    setAllowedSiteCheck(() => true);
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(makeErrorResponse(405))
+      .mockImplementation(redirectingFetch);
+    expect(await probeMediaUrl(uniqueUrl("/r/x.jpg"))).toBeNull();
+    expect(vi.mocked(fetch).mock.calls.map(([, init]) => init?.method)).toEqual(
+      ["HEAD", "GET"],
+    );
+    expect(mediaElementsCreated()).toHaveLength(0);
+  });
+
+  test("a redirecting link leaves the host's other links probed by Content-Type", async () => {
+    setAllowedSiteCheck(() => true);
+    const redirecting = uniqueUrl("/login");
+    const extensionless = new URL("/noext", redirecting).href;
+    const mislabelled = new URL("/page.jpg", redirecting).href;
+
+    vi.mocked(fetch).mockImplementation(redirectingFetch);
+    expect(await probeMediaUrl(redirecting)).toBeNull();
+
+    vi.mocked(fetch).mockImplementation(() =>
+      Promise.resolve(makeResponse({ "Content-Type": "image/png" })),
+    );
+    expect((await probeMediaUrl(extensionless))?.type).toBe("image");
+
+    vi.mocked(fetch).mockImplementation(() =>
+      Promise.resolve(makeResponse({ "Content-Type": "text/html" })),
+    );
+    expect(await probeMediaUrl(mislabelled)).toBeNull();
+  });
+
+  test("a link that fails both requests leaves the host's other links asked", async () => {
+    setAllowedSiteCheck(() => true);
+    const failing = uniqueUrl("/missing");
+    const redirecting = new URL("/r/x.jpg", failing).href;
+    const extensionless = new URL("/noext", failing).href;
+
+    vi.mocked(fetch).mockRejectedValue(new TypeError("CORS"));
+    expect(await probeMediaUrl(failing)).toBeNull();
+
+    vi.mocked(fetch).mockReset().mockImplementation(redirectingFetch);
+    expect(await probeMediaUrl(redirecting)).toBeNull();
+    expect(vi.mocked(fetch).mock.calls.map(([, init]) => init?.method)).toEqual(
+      ["HEAD"],
+    );
+
+    vi.mocked(fetch).mockImplementation(() =>
+      Promise.resolve(makeResponse({ "Content-Type": "image/png" })),
+    );
+    expect((await probeMediaUrl(extensionless))?.type).toBe("image");
+  });
+
+  test("a host the plain probe stopped asking is still asked about a guarded link", async () => {
+    const plain = uniqueUrl("/a.jpg");
+    const redirecting = new URL("/r/x.jpg", plain).href;
+
+    setAllowedSiteCheck(() => false);
+    vi.mocked(fetch).mockRejectedValue(new TypeError("CORS"));
+    expect((await probeMediaUrl(plain))?.type).toBe("image");
+
+    setAllowedSiteCheck(() => true);
+    vi.mocked(fetch).mockReset().mockImplementation(redirectingFetch);
+    expect(await probeMediaUrl(redirecting)).toBeNull();
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
+  });
+
+  test("a failed guarded link leaves the plain probe asking the host", async () => {
+    const guardedLink = uniqueUrl("/missing");
+    const plain = new URL("/noext", guardedLink).href;
+
+    setAllowedSiteCheck(() => true);
+    vi.mocked(fetch).mockRejectedValue(new TypeError("CORS"));
+    expect(await probeMediaUrl(guardedLink)).toBeNull();
+
+    setAllowedSiteCheck(() => false);
+    vi.mocked(fetch)
+      .mockReset()
+      .mockResolvedValue(makeResponse({ "Content-Type": "image/png" }));
+    expect((await probeMediaUrl(plain))?.type).toBe("image");
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
+  });
+
+  test("each link on a host that fails both requests costs those two requests, once", async () => {
+    setAllowedSiteCheck(() => true);
+    const first = uniqueUrl("/a.jpg");
+    const second = new URL("/b.jpg", first).href;
+    vi.mocked(fetch).mockRejectedValue(new TypeError("CORS"));
+    expect((await probeMediaUrl(first))?.type).toBe("image");
+    expect((await probeMediaUrl(second))?.type).toBe("image");
+    expect(vi.mocked(fetch).mock.calls.map(([, init]) => init?.method)).toEqual(
+      ["HEAD", "GET", "HEAD", "GET"],
+    );
+    expect((await probeMediaUrl(first))?.type).toBe("image");
+    expect((await probeMediaUrl(second))?.type).toBe("image");
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(4);
+  });
+
+  test("follows redirects for any other link", async () => {
+    setAllowedSiteCheck(() => false);
+    vi.mocked(fetch).mockResolvedValueOnce(
+      makeResponse({ "Content-Type": "image/png" }),
+    );
+    await probeMediaUrl(uniqueUrl());
+    expect(vi.mocked(fetch).mock.calls[0][1]?.redirect).toBe("follow");
+  });
+
+  test("a media Content-Type resolves", async () => {
+    setAllowedSiteCheck(() => true);
+    vi.mocked(fetch).mockResolvedValueOnce(
+      makeResponse({ "Content-Type": "image/png" }),
+    );
+    const result = await probeMediaUrl(uniqueUrl());
+    expect(result?.type).toBe("image");
+    expect(mediaElementsCreated()).toHaveLength(0);
+  });
+
+  test("a web page stays a link", async () => {
+    setAllowedSiteCheck(() => true);
+    vi.mocked(fetch).mockResolvedValueOnce(
+      makeResponse({ "Content-Type": "text/html" }),
+    );
+    expect(await probeMediaUrl(uniqueUrl(".jpg"))).toBeNull();
+    expect(mediaElementsCreated()).toHaveLength(0);
+  });
+
+  test("failed requests fall back to a media file extension", async () => {
+    setAllowedSiteCheck(() => true);
+    vi.mocked(fetch).mockRejectedValue(new TypeError("CORS"));
+    const result = await probeMediaUrl(uniqueUrl(".jpg"));
+    expect(result?.type).toBe("image");
+    expect(mediaElementsCreated()).toHaveLength(0);
+  });
+
+  test("failed requests and no extension give no preview and load no media element", async () => {
+    setAllowedSiteCheck(() => true);
+    const ImageSpy = vi.fn();
+    vi.stubGlobal("Image", ImageSpy);
+    vi.mocked(fetch).mockRejectedValue(new TypeError("redirect"));
+    const url = uniqueUrl("/go?u=https://elsewhere.example/x");
+    expect(await probeMediaUrl(url)).toBeNull();
+    expect(mediaElementsCreated()).toHaveLength(0);
+    expect(ImageSpy).not.toHaveBeenCalled();
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2);
+    expect(getCachedProbeResult(url)).toBeNull();
+  });
+
+  test.each([".svg", ".m3u8"])(
+    "failed requests + %s give no preview",
+    async (ext) => {
+      setAllowedSiteCheck(() => true);
+      vi.mocked(fetch).mockRejectedValue(new TypeError("CORS"));
+      expect(await probeMediaUrl(uniqueUrl(ext))).toBeNull();
+      expect(mediaElementsCreated()).toHaveLength(0);
+    },
+  );
+
+  test("the same link without the guard still sniffs with media elements", async () => {
+    setAllowedSiteCheck(() => false);
+    vi.mocked(fetch).mockRejectedValue(new TypeError("CORS"));
+    expect(await probeMediaUrl(uniqueUrl())).toBeNull();
+    expect(mediaElementsCreated().length).toBeGreaterThan(0);
+  });
+
+  test("the server a link was posted on decides its mode and its cached result", async () => {
+    setAllowedSiteCheck((_url, serverId) => serverId !== "home");
+    const url = uniqueUrl();
+
+    vi.mocked(fetch).mockResolvedValue(
+      makeResponse({ "Content-Type": "image/png" }),
+    );
+    expect((await probeMediaUrl(url, "home"))?.type).toBe("image");
+    expect(vi.mocked(fetch).mock.calls[0][1]?.redirect).toBe("follow");
+    expect(getCachedProbeResult(url, "home")?.type).toBe("image");
+    expect(getCachedProbeResult(url, "elsewhere")).toBeUndefined();
+
+    vi.mocked(fetch).mockResolvedValue(
+      makeResponse({ "Content-Type": "text/html" }),
+    );
+    expect(await probeMediaUrl(url, "elsewhere")).toBeNull();
+    expect(vi.mocked(fetch).mock.calls[1][1]?.redirect).toBe("manual");
+    expect(getCachedProbeResult(url, "elsewhere")).toBeNull();
+    expect(getCachedProbeResult(url, "home")?.type).toBe("image");
+  });
+
+  test("a result from one mode is never reused in the other", async () => {
+    const url = uniqueUrl();
+    vi.mocked(fetch).mockResolvedValue(
+      makeResponse({ "Content-Type": "image/png" }),
+    );
+
+    setAllowedSiteCheck(() => false);
+    expect(getCachedProbeResult(url)).toBeUndefined();
+    expect((await probeMediaUrl(url))?.type).toBe("image");
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
+    expect(getCachedProbeResult(url)?.type).toBe("image");
+
+    setAllowedSiteCheck(() => true);
+    expect(getCachedProbeResult(url)).toBeUndefined();
+    vi.mocked(fetch).mockResolvedValue(
+      makeResponse({ "Content-Type": "text/html" }),
+    );
+    expect(await probeMediaUrl(url)).toBeNull();
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(fetch).mock.calls[1][1]?.redirect).toBe("manual");
+    expect(getCachedProbeResult(url)).toBeNull();
+
+    setAllowedSiteCheck(() => false);
+    expect(getCachedProbeResult(url)?.type).toBe("image");
   });
 });

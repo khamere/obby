@@ -11,13 +11,19 @@ import type { E2EEScheme, E2EESessionState } from "../lib/e2ee/session";
 import { e2eeSessionKey } from "../lib/e2ee/session";
 import { ConnectionClosedError } from "../lib/irc/IRCClient";
 import ircClient from "../lib/ircClient";
+import { serverFilehosts } from "../lib/ircUtils";
 import { failWhenUnanswered, makeLabel } from "../lib/labeledResponse";
 import {
   forgetLeftChannels,
   leftReasonOf,
   saveLeftReason,
 } from "../lib/leftChannels";
-import type { MediaType } from "../lib/mediaUtils";
+import { setAllowedSiteCheck } from "../lib/mediaProbe";
+import {
+  isAllowedSiteOnly,
+  type MediaType,
+  mediaLevelToSettings,
+} from "../lib/mediaUtils";
 import { encodeStoredSaslPassword } from "../lib/sasl/storedPassword";
 import { recordPlace, recordSearch } from "../lib/search/recents";
 import { serializeSearchQuery } from "../lib/search/searchQuery";
@@ -1531,6 +1537,7 @@ const useStore = create<AppState>((set, get) => ({
     autoFallbackToSingleLine: true,
     // Media settings
     mediaVisibilityLevel: 1 as MediaVisibilityLevel,
+    mediaAllowedHosts: [],
     // Markdown settings
     enableMarkdownRendering: false,
     showMotd: true,
@@ -5027,3 +5034,34 @@ useStore.subscribe((state, prev) => {
 });
 registerAllHandlers(useStore);
 setVoiceStore(useStore);
+
+setAllowedSiteCheck((url, serverId) => {
+  const { globalSettings, servers } = useStore.getState();
+  return isAllowedSiteOnly(
+    url,
+    mediaLevelToSettings(
+      globalSettings.mediaVisibilityLevel,
+      globalSettings.mediaAllowedHosts,
+    ),
+    serverFilehosts(servers.find((s) => s.id === serverId)),
+  );
+});
+
+// Another tab saves the whole settings blob, so we follow its allowed sites:
+// a site removed there must stop loading here, and our next save must keep it
+// removed.
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (event) => {
+    if (event.key !== "globalSettings" || event.newValue === null) return;
+    const saved = loadSavedGlobalSettings().mediaAllowedHosts ?? [];
+    const current = useStore.getState().globalSettings.mediaAllowedHosts ?? [];
+    if (
+      saved.length === current.length &&
+      saved.every((host, i) => host === current[i])
+    )
+      return;
+    useStore.setState((state) => ({
+      globalSettings: { ...state.globalSettings, mediaAllowedHosts: saved },
+    }));
+  });
+}

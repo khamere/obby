@@ -6,6 +6,7 @@ import { useShallow } from "zustand/react/shallow";
 import { useIsTouchInput } from "../../hooks/useIsTouchInput";
 import { useLongPress } from "../../hooks/useLongPress";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { useMediaSettings } from "../../hooks/useMediaSettings";
 import { useSavedReply } from "../../hooks/useSavedReply";
 import { workflowIdFromTags } from "../../lib/botTools";
 import { formatCopyAuthor } from "../../lib/chatMarkdownCopy";
@@ -37,7 +38,7 @@ import {
   extractMediaFromMessage,
   type MediaEntry,
   type MediaType,
-  mediaLevelToSettings,
+  withoutAllowedSites,
 } from "../../lib/mediaUtils";
 import { stripIrcFormatting } from "../../lib/messageFormatter";
 import { isWhisper } from "../../lib/messageGrouping";
@@ -416,8 +417,8 @@ export const MessageItem = memo((props: MessageItemProps) => {
   const mediaVisibilityLevel = useStore(
     useCallback((state) => state.globalSettings.mediaVisibilityLevel, []),
   );
-  const { showSafeMedia, showTrustedSourcesMedia, showExternalContent } =
-    mediaLevelToSettings(mediaVisibilityLevel);
+  const mediaSettings = useMediaSettings();
+  const { showExternalContent } = mediaSettings;
   const enableMarkdownRendering = useStore(
     useCallback((state) => state.globalSettings.enableMarkdownRendering, []),
   );
@@ -632,16 +633,12 @@ export const MessageItem = memo((props: MessageItemProps) => {
     [strippedContent],
   );
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the visibility flags derive from mediaVisibilityLevel, and fileHosts from fileHostsKey
+  // biome-ignore lint/correctness/useExhaustiveDependencies: fileHosts derives from fileHostsKey
   const mediaEntries = useMemo(() => {
     return allMediaEntries.filter((e) =>
-      canShowMedia(
-        e.url,
-        { showSafeMedia, showTrustedSourcesMedia, showExternalContent },
-        fileHosts,
-      ),
+      canShowMedia(e.url, mediaSettings, fileHosts),
     );
-  }, [allMediaEntries, mediaVisibilityLevel, fileHostsKey]);
+  }, [allMediaEntries, mediaSettings, fileHostsKey]);
 
   const [showAllImages, setShowAllImages] = useState(false);
 
@@ -1024,11 +1021,7 @@ export const MessageItem = memo((props: MessageItemProps) => {
                 descriptor={encryptedMedia}
                 allowed={canShowMedia(
                   encryptedMedia.url,
-                  {
-                    showSafeMedia,
-                    showTrustedSourcesMedia,
-                    showExternalContent,
-                  },
+                  withoutAllowedSites(mediaSettings),
                   fileHosts,
                 )}
               />

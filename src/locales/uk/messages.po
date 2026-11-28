@@ -157,6 +157,10 @@ msgstr "{failedCount, plural, one {Не вдалося завантажити 1 
 msgid "{hiddenLines, plural, one {# more line} other {# more lines}}"
 msgstr "{hiddenLines, plural, one {ще # рядок} few {ще # рядки} many {ще # рядків} other {ще # рядків}}"
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "{host} is already on the list."
+msgstr "{host} уже є в списку."
+
 #: src/store/handlers/users.ts
 msgid "{inviter} has invited {target} to join {channel}"
 msgstr "{inviter} запросив {target} приєднатися до {channel}"
@@ -538,6 +542,7 @@ msgstr "Активність"
 #: src/components/pages/TwoFactorPage.tsx
 #: src/components/ui/settings/CustomMentionsField.tsx
 #: src/components/ui/settings/IgnoreListField.tsx
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
 msgid "Add"
 msgstr "Додати"
 
@@ -608,6 +613,10 @@ msgstr "Додати IRC-сервер"
 msgid "Add Network"
 msgstr "Додати мережу"
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Add only sites you trust. On every server, a link to an allowed site makes Obby contact that site, which shows it your IP address. Anyone who can put files on the site can post such a link, and the site can pass your request on to another site."
+msgstr "Додавайте лише сайти, яким довіряєте. На будь-якому сервері посилання на дозволений сайт змушує Obby звернутися до цього сайту, і він бачить вашу IP-адресу. Таке посилання може надіслати будь-хто, хто може розміщувати файли на сайті, а сайт може передати ваш запит іншому сайту."
+
 #: src/components/message/MessageActions.tsx
 #: src/components/message/MessageReactions.tsx
 #: src/components/message/MessageReactions.tsx
@@ -630,6 +639,10 @@ msgstr "Додайте правила, які визначають, за яко�
 #: src/components/layout/ServerList.tsx
 msgid "Add Server"
 msgstr "Додати сервер"
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Add the exact site instead. {host} is shared by many unrelated people."
+msgstr "Додайте натомість точний сайт. {host} використовують багато не пов'язаних між собою людей."
 
 #: src/components/ui/SavedHistoryChoice.tsx
 msgid "Add this network again to get its saved chat history back."
@@ -746,6 +759,10 @@ msgstr "Дозволити Obby встановлювати оновлення"
 #: src/components/layout/ChatArea.tsx
 msgid "Allow Obby under Screen Recording in System Settings, then record again."
 msgstr "Дозвольте Obby у розділі «Запис екрана» в Системних параметрах і запишіть знову."
+
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Allowed Sites"
+msgstr "Дозволені сайти"
 
 #. placeholder {0}: message.inviteChannel
 #: src/components/message/InviteMessage.tsx
@@ -2619,6 +2636,10 @@ msgstr "Введіть назву з будь-якими пробілами, е�
 msgid "Enter a number for {0}"
 msgstr "Введіть число для {0}"
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Enter a site name such as files.example.com, or paste a link to it. Ports and IP addresses cannot be added."
+msgstr "Введіть назву сайту, наприклад files.example.com, або вставте посилання на нього. Порти та IP-адреси додати не можна."
+
 #: src/components/pages/ChannelSettingsPage.tsx
 msgid "Enter a URL. Use {sizeToken} in the URL for dynamic sizing. Example: https://example.com/avatar/{sizeToken}/channel.jpg"
 msgstr "Введіть URL. Використовуйте {sizeToken} в URL для динамічного розміру. Приклад: https://example.com/avatar/{sizeToken}/channel.jpg"
@@ -2883,6 +2904,10 @@ msgstr "Зображення з файлового хостингу"
 #: src/components/ui/UnencryptedUploadConfirmModal.tsx
 msgid "Files larger than {0} are sent unencrypted. The file host can read them, and anyone with the link can open them."
 msgstr "Файли більші за {0} надсилаються без шифрування. Хост файлів може їх прочитати, а будь-хто з посиланням може їх відкрити."
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "files.example.com or a pasted link"
+msgstr "files.example.com або вставлене посилання"
 
 #. placeholder {0}: e.name
 #: src/components/chat/CommandArgHint.tsx
@@ -4630,6 +4655,7 @@ msgstr "Відкрити параметри чату"
 
 #: src/components/ui/MediaViewerModal.tsx
 #: src/components/ui/MediaViewerModal.tsx
+#: src/components/ui/MediaViewerModal.tsx
 msgid "Open in browser"
 msgstr "Відкрити в браузері"
 
@@ -4791,6 +4817,10 @@ msgstr "Пароль оновлено. Тепер можна увійти."
 msgid "Passwords don't match."
 msgstr "Паролі не збігаються."
 
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Paste a link to add the site that serves the file; it often differs from the page you opened. A name matches that exact site over https. Add *.example.com to cover example.com and all its subdomains."
+msgstr "Вставте посилання, щоб додати сайт, який віддає файл; він часто відрізняється від сторінки, яку ви відкрили. Назва відповідає лише цьому сайту через https. Додайте *.example.com, щоб охопити example.com і всі його піддомени."
+
 #: src/components/ui/PluginsScreen.tsx
 msgid "Paste code with syntax highlighting and line numbers."
 msgstr "Вставляйте код із підсвічуванням синтаксису та номерами рядків."
@@ -4831,6 +4861,10 @@ msgstr "Пауза"
 #: src/components/ui/MediaCommentsSidebar.tsx
 msgid "PDF"
 msgstr "PDF"
+
+#: src/components/ui/MediaViewerModal.tsx
+msgid "PDF cannot be displayed in browser."
+msgstr "PDF неможливо показати в браузері."
 
 #: src/components/message/MediaPreview.tsx
 msgid "PDF preview"
@@ -4985,9 +5019,13 @@ msgstr "Попередній перегляд (ще не завантажено)
 msgid "Preview all external media. Any URL can trigger a request to an unknown server."
 msgstr "Показувати попередній перегляд усіх зовнішніх медіа. Будь-який URL може спричинити запит до невідомого сервера."
 
+#: src/lib/settings/definitions/allSettings.ts
+msgid "Preview media from these sites at Safe and Trusted Sources."
+msgstr "Показувати попередній перегляд медіа з цих сайтів на рівнях «Безпечно» та «Надійні джерела»."
+
 #: src/components/pages/SettingsPage.tsx
-msgid "Preview media from your server's trusted file host only. Make no requests to external services."
-msgstr "Показувати попередній перегляд медіа лише з довіреного файлового хосту вашого сервера. Не надсилати запитів до зовнішніх сервісів."
+msgid "Preview media from your server's trusted file host and your allowed sites only. Make no requests to other services."
+msgstr "Показувати попередній перегляд медіа лише з довіреного файлового хосту вашого сервера та з дозволених вами сайтів. Не надсилати запитів до інших сервісів."
 
 #: src/components/ui/E2EEVerifyModal.tsx
 msgid "Previous fingerprint"
@@ -5313,6 +5351,11 @@ msgstr "Видалити"
 #: src/components/pages/TwoFactorPage.tsx
 msgid "Remove \"{0}\"? You will no longer be able to use it as a second factor."
 msgstr "Видалити \"{0}\"? Ви більше не зможете використовувати його як другий фактор."
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Remove {host}"
+msgstr "Видалити {host}"
 
 #: src/components/ui/ModerationModal.tsx
 msgid "Remove {username} from the channel"
@@ -5949,6 +5992,10 @@ msgstr "Вкажіть, скільки секунд рахувати актив�
 #: src/lib/settings/definitions/allSettings.ts
 msgid "Set how much disk space saved history can use. The oldest messages are deleted first when the limit is reached."
 msgstr "Задайте, скільки місця на диску може займати збережена історія. Після досягнення ліміту найстаріші повідомлення видаляються першими."
+
+#: src/components/ui/settings/MediaAllowedHostsField.tsx
+msgid "Set Media Previews to Trusted Sources to preview {host}. It also loads from other sites, so it cannot be added here."
+msgstr "Щоб показувати попередній перегляд із {host}, установіть для попереднього перегляду медіа рівень «Надійні джерела». Сервіс завантажує дані й з інших сайтів, тому додати його сюди не можна."
 
 #: src/components/ui/PasswordRecoveryModal.tsx
 msgid "Set new password"
